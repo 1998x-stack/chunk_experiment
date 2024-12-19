@@ -3,6 +3,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + '..'))
 
 
 import re, math
+from lingua import Language, LanguageDetectorBuilder
 
 
 ### CUSTOM LENGTH CALCULATION ###
@@ -56,3 +57,20 @@ def calculate_custom_length(text: str) -> int:
 
     # 取下整
     return math.floor(total_length)
+
+
+### 语言检测 ###
+languages = [
+    Language.ENGLISH, 
+    Language.CHINESE, 
+]
+detector = LanguageDetectorBuilder.from_languages(*languages).build()
+def detect_language(text):
+    try:
+        lang = detector.detect_language_of(text).iso_code_639_1.name.lower()
+        if lang in ['zh', 'en']:
+            return lang
+        else:
+            return None
+    except:
+        return None
