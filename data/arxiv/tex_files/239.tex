@@ -1,0 +1,507 @@
+
+\chapter{Dependently typed parsing example mentioned in Chapter~\ref{chap:introduction}}
+\label{chap:appendixC1}
+
+In this appendix we present details of the dependently typed monadic parsing example 
+we alluded to in~\cite{Ahman:FibredEffects}, and that we also mentioned in the end of Section~\ref{sect:twoguidingquestions}.
+As highlighted in the latter, then similarly to other computationally interesting  examples we are aware of, this example also only requires  
+computation types $\Sigma\, x\!:\! A .\, \ul{C}$ where $\ul{C}$ is of the form $FB$, or equivalently, computation types of the form $F(\Sigma\, x \!:\! A .\, B)$.
+%
+As a result, as we only need computation types of the form $FB$ for this example, we can present it using a shallow embedding\footnote{The full code is available at 
+\url{https://www.github.com/danelahman/Dep-Mon-Parsing/}.} of Moggi's monadic metalanguage in Agda~\cite{Norell:AgdaTutorial}, using the standard parser monad from~\cite{Hutton:MonParsing} (written $\mathtt{P}$ in the code below). By observing that $\mathtt{P}$ is nothing but the tensor product of the global state monad with the lists-based nondeterminism monad (see~\cite{Hyland:CombiningEffects}), we can give the parser combinators we use high-level definitions in terms of the algebraic operations that determine these two monads. 
+
+To keep the example as simple as possible, we consider a very small simply typed language in this appendix, whose terms $t$ are given by the following grammar:
+\[
+\begin{array}{r c l}
+t & ::= & c ~ \vertbar ~ f~t_1~\ldots~t_n
+\end{array}
+\]
+where $c$ and $f$ range over typed constant and function symbols; for simplicity, $n > 0$.
+
+The code for our parser is given below. For better readability, we parameterise it over tokens, types, and constant and function symbols; and conversion functions taking tokens to types, and constant and function symbols. We also assume that the given representation of types has decidable equality ($\mathtt{decTypeEq}$). If it succeeds, the parser will produce as its output a pair of a type $\mathtt{ty:Types}$ and a typed term $\mathtt{tm:Terms~ty}$.
+
+\pagebreak
+
+{\small{$\mathtt{module ~ Parser}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(Token : Set) ~ (Types : Set) ~ (ConstSym : Set) ~ (FunSym : Set)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(tokenToType : Token} \to \mathtt{Types} + \mathtt{One)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(decTypeEq : (ty1 ~ ty2 : Types)} \to \mathtt{(Id ~ ty1 ~ ty2)} + \mathtt{(Id ~ ty1 ~ ty2} \to \mathtt{Zero))}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(tokenToConstSym : Token} \to \mathtt{ConstSym} + \mathtt{One)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(typeOfConst : ConstSym} \to \mathtt{Types)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(tokenToFunSym : Token} \to \mathtt{FunSym} + \mathtt{One)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{(typeOfFun : FunSym} \to \mathtt{(NEList ~ Types)} \times \mathtt{Types) ~where}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{lists ~ of ~ tokens}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{Tokens : Set}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{Tokens = List ~ Token}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{the ~ standard ~(fibred) ~ parser ~ monad ~ with ~ its ~ return ~ and ~ bind}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{P : Set} \to \mathtt{Set}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{P ~ A = Tokens} \to \mathtt{List ~ (Tokens} \times \mathtt{A)}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{Pf : \{A ~B : Set\}} \to \mathtt{(A} \to \mathtt{B)} \to \mathtt{P ~A} \to \mathtt{P ~B}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{Pf ~ f ~ p ~ tok = map ~ (\char`\\ \,x \to ((fst ~x) , f~(snd ~x)))~ (p~ tok)}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{return : \{A : Set\} \to A \to P~ A}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{return ~a ~tok = listReturn ~(tok , a)}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{bind : \{A : Set\} ~\{B : Set\} \to P ~A \to (A \to P ~B) \to P ~B}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{bind ~p ~f ~tok = listBind ~(p ~tok) ~ (\char`\\ \,x \to f ~(snd ~x) ~(fst ~x))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{generic ~effects ~and ~algebraic ~operations ~for ~the ~parser ~monad}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{lkp : P ~Tokens}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{lkp ~toks = (toks , toks) ~::~ []}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{put : Tokens \to P ~ One}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{put ~toks1 ~toks2 = (toks1 , *) ~::~ []}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{or : \{A : Set\} \to P ~A \to P ~A \to P ~A}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{or ~p1 ~p2 ~tok = append ~(p1 ~tok) ~(p2 ~tok)}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{fail : \{A : Set\} \to P ~A}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{fail ~tok = []}$}}
+
+\newpage
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{some ~useful ~combinators ~for ~parsing ~tokens}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseToken : P ~Token}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseToken = bind ~ lkp ~ (\char`\\ \, \{ [] \to fail;}$}}
+
+\vspace{-0.1cm}
+
+\hspace{4.9cm}
+{\small{$\mathtt{(tok ~::~ toks) \to bind ~(put ~toks)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{8.65cm}
+{\small{$\mathtt{ (\char`\\ \, \_ \to return ~tok) \})}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseAndConvert : \{X : Set\} \to (Token \to X) \to P ~X}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseAndConvert ~ f = bind ~parseToken ~(\char`\\ \,tok \to return ~(f ~tok))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseAndTest : \{X : Set\} \to (Token \to X + One) \to P ~X}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{parseAndTest ~f = bind ~(parseAndConvert ~f)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{4.35cm}
+{\small{$\mathtt{(\char`\\ \, b \to +\text{-}elim ~b ~(\char`\\ \, x \to return ~x) ~(\char`\\ \, \_ \to fail))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- -$\mathtt{typed ~ASTs~of ~the ~terms ~of ~the ~small ~language}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{mutual}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{data ~Terms : Types \to Set ~where}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{const : (c : ConstSym) \to Terms ~(typeOfConst ~c)}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{app : (f : FunSym) \to NEArgumentList ~(fst ~(typeOfFun ~f))}$}}
+
+\vspace{-0.1cm}
+
+\hspace{3.7cm}
+{\small{$\mathtt{\to Terms ~(snd ~(typeOfFun ~f))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{$\mathtt{data ~NEArgumentList : NEList ~Types \to Set ~where}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{[\_]  : \{ty : Types\} \to Terms ~ty \to NEArgumentList ~[ ~ty~ ]}$}}
+
+\hspace{0.75cm}
+{\small{$\mathtt{\_::\!\_ : \{ty : Types\} ~\{tys : NEList ~Types\} \to Terms ~ty}$}}
+
+\vspace{-0.1cm}
+
+\hspace{7.5cm}
+{\small{$\mathtt{\to NEArgumentList ~tys}$}}
+
+\vspace{-0.1cm}
+
+\hspace{7.5cm}
+{\small{$\mathtt{\to  NEArgumentList ~(ty ~::~ tys)}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.25cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{monadic ~parsing ~of ~typed ~ASTs}$}}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{mutual}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{$\mathtt{\{\text{-}\# ~TERMINATING~ \#\text{-}\}}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{the ~top\text{-}level ~parser ~for ~the ~language}$}}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parser : P ~(Sigma ~Types ~Terms)}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parser = or ~parseConst ~parseFunApp}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{the ~sub\text{-}parser ~for ~constants}$}}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseConst : P ~(Sigma ~Types ~Terms)}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseConst = bind ~(parseAndTest ~tokenToConstSym)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{3.9cm}
+{\small{$\mathtt{(\char`\\ \, c \to return ~(typeOfConst ~c , const ~c))}$}}
+
+\newpage
+
+\hspace{0.5cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{the ~sub\text{-}parser ~for ~function ~applications}$}}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseFunApp : P ~(Sigma ~Types ~Terms)}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseFunApp =}$}}
+
+\vspace{-0.1cm}
+
+\hspace{0.75cm}
+{\small{$\mathtt{bind ~(parseAndTest ~tokenToFunSym)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{1.65cm}
+{\small{$\mathtt{(\char`\\ \, f \to bind ~(parseNEArgumentList ~(fst ~(typeOfFun ~f)))}$}}
+
+\vspace{-0.1cm}
+
+\hspace{3.7cm}
+{\small{$\mathtt{(\char`\\ \, args \to return ~(snd ~(typeOfFun ~f) , app ~f ~args)))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{parsing ~the ~non\text{-}empty ~lists ~of ~arguments ~in ~function ~applications}$}}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseNEArgumentList : (tys : NEList ~Types) \to P ~(NEArgumentList ~tys)}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseNEArgumentList ~[ ~ty~ ]      = bind ~(parseTermOfGivenType ~ty)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{6.65cm}
+{\small{$\mathtt{(\char`\\ \, tm \to return ~[ ~tm~ ])}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseNEArgumentList ~(ty ~::~ tys) =}$}}
+
+\vspace{-0.1cm}
+
+\hspace{0.75cm}
+{\small{$\mathtt{bind ~(parseTermOfGivenType ~ty)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{1.65cm}
+{\small{$\mathtt{(\char`\\ \, tm \to bind ~(parseNEArgumentList ~tys)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{3.9cm}
+{\small{$\mathtt{(\char`\\ \, tms \to return ~(tm ~::~ tms)))}$}}
+
+\vspace{0.25cm}
+
+\hspace{0.5cm}
+{\small{\textcolor{lightgray}{- - $\mathtt{parsing ~a ~term ~of ~given ~type}$}}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseTermOfGivenType : (ty : Types) \to P ~(Terms ~ty)}$}}
+
+\hspace{0.5cm}
+{\small{$\mathtt{parseTermOfGivenType ~ty =}$}}
+
+\vspace{-0.1cm}
+
+\hspace{0.75cm}
+{\small{$\mathtt{bind ~parser~ (\char`\\ \, p \to +\text{-}elim ~(decTypeEq ~(fst ~p) ~ty)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{5.45cm}
+{\small{$\mathtt{(\char`\\ \, q \to return ~(transport ~q ~(snd ~p)))}$}}
+
+\vspace{-0.1cm}
+
+\hspace{5.45cm}
+{\small{$\mathtt{(\char`\\ \, \_ \to fail))}$}}
+
+\vspace{0.5cm}
+
+\noindent
+where we highlight that in $\mathtt{parseFunApp}$, the sub-parser for the arguments of a function application ($\mathtt{parseNEArgumentList}$) crucially depends on the type of the particular parsed function. The types and functions we use above are defined as follows:
+
+\vspace{0.5cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{propositional ~equality}$}}}
+
+{\small{$\mathtt{data ~Id ~\{A : Set\} ~(a : A) : A \to Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{refl : Id ~a ~a}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{transport : \{A : Set\} ~\{B : A \to Set\} ~\{a1 ~a2 : A\} \to Id ~a1 ~a2 \to B ~a1 \to B ~a2}$}}
+
+{\small{$\mathtt{transport ~refl ~b = b}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{lists~with~their~monad~structure}$}}}
+
+{\small{$\mathtt{data ~List ~(A : Set) : Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{[] : List ~A}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{\_::\!\_ : A \to List ~A \to List ~A}$}}
+
+\newpage
+
+{\small{$\mathtt{map : \{X ~Y : Set\} \to (X \to Y) \to List ~X \to List ~Y}$}}
+
+{\small{$\mathtt{map ~f ~[] = []}$}}
+
+{\small{$\mathtt{map ~f ~(x ~::~ xs) = f ~x ~::~ map ~f ~xs}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{append : \{X : Set\} \to List ~X \to List ~X \to List ~X}$}}
+
+{\small{$\mathtt{append ~[] ~ys = ys}$}}
+
+{\small{$\mathtt{append ~(x ~::~ xs) ~ys = x ~::~ append ~xs ~ys}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{listReturn : \{X : Set\} \to X \to List ~X}$}}
+
+{\small{$\mathtt{listReturn ~x = x ~::~ []}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{listBind : \{X ~Y : Set\} \to List ~X \to (X \to List ~Y) \to List ~Y}$}}
+
+{\small{$\mathtt{listBind ~[] ~f = []}$}}
+
+{\small{$\mathtt{listBind ~(x ~::~ xs) ~f = append ~(f ~x) ~(listBind ~xs ~f)}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{non\text{-}empty ~lists}$}}}
+
+{\small{$\mathtt{data ~NEList ~(A : Set) : Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{[\_] : A \to NEList ~A}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{\_::\!\_ : A \to NEList ~A \to NEList ~A}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{unit ~type}$}}}
+
+{\small{$\mathtt{data ~One : Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{* : One}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{empty ~type}$}}}
+
+{\small{$\mathtt{data ~Zero : Set ~where}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{Sigma\text{-}type}$}}}
+
+{\small{$\mathtt{data ~Sigma ~(A : Set) ~(B : A \to Set) : Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{\_\,,\_ : (a : A) \to (b : B ~a) \to Sigma ~A ~B}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{fst : \{A : Set\} ~\{B : A \to Set\} \to Sigma ~A ~B \to A}$}}
+
+{\small{$\mathtt{fst ~(a , b) = a}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{snd : \{A : Set\} \{B : A \to Set\} \to (p : Sigma ~A ~B) \to B ~(fst ~p)}$}}
+
+{\small{$\mathtt{snd ~(a , b) = b}$}}
+
+\vspace{0.25cm}
+
+{\small{\textcolor{lightgray}{- - $\mathtt{product ~type}$}}}
+
+{\small{$\mathtt{\_\times\!\_ : Set \to Set \to Set}$}}
+
+{\small{$\mathtt{A \times B = Sigma ~A ~(\char`\\ \, \_ \to B)}$}}
+
+\newpage
+
+{\small{\textcolor{lightgray}{- - $\mathtt{coproduct ~type}$}}}
+
+{\small{$\mathtt{data ~\_+\!\_~ (A ~B : Set) : Set ~where}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{inl : A \to A + B}$}}
+
+\hspace{0.25cm}
+{\small{$\mathtt{inr : B \to A + B}$}}
+
+\vspace{0.25cm}
+
+{\small{$\mathtt{+\text{-}elim : \{A ~B : Set\} ~\{C : A + B \to Set\} \to (ab : A + B)}$}}
+
+\vspace{-0.1cm}
+
+\hspace{6.2cm}
+{\small{$\mathtt{\to ((a : A) \to C ~(inl ~a))}$}}
+
+\vspace{-0.1cm}
+
+\hspace{6.2cm}
+{\small{$\mathtt{\to ((b : B) \to C ~(inr ~b))}$}}
+
+\vspace{-0.1cm}
+
+\hspace{6.2cm}
+{\small{$\mathtt{\to C ~ab}$}}
+
+{\small{$\mathtt{+\text{-}elim ~(inl ~a) ~f ~g = f ~a}$}}
+
+{\small{$\mathtt{+\text{-}elim ~(inr ~b) ~f ~g = g ~b}$}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

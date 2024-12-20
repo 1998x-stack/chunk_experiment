@@ -1,0 +1,319 @@
+\section{Numerical experiments: Gaussian local basis functions}\label{NumGauss}
+This section is devoted to some numerical experiments in imaginary and real time using local Gaussian basis functions in order to validate the methodology developed in this paper for a one-dimensional 2-electron problem, that is with $d=1$ and $N=2$. Numerically this corresponds to two-dimensional time-dependent problems. Naturally, DDM is not necessary for this low-dimensional problem, but we intend here to show that the presented method is indeed convergent, and is a good candidat in higher dimension where DDM becomes relevant. Realistic simulations in higher dimensions will be presented in a forthcoming paper.\\
+We assume that the global domain $\Omega=[a-\epsilon^{(x_1)}/2,b+\epsilon^{(x_1)}/2]\times[c-\epsilon^{(x_2)}/2,d+\epsilon^{(x_2)}/2]$ is uniformly decomposed in $L^2$ subdomains, $\Omega_{i+Lj}=[a_i-\epsilon^{(x_1)}/2,b_i+\epsilon^{(x_1)}/2]\times[c_j-\epsilon^{(x_2)}/2,d_j+\epsilon^{(x_2)}/2]$, for all $i,j=1,\cdots,L$ and $\epsilon^{(x_{1,2})}>0$. That is $a_i=a+(i-1)(b-a)/L$ (resp. $c_i=c+i(d-c)/L$) and $b_i=a+i(b-a)/L$ (resp. $d_i=c+i(d-c)/L$), for $i=1,\cdots,L$. The overlapping zone in each direction (North, West, South, East) is a band of size $\epsilon^{(x_2)}\times (b-a)/L$ (South, North) or $\epsilon^{(x_1)}\times (d-c)/L$ (East, West).  We denote by $N^{(x_1)}$ and $N^{(x_2)}$ the total number of grid points, in each coordinate. The total number of local basis functions will be assumed, for the sake of simplicity, to be subdomain-independent, and is denoted by $K:=K_i$, for $i=1,\cdots,L^2$.
+\subsection{Test 1.a: Gaussian local basis function construction}\label{testA}
+In this first test, we simply represent the local basis functions, and the reconstructed Gaussian Cauchy data. More specifically, we assume that $L^2=25$ subdomains cover a two-dimensional global domain $(-15,15)$, that is $a=-15$ and $b=15$. We construct  $K=N_{\phi}^2=6^2$ Gaussian local basis functions per subdomain. Say for a subdomain $\Omega_{i+jL}=[a_i-\epsilon^{(x_1)}/2,b_i+\epsilon^{(x_1)}/2]\times[c_j-\epsilon^{(x_2)}/2,d_j+\epsilon^{(x_2)}/2]$, the basis functions are constructed as:
+\begin{eqnarray*}
+v_{l,p}^{i,j}(x_1,x_2) = \exp\big(-0.4(x_1-\alpha^{(l)}_i)^2-0.4(x_2-\beta^{(p)}_i)^2\big)
+\end{eqnarray*}
+where $\alpha^{(l)}_i$ (resp. $\beta^{(p)}_j$) for $l=1,\cdots,N_{\phi}$ (resp. $p=1,\cdots,N_{\phi}$), are uniformly distributed numbers in $[a_i-\epsilon^{(x_1)}/2,b_i+\epsilon^{(x_1)}/2]$ (resp. $[c_j-\epsilon^{(x_2)}/2,d_j+\epsilon^{(x_2)}/2]$).  From now on, in order to simplify the notations, we will denote the basis functions $v^{i}_l$ (see Subsection \ref{notations}), for $l=1,\cdots,N_{\phi}^2$ and for $i=1,\cdots,L^2$.  The overlapping zone on each subdomain, represents $\approx 10\%$ of the overall subdomain. The total number of grid points is fixed at $N^{(x_1)}\times N^{(x_2)}=201^2$. We represent in Fig. \ref{CauchyRec} (Left), the coverage of a given subdomain by the $N_{\phi}^2$ basis functions, from above.  The reconstructed function $\phi^{(0)}$, defined on $\Omega$ from $\phi_0$
+\begin{eqnarray*}
+\phi_0(x_1,x_2) = \exp\big(-0.2(x_1^2+x_2^2)\big)
+\end{eqnarray*}
+is computed as follows:
+\begin{itemize}
+\item $i \in \{1,\cdots,L^2\}$, we construct the sparse matrices ${\bf A}_{i}=\{A_{i;(l,p)}\}_{1\leq l \leq N_{\phi}^2,1 \leq p\leq N_{\phi}^2}$,
+\begin{eqnarray*}
+A_{i;(l,p)} = \langle v_{l}^{i},v_p^{i} \rangle_{L^2(\Omega_{i})}, \qquad \forall (l,p)=\{1,\cdots,N^2_{\phi}\}^2.
+\end{eqnarray*}
+\item For each  $i \in \{1,\cdots,L^2\}$, we restrict $\phi_0$ to $\Omega_{i}$: $\phi_{0|\Omega_{i}}$.
+\item For any $i \in \{1,\cdots,L^2\}$, we project $\phi_{0|\Omega_{i}}$ on each local basis functions, and construct the coefficients $\widetilde{{\bf c}}^{i} = \{\widetilde{c}^i_l\}_l$ defined by
+\begin{eqnarray*}
+\widetilde{c}_l^{i} = \langle \phi_{0|\Omega_{i}},v_{l}^{i} \rangle_{L^2(\Omega_{i})}, \qquad \forall l=\{1,\cdots,N^2_{\phi}\}.
+\end{eqnarray*}
+\item Then ${\bf c}^{i}$ is solution to ${\bf A}_i{\bf c}^{i} = \widetilde{\bf c}^{i}$, using GMRES \cite{saad}.
+\item We can then reconstruct the local solution as follows: $\phi_{0;i}(x_1,x_2)=\sum_{l=1}^{N^2_{\phi}}c^{i}_{l}v_{l}^{i}(x_1,x_2)$.
+\item  We finally denote by $\phi^{(0)}_0(x_1,x_2)$ the reconstructed initial data, which is then given, for $i \in \{1,\cdots,L^2\}$,  by
+\begin{eqnarray*}
+\phi^{(0)}(x_1,x_2) =
+\left\{
+\begin{array}{ll}
+\phi^{(0)}_{i}(x_1,x_2), & \hbox { if } (x_1,x_2)\in \Omega_{i} \, \hbox{ only} \\
+\cfrac{1}{k}\sum_{l=1}^{k}\phi^{(0)}_{k}(x_1,x_2)&, \hbox { if } (x_1,x_2) \in \cap_{l=1}^k\Omega_{i_k} \, \hbox{ with } i_1,\cdots,i_k \in \{1,\cdots,L^2\}  
+\end{array}
+\right.
+\end{eqnarray*}
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{GaussianBF.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{CauchyRec.eps}
+\caption{(Left) $36$ Gaussian basis functions in a subdomain. (Right) Reconstruction of a given function from local basis functions.}
+\label{CauchyRec}
+\end{center}
+\end{figure}
+\end{itemize}
+We show in Fig. \ref{CauchyRec} (Right) the reconstructed wavefunction $\phi^{(0)}$.
+\subsection{Test 1.b: Heat equation}
+A second preliminary test is dedicated to the computation by SWR-DDM with Robin-TC to the heat equation
+\begin{eqnarray*}
+\phi_t(x_1,x_2,t) -\triangle \phi(x_1,x_2,t)=0
+\end{eqnarray*}
+on $\Omega\times (0,T)$,  with the following initial data (see also Fig. \ref{Heat1} (Left))
+\begin{eqnarray*}
+\phi_0(x_1,x_2) = \exp\big(-0.2(x_1^2+x_2^2)\big).
+\end{eqnarray*} 
+The computational domain defined at the beginning of Section \ref{NumGauss}, and $\phi^{(0)}$ is constructed following the algorithm proposed in Subsection \ref{testA}. This is a relevant test, as the imaginary time method which will be implemented below is basically based on the solution of a normalized heat equation. The set-up is as follows. The global domain $(-15,15)$ is decomposed in $L^2=25$ subdomains, and the total number of grid points is $N^{(x_1)}\times N^{(x_2)}=201^2$. On each subdomain, a total of $N_{\phi}^2=36$ Gaussian local basis functions is constructed. The Robin-SWR algorithm is then implemented with $\mu=1$ defined in \eqref{RTC}, and we provide in Fig. \ref{Heat1} (Middle) the converged reconstructed solution at time $T=16$ where $\Delta t \approx 0.213$.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{InitHeat.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{Heat.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{CV_Heat.eps}
+\caption{$25$ subdomains. (Left) Initial data. (Middle) Reconstructed solution at time $T=16$. (Right) Residual history.}
+\label{Heat1}
+\end{center}
+\end{figure}
+Here, we define the residual history as follows
+\begin{eqnarray}\label{residueRT}
+\textrm{Res}(k):=\Big(\int_0^{T}\sum_{i=1}^{L^2}\int_{\partial \Omega_i}|\phi_i^{(k)}-\phi_i^{(k-1)}|^2dx_1dx_2dt\Big)^{1/2}
+\end{eqnarray}
+and is reported in logscale as a function of the Schwarz iteration, $\big\{\big(k,\log(\textrm{Res}(k))\big), \, k \in \N\big\}$, in Fig. \ref{Heat1} (Right). Notice that for numerical convenience, the convergence criterion we use is a bit different from the one defined Section \ref{SWR}.
+\subsection{Test 2.a: Ground state construction I}\label{testB}
+In this next experiment, we apply the imaginary time method for constructing the ground state of a 2-electron problem, more specifically a $H_2$-molecule with fixed nuclei. Again, the overall domain $(-15,15)$ is decomposed in $L^2=25$ subdomains. On each subdomain a total of $N_{\phi}^2=36$ Gaussian local basis functions, with $\delta=0.5$ in \eqref{gauss1d}, are used to construct the local solutions. The Robin-SWR algorithm described in Section \ref{SWR1} is applied with a Robin constant $\mu=10$ in \eqref{RTC}. Notice that a deeper analysis would help to select the optimized value of $\mu$ (that is ensuring the fastest convergence), see \cite{halpern2} in 1-d and for $2$ subdomains. At each Schwarz iteration $k$, we then solve $25$ independent imaginary time problems, from $0$ to $T^{\textrm{cvk},(k)}$ corresponding to the converged (imaginary) time of the imaginary time method. The wave transmission from one time iteration to another occurs through Robin transmission conditions. The test which is proposed here is as follows. The position of the nuclei is respectively $x_A=-1.25$ and $x_B=1.25$, while their charge is fixed to $Z_A=Z_B=1$. We use a regularized potential to avoid the singularity, thanks to the parameter $\eta=0.2$ in 
+\begin{eqnarray}\label{pseudo}
+V(x) = -1/\sqrt{(x-x_A)^2+\eta^2} -1/\sqrt{(x-x_B)^2+\eta^2},
+\end{eqnarray}
+Notice that the nuclei are located in the central subdomain. The total number of grid points is $N^{(x_1)}\times N^{(x_2)}=101^2$, and the overlap zone between 2 subdomains is $\approx 10\%$. We pick an initial guess as the following Gaussian function
+\begin{eqnarray*}
+\phi_0(x_1,x_2) = \exp\big(-(x_1^2+x_2^2)\big).
+\end{eqnarray*}
+At iteration $k$, we denote by $\widetilde{\phi}_g=\phi^{\textrm{cvg},(k)}$ the reconstructed solution at the converged time $T^{\textrm{cvg},(k)}$. We report in logscale Fig. \ref{ground_Gauss} (Right), the residual history as a function of the Schwarz iterations, $\big\{\big(k,\log(\textrm{Res}(k))\big), \, k \in \N\big\}$, where we numerically evaluate
+\begin{eqnarray}\label{residueIT}
+\textrm{Res}(k):=\Big(\int_0^{T^{\textrm{cvg},(k)}}\sum_{i=1}^{L^2}\int_{\partial \Omega_i}|\phi_i^{\textrm{cvg},(k)}-\phi_i^{\textrm{cvg},(k-1)}|^2dx_1dx_2dt\Big)^{1/2}.
+\end{eqnarray}
+The chosen time step is $\Delta t=4.5\times 10^{-1}$. Notice, that the constructed ground state $\widetilde{\phi}_g$, is not a priori antisymmetric. An a posteriori antisymmetrization of the reconstructed wavefunction $\widetilde{\phi}_g$, is possible thanks the operator $\mathcal{A}$ defined by:
+\begin{eqnarray*}
+\phi_g(x_1,x_2) = \mathcal{A}\widetilde{\phi}_{g}(x_1,x_2)=\left\{
+\begin{array}{l}
+\widetilde{\phi}_g(x_1,x_2),  \, x_2 \leq x_1,\\
+-\widetilde{\phi}_g(x_1,x_2), \, x_2 > x_1
+\end{array}
+\right.
+\end{eqnarray*}
+In Fig. \ref{ground_Gauss} (Middle) we report the antisymmetrized computed energy state. Notice however, that this antisymmetric wavefunction is, a priori, associated to an eigenenergy higher than the groundstate energy.\\
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6.0cm, keepaspectratio]{ground_Gauss_Anti.eps}
+\hspace*{1mm}\includegraphics[height=6.0cm, keepaspectratio]{CV_TISE_Gauss.eps}
+\caption{$H_2$-molecule ground state: $25$ subdomains. (Left) Antisymmetric wavefunction. (Right) Residual error.}
+\label{ground_Gauss}
+\end{center}
+\end{figure}
+We are now interested in the residual history as a function of the time step, for $\mu=10$. We basically observe that the smaller the time step, the faster the convergence of the SWR algorithm. This is coherent with \cite{halpern3,lorin-TBS}, where it is proven that the convergence rate for CSWR (based on Dirichlet boundary conditions) is exponential in $-1/\sqrt{\Delta t}$ for a one-dimensional two-domain problem. For the Robin-SWR algorithm however, the convergence rate is dependent on the choice of $\mu$, as we can observe in Fig. \ref{DT} (Left). 
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6.0cm, keepaspectratio]{DTTISE.eps}
+\hspace*{1mm}\includegraphics[height=6.0cm, keepaspectratio]{MUTISE.eps}
+\caption{Convergence rate as a function of the time step, for $\mu=10$. Convergence rate as a function of $\mu$, for $\Delta t=3.15\times 10^{-2}$.}
+\label{DT}
+\end{center}
+\end{figure}
+We also represent in Fig. \ref{DT} (Right), the residual history as a function of $\mu$. Notice that in \cite{halpern3} was established for Robin-SWR, a criterion to optimize the value of $\mu$ for the one-dimensional linear advection diffusion reaction equation  with constant coefficients. In the presented simulations, we can not really conclude about an optimized choice of $\mu$, as a fine mathematical analysis would be required to extend ideas from \cite{halpern3}. The proposed set-up, multidimensional with non-constant potentials, would make the analysis quite complex and quite beyond the current state of the art in this research field.
+\subsection{Test 2.b: Ground state construction II}\label{testB}
+In this next test, we again apply the imaginary time method for constructing the ground state of the 2-electron problem. In this test however, the overall computational domain is smaller and the ground state support will cover several subdomains, slowing down the DDM convergence. The overall domain $(-6.5,6.5)$ is decomposed in $L^2=25$ subdomains, with Gaussian basis functions as defined in the previous section. On each subdomain a total of $N_{\phi}^2=36$ Gaussian local basis functions, with $\delta=2$ in \eqref{gauss1d}, are used to construct the local solutions. The chosen Robin constant is $\mu=10$  in \eqref{RTC}.  The nucleus singularities are still located in the central subdomain, respectively in $x_A=-0.5$ and $x_B=0.5$ and the charge while their charge is $Z_A=Z_B=1$. We again use a regularized potential to avoid the singularity. The total number of grid points is $N^{(x_1)}\times N^{(x_2)}=151^2$, the overlap zone between 2 subdomains is $\approx 10\%$. We pick an initial guess as the following Gaussian function $\phi_0=\widetilde{\phi}_0/\|\widetilde{\phi}_0\|_0$, where
+\begin{eqnarray*}
+\widetilde{\phi}_0(x_1,x_2) = \exp\big(-0.8(x_1^2+x_2^2)\big).
+\end{eqnarray*}
+We report in Fig. \ref{ground_Gauss2} (Left), the converged ground state obtained by the Robin-SWR method. In addition, we report in logscale Fig. \ref{ground_Gauss2} (Right), the residual history as a function of the Schwarz iterations, $\big\{\big(k,\log(\textrm{Res}(k))\big)\big\}$, defined in \eqref{residueIT}. The chosen time step is $\Delta t=10^{-2}$.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{ground_Gauss2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{CV_TISE_Gauss2.eps}
+\caption{Converged ground state: $25$ subdomains. (Left) Modulus of the converged ground state. (Right) Residual error.}
+\label{ground_Gauss2}
+\end{center}
+\end{figure}
+\subsection{Test 3: Real time experiment}
+The following test is devoted to the evolution of a 2-electron wavefunction, subject to an external circular electric ${\bf E}(t)=(E_x(t),E_y(t))$ defined by:
+\begin{eqnarray*}
+\left\{
+\begin{array}{lcl}
+E_x(t) & = & E_0\cos(\omega_0t)\exp\big(-\nu_0(T/2-t)^2\big), \\
+E_y(t) & = & E_0\sin(\omega_0t)\exp\big(-\nu_0(T/2-t)^2\big)
+\end{array}
+\right.
+\end{eqnarray*}
+where $E_0=1$ $\omega_0=8$, $\nu_0=10$, $T=2.5$, see Fig. \ref{laser_circ} (Left). We are interested in the convergence of the Robin-SWR algorithm. 
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{laser2.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{InitTDSE2.eps}
+\caption{(Left) Circular laser electric field from time $0$ to $T=2.5$. (Right) Initial state for TDSE.}
+\label{laser_circ}
+\end{center}
+\end{figure}
+ As before we assume that the global domain $\Omega=(-10,10)^2$ is decomposed in $L^2=25$ square subdomains, with an overlap corresponding to $10\%$. We fix to $N^2_{\phi}=36$, the number of the Gaussian local basis functions, and in \eqref{RTC}, we impose $\mu=-10{\tt i}$. The total number of grid points is $N^{(x_1)}\times N^{(x_2)}=201^2$. The time step is given by $\Delta t=5\times 10^{-2}$ and final time $T=2.5$. The initial data is a Gaussian wave Fig. \ref{laser_circ} (Right). The potential \eqref{pseudo} is regularized using a parameter $\eta=0.5$.
+\begin{eqnarray*}
+\phi_0(x_1,x_2) = \exp\big(-(x_1^2+x_2^2)\big).
+\end{eqnarray*} 
+We report the solution at time $T=2.5$, at the end of the first Schwarz iteration the imaginary part of the wavefunction $\mathcal{I}\psi^{(1)}$ ($k=1$) in Fig. \ref{CVTDSE2} (Left). We represent in Fig. \ref{CVTDSE2} (Middle), the imaginary part of the converged solution $\mathcal{I}\psi^{(k^{(\textrm{cvg})})}$, $k=k^{(\textrm{cvg})}$ at time $T=2.5$. The residual history $\big\{\big(k,\log(\textrm{Res}(k))\big), \, k \in \N\big\}$ is represented in Fig. \ref{CVTDSE2} (Right).
+%is now defined as
+%
+%\begin{eqnarray}\label{residueRT2}
+%\textrm{Res}(k):=\Big(\int_0^{T}\sum_{i=1}^{L^2}\int_{\partial \Omega_i}|\psi_i%^{(k)}-\psi_i^{(k-1)}|^2dx_1dx_2dt\Big)^{1/2}
+%\end{eqnarray}
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{TDSE2_IterSchwarz1.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{TDSE2_IterSchwarzCV.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{CV_TDSE2.eps}
+\caption{$H_2$-molecule subject to electric field at time $T=2.5$: $25$ subdomains. (Left). Imaginary part of solution at final time after the first Schwarz iteration. (Middle) Solution at final time at Schwarz iteration $k=k^{(\textrm{cvg})}$. (Right) Residual error.}
+\label{CVTDSE2}
+\end{center}
+\end{figure}
+%\subsection{Test 3.b: Real time experiment II}
+%The following test is devoted to the evolution of a 2-electron wavefunction, subject to an external constant electric ${\bf E}(t)=(E_x(t),E_y(t))^T=(1,1)^T$. As before we assume that the global domain $\Omega=(-10,10)^2$ is decomposed in $L^2=25$ square subdomains, with an overlap corresponding to $\approx 10\%$. We fix to $N^2_{\phi}=36$, the number of the Gaussian local basis functions. In \eqref{RTC}, we take $\mu=-10{\tt i}$. The total number of grid points is $N^{(x_1)}\times N^{(x_2)}=201^2$. The time step is given by $\Delta t=2.7\times 10^{-1}$ and $T=1.75$. The initial data is a Gaussian wave. The potential \eqref{pseudo} is regularized using a parameter $\eta=0.5$. The initial data is set to:
+%\begin{eqnarray*}
+%\phi_0(x_1,x_2) = \exp\big(-(x_1^2+x_2^2)\big).
+%\end{eqnarray*} 
+%We report the solution at time $T=1.75$, at the end of the first Schwarz iteration the real part of the wavefunction $\mathcal{R}\psi^{(1)}$ ($k=1$) in Fig. \ref{CVTDSE} (Left). We represent in Fig. \ref{CVTDSE} (Middle), the real part of the converged solution $\mathcal{R}\psi^{(k^{(\textrm{cvg})})}$, $k=k^{(\textrm{cvg})}$ at time $T=1.75$. The residual history \eqref{residueRT} is represented in Fig. \ref{CVTDSE} (Right). 
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{TDSE_IterSchwarz1.eps}
+%\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{TDSE_IterSchwarzCV.eps}
+%\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{CV_TDSE.eps}
+%\caption{$H_2$-molecule subject to electric field at time $T=1.75$: $25$ subdomains. (Left). Real part of the solution at final time after t%he first Schwarz iteration. (Middle) Solution at final time at Schwarz iteration $k=k^{(\textrm{cvg})}$. (Right) Residual error.}
+%\label{CVTDSE}
+%\end{center}
+%\end{figure}
+\section{Numerical experiments: Local Slater's Determinants}\label{NumSlater}
+This section is devoted to some numerical experiments in imaginary time  with local Slater's determinant basis functions, with $d=1$ and $N=2$. The geometry and domain decomposition is identical to Section \ref{NumGauss}.  For realistic applications, and as discussed above, an appropriate choice of $K_i$ as a function of the position of the nuclei will be useful in order to accurately reduce the overall computational complexity of the method. A forthcoming paper will be dedicated to some exhaustive experiments in real time.\\
+The set-up is the same as above, except that the local basis functions are here assumed to be local Slater's determinants, constructed from $1$-electron orbitals, see Section \ref{1D-2E}. 
+\subsection{Test 1: Local Slater Determinants construction}\label{test1}
+This first test is dedicated to the construction of the LSD's for a 2-nucleus problem, with charge $Z_A=Z_B=1$. We choose $K=N_{\phi}(N_{\phi}+1)/2=45$, $L=5$ (for a total of $25$ subdomains $\Omega_1, \cdots,\Omega_{25}$) and $a=c=-8$, $b=d=8$ and $\epsilon^{(x_{1,2})}=3.2\times 10^{-1}$. The 2 nuclei are located in the central subdomain $\Omega_{13}=[a_3-\epsilon^{(x_1)}/2,b_3+\epsilon^{(x_1)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$ with $a_3-\epsilon^{(x_1)}/2=c_3-\epsilon^{(x_2)}/2=1.6$. We choose $\epsilon=0.1$ and $\sigma_1=315/256$ in \eqref{Beps}, and $N^{(x_1)}=N^{(x_2)}=301$. As an illustration, we represent the first 6 local Slater determinants (LSD's) in $\Omega_{13}=[a_3-\epsilon^{(x_1)}/2,b_3+\epsilon^{(x_1)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$ in Fig. \ref{SDBF_3x3}, as well as the first 6 LSD's in $\Omega_{14}=[a_4-\epsilon^{(x_1)}/2,b_4+\epsilon^{(x_1)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$. Recall in practice, that there is no need to explicitly construct these LSD's, see \cite{CAM15-10}.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf1.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf3.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf4.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf5.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf6.eps}
+\caption{First $6$ LSD's in $\Omega_{13}=[a_3-\epsilon^{(x_1)}/2,b_3+\epsilon^{(x_1)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$.}
+\label{SDBF_3x3}
+\end{center}
+\end{figure}
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf1_2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf2_2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf3_2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf4_2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf5_2.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{sdbf6_2.eps}
+\caption{First $6$ LSD's in $\Omega_{14}=[a_4-\epsilon^{(x_1)}/2,b_4+\epsilon^{(x_1)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$}
+\label{SDBF_4x3}
+\end{center}
+\end{figure}
+We also report in Table \ref{table1} the $L^{2}$-inner products in $[a,b]$, of the first 4 LSD's in $\Omega_{13}$ denoted here $v_{1},\cdots v_4$, with themselves and with the first 2 LSD's in $\Omega_{14}$ denoted $w_{1},w_2$, in order to illustrate their approximate orthogonality. Notice that the product of the $v_i$ with $w_j$ are naturally dependent on the overlap size as well as the mollifier parameters and the parameters used to build the localized 1-electron orbitals.
+\begin{table}
+\caption{LSD approximate orthogonality: $\langle v_i,v_j\rangle$ for all $i=1,\cdots,4$ and $j=i,\cdots 4$,  and $\langle v_i,w_j\rangle$ for $i=1,\cdots,4$ and $j=1,\cdots 2$}
+\centering
+\begin{tabular}{ccccccc}
+Inner prod. & $v_1$ & $v_2$ & $v_3$ & $v_4$ & $w_1$ & $w_2$ \\
+\hline
+$v_1$ & $1$ & $2 \times 10^{-17}$ & $2\times 10^{-16}$ & $-2\times 10^{-17}$ & $-2\times 10^{-5}$ & $-5\times 10^{-5}$\\
+$v_2$ & $2 \times 10^{-16}$ & $1$ & $-4\times 10^{-16}$ & $7\times 10^{-17}$ & $5\times 10^{-5}$ & $2\times 10^{-4}$\\
+$v_3$ & $2\times 10^{-16}$  & $-4\times 10^{-16}$ & $1$ & $-5\times 10^{-16}$  & $-2\times 10^{-4}$ & $-7\times 10^{-4}$ \\
+$v_4$ & $-2\times 10^{-17}$  &  $7\times 10^{-17}$ & $-5\times 10^{-16}$ & $1$ & $-1\times 10^{-3}$ & $3\times 10^{-3}$ \\
+\hline
+\end{tabular}
+\label{table1}
+\end{table}
+We deduce from this table that, in general, the matrices ${\bf A}_i$ defined in Subsection \ref{expcons} are not exactly the identity matrices. 
+\subsection{Test 2.a: Imaginary time experiment I}
+We implement the imaginary time method within a SWR domain decomposition framework in order to determine the ground state of $H_2$ with $x_A=-0.5$, $x_B=0.5$ (and $Z_A=Z_B=1$). The numerical data are as follows: $L=5$ (for a total of $25$ subdomains), $K=N_{\phi}(N_{\phi}+1)/2=28$ LSD's per subdomain (for a total of $25\times 28 = 700$ LSD's),  $a=c=-8$, $b=d=8$ and $\epsilon^{(x_{1,2})}=3.2\times 10^{-1}$.  The 2 nuclei are located in the central subdomain $\Omega_{13}=[a_3-\epsilon^{(x_1)}/2,b_3+\epsilon^{(x_2)}/2]\times[c_3-\epsilon^{(x_2)}/2,d_3+\epsilon^{(x_2)}/2]$ with $a_3-\epsilon^{(x_1)}/2=c_3-\epsilon^{(x_2)}/2=1.6$. We choose $\epsilon=0.1$ and $\sigma_1=315/256$  in \eqref{Beps}, and $N^{(x_1)}=N^{(x_2)}=201$. The LSD's are computed as in Subsection \ref{test1}. The matrices $\widetilde{{\bf H}}_i$ and $\widetilde{{\bf A}}_i$ are both sparse, and belong to $M_{28}(\R)$ for $i=1,\cdots,L^2$. \\
+We choose Robin transmission conditions with $\mu=1$ in \eqref{RTC}, in the SWR algorithm. The initial guess is an antisymmetric function $\phi_0(x_1,x_2)=\widetilde{\phi}_0(x_1,x_2)/\|\widetilde{\phi}_0\|_{0}$ where
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl}
+\widetilde{\phi}_0(x_1,x_2) & =  & \exp\big(-(x_1-1/2)^2/10-(x_2-1/2)^2/5\big)\\
+& & - \exp\big(-(x_2-1/2)^2/10-(x_1-1/2)^2/5\big)
+\end{array}
+\right.
+\end{eqnarray*}
+and is represented in Fig. \ref{phi0} (Left).
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{phi0.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{phi0err.eps}
+\caption{(Left) Initial guess. (Right) Initial data reconstruction error: $\phi^{(k)}(x_1,x_2,0) - \phi_0(x_1,x_2)$.}
+\label{phi0}
+\end{center}
+\end{figure}
+Before iterating in Schwarz and imaginary time, we first need to construct the local projections of $\phi_0$ onto $\Omega_{i}=[a_i-\epsilon^{(x_1)}/2,b_i+\epsilon^{(x_1)}/2]\times[c_i-\epsilon^{(x_2)}/2,d_i+\epsilon^{(x_2)}/2]$, for each $i=1,\cdots,L$, with LSD's $\big\{v_j^{i}\big\}_{1\leq j \leq K}$ ($K=28$, $L=5$), that is we compute
+\begin{eqnarray*}
+\phi_i^{(0)}(x_1,x_2)  = \sum_{j=1}^K\langle \phi_0,v_j^{i}\rangle v^i_{j}(x_1,x_2).
+\end{eqnarray*}
+We reconstruct the initial data $\phi^{(0)}(\cdot,0)$ according to the algorithm presented in Subsection \ref{testA}, and we report in Fig. \ref{phi0} (Right) the reconstruction error: $\phi^{(0)}(\cdot,0) - \phi_0$. We then report in Fig. \ref{phi0t}, the reconstructed solution computed at Schwarz iteration $k=0$ and imaginary time $t_n=n\Delta t$, with $n=10,20,40,80,160,320,640,1280$ and with $\Delta t=1.4\times 10^{-3}$. As we can see, global convergence is almost reached at CNFG convergence at the first Schwarz iteration. This is due to the fact that the nuclei are located at the center of the central subdomain. In the subsequent Schwarz iterations, the residual error is still decreasing.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t10.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t20.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t40.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t80.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t160.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t320.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t640.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi_k0_t1280.eps}
+\caption{Reconstructed wavefunction $\phi^{(0)}(x_1,x_2,t)$ with $t=n\Delta t$ with  $n=10,20,40,80,160,320,640,1280$.}
+\label{phi0t}
+\end{center}
+\end{figure}
+We then represent in Fig. \ref{CV_IT} (Left), as a function of the Schwarz iteration $k$, the residual error Res($k$) defined in \eqref{residueIT}. We also represent the converged solution $\phi^{\textrm{(cvg)}}$ in Fig. \ref{CV_IT} (Right), which was then reconstructed from $25$-local Schr\"odinger equations, showing the rapid convergence of the SWR algorithm.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{errLog_IT.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{CV_IT.eps}
+\caption{(Left) Residual error in logscale as a function of Schwarz iteration. (Right) Converged ground state $\phi^{n^{\textrm{(cvg)}},k^\textrm{(cvg)}}$.}
+\label{CV_IT}
+\end{center}
+\end{figure}
+\subsection{Test 2.b: Imaginary time experiment II}
+We now present a stiffer problem. In the above test, the support of the ground state was mainly included in the central subdomain. In this new test, the support of the ground state of $H_2$ covers several subdomains. We take $x_A=-0.1$, $x_B=0.1$ and $\eta=0.6$ in \eqref{pseudo}. The basis is augmented by Gaussian basis functions as described in Subsection \ref{subsec:CB}, with $\delta=3$ in \eqref{gauss1d}, at the boundary of the subdomains, in order to ensure a better transmission. The global domain is $(-4,4)$ and is decomposed in $25$ subdomains. We select only $N_{\phi}=15$ local Slater's determinants per subdomain. The grid possesses a total of $N^{(x_1)}\times N^{(x_2)}=101^2$ points. Robin transmission conditions are imposed between subdomain with $\mu=10$, see \eqref{Heat1}.  The initial guess is an antisymmetric function $\phi_0(x_1,x_2)=\widetilde{\phi}_0(x_1,x_2)/\|\widetilde{\phi}_0\|_{0}$ where
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl}
+\widetilde{\phi}_0(x_1,x_2) & =  & \exp\big(-4(x_1^2+x_2^2)\big).
+\end{array}
+\right.
+\end{eqnarray*}
+We first reconstruct the initial data $\phi^{(0)}(\cdot,0)$ as described in Subsection \ref{testA}. We report in Fig. \ref{CV2_IT} (Left) as a function of the Schwarz iteration $k$, the residual error Res($k$) in logscale. We also represent the converged solution $\phi^{\textrm{(cvg)}}$ in Fig. \ref{CV2_IT} (Right) which was then reconstructed from $25$-local Schr\"odinger equations, showing the rapid convergence of the SWR algorithm.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{errLog2_IT.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{CV2_IT.eps}
+\caption{(Left)  Residual error in logscale as a function of Schwarz iteration. (Right) Converged ground state $\phi^{n^{\textrm{(cvg)}},k^\textrm{(cvg)}}$}
+\label{CV2_IT}
+\end{center}
+\end{figure}
+%\subsection{Real time experiment}
+%This subsection is dedicated to numerical experiments in real time, for a $H_2$-molecule, with $x_A=-0.5$ and $x_B=0.5$, subject to an intense electric field, corresponding to solving (in length gauge) \eqref{LG} with $N=2$ and $d=1$. We initialize the problem with a ground state (computed with the imaginary time method.) At time $t=0^+$, a short and intense circularly polarized external field ${\bf E}$, is imposed, which under the dipole approximation (electric field wavelength much larger than the molecule scale) reads
+%\begin{eqnarray*}
+%{\bf E}(t) = \exp\big(-(t-T/2)^2\big)\Big(E_{0,x}\cos(\omega_0 t){\bf e}_x + E_{0,y}\sin(\omega_0 t){\bf e}_y\Big)
+%\end{eqnarray*}
+%where $\omega_0$ denotes the electric field frequency and $T$ the pulse duration. The exponential function models the envelope of the pulse. At high intensity $I=E^2_{0,x}+E^2_{0,y}$, it is expected that the wavefunction will be delocalized in all $\R^2$. In addition,  recollision of the electrons with the parent ions can occur, and leading to  multiphoton ionization, the latter giving rise to the generation of high frequencies (corresponding physically to high frequency photons), typically multiples of $\omega_0$ \cite{PBC,gauge}. As a consequence, a very large physical domain should be considered to accurately represent the solution to the time dependent Schr\"odinger equation. We can then fully benefit from the SWR approach. Basically, the Cauchy data (ground state) will be located in the central subdomain and will eventually be spread by the electric field.  The numerical data are as follows: $\omega=60$, $T=2$, $E_{0,x}=E_{0,y}=30$, $\Delta t=$ and $N^{(x_1)}=N^{(x_2)}=311$. The global domain $(-10,10)$ is decomposed in $25$ subdomains. As before, the nuclei are located in the central domain $\Omega_{13}$.  The overlap region is $4$ point thick. The Cauchy data, $\phi_0$ is given by:
+%\begin{eqnarray*}
+%\phi_0(x_1,x_2)=
+%\end{eqnarray*}
+%and is reported in Fig. \cite{init_rt}.
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{phi0_rt.eps}
+%\caption{Reconstructed Cauchy data}
+%\label{init_rt}
+%\end{center}
+%\end{figure}
+%The initial electric field is reported in Fig. \ref{circ_field}.
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{cp_field.eps}
+%\caption{Circularly polarized electric field}
+%\label{circ_field}
+%\end{center}
+%\end{figure}
+%The final reconstructed solution is presented in Fig. \ref{final_rt} and the residual history in Fig. \ref{schwarz_rt}.
+\section{Conclusion}\label{conclusion}
+This paper was devoted to the derivation of a domain decomposition method for solving the $N$-body Schr\"odinger equation. More specifically a Schwarz waveform relaxation algorithm with Robin transmission conditions was proposed, along with a pseudospectral method, for computing in parallel ``many'' local Schr\"odinger equations, and from which is constructed a global wavefunction.  In order to improve the accuracy while keeping efficiency, local Slater's determinant functions were alternatively selected as basis functions, allowing in principle, for reduced local bases and as a consequence lower dimensional local approximate Hamiltonians. Some preliminary tests show a promising approach, which will be further developed on more elaborated cases.
+\\
+\\
+\noindent{\bf Acknowledgments}. The author would like to thank Prof. C.R. Anderson (UCLA) for helpful discussions about mollifiers and grid-based methods for solving the N-body Schr\"odinger equation.

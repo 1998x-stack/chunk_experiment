@@ -1,0 +1,25 @@
+\section{Examples}
+\label{sec:examples}
+It might be surprising that sampling a mixture of gaussians require a complicated Markov Chain such as simulated tempering. However, many simple strategies seem to fail. 
+
+\paragraph{Langevin with few restarts} One natural strategy to try is simply to run Langevin a polynomial number of times from randomly chosen locations. While the time to ``escape'' a mode and enter a different one could be exponential, we may hope that each of the different runs ``explores'' the individual modes, and we somehow stitch the runs together. The difficulty with this is that when the means of the gaussians are not well-separated, it's difficult to quantify how far each of the individual runs will reach and thus how to combine the various runs.  
+
+\paragraph{Recovering the means of the gaussians} Another natural strategy would be to try to recover the means of the gaussians in the mixture by performing gradient descent on the log-pdf with a polynomial number of random restarts. The hope would be that maybe the local minima of the log-pdf correspond to the means of the gaussians, and with enough restarts, we should be able to find them. 
+
+Unfortunately, this strategy without substantial modifications also seems to not work: for instance, in dimension $d$, consider a mixture of $d+1$ gaussians, $d$ of them with means on the corners of a $d$-dimensional simplex with a side-length substantially smaller than the diameter $D$ we are considering, and one in the center of the simplex. In order to discover the mean of the gaussian in the center, we would have to have a starting point extremely close to the center of the simplex, which in high dimensions seems difficult.
+
+Additionally, this doesn't address at all the issue of robustness to perturbations. Though there are algorithms to optimize ``approximately'' convex functions, they can typically handle only very small perturbations. \cite{belloni2015escaping, risteski2016algorithms}
+   
+%the sampling problem is in general much harder than the corresponding optimization problem. In the case of mixture of gaussians one need to at least be able to find {\em all} the modes of the gaussians, which is already unclear for optimization algorithms. The sampling algorithms also tolerate perturbations that are hard to handle for standard optimization algorithms.
+
+\paragraph{Gaussians with different covariance} Our result requires all the gaussians to have the same variance. This is necessary, as even if the variance of the gaussians only differ by a factor of 2, there are examples where a simulated tempering chain takes exponential time to converge \cite{woodard2009sufficient}. Intuitively, this is illustrated in Figure~\ref{figure:variance}. The figure on the left shows the distribution in low temperature \--- in this case the two modes are separate, and both have a significant mass. The figure on the right shows the distribution in high temperature. Note that although in this case the two modes are connected, the volume of the mode with smaller variance is much smaller (exponentially small in $d$). Therefore in high dimensions, even though the modes can be connected at high temperature, the probability mass associated with a small variance mode is too small to allow fast mixing.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[height=2in]{figure/variance.png}
+\includegraphics[height=2in]{figure/variance_ht.png}
+\caption{Mixture of two gaussians with different covariance at different temperature}
+\label{figure:variance}
+\end{figure}
+
+

@@ -1,0 +1,74 @@
+\section{Experiments with Different Contexts}
+\label{sec:experiments}
+
+The goal of our experiments is to show that the FactorCell model can deliver improved performance over current approaches for multiple language model applications and a variety of types of contexts. Specifically, results are reported for context-conditioned perplexity and generative model text classification accuracy, using contexts that capture a range of phenomena and dimensionalities.
+
+Test set perplexity 
+is the most widely accepted method for evaluating language models, both for use in recognition/translation applications and generation. It has the advantage that it is easy to measure and is widely used as a criteria for model fit, but the limitation that it is not directly matched to most tasks that language models are directly used for. 
+Text classification using the model in a generative classifier is a simple application of Bayes rule:
+\begin{equation}
+\label{eq:bayes}
+    \hat \omega = \argmax_\omega p(w_{1:T} | \omega) p(\omega)
+\end{equation}
+where $w_{1:T}$ is the text sequence, $p(\omega)$ is the class prior, which we assume to be uniform.
+Classification accuracy provides additional information about the power of a model, even if it is not being designed explicitly for text classification. Further, it allows us to be able to directly compare our model performance against previously published text classification benchmarks. 
+
+
+Note that the use of classification accuracy for evaluation here involves counting errors associated with applying the generative model to independent test samples. This differs from the accuracy criterion used for evaluating context-sensitive language models for text generation based on a separate discriminative classifier trained on generated text \cite{Ficler2017ControllingLS,Hu2017ControllableTG}. We discuss this further in Section~\ref{sec:prior}.
+
+
+The experiments compare the FactorCell model (equations \ref{eq:FactorCell} and \ref{eqn:adaptSoftmax}) to two popular alternatives, which we refer to as ConcatCell (equations \ref{eq:ConcatCell} and \ref{eqn:adaptSoftmax}) and SoftmaxBias (equation \ref{eqn:adaptSoftmax}). As noted earlier, the SoftmaxBias method is a simplification of the ConcatCell model, which is in turn a simplification of the FactorCell model. The SoftmaxBias method impacts only the output layer and thus only unigram statistics. 
+Since bag-of-word models provide strong baselines in many text classification tasks, we hypothesize that the SoftmaxBias model will capture much of the relative improvement over the unadapted model for word-based tasks. However, in small vocabulary character-based models, the unigram distribution is unlikely to carry much information about the context, so adapting the recurrent layer should become more important in character-level models. 
+We expect that performance gains will be greatest for the FactorCell model for sources that have sufficient structure and data to support learning the extra degrees of freedom.
+
+Another possible baseline would use models independently trained on the subset of data for each context. This is the ``independent component'' case in \cite{Yogatama2017GenerativeAD}. This will fail when a context variable takes on many values (or continuous values) or when training data is limited, because it makes poor use of the training data, as shown in that study. While we do have some datasets where this approach is plausible, we feel that its limitations have been clearly established.
+
+\subsection{Implementation Details}
+The RNN variant that we use is an LSTM with coupled input and forget gates \cite{melis2017state}.  The different model variants are implemented\footnote{Code available at http://github.com/ajaech/calm.} using the Tensorflow library. 
+The model is trained with the standard negative log likelihood loss function, i.e.\ minimizing cross entropy.
+Dropout is used as a regularizer in the recurrent connections as described in \newcite{semeniuta2016recurrent}. Training is done using the Adam optimizer with a learning rate of $0.001$. For the models with word-based vocabularies, a sampled softmax loss is used with a unigram proposal distribution and sampling 150 words at each time-step \cite{jean2014using}. The classification experiments use a sampled softmax loss with a sample size of 8,000 words. This is an order of magnitude faster to compute with a minimal effect on accuracy.
+
+\begin{table*}[]
+\centering
+\begin{tabular}{crrrrrr}
+\textbf{}  & \textbf{AgNews} & \textbf{DBPedia} & \textbf{EuroTwitter} & \textbf{GeoTwitter} & \textbf{TripAdvisor} & \textbf{Yelp} \\ \hline
+Word Embed & 150      & 114-120  & 35-40       & 42-50      & 100         & 200      \\
+LSTM dim   & 110      & 167-180  & 250         & 250        & 200         & 200      \\
+Steps      & 4.1-5.5K & 7.5-8.0K & 6.0-8.0K    & 6.0-11.1K  & 8.4-9.9K    & 7.2-8.8K \\
+Dropout    & 0.5      & 1.00 & 0.95-1.00   & 0.99-1.00      & 0.97-1.00   & 1.00     \\
+Ctx. Embed & 2        & 12      & 3-5         & 8-24       & 20-30       & 2-3      \\
+Rank       & 12       & 19        & 2           & 20         & 12          & 9       
+\end{tabular}
+\caption{Selected hyperparameters for each dataset. When a range is listed it means that a different values were selected for the FactorCell, ConcatCell, SoftmaxBias or Unadapted models.}
+\label{table:hyperparams2}
+\end{table*}
+
+Hyperparameter tuning was done based on minimizing perplexity on the development set and using a random search. 
+Hyperparameters included word embedding size $e$, recurrent state size $d$, context embedding size $k$, and weight adaptation matrix rank $r$, the number of training steps, recurrent dropout probability, and random initialization seed. The selected hyperparameter values are listed in Table \ref{table:hyperparams2}
+For any fixed LSTM size, the FactorCell has a higher count of learned parameters compared to the ConcatCell. However, during evaluation both models use approximately the same number of floating-point operations because $\mathbf{W}'$ only needs to be computed once per sentence. Because of this, we believe limiting the recurrent layer cell size is a fair way to compare between the FactorCell and the ConcatCell.
+
+\input{word_experiments}
+
+\input{character_experiments}
+
+\subsection{Hyperparameter Analysis}
+\label{sec:hyperparam_analysis}
+
+The hyperparameter with the strongest effect on perplexity is the size of the LSTM. This was consistent across all six datasets. The effect on classification accuracy of increasing the LSTM size was mixed. Increasing the context embedding size generally helped with accuracy on all datasets, but it had a more neutral effect on TripAdvisor and Yelp and increased perplexity on the two character-based datasets. For the FactorCell model, increasing the rank of the adaptation matrix tended to lead to increased classification accuracy on all datasets and seemed to help with perplexity on AGNews, DBPedia, and TripAdvisor. 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.47\textwidth]{hyperparam}
+\caption{Comparison of the effect of LSTM parameter count and FactorCell rank hyperparameters on perplexity for DBPedia.}
+\label{fig:rank}
+\end{figure}
+
+Figure \ref{fig:rank} compares the effect on perplexity of the LSTM parameter count and the FactorCell rank hyperparameters. Each point in those plots represents a separate instance of the model with varied hyperparameters. In the right subplot of Figure \ref{fig:rank}, we see that increasing the rank hyperparameter improves perplexity. This is consistent with our hypothesis that increasing the rank can let the model adapt more. The variance is large because differences in other hyperparameters (such as hidden state size) also have an impact.
+
+In the left subplot we compare the performance of the FactorCell with the ConcatCell as the size of the word embeddings and recurrent state change. The x-axis is the size of the $\mathbf{W}$ recurrent weight matrix, specifically $3 (e + d) d$ for an LSTM with $3$ gates. Since the adapted weights can be precomputed, the computational cost is roughly the same for points with the same x-value. For a fixed-size hidden state, the FactorCell model has a better perplexity than the ConcatCell. 
+
+Since performance can be improved both by increasing the recurrent state dimension and/or by increasing rank, we examined the relative benefits of each. The perplexity of a FactorCell model with an LSTM size of 120K will improve by 5\% when the rank is increased from 0 to 20. To get the same decrease in perplexity by changing the size of the hidden state would require 160K parameters, resulting in a significant computational advantage for the FactorCell model.
+
+Using a one-hot vector for adapting the softmax bias layer in place of the context embedding when adapting the softmax bias vector tended to have a large positive effect on accuracy leaving perplexity mostly unchanged. Recall from Section \ref{sec:softmaxbias} that if the number of values that a context variable can take on is small then we can allow the model to choose between using the low-dimensional context embedding or a one-hot vector. This option is not available for the TripAdvisor and the GeoTwitter datasets because the dimensionality of their one-hot vectors would be too large. The method of adapting the softmax bias is the main explanation for why some ConcatCell models performed significantly above/below the trendline for DBPedia in Figure \mbox{\ref{fig:acc_vs_ppl4}}.
+
+We experimented with an additional hyperparameter on the Yelp dataset, namely the inclusion of layer normalization \cite{ba2016layer}. (We had ruled-out using layer normalization in preliminary work on the AGNews data before we understood that AGNews is not representative, so only one task was explored here.) Layer normalization significantly helped the perplexity on Yelp ($\approx 2\%$ relative improvement) and all of the top-performing models on the held-out development data had it enabled.

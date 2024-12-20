@@ -1,0 +1,39 @@
+\subsection{Character-based Models}
+
+Next, we evaluate the EuroTwitter and GeoTwitter models using both perplexity and a classification task. For EuroTwitter, the classification task is to identify the language. With GeoTwitter, it is less obvious what the classification task should be because the context values are continuous and not categorical. We selected six cities and then assigned each sentence the label of the closest city in that list while still retaining the exact coordinates of the Tweet. There are two cities from each country: Manchester, London, Madrid, Barcelona, New York City, and Los Angeles. Tweets from locations further than 300 km from the nearest city in the list were discarded when evaluating the classification accuracy.
+
+Perplexities and classification accuracies are presented in Table \ref{table:twitter_results}. The FactorCell model has the lowest perplexity and the highest accuracy for both datasets. Again, the FactorCell model clearly improves on the ConcatCell as measured by classification accuracy. Consistent with our hypothesis, adapting the softmax bias is not effective for these small vocabulary character-based tasks. The SoftmaxBias model has small perplexity improvements ($<1\%$) and low classification accuracies.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{c|rr|rr}
+  & \multicolumn{2}{c|}{\textbf{EuroTwitter}} & \multicolumn{2}{c}{\textbf{GeoTwitter}} \\
+\textbf{Model} & \multicolumn{1}{c}{PPL} & \multicolumn{1}{c|}{ACC} & \multicolumn{1}{c}{PPL} & \multicolumn{1}{c}{ACC} \\ \hline
+Unadapted & 6.35 & -- & 4.64 & -- \\
+SoftmaxBias & 6.29 & 43.0 & 4.63 & 29.9 \\
+ConcatCell & 6.17 & 91.5 & 4.54 & 42.2 \\
+FactorCell & \textbf{6.07} & \textbf{93.3} & \textbf{4.52} & \textbf{63.5} \\
+\end{tabular}
+\caption{Perplexity and classification accuracies for the EuroTwitter and GeoTwitter datasets.}
+\label{table:twitter_results}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.45\textwidth]{acc_vs_ppl2}
+\caption{Accuracy vs. Perplexity for different classes of models on the two character-based datasets.}
+\label{fig:acc_vs_ppl2}
+\end{figure}
+
+Figure \ref{fig:acc_vs_ppl2} compares perplexity and classification accuracy for different hyperparameter settings of the character-based models. Again, we see that it is possible to trade-off some perplexity for gains in classification accuracy. For EuroTwitter, if tuning is done on accuracy rather than perplexity then the accuracy of the best model is as high as 95\%.
+
+Sometimes there can be little to no perplexity improvement between the unadapted model and the FactorCell model. This can be explained if the provided context variables are mostly redundant given the previous tokens in the sequence. To investigate this further, we trained a logistic regression classifier to predict the language using the state from the LSTM at the last time step on the unadapted model as a feature vector. Using just 30 labeled examples per class it is possible to get 74.6\% accuracy. Furthermore, we find that a single dimension in the hidden state of the unadapted model is often enough to distinguish between different languages even though the model was not given any supervision signal. This finding is consistent with previous work that showed that individual dimensions of LSTM hidden states can be strong indicators of concepts like sentiment \cite{karpathy2015visualizing,radford2017}. 
+
+Figure \ref{fig:heatmap} visualizes the value of the dimension of the hidden layer that is the strongest indicator of Spanish on three different code-switched tweets. Code-switching is not a part of the training data but it provides a compelling visualization of the ability of the unsupervised model to quickly recognize the language. The fact that it is so easy for the unadapted model to pick-up on the identity of the contextual variable fits with our explanation for the small relative gain in perplexity from the adapted models in these two tasks.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.47\textwidth]{heatmaps/codeswitch}
+\caption{The value of the dimension of the LSTM hidden state in an unadapted model that is the strongest indicator for Spanish text for three different code-switched Tweets.}
+\label{fig:heatmap}
+\end{figure}

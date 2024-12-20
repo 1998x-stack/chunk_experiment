@@ -1,0 +1,204 @@
+
+%!TEX root = main.tex
+
+\section{Group Sparse Autoencoders}
+\label{sec:GSA}
+
+\subsection{Sparse Autoencoders}
+Autoencoder \cite{NIPS2006_3048} is an unsupervised neural network which learns the hidden representations from data. %of input samples.
+When the number of hidden units is large %and redundant 
+(e.g., bigger than input dimension),
+we can still discover the underlying structure by imposing sparsity constraints, % on the network.
+%To achieve this, 
+using sparse autoencoders (SAE) \cite{andrew_sparse}:% shows interesting results of getting visualization of the hidden layers.
+%The objective function of SAE is: %defined as follows:
+%\footnote{\small{for more details please refer to \href{http://web.stanford.edu/class/cs294a/sparseAutoencoder.pdf}{the paper} \cite{andrew_sparse}}} %\url{http://web.stanford.edu/class/cs294a/sparseAutoencoder.pdf}}}
+%\vspace{-6mm}
+\begin{equation}\label{eq:loss_sparse}
+%\small
+    J_\text{sparse}(\rho) = J + \alpha \sum_{j=1}^s \KL(\rho \| \hat{\rho}_j)
+\end{equation}
+%\vspace{-3mm}
+where $J$ is the autoencoder reconstruction loss, 
+$\rho$ is the desired sparsity level which is small,
+and thus $J_\text{sparse}(\rho)$ is the sparsity-constrained version of loss $J$.
+Here $\alpha$ is the weight of the sparsity penalty term defined below:
+%\vspace{-6mm}
+\begin{equation}\label{eq:KL_sparse}
+%\small
+    \KL(\rho \| \hat{\rho}_j)=  \rho\log\frac{\rho}{\hat{\rho}_j} + (1-\rho)\log\frac{1-\rho}{1-\hat{\rho}_j}
+\end{equation}
+where \[\hat{\rho}_j = \frac{1}{m}\sum_{i=1}^m h_j^i\] represents the average activation of hidden unit $j$
+over $m$ examples  (SAE assumes the input features are correlated). % value.
+
+
+
+
+As described above, SAE has a similar objective to traditional sparse coding which tries to find sparse representations for input samples. 
+Besides applying simple sparse constraints to the network,
+group sparse constraints is also desired when the class categories are structured and overlapped.  
+Inspired by group sparse lasso \cite{Yuan06modelselection} and sparse group lasso \cite{Simon13asparse-group}, we propose a novel architecture below.
+%, Group Sparse Autoencoders (GSA) in this paper. 
+
+\begin{figure*}[h]
+    \centering
+    \begin{subfigure}[b]{0.2\textwidth}
+      \raisebox{0.5cm}{\includegraphics[width=\textwidth]{figs/1.pdf}}
+        \caption{}
+        \label{fig:img}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth,height=4.5cm]{figs/2.pdf}
+        \caption{}
+        \label{fig:w1}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.28\textwidth}
+        \raisebox{0.05cm}{\includegraphics[width=\textwidth,height=4.4cm]{figs/3.png}}
+        \caption{}
+        \label{fig:w2}
+    \end{subfigure}
+    \caption{The input figure with hand written digit $0$ is shown in (a). Figure (b) is the visualization of trained projection matrix $\vecW$ on MNIST dataset. Different rows represent different groups of $\vecW$ in Eq.~\ref{eq:loss_sgl}. 
+For each group, we only show the first 15 (out of 50) bases. The red numbers on the left side are the indices of 10 different groups. Figure (c) is the projection matrix from basic autoencoders.% The differences are easier to see in pdf.
+}\label{fig:vis}
+\end{figure*}
+
+
+\subsection{Group Sparse Autoencoders}
+Group Sparse Autoencoder (GSA), unlike SAE, categorizes the weight matrix into different groups. 
+For a given input, GSA reconstructs the input signal with the activations from only a few groups. 
+Similar to the average activation $\hat{\rho}_j$ for sparse autoencoders, GSA defines each grouped average activation for the hidden layer as follows: 
+\begin{equation}\label{eq:eta_hat_j}
+    \hat{\eta}_p = \frac{1}{mg}\sum_{i=1}^m \sum_{l=1}^g  \| h^{i}_{p,l} \| _2
+\end{equation}
+where $g$ represents the size of each group, and $\hat{\eta}_j$ first sums up all the activations within $p^{th}$ group, then computes the average $p^{th}$ group respond across different samples' hidden activations. 
+
+Similar to Eq.~\ref{eq:KL_sparse}, we also use \KL divergence to measure the difference between estimated intra-group activation and global group sparsity: % as follows:
+\begin{equation}\label{eq:KL_grop}
+    \KL(\eta \| \hat{\eta}_p) = \eta\log\frac{\eta}{\hat{\eta}_p} + (1-\eta)\log\frac{1-\eta}{1-\hat{\eta}_p}
+\end{equation}
+where $G$ is the number of groups. Then the objective function of GSA is: % defined as follows:
+\begin{equation}\label{eq:loss_sgl}
+\begin{split}
+J_\text{groupsparse}(\rho, \eta) = J & + \alpha \sum_{j=1}^s \KL(\rho \| \hat{\rho}_j) \\
+& + \beta \sum_{p=1}^G \KL(\eta \| \hat{\eta}_p)
+\end{split}
+\end{equation}
+where $\rho$ and $\eta$ are constant scalars which are our target sparsity and group-sparsity levels, resp.
+When $\alpha$ is set to zero, GSA only considers the structure between difference groups. When $\beta$ is set to zero, GSA is reduced to SAE.  
+%In some cases, if both inter- and intra-group sparsities are preferred we need to set both $\alpha$ and $\beta$ to positive values. 
+
+
+
+
+
+
+
+
+
+\subsection{Visualizing Group Sparse Autoencoders}
+
+% \begin{figure*}
+%     \centering
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\textwidth]{figs/2.pdf}
+%         \caption{}
+%         \label{fig:gull}
+%     \end{subfigure}
+%     ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+%       %(or a blank line to force the subfigure onto a new line)
+%     \begin{subfigure}[b]{0.32\textwidth}
+%         \includegraphics[width=\textwidth,height=3.9cm]{figs/act.pdf}
+%         \caption{}
+%         \label{fig:tiger}
+%     \end{subfigure}
+%     ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+%     %(or a blank line to force the subfigure onto a new line)
+%     \begin{subfigure}[b]{0.24\textwidth}
+%         \includegraphics[width=\textwidth]{figs/3.png}
+%         \caption{}
+%         \label{fig:mouse} 
+%     \end{subfigure}
+% %\vspace{-0.2cm}
+%     \caption{(a): the visualization of trained projection matrix $\vecW$ on MNIST dataset. Different rows represent different groups of $\vecW$ in Eq.~\ref{eq:loss_sgl}. 
+% For each group, we only show the first 15 (out of 50) bases. The red numbers on the left side are the indices of 10 different groups. % (10 in total). 
+% (b): the hidden activations $\vech$ with respect to the input image (the red numbers correspond to the indices in (a)). 
+% (c): the projection matrix from basic autoencoders. The differences are easier to see in pdf.}\label{fig:vis}
+% %\vspace{-.3cm}
+% \end{figure*}
+
+
+
+\newcommand{\myspace}{\hspace{0.175cm}$\mid$\hspace{0.175cm}}
+\begin{figure*}
+%\centering
+%\hspace{-0.3cm}
+%\begin{tabular}{p{.4cm}p{0.4\textwidth}}
+\begin{tabular}{cc}
+%\raisebox{2cm}{(a)} &
+  \begin{subfigure}[b]{0.5\textwidth}
+     %\centering
+     \includegraphics[width=.85\textwidth,height=4.2cm]{figs/gs_0.png}\\[-0.1cm]
+     {\color{red}\hspace{.45cm}1\myspace 2\myspace 3\myspace 4\myspace 5\myspace 6\myspace 7\myspace 8\myspace 9\myspace 10}
+     %\caption{}
+     %\label{fig:Ng1} 
+   \end{subfigure}
+&
+\begin{subfigure}[b]{0.5\textwidth}
+     \raisebox{.3cm}{\includegraphics[width=.85\textwidth,height=4.2cm]{figs/act0.png}}
+     %\caption{}
+     %\label{fig:Ng2}
+\end{subfigure}
+\\%[0.5cm]
+\hspace{-1cm}(a) & \hspace{-1cm}(b)
+%\raisebox{2cm}{(b)} &   
+\end{tabular}
+\caption{(a): the hidden activations $\vech$ for the input image in Fig.~\ref{fig:vis}(a). 
+The red numbers corresponds to the index in Fig.~\ref{fig:vis}(b). 
+(b): the hidden activations $\vech$ for the same input image from basic autoencoders.}\label{fig:act}
+\end{figure*}
+
+% \begin{figure}[!htbp]
+% \centering
+% \includegraphics[width=0.45\textwidth,height=5cm]{figs/act.pdf}
+% \caption{The hidden activations $\vech$ with respect to the input image in Fig.~\ref{fig:vis}(a). the red numbers corresponds to the index in Fig.~\ref{fig:vis}(b). These activations come from $10$ different groups. The group size here is $50$.}
+% \label{fig:act}
+% \end{figure}
+
+
+
+
+
+In order to have a better understanding of GSA, %of how the GSA behaves, 
+we use the MNIST dataset to visualize GSA's internal parameters. % of GSA.
+% MNIST dataset is used here for this visualization experiments. 
+Fig.~\ref{fig:vis} and Fig.~\ref{fig:act} illustrate the projection matrix and the corresponding hidden activations.
+We use 10,000 training samples. We set the size of the hidden layer to 500 with 10 groups. Fig.~\ref{fig:vis}(a) visualizes the input image for hand written digit $0$.% for GSA. 
+% We set the intra-group sparsity $\rho$ equal to $0.3$ and inter-group sparsity $\eta$ equal to $0.2$. $\alpha$ and $\beta$ are equal to 1. 
+% On the other hand, we also train the same $10,000$ examples on basic autoencoders with random noise added to the input signal (denoising autoencoders \cite{VincentPLarochelleH2008}) for better hidden information extraction. 
+% We add the same $30\%$ random noise into both models. 
+% Note that the group size of this experiments does not have to be set to $10$. Since this is the image dataset with digit numbers, we may use fewer groups to train GSA.
+
+
+In Fig.~\ref{fig:vis}(b), we find similar patterns within each group. For example, group 8 has different forms of digit 0, 
+and group 9 includes different forms of digit 7. However, it is difficult to see any meaningful patterns from the projection matrix of basic autoencoders in Fig.~\ref{fig:vis}(c). 
+
+Fig.~\ref{fig:act}(a) shows the hidden activations with respect to the input image of digit 0. 
+The patterns of the 10$^{th}$ row in Fig.~\ref{fig:vis}(b) are very similar to digit $1$ which is very different from digit $0$ in shape. Therefore, there is no activation in group 10 in Fig.~\ref{fig:act}(a).
+The majority of hidden layer activations are in groups 1, 2, 6 and 8,
+with group 8 being the most significant. % activations. 
+When compared to the projection matrix visualization in Fig.~\ref{fig:vis}(b), these results are reasonable since the 8$^{th}$ row has the most similar patterns of digit 0.
+However, we could not find any meaningful pattern from the hidden activations of basic autoencoder as shown in Fig.~\ref{fig:act}(b).
+
+
+GSA could be directly applied to small image data (e.g.~MINIST dataset) for pre-training. 
+However, in tasks which prefer dense semantic representations (e.g.~sentence classification), we still need CNNs to learn the sentence representation automatically. 
+%In this scenario, 
+In order to combine advantages from GSA and CNNs, we propose Group Sparse Convolutional Neural Networks below.%in the following section.
+
+
+
+

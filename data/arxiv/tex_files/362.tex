@@ -1,0 +1,160 @@
+%!TEX root = main.tex
+
+
+\section{Preliminaries: Sparse Autoencoders}
+\label{sec:GSA}
+
+We first review the basic autoencoders and sparse autoencoders to establish the mathematical notations. Then we propose our new autoencoder with group sparse constraints in later section.
+\subsection{Basic Autoencoders}
+As introduced in \cite{NIPS2006_3048}, autoencoder is an unsupervised neural network which could learn the hidden representations of input samples. An autoencoder takes an input instance $\vecz \in R^d$, and then maps it into a hidden space in the form of $h \in R^s$ through a deterministic mapping function $h = \Phi_{\theta}(\vecz) = \Phi(W\vecz + b)$, where $\theta = \{W, b\}$. $W$ is a $d \times s$ projection matrix and $b$ is the bias term. The projection function can be linear or non-linear function such as sigmoid. This projection process often can be recognized as encoding process. The encoded hidden representation is then mapped back to the original input space to reconstruct a vector $\hat{\vecz}\in R^d$ with function $\hat{\vecz}= \Phi_{\theta' } (h) = \Phi(W' h + c)$ with $\theta' = \{W', c\}$. The reverse projection matrix $W'$ may optionally be constrained by $W' = W^T$. This reverse operation can be recognized as a decoding process which tries to reconstruct a new vector $\vecz$ such that the difference between $\hat{\vecz}$ and $\vecz$ are as small as possible by minimizing the average reconstruction error:
+
+
+\begin{equation}\label{eq:ae_loss}
+\begin{split}
+& J(W,b,c) = \argmin_{W,b,c} \frac{1}{n} \sum_{i=1}^n L(\vecz^{(i)}, \hat{\vecz}^{(i)})\\
+& = \argmin_{W,b,c} \frac{1}{n} \sum_{i=1}^n L(\vecz^{(i)}, \Phi_{W^T,c}(\Phi_{W,b}(\vecz^{(i)})))
+\end{split}
+\end{equation}
+
+\noindent where $L$ is a loss function such as minimum square error $L(\vecz,\hat{\vecz}) = \| \vecz-\hat{\vecz}\|^2$. Depending on the applications, this loss function also can be defined in form of computing the reconstruction cross-entropy between $\vecz$ and $\hat{\vecz}$:
+\begin{equation*}\label{eq:ae_ce}
+\begin{split}
+L_{C}(\vecz,\hat{\vecz}) = - \sum_{k=1}^d (z_k \log \hat{z}_k + (1-z_k) \log (1-\hat{z}_k))
+\end{split}
+\end{equation*}
+
+When the dimensionality of the hidden space $s$ is smaller than the dimensionality of the input space $d$. The network is forced to learn a compressed representation of the input. If there is structure or feature correlation in the data, the linear autoencoders often ends up learning a low-dimensional representation like PCA. Most of the time, autoencoders learns a compressed representation when the number of hidden units $s$ being small. However, when the number of hidden units becomes larger than the dimensionality of input space, there are still some interesting structure that can be discovered by imposing other constraints on the network. The following discussed sparse constraints is one of them.   
+
+
+
+
+
+\subsection{Sparse Autoencoders}
+Sparse autoencoders \cite{andrew_sparse,Alireza} shows interesting results of getting visualization of the hidden layers. Recall that $h_j^i$ represents the activations of $j^{th}$ hidden unit for a given specific input $\vecz_i$. Then the average activation of hidden unit $j$ (average over the training batch) can be defined as:
+
+\begin{equation}\label{eq:rho_hat_j}
+    \hat{\rho}_j = \frac{1}{m}\sum_{i=1}^m h_j^i
+\end{equation}
+
+\noindent where $m$ is the number of samples in training batch. The goal of sparse autoencoders is to enforce the constraint: 
+
+\begin{equation}\label{eq:sparse_goal}
+\hat{\rho}_j = \rho
+\end{equation}
+\noindent where $\rho$ is the sparsity parameter which controls how sparse you want the hidden representation to be. Typically $\rho$ is set to be a small value close to zero. In order to satisfy this constraint, the activations of hidden layer must mostly be close to $0$.
+
+In order to achieve the above objective, there will be an extra penalty term in our optimization function which tries to reconstruct the original input with as few hidden layer activations as possible. The most commonly used penalty term \cite{andrew_sparse} is as follows:
+
+\begin{equation}\label{eq:KL_sparse}
+    \sum_{j=1}^s KL(\rho||\hat{\rho}_j)= \sum_{j=1}^s \rho\log\frac{\rho}{\hat{\rho}_j} + (1-\rho)\log\frac{1-\rho}{1-\hat{\rho}_j}
+\end{equation}
+
+\noindent where $s$ is the number of units in hidden layer, and $j$ is the index of the hidden unit. This penalty term is based on KL divergence which measures the difference between two different distributions.
+
+Then our new objective of the sparse autoencoders is defined as follows:
+
+\begin{equation}\label{eq:loss_sparse}
+    J_{sparse}(W,b,c) = J(W,b,c) + \alpha \sum_{j=1}^s KL(\rho||\hat{\rho}_j)
+\end{equation}
+
+\noindent where $J(W,b,c)$ is defined in Eq.~\ref{eq:ae_loss}, and $\alpha$ controls the weights of the sparsity penalty term. Note that the term $\hat{\rho}_j$ is implicitly controlled by $W$, $b$ and $c$. This is one of the difference between sparse autoencoders and sparse coding which will be discussed in details in Section~\ref{sec:related}.
+
+
+
+
+\section{Group Sparse Autoencoders}
+As described above, sparse autoencoder has similar objective with sparse coding which tries to find sparse representations for input samples. Inspired by the motivations from group sparse lasso \cite{Yuan06modelselection} and sparse group lasso \cite{Simon13asparse-group}, we propose a novel Group Sparse Autoencoders (GSA)in this paper. 
+
+Different from sparse autoencoders, in our GSA, the weight matrix is categorized into different groups. For a given input, GSA reconstructs the input signal with the activations from only a few groups. Similar to the average activation defined in Eq.~\ref{eq:rho_hat_j} for sparse autoencoders, in GSA, we define each grouped average activation for the hidden layer as follows: 
+
+
+\begin{equation}\label{eq:eta_hat_j}
+    \hat{\eta}_p = \frac{1}{mg}\sum_{i=1}^m \sum_{l=1}^g ||h^{i}_{p,l}||_2
+\end{equation}
+
+\noindent where $g$ represents the number of samples in each group, and $m$ represents the number of samples in training batch. $\hat{\eta}_j$ first sums up all the activations within $p^{th}$ group, then computes the average $p^{th}$ group respond across different samples' hidden activations. 
+
+Similar with Eq.\ref{eq:KL_sparse}, we also use KL divergence to measure the difference between estimated intra-group activation and goal group sparsity as follows:
+\begin{equation}\label{eq:KL_grop}
+    \sum_{p=1}^G KL(\eta||\hat{\eta}_p) = \eta\log\frac{\eta}{\hat{\eta}_p} + (1-\eta)\log\frac{1-\eta}{1-\hat{\eta}_p}
+\end{equation}
+
+\noindent where $G$ is the number of groups. When we only need inter-group constraints, the loss function of autoencoders can be defined as follows: 
+
+\begin{equation}\label{eq:loss_group}
+    J_{gs}(W,b,c) = J(W,b,c) + \beta \sum_{l=1}^g KL(\eta||\hat{\eta}_p)
+\end{equation}
+
+In some certain cases, inter- and intra- group sparsity are preferred and the same time. Then objective can be defined as follows: 
+
+
+\begin{equation}\label{eq:loss_sgl}
+\begin{split}
+J_{gs}(W,b,c) &= J(W,b,c) + \alpha \sum_{j=1}^s KL(\rho||\hat{\rho}_j) \\
+& + \beta \sum_{p=1}^G KL(\eta||\hat{\eta}_p)
+\end{split}
+\end{equation}
+
+Inter-group sparse autoencoders defined in Eq.~\ref{eq:loss_group} has similar functionality with group sparse lasso in \cite{Yuan06modelselection}. Inter- and intra- group sparse autoencoders which defined in Eq.~\ref{eq:loss_sgl} behaves similarly to sparse group lasso in \cite{Simon13asparse-group}. Different from the sparse coding approach, the encoding and decoding process could be nonlinear while sparse coding is always linear. 
+
+Similar to sparse coding approach, the projection matrix in GSA works like a dictionary which includes all the necessary bases for reconstructing the input signal with the activations in the hidden layer. Different initialization methods for projection matrix are described in Section~\ref{sec:exp1}.  
+
+
+
+
+
+
+
+
+
+
+\subsection{Visualization for Group Sparse Autoencoders}
+In order to have a better understanding of how the GSA behaves, 
+We use MNIST dataset for visualizing the internal parameters of GSA.
+% MNIST dataset is used here for this visualization experiments. 
+We visualize the projection matrix in Fig.~\ref{fig:vis} and the corresponding hidden activation in Fig.~\ref{fig:act}. 
+
+
+
+In our experiments, we use $10,000$ samples for training. We set the size of hidden layer as $500$ with $10$ different groups for GSA. We set the intra-group sparsity $\rho$ equal to $0.3$ and inter-group sparsity $\eta$ equal to $0.2$. $\alpha$ and $\beta$ are equal to 1. On the other hand, we also train the same $10,000$ examples on basic autoencoders with random noise added to the input signal (denoising autoencoders \cite{VincentPLarochelleH2008}) for better hidden information extraction. We add the same $30\%$ random noise into both models. Note that the group size of this experiments does not have to be set to $10$. Since this is the image dataset with digit numbers, we may use fewer groups to train GSA.
+
+In Fig.~\ref{fig:vis}(b), we could find similar patterns within each group. For example, the $8^{th}$ group in Fig.~\ref{fig:vis}(b) has different forms of digit $0$, and $9^{th}$ group includes different forms of digit $7$. However, it is difficult to tell any meaningful patterns from the projection matrix of basic autoencoders in Fig.~\ref{fig:vis}(c). 
+
+Fig.~\ref{fig:act} shows the hidden activations respect to the input image in Fig.~\ref{fig:vis}(a). From the results, we can tell that most of the activations of hidden layer are in group $1$, $2$, $6$ and $8$. And the $8^{th}$ group has the most significant activations. When we refer this activations to the projection matrix visualization in Fig.~\ref{fig:vis}(b). These results are reasonable since the $8^{th}$ row has the most similar patterns of digit $0$. 
+
+\begin{figure*}
+    \centering
+    \begin{subfigure}[b]{0.2\textwidth}
+        \includegraphics[width=\textwidth]{figs/1.pdf}
+        \caption{}
+        \label{fig:gull}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figs/2.pdf}
+        \caption{}
+        \label{fig:tiger}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.2\textwidth}
+        \includegraphics[width=\textwidth]{figs/3.png}
+        \caption{}
+        \label{fig:mouse}
+    \end{subfigure}
+    \caption{\small The input figure with hand written digit $0$ is shown in (a). Figure (b) is the visualization of projection matrix $W$. Different rows represent different groups of $W$ in Eq.~\ref{eq:loss_sgl}. For each group, we only show the first $15$ (out of $50$) bases. The red numbers on the left side of (b) are the index of different groups(10 groups in total). Figure (c) is the projection matrix visualization from a basic autoencoders.}\label{fig:vis}
+\end{figure*}
+
+
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.45\textwidth,height=5cm]{figs/act.pdf}
+\caption{The hidden activations $h$ respect to the input image in Fig.~\ref{fig:vis}(a). The red numbers corresponds to the index in Fig.~\ref{fig:vis}(b). These activations come from $10$ different groups. The group size here is $50$.}
+\label{fig:act}
+\end{figure}
+
+GSA could be directly applied to small image data (i.e. MINIST dataset) for pre-training. 
+However, in the tasks which prefer dense, semantic representation (i.e. sentence classification), we still need CNNs to learn the sentence representation automatically. 
+In this scenario, in order to incorporate both advantages from GSA and CNNs, we propose Group Sparse Convolutional Neural Networks in the following section.

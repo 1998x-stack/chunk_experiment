@@ -1,0 +1,426 @@
+\section{Theoretical Results} \label{sec:theoretical_results}
+From the two preceding sections, we can compute $F^{\textsf{ND}}$ with
+the (adaptive) YDS algorithm (Theorem \ref{the:YDS}) and $F^{\textsf{D2D}}$ by
+solving the large-scale LP problem \textsf{Min-Spectrum-D2D} (Sec. \ref{sec:problem_formulation_D2D}).
+Hence, numerically we can get the  spectrum reduction and
+the overhead ratio. In this section, however, we seek to
+derive theoretical upper bounds on both spectrum reduction and overhead ratio.
+Such theoretical upper bounds provide insights for the key factors to
+achieve large spectrum reduction and thus provide guidance to determine whether
+it is worthwhile to implement D2D load balancing scheme in real-world cellular systems.
+
+%We summarize our results in Tab. \ref{tab:theo_results}.
+%
+%\begin{table}[h]
+%   \caption{Theoretical Results \newline}
+%      \label{tab:theo_results}
+%   \centering
+%\begin{tabular}{|c|c|c|c|}
+%\hline
+%\textbf{Topology} & \textbf{Traffic} & \textbf{$\rho$}& \textbf{$\eta$}\\
+%\hline
+%Arbitrary& Arbitrary & $\rho  \le \frac{\max\{r,1\} + \tilde{r} \Delta^--1}{\max\{r,1\} + \tilde{r} \Delta^-}$ &  N/A \\
+%\hline
+%%Torus & Specified  & $\rho = \frac{\Delta^-}{\Delta^- + \frac{D}{D-1}}$ & $\eta = $\\
+%Ring& Specified & $\rho = \frac{2(D-1)}{3D-2}$ & $\eta = \frac{D(D-1)}{D^2+2D-2}$\\
+%\hline
+%Complete& Specified & $\rho = \frac{N-1}{N+1}$ & $\eta = \frac{N-1}{2N}$\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+%
+%\begin{figure}
+%  \centering
+%  % Requires \usepackage{graphicx}
+%  \includegraphics[width=0.5\linewidth]{intra_cell_benefit}\\
+%  \caption{A simple example to show the benefit of intra-cell D2D communications.}
+%  \label{fig:intra_cell_benefit}
+%\end{figure}
+
+
+\subsection{A Simple Upper Bound for Spectrum Reduction}
+We can get a simple upper bound for $F^{\textsf{D2D}}$ by assuming no cost for D2D communication in the sense
+that any D2D communication will not consume bandwidth and will not incur delays. Then we can
+construct a virtual grand BS and all users $\mathcal{U}$ are in this BS. Then the system becomes similar
+to the case without D2D. We can apply the YDS algorithm
+to compute the minimum peak traffic, which is a lower bound
+for $F^{\textsf{D2D}}$, i.e.,
+$
+\underline{F}^{\textsf{D2D}}=  \max_{I \subset [T]} g(I),
+$
+where
+\be
+g(I) = \frac{\sum\limits_{j \in \mathcal{A}(I)} \frac{r_j}{R_{\max}}}{z'-z + 1}.
+\label{equ:intensity_d2d}
+\ee
+Here in \eqref{equ:intensity_d2d},
+$
+\mathcal{A}(I) = \{j \in \mathcal{J}: [s_j, e_j] \subset [z,z']\}
+$
+is the set of all active traffic demands whose lifetime is within the interval $I=[z,z']$
+and $R_{\max} = \max_{s \in \mathcal{U}} R_{s,b_s}$ is the best user-to-BS link. Then we have the following theorem.
+
+%An trivial upper bound is $P_{D}^{ub} = \sum_{b \in \mathcal{B}} P^{ND}_b$, which means that we do not use D2D
+%communications but just schedule all traffics to its own BS.
+
+\begin{theorem}
+%$P_{D}^{lb} \le P_{D}^* \le P_{D}^{ub}.$
+$\rho \le \frac{F^{\textsf{ND}}-\underline{F}^{\textsf{D2D}}}{F^{\textsf{ND}}}$.
+\label{the:trivial_upper_bound}
+\end{theorem}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see our technical report \cite{TR}.
+\else
+Please see Appendix~\ref{app:proof_trivial_upper_bound}.
+% in the supplementary materials.
+\fi
+\end{IEEEproof}
+
+Note that both $\underline{F}^{\textsf{D2D}}$ and $F^{\textsf{ND}}$ can be computed by the YDS algorithm, much
+easier than solving the large-scale LP \textsf{Min-Spectrum-D2D}. Therefore, numerically we can get
+a quick understanding of the maximum benefit that can be achieved by D2D load balancing.
+
+\subsection{A General Upper Bound for Spectrum Reduction} \label{sec:a_general_upper_bound}
+We next describe another general upper
+bound for any arbitrary topology and any arbitrary traffic demand set. We will begin with
+some preliminary notations.
+
+We first define some preliminary notations. Let $N=|\mathcal{B}|$ be the number of BSs and we define
+a directed \emph{D2D communication graph} $\mathcal{G}^{\textsf{D2D}}= (\mathcal{B}, \mathcal{E}^{\textsf{D2D}})$
+where the vertex set is the BS set $\mathcal{B}$ and $(b,b') \in \mathcal{E}^{\textsf{D2D}}$
+if there  exists at least one inter-cell D2D link from user $u \in \mathcal{U}_b$ in BS $b \in \mathcal{B}$
+to user $v \in \mathcal{U}_{b'}$ in BS $b' \in \mathcal{B}$.
+%Also, we say that BS $j$ can do load balancing for BS $i$ if $(i,j) \in \mathcal{E}_{D2D}$.
+Denote $\delta^-_b$ as the in-degree of BS $b$ in the graph $\mathcal{G}^{\textsf{D2D}}$
+and define the maximum in-degree of the graph $\mathcal{G}^{\textsf{D2D}}$ as $\Delta^- = \max_{b \in \mathcal{B}} \delta^-_b$.
+In addition, we define some notations in Tab. \ref{tab:Discrepancy Notations}
+to capture the discrepancy of D2D links and non-D2D links for users and BSs.
+%\footnote{
+Note that these definitions will be used thoroughly
+\ifx \ISTR \undefined
+in our technical report \cite{TR} to prove {Theorem} \ref{the:ratio_bound}.
+\else
+in Appendix \ref{app:proof_upper_bound} to prove {Theorem} \ref{the:ratio_bound}.
+%in the supplementary materials to prove {Theorem} \ref{the:ratio_bound}.
+\fi
+
+
+%
+%\begin{table}[h]
+%   \caption{Discrepancy Notations}
+%      \label{tab:Discrepancy Notations}
+%   \centering
+%\begin{tabular}{|l|}
+%\hline
+%%Self-discrepancy of user $s$: &
+%$r_s = \max_{v: (s,v) \in \mathcal{E}, v \in \mathcal{U}_{b_s}} \frac{R_{s,v}}{R_{s,b_s}},
+%\quad \forall s \in \mathcal{U}$
+%\\%
+%%Cross-discrepancy ratio between user $s$ and BS $j$ &
+%$\tilde{r}_s^b = \max_{v: (s,v) \in \mathcal{E}, v \in \mathcal{U}_{b}} \frac{R_{s,v}}{R_{s,b_s}},
+%\quad \forall s \in \mathcal{U}, b \in \mathcal{B}$
+%\\
+%%Self-discrepancy ratio of BS $i$ &
+%$r_b = \max_{s \in \mathcal{U}_b} r_s,
+%\quad \forall b \in \mathcal{B}$
+%\\
+%%Cross-discrepancy ratio between BS $i$ and BS $j$ &
+%$\tilde{r}_{b,b'} = \max_{s \in \mathcal{U}_b} \tilde{r}_s^{b'},
+%\quad \forall b \in \mathcal{B}, b' \in \mathcal{B}$
+%\\
+%%Maximal self-discrepancy ratio of all BSs &
+%$r = \max_{b \in \mathcal{B}}{r_b}$
+%\\
+%%Maximal cross-discrepancy ratio of all BS pairs &
+%$\tilde{r} = \max_{(b,b') \in \mathcal{E}^{\textsf{D2D}}} \tilde{r}_{b,b'}$
+%\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+
+Now we have the following theorem.
+
+\begin{theorem}
+\label{the:ratio_bound}
+For an arbitrary network topology $\mathcal{G}$ associated with a D2D communication
+graph $\mathcal{G}^{\textsf{D2D}}= (\mathcal{B}, \mathcal{E}^{\textsf{D2D}})$ and an arbitrary
+traffic demand set, the  spectrum reduction is upper bounded by
+\be
+\rho \le \frac{\max\{r,1\} + \tilde{r} \Delta^--1}{\max\{r,1\} + \tilde{r} \Delta^-}.
+\ee
+%where $\Delta^-$ is the maximal in-degree of the graph $\mathcal{G}_{D2D}$.
+\end{theorem}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see Appendix \ref{app:proof_upper_bound}.
+\else
+Please see  our technical report \cite{TR}.
+\fi
+\end{IEEEproof}
+
+Based on this upper bound, we observe that the benefit of D2D load
+balancing comes from two parts: intra-cell D2D and inter-cell D2D.
+More interestingly, we can obtain the individual benefit of intra-cell
+D2D and inter-cell D2D separately, as shown in the following Corollaries \ref{cor:intra_cell_benefit}
+and \ref{cor:inter_cell_benefit}. One can go through the proof for Theorem \ref{the:ratio_bound}
+by disabling inter-cell or intra-cell D2D communication and get the proof of these
+two corollaries.
+
+
+
+\begin{figure*}
+\begin{minipage}[c]{0.32\linewidth}
+\captionof{table}{Discrepancy Notations.} \label{tab:Discrepancy Notations}
+\begin{tabular}{|l|}
+\hline
+%Self-discrepancy of user $s$: &
+\scriptsize{$r_s = \max_{v: (s,v) \in \mathcal{E}, v \in \mathcal{U}_{b_s}} \frac{R_{s,v}}{R_{s,b_s}},
+ \forall s \in \mathcal{U}$}
+\\%
+%Cross-discrepancy ratio between user $s$ and BS $j$ &
+\scriptsize{$\tilde{r}_s^b = \max_{v: (s,v) \in \mathcal{E}, v \in \mathcal{U}_{b}} \frac{R_{s,v}}{R_{s,b_s}},
+ \forall s \in \mathcal{U}, b \in \mathcal{B}$}
+\\
+%Self-discrepancy ratio of BS $i$ &
+\scriptsize{$r_b = \max_{s \in \mathcal{U}_b} r_s, \forall b \in \mathcal{B}$}
+\\
+%Cross-discrepancy ratio between BS $i$ and BS $j$ &
+\scriptsize{$\tilde{r}_{b,b'} = \max_{s \in \mathcal{U}_b} \tilde{r}_s^{b'}, \forall b \in \mathcal{B}, b' \in \mathcal{B}$}
+\\
+%Maximal self-discrepancy ratio of all BSs &
+\scriptsize{$r = \max_{b \in \mathcal{B}}{r_b}$,  $\tilde{r} = \max_{(b,b') \in \mathcal{E}^{\textsf{D2D}}} \tilde{r}_{b,b'}$}
+\\
+\hline
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.3\linewidth}
+%\centering
+%\includegraphics[width=0.82\columnwidth]{BS_ring_topology}
+%\caption{\label{fig:BS_ring_topology}  Ring topology with $N=5$.}
+  \centering
+  % Requires \usepackage{graphicx}
+  \includegraphics[width=\linewidth]{intra_cell_benefit}\\
+  \caption{The benefit of intra-cell D2D communications.}
+  \label{fig:intra_cell_benefit}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.3\linewidth}
+\centering
+\includegraphics[width=\linewidth]{tradeoff_ring_complete}
+\caption{\label{fig:tradeoff_ring_complete}  Tradeoff between $\rho$ and $\eta$.}
+\end{minipage}
+\end{figure*}
+
+
+%\subsubsection{Benefit of Intra-cell D2D}
+\begin{corollary} \label{cor:intra_cell_benefit}
+If only intra-cell D2D communication is enabled, the  spectrum reduction is upper bounded by
+\be
+\rho \le \frac{\max\{r,1\} -1}{\max\{r,1\}}.
+\ee
+\end{corollary}
+
+This upper bound is quite intuitive. When $r \le 1$, then for any user $s$, there does
+not exist any intra-cell D2D link with better link quality than its direct link to BS $b_s$.
+Therefore, using the user-to-BS link is always the optimal choice. Thus the spectrum
+reduction is 0. When $r > 1$, larger $r$ means more advantages for intra-cell D2D links
+over the user-to-BS links. Therefore, D2D can exploit more benefit.
+
+Moreover, this upper bound can be achieved by the simple example in Fig. \ref{fig:intra_cell_benefit}.
+Suppose that user $a$ generates one traffic demand with volume $V$ and delay $D \ge 2$ at slot 1.
+Suppose link rates $R_1=1, R_2=r, R_3=(D-1)r$.
+Then without intra-cell D2D, the (peak) spectrum requirement is $F_1=\frac{V}{D}$. With intra-cell
+D2D, user $a$ transmits $\frac{V}{D-1}$ traffic to user b from slot
+1 to slot $D-1$ and then user $b$ transmits all $V$ traffic to BS at slot $D$.
+The (peak) spectrum requirement is $F_2 = \max\{\frac{V}{(D-1)R_2}, \frac{V}{R_3}\} = \frac{V}{(D-1)r}$.
+Then the spectrum reduction is
+\be
+\frac{F_1-F_2}{F_1} = 1 - \frac{\frac{V}{(D-1)r}}{\frac{V}{D}} \to \frac{r-1}{r},
+\text{as} \; D \to \infty.
+\ee
+
+
+The benefit of intra-cell D2D communication is widely studied (see \cite{Doppler09} \cite{Foder12}).
+However, in this paper, we mainly focus on the benefit of inter-cell D2D load balancing. Indeed,
+in our simulation settings in Sec. \ref{sec:simulation}, the intra-cell D2D brings negligible benefit.
+
+%\subsubsection{Benefit of Inter-cell D2D}
+\begin{corollary} \label{cor:inter_cell_benefit}
+If only inter-cell D2D communication is enabled, the  spectrum reduction is upper bounded by
+$
+\rho \le \frac{\tilde{r} \Delta^-}{1 + \tilde{r} \Delta^-}.
+$
+\end{corollary}
+
+The intuition behind the parameter $\tilde{r}$ is similar to the effect of
+parameter $r$ in the intra-cell D2D case. In what follows, we will
+only discuss the effect of parameter $\Delta^-$, which actually
+reveals the insight of our advocated D2D load balancing scheme.
+Now suppose that all the links have the
+same quality and \emph{w.l.o.g.} let $R_{u,v}=1, \forall (u,v) \in \mathcal{E}$. Then
+$r = \tilde{r} =1$, meaning that no intra-cell D2D benefit exists. And the benefit
+of inter-cell D2D is reduced to the following upper bound
+\be
+\rho \le \frac{\Delta^-}{1+\Delta^-}.
+\label{equ:bound_delta}
+\ee
+
+The rationale to understand this upper bound is as follows.
+On a high level of understanding,
+the main idea for load balancing is traffic aggregation.
+If each BS can aggregate more traffic from other BSs, it can exploit more
+statistical multiplexing gains to serve more traffic with the same amount of spectrum.
+Since the in-degree for each BS indeed measures its capacity of traffic aggregation,
+it is not surprising that the upper bound for $\rho$ is related to maximum in-degree $\Delta^-$.
+
+To evaluate how good the upper bound in \eqref{equ:bound_delta} is, two natural questions can
+be asked. The first is: \emph{Is this upper bound tight}?
+Another observation is that if we want to achieve unbounded benefit,
+i.e., $\rho \to 1$,
+it is necessary to let $\frac{\Delta^-}{\Delta^-+1} \to 1$,
+which means that $\Delta^- \to \infty$.
+Then the second question is:
+\emph{Can $\rho$ indeed approach 100\% as  $\Delta^- \to \infty$}?
+
+In the rest of this subsection, we will answer these two questions
+by  constructing a specified network and traffic demand set.
+Specifically, we consider $N=|\mathcal{B}|$ BSs each serving one user only. To facilitate analysis, let
+$b_i$ be the $i$-th BS and $u_i$ be the user in BS $i$, for
+all $i\in[N]$. We consider a \emph{singleton-decoupled} traffic
+demand set as follows. Each user has one and only one traffic
+demand with the same volume $V$ and the same delay $D \ge 2$.
+Let $T=ND$ and the traffic generation time of user $i$ be slot $D(i-1)+1$.
+Therefore, the lifetime of user $u_i$'s traffic demand is $[D(i-1)+1,Di]$,
+during which there are no other demands.
+
+Under such settings, we will vary the user-connection pattern such that
+the D2D communication graph is different.
+Specifically, we will prove that this upper bound is asymptotically
+tight in the ring topology for $\Delta^-=2$ in Fact \ref{fact:bs_ring},
+and $\rho \to$ 100\% in the complete topology
+as the number of BSs $N \to \infty$ in Fact \ref{fact:bs_complete}.
+Moreover, we will also discuss the overhead ratio for these
+two special topologies.
+
+\begin{fact} \label{fact:bs_ring}
+If $N=2D-1$ and the D2D communication graph
+forms a bidirectional ring graph, then
+there exists a traffic scheduling policy
+such that the  spectrum reduction is
+\be
+\rho =\frac{2(D-1)}{3D-2} \to \frac{2}{3} = \frac{\Delta^-}{\Delta^-+1},
+\text{as} \; {D \to \infty}.
+\ee
+Besides, the overhead ratio in this case is
+\be
+\eta = \frac{D(D-1)}{D^2+2D-2}.
+\ee
+\end{fact}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see  our technical report \cite{TR}.
+\else
+Please see Appendix \ref{app:proof_ring}.
+% in the supplementary materials.
+\fi
+\end{IEEEproof}
+\begin{fact} \label{fact:bs_complete}
+If the D2D communication graph forms a bidirectional complete graph,
+then there exists a traffic scheduling policy such that the spectrum reduction is
+\be
+\rho = \frac{N-1}{N+1} \to 100\%, \text{as} \; N \to \infty.
+\ee
+Besides, the overhead ratio in this case is
+\be
+\eta = \frac{N-1}{2N}.
+\ee
+\end{fact}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see  our technical report \cite{TR}.
+\else
+Please see Appendix \ref{app:proof_complete}.
+% in the supplementary materials.
+\fi
+\end{IEEEproof}
+
+
+
+\textbf{Remark:}
+(i) Fact \ref{fact:bs_ring} shows the tightness of the upper bound in \eqref{equ:bound_delta}
+for the ring-graph topology when $\Delta^-=2$.
+(ii) { Fact \ref{fact:bs_complete} shows that $\rho$ can indeed approach $100\%$,
+implying that in the best case, $\rho$ goes to $100\%$.
+This  gives us strong motivation to investigate D2D load balancing scheme both theoretically and practically.}
+(iii) For the complete-graph topology, the upper bound $\frac{\Delta^-}{\Delta^-+1}$ is not tight.
+Indeed, since $\Delta^- =N-1$ in the complete-graph topology,
+we have
+\bee
+\frac{\Delta^-}{\Delta^-+1} = \frac{N-1}{N} > \frac{N-1}{N+1}.
+\eee
+(iv) Let us revisit the toy example in Fig. \ref{fig:example}
+which forms a complete-graph topology with $N=2$. It verifies the spectrum reduction
+and overhead ratio in Fact \ref{fact:bs_complete},
+i.e., $\rho = \frac{1}{3} = \frac{N-1}{N+1}$ and $\eta = \frac{1}{4} = \frac{N-1}{2N}$.
+(v) We also highlight the tradeoff between the benefit $\rho$ and the cost $\eta$,
+as illustrated in Fig. \ref{fig:tradeoff_ring_complete}.
+Furthermore, Fig. \ref{fig:tradeoff_ring_complete} shows that
+the complete-graph topology outperforms the ring-graph topology asymptotically
+because $\rho \to \frac{2}{3}$ and $\eta \to 1 $ for the ring-graph topology but
+$\rho \to 1 > \frac{2}{3}$ (larger benefit) and $\eta \to \frac{1}{2} < 1$ (smaller cost) for the complete-graph topology.
+
+
+\subsection{An Upper Bound for Overhead Ratio}
+Previously we study upper bounds for the spectrum reduction. Now
+we instead propose an upper bound for overhead ratio. Recall that
+$d_{\max}$ is the maximum demand delay. We then have the following result.
+
+\begin{comment}
+We further denote
+\be
+R^{\textsf{D2D}}_{\max} \triangleq \max_{(u,v) \in \mathcal{E}: (u,v) \text{ is a D2D link }} R_{u,v},
+\ee
+as the maximum D2D link rate.
+\end{comment}
+
+\begin{theorem} \label{the:overhead-upper-bound}
+$\eta \le \frac{d_{\max}-1}{d_{\max}}$.
+\end{theorem}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please our technical report \cite{TR}.
+\else
+Please see Appendix~\ref{app:proof-of-overhead-upper-bound}.
+% in the supplementary materials.
+\fi
+\end{IEEEproof}
+
+The upper bound in Theorem~\ref{the:overhead-upper-bound} increases when the maximum
+demand delay $d_{\max}$ increases. This is reasonable because a traffic demand can travel more
+D2D links (and thus incurs more D2D traffic overhead) if its delay is large.
+For our toy example in Fig.~\ref{fig:example}, we have $d_{\max}=2$ and thus
+the upper bound for the overhead ratio is $\frac{d_{\max}-1}{d_{\max}}=50\%$, which
+is in line with our actual overhead ratio 25\%.
+
+
+\begin{comment}
+\begin{theorem}
+$\eta \le \frac{F^{\textsf{D2D}} R^{\textsf{D2D}}_{\max} (d_{\max}-1)}{F^{\textsf{D2D}} R^{\textsf{D2D}}_{\max} (d_{\max}-1) + V^{\textsf{BS}}}$.
+\end{theorem}
+\begin{IEEEproof}
+According to \eqref{equ:D2D-traffic}, we have
+\bee
+V^{\textsf{D2D}} & = \sum_{t=1}^{T} \sum_{j \in \mathcal{J}: t \in [s_j, e_j-1]}
+\sum_{u \in \mathcal{U}} \sum_{v:v \in \mathcal{U}, (u,v) \in \mathcal{E}} x^{j}_{u,v}(t) {R_{u,v}} \nnb \\
+& = \sum_{j \in \mathcal{J}} \sum_{t=s_j}^{e_j-1} \sum_{u \in \mathcal{U}} \sum_{v:v \in \mathcal{U}, (u,v) \in \mathcal{E}} x^{j}_{u,v}(t) {R_{u,v}} \nnb \\
+& \le \sum_{j \in \mathcal{J}} \sum_{t=s_j}^{e_j-1} R^{\textsf{D2D}}_{\max} \sum_{u \in \mathcal{U}} \sum_{v:v \in \mathcal{U}, (u,v) \in \mathcal{E}} x^{j}_{u,v}(t) \nnb \\
+& = \sum_{j \in \mathcal{J}} \sum_{t=s_j}^{e_j-1} R^{\textsf{D2D}}_{\max} F^{\textsf{D2D}} \nnb \\
+& = \sum_{j \in \mathcal{J}} R^{\textsf{D2D}}_{\max} F^{\textsf{D2D}}
+\eee
+\red{there are some problems about the proof...}
+\end{IEEEproof}
+\end{comment}

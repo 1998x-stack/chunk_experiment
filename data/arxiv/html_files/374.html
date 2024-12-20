@@ -1,0 +1,1034 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02718] OSU Multimodal Machine Translation System Report</title><meta property="og:description" content="This paper describes Oregon State University’s submissions to the shared
+WMT’17 task “multimodal translation task I”.
+In this task, all the sentence pairs are image captions
+in different languages.
+The key difference b…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="OSU Multimodal Machine Translation System Report">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="OSU Multimodal Machine Translation System Report">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02718">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02718">
+
+<!--Generated on Sat Mar 16 10:55:48 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line">
+<h1 class="ltx_title ltx_title_document">OSU Multimodal Machine Translation System Report</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Mingbo Ma, Dapeng Li, Kai Zhao<sup id="id2.2.id1" class="ltx_sup">†</sup> and Liang Huang 
+<br class="ltx_break">Department of EECS
+<br class="ltx_break">Oregon State University
+<br class="ltx_break">Corvallis, OR 97331, USA 
+<br class="ltx_break"><span id="id3.3.id2" class="ltx_text ltx_font_typewriter">{mam, lidap, zhaok, liang.huang}@oregonstate.edu</span>
+</span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id4.id1" class="ltx_p">This paper describes Oregon State University’s submissions to the shared
+WMT’17 task “multimodal translation task I”.
+In this task, all the sentence pairs are image captions
+in different languages.
+The key difference between this task and conventional machine translation is that
+we have corresponding images as additional information
+for each sentence pair.
+In this paper, we introduce a simple but effective system which takes an image
+shared between different languages,
+feeding it into the both encoding and decoding side.
+We report our system’s performance for English-French and English-German with Flickr30K (in-domain) and MSCOCO (out-of-domain) datasets.
+Our system achieves the best performance in TER for English-German for MSCOCO dataset.</p>
+</div>
+<span id="footnotex1" class="ltx_note ltx_role_footnotetext"><sup class="ltx_note_mark">0</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">0</sup><span class="ltx_note_type">footnotetext: </span><sup id="footnotex1.1" class="ltx_sup">†</sup> Current address: Google Inc., 111 8th Avenue, New York, New York, USA.</span></span></span>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">Natural language generation (NLG) is one of
+the most important tasks in natural language processing (NLP).
+It can be applied to a lot of interesting applications such like
+machine translation, image captioning, question answering.
+In recent years, Recurrent Neural Networks (RNNs) based approaches have shown promising performance in generating more fluent and meaningful sentences compared with conventional models such as rule-based model <cite class="ltx_cite ltx_citemacro_cite">Mirkovic et al. (<a href="#bib.bib10" title="" class="ltx_ref">2011</a>)</cite>, corpus-based n-gram models <cite class="ltx_cite ltx_citemacro_cite">Wen et al. (<a href="#bib.bib18" title="" class="ltx_ref">2015</a>)</cite> and
+trainable generators <cite class="ltx_cite ltx_citemacro_cite">Stent et al. (<a href="#bib.bib15" title="" class="ltx_ref">2004</a>)</cite>.</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">More recently, attention-based encoder-decoder models <cite class="ltx_cite ltx_citemacro_cite">Bahdanau et al. (<a href="#bib.bib1" title="" class="ltx_ref">2014</a>)</cite> have been proposed to provide the decoder more accurate
+alignments to generate more relevant words.
+The remarkable ability of attention mechanisms quickly update the state-of-the-art performance on variety of NLG tasks, such as machine translation <cite class="ltx_cite ltx_citemacro_cite">Luong et al. (<a href="#bib.bib9" title="" class="ltx_ref">2015</a>)</cite>, image captioning <cite class="ltx_cite ltx_citemacro_cite">Xu et al. (<a href="#bib.bib19" title="" class="ltx_ref">2015</a>); Yang et al. (<a href="#bib.bib20" title="" class="ltx_ref">2016</a>)</cite>, and text summarization <cite class="ltx_cite ltx_citemacro_cite">Rush et al. (<a href="#bib.bib13" title="" class="ltx_ref">2015</a>); Nallapati et al. (<a href="#bib.bib11" title="" class="ltx_ref">2016</a>)</cite>.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">However, for multimodal translation <cite class="ltx_cite ltx_citemacro_cite">Elliott et al. (<a href="#bib.bib3" title="" class="ltx_ref">2015</a>)</cite>, where we translate a caption from one language into another given
+a corresponding image, we need to design a new model since the decoder needs to consider both language and images at the same time.</p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p">This paper describes our participation in the WMT 2017 multimodal task 1. Our model feeds the image information to both the encoder and decoder, to ground their hidden representation within the same context of image during training. In this way, during testing time, the decoder would generate more relevant words given the context of both source sentence and image.</p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>Model Description</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">For the neural-based machine translation model, the encoder needs to
+map sequence of word embeddings from the source side into another
+representation of the entire sequence using
+recurrent networks. Then, in the second stage, decoder generates one
+word at a time with considering global (sentence representation)
+and local information (weighted context) from source side. For
+simplicity, our proposed model is based on the attention-based
+encoder-decoder framework in <cite class="ltx_cite ltx_citemacro_cite">Luong et al. (<a href="#bib.bib9" title="" class="ltx_ref">2015</a>)</cite>, refereed as “Global attention”.</p>
+</div>
+<div id="S2.p2" class="ltx_para">
+<p id="S2.p2.1" class="ltx_p">On the other hand, for the early work of neural-basic caption
+generation models <cite class="ltx_cite ltx_citemacro_cite">Vinyals et al. (<a href="#bib.bib17" title="" class="ltx_ref">2015</a>)</cite>, the convolutional neural
+networks (CNN) generate the image features which feed into the
+decoder directly for generating the description.</p>
+</div>
+<div id="S2.p3" class="ltx_para">
+<p id="S2.p3.1" class="ltx_p">The first stage of the above two tasks both map the temporal and spatial
+information into a fixed dimensional vector which makes it feasible
+to utilize both information at the same time.</p>
+</div>
+<div id="S2.p4" class="ltx_para">
+<p id="S2.p4.1" class="ltx_p">Fig. <a href="#S2.F1" title="Figure 1 ‣ 2 Model Description ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> shows the basic idea of our proposed model (OSU1). The red character <math id="S2.p4.1.m1.1" class="ltx_Math" alttext="\mathbf{I}" display="inline"><semantics id="S2.p4.1.m1.1a"><mi id="S2.p4.1.m1.1.1" xref="S2.p4.1.m1.1.1.cmml">𝐈</mi><annotation-xml encoding="MathML-Content" id="S2.p4.1.m1.1b"><ci id="S2.p4.1.m1.1.1.cmml" xref="S2.p4.1.m1.1.1">𝐈</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.p4.1.m1.1c">\mathbf{I}</annotation></semantics></math> represents the image feature that is generated from CNN. In our case, we directly use the image features that are provided by WMT, and these features are generated by residual networks <cite class="ltx_cite ltx_citemacro_cite">He et al. (<a href="#bib.bib4" title="" class="ltx_ref">2016</a>)</cite>.</p>
+</div>
+<div id="S2.p5" class="ltx_para">
+<p id="S2.p5.1" class="ltx_p">The encoder (blue boxes) in Fig. <a href="#S2.F1" title="Figure 1 ‣ 2 Model Description ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> takes the image feature as initialization for generating
+each hidden representation. This process is very similar to neural-basic caption
+generation <cite class="ltx_cite ltx_citemacro_cite">Vinyals et al. (<a href="#bib.bib17" title="" class="ltx_ref">2015</a>)</cite> which grounds each word’s hidden representation to
+the context given by the image. On the decoder side (green boxes in Fig. <a href="#S2.F1" title="Figure 1 ‣ 2 Model Description ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>),
+we not only let each decoded word align to source words by global attention but also
+feed the image feature as initialization to the decoder.</p>
+</div>
+<figure id="S2.F1" class="ltx_figure"><img src="/html/1710.02718/assets/x1.png" id="S2.F1.g1" class="ltx_graphics ltx_img_landscape" width="227" height="82" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>The image information is feed to both encoder and decoder for initialization. I (in red) represents the image feature that are generated by CNN.</figcaption>
+</figure>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>Experiments</h2>
+
+<section id="S3.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.1 </span>Datasets</h3>
+
+<div id="S3.SS1.p1" class="ltx_para">
+<p id="S3.SS1.p1.1" class="ltx_p">In our experiments, we use two datasets Flickr30K <cite class="ltx_cite ltx_citemacro_cite">Elliott et al. (<a href="#bib.bib2" title="" class="ltx_ref">2016</a>)</cite>
+and MSCOCO <cite class="ltx_cite ltx_citemacro_cite">Lin et al. (<a href="#bib.bib8" title="" class="ltx_ref">2014</a>)</cite> which are provided by the WMT organization.
+For both datasets, there are triples that contains English as source
+sentence, its German and French human translations and corresponding
+image. The system is only trained on Flickr30K datasets but are also tested on
+MSCOCO besides Flickr30K.
+MSCOCO datasets are considered out-of-domain (OOD) testing while
+Flickr30K dataset are considered in-domain testing.
+The datasets’ statics is shown in Table <a href="#S3.T1" title="Table 1 ‣ 3.1 Datasets ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a></p>
+</div>
+<figure id="S3.T1" class="ltx_table">
+<div id="S3.T1.4" class="ltx_inline-block ltx_align_center ltx_transformed_outer" style="width:198.9pt;height:48.6pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-11.0pt,2.7pt) scale(0.9,0.9) ;">
+<table id="S3.T1.4.4" class="ltx_tabular ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S3.T1.4.4.5.1" class="ltx_tr">
+<th id="S3.T1.4.4.5.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_l ltx_border_r ltx_border_t">Datasets</th>
+<th id="S3.T1.4.4.5.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">Train</th>
+<th id="S3.T1.4.4.5.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">Dev</th>
+<th id="S3.T1.4.4.5.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">Test</th>
+<th id="S3.T1.4.4.5.1.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">OOD ?</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S3.T1.3.3.3" class="ltx_tr">
+<td id="S3.T1.3.3.3.4" class="ltx_td ltx_align_left ltx_border_l ltx_border_r ltx_border_t">Flickr30K</td>
+<td id="S3.T1.1.1.1.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><math id="S3.T1.1.1.1.1.m1.2" class="ltx_Math" alttext="29,000" display="inline"><semantics id="S3.T1.1.1.1.1.m1.2a"><mrow id="S3.T1.1.1.1.1.m1.2.3.2" xref="S3.T1.1.1.1.1.m1.2.3.1.cmml"><mn id="S3.T1.1.1.1.1.m1.1.1" xref="S3.T1.1.1.1.1.m1.1.1.cmml">29</mn><mo id="S3.T1.1.1.1.1.m1.2.3.2.1" xref="S3.T1.1.1.1.1.m1.2.3.1.cmml">,</mo><mn id="S3.T1.1.1.1.1.m1.2.2" xref="S3.T1.1.1.1.1.m1.2.2.cmml">000</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.T1.1.1.1.1.m1.2b"><list id="S3.T1.1.1.1.1.m1.2.3.1.cmml" xref="S3.T1.1.1.1.1.m1.2.3.2"><cn type="integer" id="S3.T1.1.1.1.1.m1.1.1.cmml" xref="S3.T1.1.1.1.1.m1.1.1">29</cn><cn type="integer" id="S3.T1.1.1.1.1.m1.2.2.cmml" xref="S3.T1.1.1.1.1.m1.2.2">000</cn></list></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.1.1.1.1.m1.2c">29,000</annotation></semantics></math></td>
+<td id="S3.T1.2.2.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><math id="S3.T1.2.2.2.2.m1.2" class="ltx_Math" alttext="1,014" display="inline"><semantics id="S3.T1.2.2.2.2.m1.2a"><mrow id="S3.T1.2.2.2.2.m1.2.3.2" xref="S3.T1.2.2.2.2.m1.2.3.1.cmml"><mn id="S3.T1.2.2.2.2.m1.1.1" xref="S3.T1.2.2.2.2.m1.1.1.cmml">1</mn><mo id="S3.T1.2.2.2.2.m1.2.3.2.1" xref="S3.T1.2.2.2.2.m1.2.3.1.cmml">,</mo><mn id="S3.T1.2.2.2.2.m1.2.2" xref="S3.T1.2.2.2.2.m1.2.2.cmml">014</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.T1.2.2.2.2.m1.2b"><list id="S3.T1.2.2.2.2.m1.2.3.1.cmml" xref="S3.T1.2.2.2.2.m1.2.3.2"><cn type="integer" id="S3.T1.2.2.2.2.m1.1.1.cmml" xref="S3.T1.2.2.2.2.m1.1.1">1</cn><cn type="integer" id="S3.T1.2.2.2.2.m1.2.2.cmml" xref="S3.T1.2.2.2.2.m1.2.2">014</cn></list></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.2.2.2.2.m1.2c">1,014</annotation></semantics></math></td>
+<td id="S3.T1.3.3.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><math id="S3.T1.3.3.3.3.m1.2" class="ltx_Math" alttext="1,000" display="inline"><semantics id="S3.T1.3.3.3.3.m1.2a"><mrow id="S3.T1.3.3.3.3.m1.2.3.2" xref="S3.T1.3.3.3.3.m1.2.3.1.cmml"><mn id="S3.T1.3.3.3.3.m1.1.1" xref="S3.T1.3.3.3.3.m1.1.1.cmml">1</mn><mo id="S3.T1.3.3.3.3.m1.2.3.2.1" xref="S3.T1.3.3.3.3.m1.2.3.1.cmml">,</mo><mn id="S3.T1.3.3.3.3.m1.2.2" xref="S3.T1.3.3.3.3.m1.2.2.cmml">000</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.T1.3.3.3.3.m1.2b"><list id="S3.T1.3.3.3.3.m1.2.3.1.cmml" xref="S3.T1.3.3.3.3.m1.2.3.2"><cn type="integer" id="S3.T1.3.3.3.3.m1.1.1.cmml" xref="S3.T1.3.3.3.3.m1.1.1">1</cn><cn type="integer" id="S3.T1.3.3.3.3.m1.2.2.cmml" xref="S3.T1.3.3.3.3.m1.2.2">000</cn></list></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.3.3.3.3.m1.2c">1,000</annotation></semantics></math></td>
+<td id="S3.T1.3.3.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">No</td>
+</tr>
+<tr id="S3.T1.4.4.4" class="ltx_tr">
+<td id="S3.T1.4.4.4.2" class="ltx_td ltx_align_left ltx_border_b ltx_border_l ltx_border_r ltx_border_t">MSCOCO</td>
+<td id="S3.T1.4.4.4.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">-</td>
+<td id="S3.T1.4.4.4.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">-</td>
+<td id="S3.T1.4.4.4.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><math id="S3.T1.4.4.4.1.m1.1" class="ltx_Math" alttext="461" display="inline"><semantics id="S3.T1.4.4.4.1.m1.1a"><mn id="S3.T1.4.4.4.1.m1.1.1" xref="S3.T1.4.4.4.1.m1.1.1.cmml">461</mn><annotation-xml encoding="MathML-Content" id="S3.T1.4.4.4.1.m1.1b"><cn type="integer" id="S3.T1.4.4.4.1.m1.1.1.cmml" xref="S3.T1.4.4.4.1.m1.1.1">461</cn></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.4.4.4.1.m1.1c">461</annotation></semantics></math></td>
+<td id="S3.T1.4.4.4.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">Yes</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 1: </span>Summary of datasets statistics.</figcaption>
+</figure>
+</section>
+<section id="S3.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.2 </span>Training details</h3>
+
+<div id="S3.SS2.p1" class="ltx_para">
+<p id="S3.SS2.p1.1" class="ltx_p">For preprocessing, we convert all of the sentences to lower case, normalize the
+punctuation, and do the tokenization. For simplicity, our vocabulary keeps all the
+words that show in training set.
+For image representation, we use ResNet <cite class="ltx_cite ltx_citemacro_cite">He et al. (<a href="#bib.bib4" title="" class="ltx_ref">2016</a>)</cite> generated image features which are
+provided by the WMT organization. In our experiments, we only use average pooled features.</p>
+</div>
+<div id="S3.SS2.p2" class="ltx_para">
+<p id="S3.SS2.p2.1" class="ltx_p">Our implementation is adapted from on Pytorch-based OpenNMT <cite class="ltx_cite ltx_citemacro_cite">Klein et al. (<a href="#bib.bib6" title="" class="ltx_ref">2017</a>)</cite>. We use two layered
+bi-LSTM <cite class="ltx_cite ltx_citemacro_cite">Sutskever et al. (<a href="#bib.bib16" title="" class="ltx_ref">2014</a>)</cite> on the source side as encoder. Our batch size is 64, with SGD optimization and a learning rate at 1.
+For English to German, the dropout rate
+is 0.6, and for English to French, the dropout rate is 0.4. These two parameters are selected by
+observing the performance on development set. Our word embeddings are randomly initialized with
+500 dimensions.
+The source side vocabulary is 10,214 and the target side vocabulary is 18,726 for German
+and 11,222 for French.</p>
+</div>
+</section>
+<section id="S3.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.3 </span>Beam search with length reward</h3>
+
+<div id="S3.SS3.p1" class="ltx_para">
+<p id="S3.SS3.p1.1" class="ltx_p">During test time, beam search is widely used to improve the output text quality by giving the decoder
+more options to generate the next possible word.
+However, different from traditional beam search in phrase-based MT where all hypotheses
+know the number of steps to finish the generation, while in neural-based generation,
+there is no information about what is the most ideal number of steps to finish the decoding.
+The above issue also leads to another problem that the beam search in neural-based MT prefers shorter sequences due to probability-based scores for evaluating different candidates.
+In this paper, we use Optimal Beam Search <cite class="ltx_cite ltx_citemacro_cite">Huang et al. (<a href="#bib.bib5" title="" class="ltx_ref">2017</a>)</cite> (OBS) during decoding time.
+OBS uses bounded length reward
+mechanism which allows a modified version of
+our beam search algorithm to remain optimal.</p>
+</div>
+<div id="S3.SS3.p2" class="ltx_para">
+<p id="S3.SS3.p2.1" class="ltx_p">Figure <a href="#S3.F2" title="Figure 2 ‣ 3.3 Beam search with length reward ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> and Figure <a href="#S3.F3" title="Figure 3 ‣ 3.3 Beam search with length reward ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a> show the BLEU score and length ratio with different rewards for different beam size. We choose beam size equals to 5 and reward equals to 0.1 during decoding.</p>
+</div>
+<figure id="S3.SS3.2" class="ltx_figure">
+<div id="S3.SS3.2.3" class="ltx_block">
+<figure id="S3.F2" class="ltx_figure ltx_figure_panel ltx_align_center ltx_align_middle" style="width:227.6pt;"><img src="/html/1710.02718/assets/x2.png" id="S3.SS3.1.1.g1" class="ltx_graphics ltx_figure_panel ltx_img_landscape" width="461" height="322" alt="Refer to caption">
+<br class="ltx_break ltx_break">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>BLEU vs. beam size</figcaption>
+</figure>
+<figure id="S3.F3" class="ltx_figure ltx_figure_panel ltx_align_center ltx_align_middle" style="width:227.6pt;"><img src="/html/1710.02718/assets/x3.png" id="S3.SS3.2.2.g1" class="ltx_graphics ltx_figure_panel ltx_img_landscape" width="461" height="322" alt="Refer to caption">
+<br class="ltx_break ltx_break">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>length ratio vs. beam size</figcaption>
+</figure>
+</div>
+</figure>
+</section>
+<section id="S3.SS4" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.4 </span>Results</h3>
+
+<div id="S3.SS4.p1" class="ltx_para">
+<p id="S3.SS4.p1.1" class="ltx_p">WMT organization provides three different evaluating metrics: BLEU <cite class="ltx_cite ltx_citemacro_cite">Papineni et al. (<a href="#bib.bib12" title="" class="ltx_ref">2002</a>)</cite>, METEOR <cite class="ltx_cite ltx_citemacro_cite">Lavie and Denkowski (<a href="#bib.bib7" title="" class="ltx_ref">2009</a>)</cite> and TER <cite class="ltx_cite ltx_citemacro_cite">Snover et al. (<a href="#bib.bib14" title="" class="ltx_ref">2006</a>)</cite>.</p>
+</div>
+<div id="S3.SS4.p2" class="ltx_para">
+<p id="S3.SS4.p2.1" class="ltx_p">Table <a href="#S3.T2" title="Table 2 ‣ 3.4 Results ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> to Table <a href="#S3.T5" title="Table 5 ‣ 3.4 Results ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> summarize the performance with their corresponding rank among all other systems.
+We only
+show a few top performing systems in the tables to make a comparison. OSU1 is our proposed model and OSU2
+is our baseline system without any image information.
+For MSCOCO dataset, the translation from English to
+German (Table <a href="#S3.T3" title="Table 3 ‣ 3.4 Results ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>), which is the hardest tasks compared with others since it is from
+English to German on OOD dataset, we
+achieve best TER score across all other systems.</p>
+</div>
+<figure id="S3.T2" class="ltx_table">
+<div id="S3.T2.2" class="ltx_inline-block ltx_align_center ltx_transformed_outer" style="width:210.1pt;height:113.4pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-11.7pt,6.3pt) scale(0.9,0.9) ;">
+<table id="S3.T2.2.2" class="ltx_tabular ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S3.T2.2.2.3.1" class="ltx_tr">
+<td id="S3.T2.2.2.3.1.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">System</td>
+<td id="S3.T2.2.2.3.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">Rank</td>
+<td id="S3.T2.2.2.3.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">TER</td>
+<td id="S3.T2.2.2.3.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">METEOR</td>
+<td id="S3.T2.2.2.3.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">BLEU</td>
+</tr>
+<tr id="S3.T2.2.2.4.2" class="ltx_tr">
+<td id="S3.T2.2.2.4.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">UvA-TiCC</td>
+<td id="S3.T2.2.2.4.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1</td>
+<td id="S3.T2.2.2.4.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T2.2.2.4.2.3.1" class="ltx_text ltx_font_bold">47.5</span></td>
+<td id="S3.T2.2.2.4.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">53.5</td>
+<td id="S3.T2.2.2.4.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T2.2.2.4.2.5.1" class="ltx_text ltx_font_bold">33.3</span></td>
+</tr>
+<tr id="S3.T2.2.2.5.3" class="ltx_tr">
+<td id="S3.T2.2.2.5.3.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">NICT</td>
+<td id="S3.T2.2.2.5.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2</td>
+<td id="S3.T2.2.2.5.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">48.1</td>
+<td id="S3.T2.2.2.5.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T2.2.2.5.3.4.1" class="ltx_text ltx_font_bold">53.9</span></td>
+<td id="S3.T2.2.2.5.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">31.9</td>
+</tr>
+<tr id="S3.T2.2.2.6.4" class="ltx_tr">
+<td id="S3.T2.2.2.6.4.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">LIUMCVC</td>
+<td id="S3.T2.2.2.6.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">3 &amp; 4</td>
+<td id="S3.T2.2.2.6.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">48.2</td>
+<td id="S3.T2.2.2.6.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">53.8</td>
+<td id="S3.T2.2.2.6.4.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">33.2</td>
+</tr>
+<tr id="S3.T2.2.2.7.5" class="ltx_tr">
+<td id="S3.T2.2.2.7.5.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">CUNI</td>
+<td id="S3.T2.2.2.7.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">5</td>
+<td id="S3.T2.2.2.7.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">50.7</td>
+<td id="S3.T2.2.2.7.5.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">51</td>
+<td id="S3.T2.2.2.7.5.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">31.1</td>
+</tr>
+<tr id="S3.T2.1.1.1" class="ltx_tr">
+<td id="S3.T2.1.1.1.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t"><math id="S3.T2.1.1.1.1.m1.1" class="ltx_Math" alttext="\text{OSU2}^{\dagger}" display="inline"><semantics id="S3.T2.1.1.1.1.m1.1a"><msup id="S3.T2.1.1.1.1.m1.1.1" xref="S3.T2.1.1.1.1.m1.1.1.cmml"><mtext id="S3.T2.1.1.1.1.m1.1.1.2" xref="S3.T2.1.1.1.1.m1.1.1.2a.cmml">OSU2</mtext><mo id="S3.T2.1.1.1.1.m1.1.1.3" xref="S3.T2.1.1.1.1.m1.1.1.3.cmml">†</mo></msup><annotation-xml encoding="MathML-Content" id="S3.T2.1.1.1.1.m1.1b"><apply id="S3.T2.1.1.1.1.m1.1.1.cmml" xref="S3.T2.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T2.1.1.1.1.m1.1.1.1.cmml" xref="S3.T2.1.1.1.1.m1.1.1">superscript</csymbol><ci id="S3.T2.1.1.1.1.m1.1.1.2a.cmml" xref="S3.T2.1.1.1.1.m1.1.1.2"><mtext id="S3.T2.1.1.1.1.m1.1.1.2.cmml" xref="S3.T2.1.1.1.1.m1.1.1.2">OSU2</mtext></ci><ci id="S3.T2.1.1.1.1.m1.1.1.3.cmml" xref="S3.T2.1.1.1.1.m1.1.1.3">†</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T2.1.1.1.1.m1.1c">\text{OSU2}^{\dagger}</annotation></semantics></math></td>
+<td id="S3.T2.1.1.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">6</td>
+<td id="S3.T2.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">50.7</td>
+<td id="S3.T2.1.1.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">50.6</td>
+<td id="S3.T2.1.1.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">31</td>
+</tr>
+<tr id="S3.T2.2.2.2" class="ltx_tr">
+<td id="S3.T2.2.2.2.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_t"><math id="S3.T2.2.2.2.1.m1.1" class="ltx_Math" alttext="\text{OSU1}^{\dagger}" display="inline"><semantics id="S3.T2.2.2.2.1.m1.1a"><msup id="S3.T2.2.2.2.1.m1.1.1" xref="S3.T2.2.2.2.1.m1.1.1.cmml"><mtext id="S3.T2.2.2.2.1.m1.1.1.2" xref="S3.T2.2.2.2.1.m1.1.1.2a.cmml">OSU1</mtext><mo id="S3.T2.2.2.2.1.m1.1.1.3" xref="S3.T2.2.2.2.1.m1.1.1.3.cmml">†</mo></msup><annotation-xml encoding="MathML-Content" id="S3.T2.2.2.2.1.m1.1b"><apply id="S3.T2.2.2.2.1.m1.1.1.cmml" xref="S3.T2.2.2.2.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T2.2.2.2.1.m1.1.1.1.cmml" xref="S3.T2.2.2.2.1.m1.1.1">superscript</csymbol><ci id="S3.T2.2.2.2.1.m1.1.1.2a.cmml" xref="S3.T2.2.2.2.1.m1.1.1.2"><mtext id="S3.T2.2.2.2.1.m1.1.1.2.cmml" xref="S3.T2.2.2.2.1.m1.1.1.2">OSU1</mtext></ci><ci id="S3.T2.2.2.2.1.m1.1.1.3.cmml" xref="S3.T2.2.2.2.1.m1.1.1.3">†</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T2.2.2.2.1.m1.1c">\text{OSU1}^{\dagger}</annotation></semantics></math></td>
+<td id="S3.T2.2.2.2.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">8</td>
+<td id="S3.T2.2.2.2.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">51.6</td>
+<td id="S3.T2.2.2.2.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">48.9</td>
+<td id="S3.T2.2.2.2.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">29.7</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 2: </span>Experiments on Flickr30K dataset for translation from English to German. 16 systems in total. <math id="S3.T2.4.m1.1" class="ltx_Math" alttext="\dagger" display="inline"><semantics id="S3.T2.4.m1.1b"><mo id="S3.T2.4.m1.1.1" xref="S3.T2.4.m1.1.1.cmml">†</mo><annotation-xml encoding="MathML-Content" id="S3.T2.4.m1.1c"><ci id="S3.T2.4.m1.1.1.cmml" xref="S3.T2.4.m1.1.1">†</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.T2.4.m1.1d">\dagger</annotation></semantics></math> represents our system.</figcaption>
+</figure>
+<figure id="S3.T3" class="ltx_table">
+<div id="S3.T3.1" class="ltx_inline-block ltx_align_center ltx_transformed_outer" style="width:209.0pt;height:81pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-11.6pt,4.5pt) scale(0.9,0.9) ;">
+<table id="S3.T3.1.1" class="ltx_tabular ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S3.T3.1.1.2.1" class="ltx_tr">
+<th id="S3.T3.1.1.2.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_l ltx_border_r ltx_border_t">System</th>
+<th id="S3.T3.1.1.2.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">Rank</th>
+<th id="S3.T3.1.1.2.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">TER</th>
+<th id="S3.T3.1.1.2.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">METEOR</th>
+<th id="S3.T3.1.1.2.1.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">BLEU</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S3.T3.1.1.3.1" class="ltx_tr">
+<td id="S3.T3.1.1.3.1.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t"><span id="S3.T3.1.1.3.1.1.1" class="ltx_text" style="color:#0000FF;">OSU1</span></td>
+<td id="S3.T3.1.1.3.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.3.1.2.1" class="ltx_text" style="color:#0000FF;">1</span></td>
+<td id="S3.T3.1.1.3.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.3.1.3.1" class="ltx_text ltx_font_bold" style="color:#0000FF;">52.3</span></td>
+<td id="S3.T3.1.1.3.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.3.1.4.1" class="ltx_text" style="color:#0000FF;">46.5</span></td>
+<td id="S3.T3.1.1.3.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.3.1.5.1" class="ltx_text" style="color:#0000FF;">27.4</span></td>
+</tr>
+<tr id="S3.T3.1.1.4.2" class="ltx_tr">
+<td id="S3.T3.1.1.4.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">UvA-TiCC</td>
+<td id="S3.T3.1.1.4.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2</td>
+<td id="S3.T3.1.1.4.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">52.4</td>
+<td id="S3.T3.1.1.4.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">48.1</td>
+<td id="S3.T3.1.1.4.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">28</td>
+</tr>
+<tr id="S3.T3.1.1.5.3" class="ltx_tr">
+<td id="S3.T3.1.1.5.3.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">LIUMCVC</td>
+<td id="S3.T3.1.1.5.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">3</td>
+<td id="S3.T3.1.1.5.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">52.5</td>
+<td id="S3.T3.1.1.5.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.5.3.4.1" class="ltx_text ltx_font_bold">48.9</span></td>
+<td id="S3.T3.1.1.5.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T3.1.1.5.3.5.1" class="ltx_text ltx_font_bold">28.7</span></td>
+</tr>
+<tr id="S3.T3.1.1.1" class="ltx_tr">
+<td id="S3.T3.1.1.1.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_t"><span id="S3.T3.1.1.1.1.1" class="ltx_text ltx_markedasmath" style="color:#0000FF;">OSU2</span></td>
+<td id="S3.T3.1.1.1.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T3.1.1.1.2.1" class="ltx_text" style="color:#0000FF;">8</span></td>
+<td id="S3.T3.1.1.1.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T3.1.1.1.3.1" class="ltx_text" style="color:#0000FF;">55.9</span></td>
+<td id="S3.T3.1.1.1.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T3.1.1.1.4.1" class="ltx_text" style="color:#0000FF;">45.7</span></td>
+<td id="S3.T3.1.1.1.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T3.1.1.1.5.1" class="ltx_text" style="color:#0000FF;">26.1</span></td>
+</tr>
+</tbody>
+</table>
+</span></div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 3: </span>Experiments on MSCOCO dataset for translation from English to German. 15 systems in total. <math id="S3.T3.3.m1.1" class="ltx_Math" alttext="\dagger" display="inline"><semantics id="S3.T3.3.m1.1b"><mo id="S3.T3.3.m1.1.1" xref="S3.T3.3.m1.1.1.cmml">†</mo><annotation-xml encoding="MathML-Content" id="S3.T3.3.m1.1c"><ci id="S3.T3.3.m1.1.1.cmml" xref="S3.T3.3.m1.1.1">†</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.T3.3.m1.1d">\dagger</annotation></semantics></math> represents our system.</figcaption>
+</figure>
+<figure id="S3.T4" class="ltx_table">
+<div id="S3.T4.2" class="ltx_inline-block ltx_align_center ltx_transformed_outer" style="width:209.0pt;height:97.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-11.6pt,5.4pt) scale(0.9,0.9) ;">
+<table id="S3.T4.2.2" class="ltx_tabular ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S3.T4.2.2.3.1" class="ltx_tr">
+<td id="S3.T4.2.2.3.1.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">System</td>
+<td id="S3.T4.2.2.3.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">Rank</td>
+<td id="S3.T4.2.2.3.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">TER</td>
+<td id="S3.T4.2.2.3.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">METEOR</td>
+<td id="S3.T4.2.2.3.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">BLEU</td>
+</tr>
+<tr id="S3.T4.2.2.4.2" class="ltx_tr">
+<td id="S3.T4.2.2.4.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">LIUMCVC</td>
+<td id="S3.T4.2.2.4.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1</td>
+<td id="S3.T4.2.2.4.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T4.2.2.4.2.3.1" class="ltx_text ltx_font_bold">28.4</span></td>
+<td id="S3.T4.2.2.4.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T4.2.2.4.2.4.1" class="ltx_text ltx_font_bold">72.1</span></td>
+<td id="S3.T4.2.2.4.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T4.2.2.4.2.5.1" class="ltx_text ltx_font_bold">55.9</span></td>
+</tr>
+<tr id="S3.T4.2.2.5.3" class="ltx_tr">
+<td id="S3.T4.2.2.5.3.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">NICT</td>
+<td id="S3.T4.2.2.5.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2</td>
+<td id="S3.T4.2.2.5.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">28.4</td>
+<td id="S3.T4.2.2.5.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">72</td>
+<td id="S3.T4.2.2.5.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">55.3</td>
+</tr>
+<tr id="S3.T4.2.2.6.4" class="ltx_tr">
+<td id="S3.T4.2.2.6.4.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">DCU</td>
+<td id="S3.T4.2.2.6.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">3</td>
+<td id="S3.T4.2.2.6.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">30</td>
+<td id="S3.T4.2.2.6.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">70.1</td>
+<td id="S3.T4.2.2.6.4.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">54.1</td>
+</tr>
+<tr id="S3.T4.1.1.1" class="ltx_tr">
+<td id="S3.T4.1.1.1.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t"><math id="S3.T4.1.1.1.1.m1.1" class="ltx_Math" alttext="\text{OSU2}^{\dagger}" display="inline"><semantics id="S3.T4.1.1.1.1.m1.1a"><msup id="S3.T4.1.1.1.1.m1.1.1" xref="S3.T4.1.1.1.1.m1.1.1.cmml"><mtext id="S3.T4.1.1.1.1.m1.1.1.2" xref="S3.T4.1.1.1.1.m1.1.1.2a.cmml">OSU2</mtext><mo id="S3.T4.1.1.1.1.m1.1.1.3" xref="S3.T4.1.1.1.1.m1.1.1.3.cmml">†</mo></msup><annotation-xml encoding="MathML-Content" id="S3.T4.1.1.1.1.m1.1b"><apply id="S3.T4.1.1.1.1.m1.1.1.cmml" xref="S3.T4.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T4.1.1.1.1.m1.1.1.1.cmml" xref="S3.T4.1.1.1.1.m1.1.1">superscript</csymbol><ci id="S3.T4.1.1.1.1.m1.1.1.2a.cmml" xref="S3.T4.1.1.1.1.m1.1.1.2"><mtext id="S3.T4.1.1.1.1.m1.1.1.2.cmml" xref="S3.T4.1.1.1.1.m1.1.1.2">OSU2</mtext></ci><ci id="S3.T4.1.1.1.1.m1.1.1.3.cmml" xref="S3.T4.1.1.1.1.m1.1.1.3">†</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T4.1.1.1.1.m1.1c">\text{OSU2}^{\dagger}</annotation></semantics></math></td>
+<td id="S3.T4.1.1.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">5</td>
+<td id="S3.T4.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">32.7</td>
+<td id="S3.T4.1.1.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">68.3</td>
+<td id="S3.T4.1.1.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">51.9</td>
+</tr>
+<tr id="S3.T4.2.2.2" class="ltx_tr">
+<td id="S3.T4.2.2.2.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_t"><math id="S3.T4.2.2.2.1.m1.1" class="ltx_Math" alttext="\text{OSU1}^{\dagger}" display="inline"><semantics id="S3.T4.2.2.2.1.m1.1a"><msup id="S3.T4.2.2.2.1.m1.1.1" xref="S3.T4.2.2.2.1.m1.1.1.cmml"><mtext id="S3.T4.2.2.2.1.m1.1.1.2" xref="S3.T4.2.2.2.1.m1.1.1.2a.cmml">OSU1</mtext><mo id="S3.T4.2.2.2.1.m1.1.1.3" xref="S3.T4.2.2.2.1.m1.1.1.3.cmml">†</mo></msup><annotation-xml encoding="MathML-Content" id="S3.T4.2.2.2.1.m1.1b"><apply id="S3.T4.2.2.2.1.m1.1.1.cmml" xref="S3.T4.2.2.2.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T4.2.2.2.1.m1.1.1.1.cmml" xref="S3.T4.2.2.2.1.m1.1.1">superscript</csymbol><ci id="S3.T4.2.2.2.1.m1.1.1.2a.cmml" xref="S3.T4.2.2.2.1.m1.1.1.2"><mtext id="S3.T4.2.2.2.1.m1.1.1.2.cmml" xref="S3.T4.2.2.2.1.m1.1.1.2">OSU1</mtext></ci><ci id="S3.T4.2.2.2.1.m1.1.1.3.cmml" xref="S3.T4.2.2.2.1.m1.1.1.3">†</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T4.2.2.2.1.m1.1c">\text{OSU1}^{\dagger}</annotation></semantics></math></td>
+<td id="S3.T4.2.2.2.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">6</td>
+<td id="S3.T4.2.2.2.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">33.6</td>
+<td id="S3.T4.2.2.2.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">67.2</td>
+<td id="S3.T4.2.2.2.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">51</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 4: </span>Experiments on Flickr30K dataset for translation from English to French. 11 systems in total. <math id="S3.T4.4.m1.1" class="ltx_Math" alttext="\dagger" display="inline"><semantics id="S3.T4.4.m1.1b"><mo id="S3.T4.4.m1.1.1" xref="S3.T4.4.m1.1.1.cmml">†</mo><annotation-xml encoding="MathML-Content" id="S3.T4.4.m1.1c"><ci id="S3.T4.4.m1.1.1.cmml" xref="S3.T4.4.m1.1.1">†</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.T4.4.m1.1d">\dagger</annotation></semantics></math> represents our system.</figcaption>
+</figure>
+<figure id="S3.T5" class="ltx_table">
+<div id="S3.T5.2" class="ltx_inline-block ltx_align_center ltx_transformed_outer" style="width:209.0pt;height:97.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-11.6pt,5.4pt) scale(0.9,0.9) ;">
+<table id="S3.T5.2.2" class="ltx_tabular ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S3.T5.2.2.3.1" class="ltx_tr">
+<th id="S3.T5.2.2.3.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_th_row ltx_border_l ltx_border_r ltx_border_t">System</th>
+<th id="S3.T5.2.2.3.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_th_row ltx_border_r ltx_border_t">Rank</th>
+<th id="S3.T5.2.2.3.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">TER</th>
+<th id="S3.T5.2.2.3.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">METEOR</th>
+<th id="S3.T5.2.2.3.1.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t">BLEU</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S3.T5.2.2.4.1" class="ltx_tr">
+<th id="S3.T5.2.2.4.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">LIUMCVC</th>
+<th id="S3.T5.2.2.4.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_r ltx_border_t">1</th>
+<td id="S3.T5.2.2.4.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.2.2.4.1.3.1" class="ltx_text ltx_font_bold">34.2</span></td>
+<td id="S3.T5.2.2.4.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.2.2.4.1.4.1" class="ltx_text ltx_font_bold">65.9</span></td>
+<td id="S3.T5.2.2.4.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.2.2.4.1.5.1" class="ltx_text ltx_font_bold">45.9</span></td>
+</tr>
+<tr id="S3.T5.2.2.5.2" class="ltx_tr">
+<th id="S3.T5.2.2.5.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">NICT</th>
+<th id="S3.T5.2.2.5.2.2" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_r ltx_border_t">2</th>
+<td id="S3.T5.2.2.5.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">34.7</td>
+<td id="S3.T5.2.2.5.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">65.6</td>
+<td id="S3.T5.2.2.5.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">45.1</td>
+</tr>
+<tr id="S3.T5.2.2.6.3" class="ltx_tr">
+<th id="S3.T5.2.2.6.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">DCU</th>
+<th id="S3.T5.2.2.6.3.2" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_r ltx_border_t">3</th>
+<td id="S3.T5.2.2.6.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">35.2</td>
+<td id="S3.T5.2.2.6.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">64.1</td>
+<td id="S3.T5.2.2.6.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">44.5</td>
+</tr>
+<tr id="S3.T5.1.1.1" class="ltx_tr">
+<th id="S3.T5.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t"><span id="S3.T5.1.1.1.1.1" class="ltx_text ltx_markedasmath" style="color:#0000FF;">OSU2</span></th>
+<th id="S3.T5.1.1.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_r ltx_border_t"><span id="S3.T5.1.1.1.2.1" class="ltx_text" style="color:#0000FF;">4</span></th>
+<td id="S3.T5.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.1.1.1.3.1" class="ltx_text" style="color:#0000FF;">36.7</span></td>
+<td id="S3.T5.1.1.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.1.1.1.4.1" class="ltx_text" style="color:#0000FF;">63.8</span></td>
+<td id="S3.T5.1.1.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S3.T5.1.1.1.5.1" class="ltx_text" style="color:#0000FF;">44.1</span></td>
+</tr>
+<tr id="S3.T5.2.2.2" class="ltx_tr">
+<th id="S3.T5.2.2.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b ltx_border_l ltx_border_r ltx_border_t"><span id="S3.T5.2.2.2.1.1" class="ltx_text ltx_markedasmath" style="color:#0000FF;">OSU1</span></th>
+<th id="S3.T5.2.2.2.2" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T5.2.2.2.2.1" class="ltx_text" style="color:#0000FF;">6</span></th>
+<td id="S3.T5.2.2.2.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T5.2.2.2.3.1" class="ltx_text" style="color:#0000FF;">37.8</span></td>
+<td id="S3.T5.2.2.2.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T5.2.2.2.4.1" class="ltx_text" style="color:#0000FF;">61.6</span></td>
+<td id="S3.T5.2.2.2.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S3.T5.2.2.2.5.1" class="ltx_text" style="color:#0000FF;">41.2</span></td>
+</tr>
+</tbody>
+</table>
+</span></div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 5: </span>Experiments on MSCOCO dataset for translation from English to French. 11 systems in total.</figcaption>
+</figure>
+<figure id="S3.F4" class="ltx_figure">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F4.1" class="ltx_figure ltx_figure_panel ltx_align_center">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02718/assets/figs/m2_1.jpg" id="S3.F4.1.g1" class="ltx_graphics ltx_figure_panel ltx_img_landscape" width="99" height="74" alt="Refer to caption"></div>
+<div class="ltx_flex_cell ltx_flex_size_2">
+<div id="S3.F4.1.1" class="ltx_inline-block ltx_figure_panel ltx_transformed_outer" style="width:340.0pt;height:61.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-30.0pt,5.4pt) scale(0.85,0.85) ;">
+<table id="S3.F4.1.1.1" class="ltx_tabular ltx_guessed_headers ltx_align_bottom">
+<tbody class="ltx_tbody">
+<tr id="S3.F4.1.1.1.1.1" class="ltx_tr">
+<th id="S3.F4.1.1.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_t">input</th>
+<td id="S3.F4.1.1.1.1.1.2" class="ltx_td ltx_align_left ltx_border_t">a finger pointing at a hotdog with cheese , sauerkraut and ketchup .</td>
+</tr>
+<tr id="S3.F4.1.1.1.2.2" class="ltx_tr">
+<th id="S3.F4.1.1.1.2.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU1</th>
+<td id="S3.F4.1.1.1.2.2.2" class="ltx_td ltx_align_left">ein finger zeigt auf einen hot dog mit einem messer , wischmobs und napa .</td>
+</tr>
+<tr id="S3.F4.1.1.1.3.3" class="ltx_tr">
+<th id="S3.F4.1.1.1.3.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU2</th>
+<td id="S3.F4.1.1.1.3.3.2" class="ltx_td ltx_align_left">ein finger zeigt auf einen hotdog mit hammer und italien .</td>
+</tr>
+<tr id="S3.F4.1.1.1.4.4" class="ltx_tr">
+<th id="S3.F4.1.1.1.4.4.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b">Reference</th>
+<td id="S3.F4.1.1.1.4.4.2" class="ltx_td ltx_align_left ltx_border_b">ein finger zeigt auf einen hotdog mit käse , sauerkraut und ketchup .</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+</div>
+</div>
+</figure>
+</div>
+<div class="ltx_flex_break"></div>
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F4.2" class="ltx_figure ltx_figure_panel ltx_align_center">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02718/assets/figs/m2_2.jpg" id="S3.F4.2.g1" class="ltx_graphics ltx_figure_panel ltx_img_landscape" width="99" height="74" alt="Refer to caption"></div>
+<div class="ltx_flex_cell ltx_flex_size_2">
+<div id="S3.F4.2.1" class="ltx_inline-block ltx_figure_panel ltx_transformed_outer" style="width:267.1pt;height:61.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-23.6pt,5.4pt) scale(0.85,0.85) ;">
+<table id="S3.F4.2.1.1" class="ltx_tabular ltx_guessed_headers ltx_align_bottom">
+<tbody class="ltx_tbody">
+<tr id="S3.F4.2.1.1.1.1" class="ltx_tr">
+<th id="S3.F4.2.1.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_t">input</th>
+<td id="S3.F4.2.1.1.1.1.2" class="ltx_td ltx_align_left ltx_border_t">a man reaching down for something in a box</td>
+</tr>
+<tr id="S3.F4.2.1.1.2.2" class="ltx_tr">
+<th id="S3.F4.2.1.1.2.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU1</th>
+<td id="S3.F4.2.1.1.2.2.2" class="ltx_td ltx_align_left">ein mann greift nach unten , um etwas zu irgendeinem .</td>
+</tr>
+<tr id="S3.F4.2.1.1.3.3" class="ltx_tr">
+<th id="S3.F4.2.1.1.3.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU2</th>
+<td id="S3.F4.2.1.1.3.3.2" class="ltx_td ltx_align_left">ein mann greift nach etwas in einer kiste .</td>
+</tr>
+<tr id="S3.F4.2.1.1.4.4" class="ltx_tr">
+<th id="S3.F4.2.1.1.4.4.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b">Reference</th>
+<td id="S3.F4.2.1.1.4.4.2" class="ltx_td ltx_align_left ltx_border_b">ein mann bückt sich nach etwas in einer schachtel .</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 4: </span>Two testing examples that image information confuses the NMT model.</figcaption>
+</figure>
+<figure id="S3.F5" class="ltx_figure">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F5.1" class="ltx_figure ltx_figure_panel ltx_align_center">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02718/assets/figs/m1_1.jpg" id="S3.F5.1.g1" class="ltx_graphics ltx_figure_panel ltx_img_square" width="99" height="93" alt="Refer to caption"></div>
+<div class="ltx_flex_cell ltx_flex_size_2">
+<div id="S3.F5.1.1" class="ltx_inline-block ltx_figure_panel ltx_transformed_outer" style="width:354.5pt;height:61.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-31.3pt,5.4pt) scale(0.85,0.85) ;">
+<table id="S3.F5.1.1.1" class="ltx_tabular ltx_guessed_headers ltx_align_bottom">
+<tbody class="ltx_tbody">
+<tr id="S3.F5.1.1.1.1.1" class="ltx_tr">
+<th id="S3.F5.1.1.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_t">input</th>
+<td id="S3.F5.1.1.1.1.1.2" class="ltx_td ltx_align_left ltx_border_t">there are two foods and one drink set on the clear table .</td>
+</tr>
+<tr id="S3.F5.1.1.1.2.2" class="ltx_tr">
+<th id="S3.F5.1.1.1.2.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU1</th>
+<td id="S3.F5.1.1.1.2.2.2" class="ltx_td ltx_align_left">da sind zwei speisen und ein getränk am klaren tisch .</td>
+</tr>
+<tr id="S3.F5.1.1.1.3.3" class="ltx_tr">
+<th id="S3.F5.1.1.1.3.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU2</th>
+<td id="S3.F5.1.1.1.3.3.2" class="ltx_td ltx_align_left">zwei erwachsene und ein erwachsener befinden sich auf dem rechteckigen tisch .</td>
+</tr>
+<tr id="S3.F5.1.1.1.4.4" class="ltx_tr">
+<th id="S3.F5.1.1.1.4.4.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b">Reference</th>
+<td id="S3.F5.1.1.1.4.4.2" class="ltx_td ltx_align_left ltx_border_b">auf dem transparenten tisch stehen zwei speisen und ein getränk .</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+</div>
+</div>
+</figure>
+</div>
+<div class="ltx_flex_break"></div>
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F5.2" class="ltx_figure ltx_figure_panel ltx_align_center">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02718/assets/figs/m1_2.jpg" id="S3.F5.2.g1" class="ltx_graphics ltx_figure_panel ltx_img_square" width="99" height="82" alt="Refer to caption"></div>
+<div class="ltx_flex_cell ltx_flex_size_2">
+<div id="S3.F5.2.1" class="ltx_inline-block ltx_figure_panel ltx_transformed_outer" style="width:276.2pt;height:61.2pt;vertical-align:-0.0pt;"><span class="ltx_transformed_inner" style="transform:translate(-24.4pt,5.4pt) scale(0.85,0.85) ;">
+<table id="S3.F5.2.1.1" class="ltx_tabular ltx_guessed_headers ltx_align_bottom">
+<tbody class="ltx_tbody">
+<tr id="S3.F5.2.1.1.1.1" class="ltx_tr">
+<th id="S3.F5.2.1.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_t">input</th>
+<td id="S3.F5.2.1.1.1.1.2" class="ltx_td ltx_align_left ltx_border_t">a camera set up in front of a sleeping cat .</td>
+</tr>
+<tr id="S3.F5.2.1.1.2.2" class="ltx_tr">
+<th id="S3.F5.2.1.1.2.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU1</th>
+<td id="S3.F5.2.1.1.2.2.2" class="ltx_td ltx_align_left">eine kameracrew vor einer schlafenden katze .</td>
+</tr>
+<tr id="S3.F5.2.1.1.3.3" class="ltx_tr">
+<th id="S3.F5.2.1.1.3.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row">OSU2</th>
+<td id="S3.F5.2.1.1.3.3.2" class="ltx_td ltx_align_left">eine kamera vor einer blonden katze .</td>
+</tr>
+<tr id="S3.F5.2.1.1.4.4" class="ltx_tr">
+<th id="S3.F5.2.1.1.4.4.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b">Reference</th>
+<td id="S3.F5.2.1.1.4.4.2" class="ltx_td ltx_align_left ltx_border_b">eine kamera , die vor einer schlafenden katze aufgebaut ist</td>
+</tr>
+</tbody>
+</table>
+</span></div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 5: </span>Two testing examples that image information helps the NMT model.</figcaption>
+</figure>
+<div id="S3.SS4.p3" class="ltx_para">
+<p id="S3.SS4.p3.1" class="ltx_p">As describe in section <a href="#S2" title="2 Model Description ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>, OSU1 is the model with image information for both encoder
+and decoder, and OSU2 is only the neural machine translation baseline without any image information.
+From the above results table we found that image information would hurt the performance in some cases.
+In order to have more detailed analysis, we show some test examples for the translation from English to
+German on MSCOCO dataset.</p>
+</div>
+<div id="S3.SS4.p4" class="ltx_para">
+<p id="S3.SS4.p4.1" class="ltx_p">Fig <a href="#S3.F4" title="Figure 4 ‣ 3.4 Results ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> shows two examples that NMT baseline model performances better than OSU1 model.
+In the first example, OSU1 generates several unseen objects from given image, such like knife.
+The image feature might not represent the image accurately.
+For the second example, OSU1 model ignores the object “box” in the image.</p>
+</div>
+<div id="S3.SS4.p5" class="ltx_para">
+<p id="S3.SS4.p5.1" class="ltx_p">Fig <a href="#S3.F5" title="Figure 5 ‣ 3.4 Results ‣ 3 Experiments ‣ OSU Multimodal Machine Translation System Report" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> shows two examples that image feature helps the OSU1 to generate better results.
+In the first example, image feature successfully detects the object “drink” while the baseline
+completely neglects this.
+In the second example, the image feature even help the model figure out the action of the cat is “sleeping”.</p>
+</div>
+</section>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>Conclusion</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.1" class="ltx_p">We describe our system submission to the shared
+WMT’17 task “multimodal translation task I”.
+The results for English-German and English-French on Flickr30K and MSCOCO datasets are reported
+in this paper.
+Our proposed model is simple but effective and we achieve the best performance in TER for
+English-German for MSCOCO dataset.</p>
+</div>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">5 </span>Acknowledgment</h2>
+
+<div id="S5.p1" class="ltx_para">
+<p id="S5.p1.1" class="ltx_p">This work is supported in part by
+NSF IIS-1656051,
+DARPA FA8750-13-2-0041 (DEFT),
+DARPA N66001-17-2-4030 (XAI),
+a Google Faculty Research Award,
+and an HP Gift.</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Bahdanau et al. (2014)</span>
+<span class="ltx_bibblock">
+Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio. 2014.
+
+</span>
+<span class="ltx_bibblock">Neural machine translation by jointly learning to align and
+translate.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib1.1.1" class="ltx_text ltx_font_italic">CoRR</span> .
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Elliott et al. (2016)</span>
+<span class="ltx_bibblock">
+D. Elliott, S. Frank, K. Sima’an, and L. Specia. 2016.
+
+</span>
+<span class="ltx_bibblock">Multi30k: Multilingual english-german image descriptions.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib2.1.1" class="ltx_text ltx_font_italic">Proceedings of the 5th Workshop on Vision and Language</span> pages
+70–74.
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Elliott et al. (2015)</span>
+<span class="ltx_bibblock">
+Desmond Elliott, Stella Frank, and Eva Hasler. 2015.
+
+</span>
+<span class="ltx_bibblock">Multi-language image description with neural sequence models.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib3.1.1" class="ltx_text ltx_font_italic">CoRR</span> .
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">He et al. (2016)</span>
+<span class="ltx_bibblock">
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016.
+
+</span>
+<span class="ltx_bibblock">Deep residual learning for image recognition.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib4.1.1" class="ltx_text ltx_font_italic">Conference on Computer Vision and Pattern Recognition CVPR</span>
+.
+
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Huang et al. (2017)</span>
+<span class="ltx_bibblock">
+Liang Huang, Kai Zhao, and Mingbo Ma. 2017.
+
+</span>
+<span class="ltx_bibblock">When to finish? optimal beam search for neural text generation
+(modulo beam size).
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bib5.1.1" class="ltx_text ltx_font_italic">EMNLP 2017</span>.
+
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Klein et al. (2017)</span>
+<span class="ltx_bibblock">
+G. Klein, Y. Kim, Y. Deng, J. Senellart, and A. M. Rush. 2017.
+
+</span>
+<span class="ltx_bibblock">Opennmt: Open-source toolkit for neural machine translation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib6.1.1" class="ltx_text ltx_font_italic">ArXiv e-prints</span> .
+
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Lavie and Denkowski (2009)</span>
+<span class="ltx_bibblock">
+Alon Lavie and Michael J. Denkowski. 2009.
+
+</span>
+<span class="ltx_bibblock">The meteor metric for automatic evaluation of machine translation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib7.1.1" class="ltx_text ltx_font_italic">Machine Translation</span> .
+
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Lin et al. (2014)</span>
+<span class="ltx_bibblock">
+Tsung-Yi Lin, Michael Maire, Serge J. Belongie, Lubomir D. Bourdev, Ross B.
+Girshick, James Hays, Pietro Perona, Deva Ramanan, Piotr Dollár, and
+C. Lawrence Zitnick. 2014.
+
+</span>
+<span class="ltx_bibblock">Microsoft COCO: common objects in context .
+
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Luong et al. (2015)</span>
+<span class="ltx_bibblock">
+Minh-Thang Luong, Hieu Pham, and Christopher D. Manning. 2015.
+
+</span>
+<span class="ltx_bibblock">Effective approaches to attention-based neural machine translation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib9.1.1" class="ltx_text ltx_font_italic">CoRR</span> .
+
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Mirkovic et al. (2011)</span>
+<span class="ltx_bibblock">
+Danilo Mirkovic, Lawrence Cavedon, Matthew Purver, Florin Ratiu, Tobias
+Scheideck, Fuliang Weng, Qi Zhang, and Kui Xu. 2011.
+
+</span>
+<span class="ltx_bibblock">Dialogue management using scripts and combined confidence scores.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib10.1.1" class="ltx_text ltx_font_italic">US Patent</span> pages 7,904,297.
+
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Nallapati et al. (2016)</span>
+<span class="ltx_bibblock">
+Ramesh Nallapati, Bowen Zhou, and Mingbo Ma. 2016.
+
+</span>
+<span class="ltx_bibblock">Classify or select: Neural architectures for extractive document
+summarization.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib11.1.1" class="ltx_text ltx_font_italic">CoRR</span> .
+
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Papineni et al. (2002)</span>
+<span class="ltx_bibblock">
+Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. 2002.
+
+</span>
+<span class="ltx_bibblock">Bleu: A method for automatic evaluation of machine translation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib12.1.1" class="ltx_text ltx_font_italic">Proceedings of the 40th Annual Meeting on Association for
+Computational Linguistics</span> .
+
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Rush et al. (2015)</span>
+<span class="ltx_bibblock">
+Alexander M. Rush, Sumit Chopra, and Jason Weston. 2015.
+
+</span>
+<span class="ltx_bibblock">A neural attention model for abstractive sentence summarization .
+
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Snover et al. (2006)</span>
+<span class="ltx_bibblock">
+Matthew Snover, Bonnie Dorr, Richard Schwartz, Linnea Micciulla, and John
+Makhoul. 2006.
+
+</span>
+<span class="ltx_bibblock">A study of translation edit rate with targeted human annotation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib14.1.1" class="ltx_text ltx_font_italic">In Proceedings of Association for Machine Translation in the
+Americas</span> .
+
+</span>
+</li>
+<li id="bib.bib15" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Stent et al. (2004)</span>
+<span class="ltx_bibblock">
+Amanda Stent, Rashmi Prasad, and Marilyn Walker. 2004.
+
+</span>
+<span class="ltx_bibblock">Trainable sentence planning for complex information presentation in
+spoken dialog systems.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib15.1.1" class="ltx_text ltx_font_italic">Proceedings of the 42Nd Annual Meeting on Association for
+Computational Linguistics</span> .
+
+</span>
+</li>
+<li id="bib.bib16" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Sutskever et al. (2014)</span>
+<span class="ltx_bibblock">
+Ilya Sutskever, Oriol Vinyals, and Quoc V. Le. 2014.
+
+</span>
+<span class="ltx_bibblock">Sequence to sequence learning with neural networks.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib16.1.1" class="ltx_text ltx_font_italic">Proceedings of the 27th International Conference on Neural
+Information Processing Systems</span> .
+
+</span>
+</li>
+<li id="bib.bib17" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Vinyals et al. (2015)</span>
+<span class="ltx_bibblock">
+Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. 2015.
+
+</span>
+<span class="ltx_bibblock">Show and tell: A neural image caption generator.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib17.1.1" class="ltx_text ltx_font_italic">IEEE Conference on Computer Vision and Pattern Recognition</span>
+pages 3156–3164.
+
+</span>
+</li>
+<li id="bib.bib18" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Wen et al. (2015)</span>
+<span class="ltx_bibblock">
+Tsung-Hsien Wen, Milica Gasic, Dongho Kim, Nikola Mrksic, Pei-hao Su, David
+Vandyke, and Steve J. Young. 2015.
+
+</span>
+<span class="ltx_bibblock">Stochastic language generation in dialogue using recurrent neural
+networks with convolutional sentence reranking.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib18.1.1" class="ltx_text ltx_font_italic">CoRR</span> .
+
+</span>
+</li>
+<li id="bib.bib19" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Xu et al. (2015)</span>
+<span class="ltx_bibblock">
+Kelvin Xu, Jimmy Ba, Ryan Kiros, Kyunghyun Cho, Aaron Courville, Ruslan
+Salakhudinov, Rich Zemel, and Yoshua Bengio. 2015.
+
+</span>
+<span class="ltx_bibblock">Show, attend and tell: Neural image caption generation with visual
+attention.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib19.1.1" class="ltx_text ltx_font_italic">Proceedings of the 32nd International Conference on Machine
+Learning (ICML-15)</span> .
+
+</span>
+</li>
+<li id="bib.bib20" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Yang et al. (2016)</span>
+<span class="ltx_bibblock">
+Zhilin Yang, Ye Yuan, Yuexin Wu, William W. Cohen, and Ruslan Salakhutdinov.
+2016.
+
+</span>
+<span class="ltx_bibblock">Review networks for caption generation.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bib20.1.1" class="ltx_text ltx_font_italic">Advances in Neural Information Processing Systems</span> .
+
+</span>
+</li>
+</ul>
+</section>
+<div class="ltx_pagination ltx_role_newpage"></div>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02717" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02718" class="ar5iv-text-button ar5iv-severity-warning">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02718">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02718" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02719" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Sat Mar 16 10:55:48 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

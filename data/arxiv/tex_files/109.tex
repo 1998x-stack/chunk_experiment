@@ -1,0 +1,429 @@
+
+We reduce linear programming to the minimum norm point problem over a simplex via a series of strongly polynomial time reductions.  
+The algorithmic problems we will consider are defined below.  
+\ifnum\version=\stocversion
+\else
+We give definitions for the problems of linear programming (LP), feasibility (FP), bounded feasibility (BFP), V-polytope membership (VPM), zero V-polytope membership (ZVPM), zero V-polytope membership decision (ZVPMD), distance to a V-polytope (DVP) and distance to a V-simplex (DVS). (Prefix ``V-" means that the respective object is specified as the convex hull of a set of points.) See \cite{schrijver98, lovasz1988geometric, MR1956924} for a detailed discussions of strongly polynomial time algorithms.
+\fi
+
+\begin{definition}
+% \ifnum\version=\stocversion
+% \else
+% Each of the problems we consider requires finding a solution to a feasibility type problem or determining feasibility.
+% \fi
+Consider the following computational problems:
+\begin{itemize}
+\item 
+\textbf{\textup{LP:}} 
+Given a rational matrix $A$, a rational column vector $\ve{b}$, and a rational row vector $\ve{c}^T$, output rational $\ve{x} \in \text{argmax}\{\ve{c}^T\ve{x} \suchthat A\ve{x} \le \ve{b}\}$ if $\max\{\ve{c}^T\ve{x} \suchthat A\ve{x} \le \ve{b}\}$ is finite, otherwise output INFEASIBLE if $\{\ve{x} \suchthat A\ve{x} \le \ve{b}\}$ is empty and else output INFINITE.
+
+\ifnum\version=\stocversion
+\else
+
+\item 
+\textbf{\textup{FP:}} 
+Given a rational matrix $A$ and a rational vector $\ve{b}$, if $P:= \{\ve{x} \suchthat A\ve{x} = \ve{b}, \ve{x} \ge \ve{0}\}$ is nonempty, output a rational $\ve{x} \in P$, otherwise output NO.
+
+\item
+\textbf{\textup{BFP:}} 
+Given a rational $d \times n$ matrix $A$, a rational vector $\ve{b}$ and a rational value $M > 0$, if $P:= \{\ve{x} \suchthat A\ve{x} = \ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i \le M\}$ is nonempty, output a rational $\ve{x} \in P$, otherwise output NO.
+
+\item
+\textbf{\textup{VPM:}} 
+Given a rational $d \times n$ matrix $A$ and a rational vector $\ve{b}$, if $P:=\{\ve{x} \suchthat A\ve{x}=\ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i = 1\}$ is nonempty, output a rational $\ve{x} \in P$, otherwise output NO.
+
+\item
+\textbf{\textup{ZVPM:}} 
+Given a rational $d \times n$ matrix $A$, if $P:=\{\ve{x} \suchthat A\ve{x} = \ve{0}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i = 1\}$ is nonempty, output a rational $\ve{x} \in P$, otherwise output NO.
+%\\\\\textbf{CP}: \begin{minipage}[t]{0.9\textwidth}Given $n$ rational points in $\mathbb{R}^d$, $\ve{p_1}, \ve{p_2}, ..., \ve{p_n}$, if $\ve{0} \in \conv\{\ve{p_1},\ve{p_2},...,\ve{p_n}\}$, output rational $x_1, ..., x_n \ge 0$, so that $\sum_{i=1}^n x_i = 1, \sum_{i=1}^n x_i \ve{p_i} = 0$, otherwise output NO.\lnote{not sure why this is called CP, as there is no distance involved. Also, it is clearly the same as ZVPM, so I think the proof should be removed}\end{minipage}
+
+\item
+\textbf{\textup{ZVPMD:}} 
+Given rational points $\ve{p_1}, \ve{p_2}, \dotsc,\ve{p_n} \in \mathbb{R}^d$, output YES if $\ve{0} \in \conv\{\ve{p_1},\ve{p_2},...,\ve{p_n}\}$ and NO otherwise.
+%\lnote{not sure why it is called cpd, there is no distance or closest, is there? In fact, this could be more properly be called ZVPM, while earlier ZVPM could be called ZVPMS (for solution)}
+
+\item
+\textbf{\textup{DVP:}} 
+Given rational points $\ve{p_1}, \ve{p_2}, \dotsc,\ve{p_n} \in \mathbb{R}^d$ defining $P = \conv\{\ve{p_1}, \ve{p_2}, ..., \ve{p_n}\}$, output $d(\ve{0},P)^2$.\details{It is not assumed that the points are all vertices.}
+
+\fi 
+
+\item
+\textbf{\textup{DVS:}} 
+%\begin{minipage}[t]{0.9\textwidth}
+Given $n \leq d+1$ affinely independent rational points $\ve{p_1}, \ve{p_2},...,\ve{p_{n}} \in \mathbb{R}^d$ defining $(n-1)$-dimensional simplex $P = \conv\{\ve{p_1}, \ve{p_2}, ..., \ve{p_{n}}\}$, output $d(\ve{0},P)^2$.
+%\end{minipage}
+\end{itemize}
+\end{definition}
+
+
+
+The main result in this section reduces linear programming to finding the minimum norm point in a (vertex-representation) simplex.
+\begin{theorem}
+LP reduces to DVS in strongly-polynomial time.
+\end{theorem}
+\ifnum\version=\stocversion
+\else
+To prove each of the lemmas below, we illustrate the problem transformation and its strong polynomiality.  
+The first two reductions are highly classical, while those following are intuitive, but we do not believe have been written elsewhere. 
+\ifnum\version=\stocversion
+\else
+%Our proof of one of the lemmas will make use of the following classical lemma in \cite{schrijver98}.
+%Our proof of one the lemmas will make use of the following lemma of Khachiyan \cite{khachiyan}.
+
+%We recall the length of the binary encoding of a rational matrix, $A = (a_{ij}/\alpha_{ij})_{i=1,j=1}^{d,n}$ where $a_{ij},\alpha_{ij} \in \mathbb{Z}$ and $\alpha_{ij} \not= 0$ is 
+%\[
+%\sigma_A := 2dn + \sum_{i,j} \lceil \log_2(|a_{ij}|+1) \rceil + \lceil \log_2(|\alpha_{ij}|+1) \rceil
+%\] 
+%and the length of the binary encoding of a rational vector $\ve{b} = (b_i/\beta_i)_{i=1}^d$ where $b_i, \beta_i \in \mathbb{Z}$ and $\beta_i \not= 0$, is 
+%\[
+%\sigma_b := 2d + \sum_{i} \lceil \log_2(|b_{ij}|+1) \rceil + \lceil \log_2(|\beta_{ij}|+1) \rceil
+%\] 
+%as in \cite{schrijver98}.
+%$$\sigma = \log nd + 2 + \underset{i}{\sum}\underset{j}{\sum} \log(|a_{ij}| + 1) + \log(|\alpha_{ij}|+1) + \underset{i}{\sum} \log(|b_i| + 1) + \log(|\beta_i|+1).$$
+%\lnote{Better to cite the translation too, I added it to dropbox. I could only find the integer case in Khachiyan. This could be a bit delicate. E.g. Schrijver starts with nd rather than log nd for the first term}
+%\begin{lemma}\label{lem:feasible} If the rational system $A \ve{x} \le \ve{b}$ is feasible, then there is a feasible solution $\ve{\hat{x}}$ whose coordinates satisfy $|\hat{x}_j| \le \frac{2^\sigma}{2n}$ for $j = 1,...,n.$
+%\end{lemma}
+%\begin{lemma}\label{lem:feasible}\cite[Theorem 10.1]{schrijver98} If the system of rational linear inequalities $A \ve{x} \le \ve{b}$ has a solution, then it has one of size polynomially bounded by the sizes of $A$ and $b$.
+%\end{lemma}
+%We will denote this universal polynomial as $p(\sigma_A,\sigma_b)$.
+\fi
+
+Below is the sequence of algorithmic reductions that reduce LP to DVS.
+
+\begin{lemma}\label{lem:LPtoFP}
+LP reduces in strongly-polynomial time to FP.
+\end{lemma}
+
+\begin{proof}
+Let $\oracle$ denote the FP oracle. 
+\begin{algorithmic}
+\Require $A \in \QQ^{d \times n}, \ve{b} \in \QQ^{d}, \ve{c} \in \QQ^{n}$.
+%\Ensure
+\State Invoke $\oracle$ on 
+\begin{equation}\label{eq:LPfeas}
+\begin{bmatrix} A & -A & I_d \end{bmatrix} \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{s} \end{bmatrix} = \ve{b}, \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{s} \end{bmatrix} \ge \ve{0}.
+\end{equation}
+If the output is NO, output INFEASIBLE.
+
+\State Invoke $\oracle$ on 
+\begin{equation}\label{eq:LPfinite}
+\begin{bmatrix}-\ve{c}^T & \ve{c}^T & \ve{b}^T & \\ A & -A & 0 & I_{d+2n+1} \\ 0 & 0 & A^T & \\ 0 & 0 & -A^T & \end{bmatrix} \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{y} \\ \ve{s} \end{bmatrix} = \begin{bmatrix} 0 \\ \ve{b} \\ \ve{c} \\ -\ve{c} \end{bmatrix}, \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{y} \\ \ve{s} \end{bmatrix} \ge \ve{0}.
+\end{equation}
+If the output is NO, output INFINITE, else output rational $\ve{x} = \ve{x^+} - \ve{x^-}$.
+\end{algorithmic}
+
+\begin{claim}
+A solution 
+\[
+ \ve{\tilde{x}} := \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{s} \end{bmatrix}
+\]
+to (\ref{eq:LPfeas}) gives a solution to $A\ve{x} \le \ve{b}$ and vice versa. 
+\end{claim}
+\begin{claimproof}
+Suppose $\ve{\tilde{x}}$ satisfies (\ref{eq:LPfeas}).  
+Then $A\ve{x^+} - A\ve{x^-} + \ve{s} = \ve{b}$.  Define $\ve{x} = \ve{x^+} - \ve{x^-}$ and note $\ve{s} \ge \ve{0}$.  
+Then $A\ve{x} \le \ve{b}$.  
+Now, suppose $\ve{x}$ satisfies $A\ve{x} \le \ve{b}$.  
+Let $\ve{x^+}$ be the positive coordinates of the vector $\ve{x}$ and $\ve{x^-}$ be the negative components in absolute value, so $x_i^+ = \max(x_i,0)$ and $x_i^- = \max(-x_i,0)$.  
+Define $\ve{s} = \ve{b}- A\ve{x}$.  Since $A\ve{x} \le \ve{b}$, we have that $\ve{s} \ge \ve{0}$ and by construction, $\ve{x^+}, \ve{x^-} \ge \ve{0}$. 
+Note that $\begin{bmatrix} A & -A & I \end{bmatrix} \ve{\tilde{x}} = A\ve{x^+} - A\ve{x^-} + \ve{s} = A(\ve{x^+} - \ve{x^-}) + \ve{b} - A\ve{x} = A\ve{x} + \ve{b} - A\ve{x} = \ve{b}.$
+\end{claimproof}
+
+\begin{claim} 
+A solution 
+\[
+\ve{\tilde{z}} := \begin{bmatrix} \ve{x^+} \\ \ve{x^-} \\ \ve{y} \\ \ve{s} \end{bmatrix}
+\] 
+to (\ref{eq:LPfinite}) gives a solution to $\text{argmax}\{\ve{c}^T\ve{x} | A\ve{x} \le \ve{b}\}$ and vice versa.
+\end{claim}
+
+\begin{claimproof}
+Suppose $\ve{\tilde{z}}$ is a solution to (\ref{eq:LPfinite}).  
+These are the KKT conditions for the LP $\text{argmax}\{\ve{c}^T\ve{x} | A\ve{x} \le \ve{b}\}$, so $\ve{x} = \ve{x^+} - \ve{x^-}$ is the optimum.  
+Suppose $\ve{x} \in \text{argmax}\{\ve{c}^T\ve{x} | A\ve{x} \le \ve{b}\}$.  
+By strong duality, there exists $\ve{y}$ so that $\ve{b}^T\ve{y} \le \ve{c}^T\ve{x}$ and $A^T\ve{y} = \ve{c}, \ve{y} \ge \ve{0}$.  
+Thus, letting $\ve{x^+}$ and $\ve{x^-}$ be as above, we have $$-\ve{c}^T(\ve{x^+} - \ve{x^-}) + \ve{b}^T\ve{y} \le 0,\; A(\ve{x^+} - \ve{x^-}) \le \ve{b},\; A^T\ve{y}\le \ve{c},\; -A^T\ve{y} \le -\ve{c}.$$  
+Now choose $\ve{s} \ge \ve{0}$ so that 
+\[
+\ve{c}^T\ve{x^+} - \ve{c}^T \ve{x^-} + \ve{b}^T \ve{y} + s_1 = 0, \; A\ve{x^+} - A\ve{x^-} + \ve{s_2^{m+1}} = \ve{b},\; A^T\ve{y} + \ve{s_{m+2}^{n+m+1}} = \ve{c},\; -A^T\ve{y} + \ve{s_{n+m+2}^{2n+m+1}} = -\ve{c}
+\] 
+where $\ve{s_i^j}$ denotes the subvector of $\ve{s}$ of coordinates $s_i, s_{i+1}, ..., s_{j-1}, s_j$.  
+Thus, $\ve{\tilde{z}}$ satisfies (\ref{eq:LPfinite}).
+\end{claimproof}
+
+Clearly, constructing the required FP problems takes strongly polynomial time and we have only two calls to $\oracle$, so the reduction is strongly-polynomial time.
+\end{proof}
+
+\begin{lemma}
+FP reduces in strongly-polynomial time to BFP.
+\end{lemma}
+
+%\begin{proof}
+%Let $\oracle$ denote the oracle for BFP.
+%\begin{algorithmic}
+%\Require $A \in \QQ^{d \times n}, \ve{b} \in \QQ^{d}$.
+%\Ensure
+%\State Invoke $\oracle$ on $A\ve{x}=\ve{b}, \ve{x}\ge \ve{0}, \sum_{i=1}^n x_i \le n 2^{p(\sigma_A,\sigma_b)}$.  If the output is NO, output NO, else output rational $\ve{x}$.
+%\end{algorithmic}
+
+%By Lemma \ref{lem:feasible}, the FP instance is feasible if and only if the BFP instance is feasible and clearly, a solution to the BFP instance is a solution to the FP instance.  
+%The additional constraint will take space polynomial in the input size and to construct it will take polynomial time, so the reduction runs in strongly-polynomial time.
+%\end{proof}
+
+\begin{proof}
+Let $\oracle$ denote the oracle for BFP. Suppose $A = (a_{ij}/\alpha_{ij})_{i,j = 1}^{d,n}$, $\ve{b} = (b_j/\beta_j)_{j=1}^d$ and define $D := \max(\max_{i \in [d], j \in [n]} |\alpha_{ij}|, \max_{k \in [d]} |\beta_k|)$ and $N : =  \max(\max_{i \in [d], j \in [n]} |a_{ij}|, \max_{k \in [d]} |b_k|)+1$.  If the entry of $A$, $a_{ij}/\alpha_{ij} = 0$ or the entry of $\ve{b}$, $b_j/\beta_j = 0$ define $a_{ij} = 0$ and $\alpha_{ij}=1$ or $b_j = 0$ and $\beta_j = 1$.
+\begin{algorithmic}
+\Require $A \in \QQ^{d \times n}, \ve{b} \in \QQ^{d}$.
+\State Invoke $\oracle$ on $A\ve{x} = \ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i \le n D^{d(n+1)\min(d^3,n^3)}N^{d(n+1)}$.  If the output is NO, output NO, else output rational $\ve{x}$.
+\end{algorithmic}
+
+\begin{claim}  
+The FP $A\ve{x} = \ve{b}, \ve{x} \ge \ve{0}$ is feasible if and only if the BFP $A\ve{x} = \ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i \le n D^{d(n+1)\min(d^3,n^3)}N^{d(n+1)}$ is feasible.
+\end{claim}
+
+\begin{claimproof}  
+If the BFP is feasible then clearly the FP is feasible.  Suppose the FP is feasible.  
+By the theory of minimal faces of polyhedra, we can reduce this to a FP defined by a square matrix, $A$, in the following way:  
+By \cite[Theorem 1.1]{chernikov1965convolution}, there is a solution, $\ve x$, with no more than $\min(d,n)$ positive entries so that $A\ve{x} = \ve{b}$ and the positive entries of $\ve{x}$ combine linearly independent columns of $A$ to form $\ve{b}$.  
+Let $A'$ denote the matrix containing only these linearly independent columns and $\ve{x}'$ denote only the positive entries of $\ve{x}$.  Then $A' \ve{x}' = \ve{b}$.  Now, note that $A' \in \QQ^{d \times m}$ where $m \le d$.  Since the column rank of $A'$ equals the row rank of $A'$, we may remove $d-m$ linearly dependent rows of $A'$ and the corresponding entries of $\ve{b}$, forming $A''$ and $\ve{b}'$ so that $A'' \ve{x}' = \ve{b}'$ where $A'' \in \QQ^{m \times m}$, $\ve{b}' \in \QQ^{m}$ and $A''$ is a full-rank matrix.
+
+Define $M:= \prod_{i,j=1}^m |\alpha_{i,j}''| \prod_{k=1}^m |\beta_{k}'|$ and note that $M \le D^{d(n+1)}$.  
+Define $L := \prod_{i,j=1}^m (|a_{i,j}''|+1) \prod_{k=1}^m (|b_{k}'|+1)$ and note that $L \le N^{d(n+1)}$.  
+Define $\bar{A} = MA''$ and $\bar{\ve{b}} = Mb'$ and note that $\bar{A}$ and $\bar{\ve{b}}$ are integral.  By Cramer's rule, we known that $x_i' = \frac{|\text{det} \bar{A}_i|}{|\text{det} \bar{A}|}$ where $\bar{A}_i$ denotes $\bar{A}$ with the $i$th column replaced by $\bar{\ve{b}}$.  By integrality, $|\text{det} \bar{A}| \ge 1$, so $x_i' \le |\text{det} \bar{A}_i| \le \prod_{i,j=1}^m M (|a_{ij}|+1) \prod_{k=1}^m M (|b_k|+1) = M^{m^3}L \le D^{d(n+1)\min(d^3,n^3)}N^{d(n+1)}$.  Now, note that $\ve{x}'$ defines a solution, $\ve{x}$, to the original system of equations.  Let $x_i = x_j'$ if the $j$th column of $A'$ was the selected $i$th column of $A$  and $x_i=0$ if the $i$th column of $A$ was not selected.  Note then that $A \ve{x} = \ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i \le n D^{d(n+1)\min(d^3,n^3)}N^{d(n+1)}$.
+\end{claimproof}
+
+Thus, we have that the FP and BFP are equivalent.  To see that this is a strongly-polynomial time reduction, note that adding this additional constraint takes time for constructing the number $n D^{d(n+1)\min(d^3,n^3)}N^{d(n+1)}$ plus small constant time.  This number takes $d(n+1)$ comparisons and $d(n+1)\min(d^3,n^3)$ multiplications to form.  Additionally, this number takes space which is polynomial in the size of the input (polynomial in $d$,$n$ and size of $D$, $N$).  
+\end{proof}
+
+\begin{lemma} BFP reduces in strongly-polynomial time to VPM.
+\end{lemma}
+
+\begin{proof}
+Let $\oracle$ denote the oracle for VPM.
+\begin{algorithmic}
+\Require $A \in \QQ^{d \times n}, b \in \QQ^{d}, 0 < M \in \QQ$.
+%\Ensure
+\State Invoke $\oracle$ on 
+\begin{equation}\label{eq:VPM}
+    \begin{bmatrix} MA & 0 \end{bmatrix} \begin{bmatrix} \ve{y} \\ z \end{bmatrix} = \ve{b}, \begin{bmatrix} \ve{y} \\ z \end{bmatrix} \ge \ve{0}, z + \sum_{i=1}^n y_i= 1.
+\end{equation}  
+If the output is NO, output NO, else output rational $\ve{x} = M\ve{y}$.
+\end{algorithmic}
+
+\begin{claim}
+A solution 
+$$
+\ve{\tilde{w}} := \begin{bmatrix} \ve{y} \\ z \end{bmatrix}
+$$ 
+to (\ref{eq:VPM}) gives a solution the BFP instance, $A\ve{x}=\ve{b}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i \le M$ and vice versa.
+\end{claim}
+
+\begin{claimproof} 
+Suppose $\ve{\tilde{w}}$ satisfies (\ref{eq:VPM}).  
+Then $\ve{x} = M\ve{y}$ is a solution to the BFP instance since $A\ve{x} = MA\ve{y} = \ve{b}$ and since $\ve{y} \ge \ve{0}$, $\ve{x} = M\ve{y} \ge \ve{0}$ and since $\sum_{i=1}^n y_i + z = 1$, we have $\sum_{i=1}^n y_i \le 1$ so $\sum_{i=1}^n x_i = M \sum_{i=1}^n y_i \le M$.  
+Suppose $\ve{x}$ is a solution to the BFP instance.  
+Then $\ve{y} = \frac{1}{M}\ve{x}$ and $z = 1 - \sum_{i=1}^n y_i$ satisfies (\ref{eq:VPM}), since $\begin{bmatrix} MA & 0 \end{bmatrix} \ve{\tilde{w}} = MA\ve{y} = A\ve{x} = \ve{b}$, $\ve{y} \ge \ve{0}$ since $\ve{x} \ge \ve{0}$ and since $\sum_{i=1}^n x_i \le M$, we have $\sum_{i=1}^n y_i = \frac{1}{M} \sum_{i=1}^n x_i \le 1$ so $z \ge 0$.
+\end{claimproof}
+
+Clearly, this reduction is simply a rewriting, so the reduction is strongly-polynomial time.
+\end{proof}
+
+\begin{lemma} VPM reduces in strongly-polynomial time to ZVPM.
+\end{lemma}
+
+\begin{proof}
+Let $\oracle$ be the oracle for ZVPM.
+\begin{algorithmic}
+\Require $A \in \QQ^{d \times n}, b \in \QQ^{d}$.
+%\Ensure
+\State Invoke $\oracle$ on 
+\begin{equation}\label{eq:ZVPM}
+    \begin{bmatrix} \ve{a_1}-\ve{b} & \ve{a_2} - \ve{b} & \cdots & \ve{a_n} - \ve{b} \end{bmatrix} \ve{x} = \ve{0}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i = 1
+\end{equation} where $\ve{a_i} \in \QQ^m$ is the $i$th column of $A$.  If the output is NO, output NO, else output rational $\ve{x}$.
+\end{algorithmic}
+
+\begin{claim} 
+A solution to (\ref{eq:ZVPM}) gives a solution to the VPM instance and vice versa.
+\end{claim}
+
+\begin{claimproof}
+Note that $\ve{x}$ satisfies (\ref{eq:ZVPM}) if and only if $0 = \sum_{i=1}^n x_i(\ve{a_i} -\ve{b}) = \sum_{i=1}^n x_i \ve{a_i} - \ve{b} \sum_{i=1}^n x_i = A\ve{x} - \ve{b}$ so $A\ve{x} = \ve{b}$.  
+Thus, $\ve{x}$ is a solution to the VPM instance if and only if $\ve{x}$ is a solution to (\ref{eq:ZVPM}). 
+\end{claimproof}
+
+Clearly, this reduction is simply a rewriting, so the reduction is strongly-polynomial time.
+\end{proof}
+
+%\begin{lemma}
+%ZVPMS reduces in strongly-polynomial time to CP.
+%\end{lemma}
+
+%\begin{proof}
+%Let $\oracle$ be the oracle for CP.
+%\begin{algorithmic}
+%\Require $A \in \QQ^{d \times n}$.
+%\Ensure
+%\State Invoke $\oracle$ on $\ve{a_1}, \ve{a_2}, ..., \ve{a_n}$ where $\ve{a_i} \in \QQ^d$ is the $i$th column of $A$.  If the output is NO, output NO, else output rational $\ve{x}$.
+%\end{algorithmic}
+
+%Note that the rational vector $\ve{x}$ satisfies $\sum_{i=1}^n x_i \ve{a_i} = \ve{0}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i = 1$ if and only if $A\ve{x} = \ve{0}, \ve{x} \ge \ve{0}, \sum_{i=1}^n x_i = 1$.
+
+%Clearly, this reduction is in constant time\lnote{???} and polynomial space, so the reduction is strongly-polynomial time.
+%\end{proof}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%% added/edited stuff from CPtoSimpDist.tex
+
+
+
+\begin{lemma}
+ZVPM reduces in strongly-polynomial time to ZVPMD.
+\end{lemma}
+\begin{proofidea}
+The reduction sequentially asks for every vertex whether it is redundant and if so, it removes it and continues. 
+This process ends with at most $d+1$ vertices so that $\ve{x}$ is a strict convex combination of them and the coefficients $x_i$ can be found in this resulting case by solving a linear system.
+\end{proofidea}
+
+\begin{proof}
+Let $\oracle$ denote the ZVPMD oracle.
+%\begin{algorithm}
+%\caption{Reduction}
+\begin{algorithmic}
+\Require $P:= \{\ve{A_1}, \dotsc, \ve{A_n}\} \subseteq \QQ^d$ where $A_i$ is the $i$th column of $A$.
+%\Ensure
+\State Invoke $\oracle$ on $P$. If the output is NO, output NO.
+\For{$i=1, \dotsc, n$}
+\State Invoke $\oracle$ on instance $P$ without $\ve{A_i}$. If output is YES, remove $\ve{A_i}$ from $P$.
+\EndFor
+\State Let $m$ be the cardinality of $P$.
+\State Output the solution $x_1, \dotsc, x_m$ to the linear system $\sum x_i = 1$, $\sum_{\ve{p_i} \in P} x_i \ve{p_i} = \ve{0}$
+\end{algorithmic}
+%\end{algorithm}
+Let $P^*$ be the resulting set of points $P$ after the loop in the reduction. Claim: $P^*$ contains at most $d+1$ points so that $\ve{0}$ is a strict convex combination of (all of) them.
+Proof of claim: 
+By Caratheodory's theorem there is a subset $Q \subseteq P^*$ of at most $d+1$ points so that $\ve{0}$ is a strict convex combination of points in $Q$. 
+We will see that $P^*$ is actually equal to $Q$. 
+Suppose not, for a contradiction. Let $\ve{p} \in P^* \setminus Q$. 
+At the time the loop in the reduction examines $\ve{p}$, no point in $Q$ has been removed and therefore $\ve{p}$ is redundant and is removed. 
+This is a contradiction.
+\end{proof}
+
+\ifnum\version=\stocversion
+\else
+In our next lemma, we make use of the following elementary fact.
+\begin{claim}\label{claim:affine}
+Given $A$ an $m \times n$ matrix let $B$ be $A$ with a row of $1$s appended. 
+The columns of $A$ are affinely independent if and only if the columns of $B$ are linearly independent. 
+The convex hull of the columns of $A$ is full dimensional if and only if rank of $B$ is $m+1$.
+\end{claim}
+\fi
+
+%We also use the notion of size of a rational vector, which informally is the number of bits needed to represent the vector in binary. 
+%More precisely \cite[Section 3.2]{schrijver98}: 
+%If $r=p/q$ is a rational number with $p \in \ZZ$, $q \in \NN$ and $p,q$ relatively prime, then $\size r = 1 + \lceil \log_2(\abs{p} + 1)\rceil + \lceil \log_2(q + 1)\rceil$. 
+%If $c = (\gamma_1, \dotsc, \gamma_d)$ is a rational vector then $\size c = d + \sum_i \size \gamma_i$.  
+
+\begin{lemma}
+ZVPMD reduces in strongly-polynomial time to DVS.
+\end{lemma}
+\begin{proof}
+Clearly ZVPMD reduces in strongly-polynomial time to DVP: Output YES if the distance is 0, output NO otherwise.
+
+% Given an instance of DVP, by applying an affine transformation that can be computed in strongly-polynomial time via Gaussian elimination we can assume that the input is full-dimensional: xxx Compute a basis of the affine hull of $P$ (Gram-Schmidt), compute $a = d(\ve{0}, \aff P)^2$.\lnote{this needs to be written in detail, it's not clear}
+
+Given an instance of distance to a V-polytope, $\ve{p_1}, \ve{p_2}, \dotsc, \ve{p_{n}}$, we reduce it to an instance of DVS as follows:
+We lift the points to an affinely independent set in higher dimension, a simplex, by adding small-valued new coordinates.
+\Cref{claim:affine} allows us to handle affine independence in matrix form.
+Let $A$ be the $d \times n$ matrix having columns $(\ve{p_i})_{i=1}^n$. Let $\ve{v_1}, \dotsc, \ve{v_d}$ be the rows of $A$. 
+Let $\ve{v_0} \in \RR^n$ be the all-ones vector.
+We want to add vectors $\ve{v_{d+1}}, \dotsc, \ve{v_{d+t}}$, for some $t$, so that $\ve{v_0}, \dotsc, \ve{v_{d+t}}$ is of rank $n$.
+To this end, we construct an orthogonal basis (but not normalized, to preserve rationality) of the orthogonal complement of $\linspan{\ve{v_0}, \dotsc, \ve{v_d}}$. 
+The basis is obtained by applying the Gram-Schmidt orthogonalization procedure (without the normalization step) to the sequence $\ve{v_0}, \dotsc, \ve{v_d}, \ve{e_1}, \dotsc, \ve{e_n}$. 
+Denote $\ve{v_{d+1}}, \dotsc, \ve{v_{d+t}}$ the resulting orthogonal basis of the orthogonal complement of $\linspan{\ve{v_0}, \dotsc, \ve{v_d}}$. 
+The matrix with rows $\ve{v_0}, \dotsc, \ve{v_d}, \ve{v_{d+1}}, \dotsc, \ve{v_{d+t}}$ is of rank $n$ and so is the matrix with rows
+\[
+\ve{v_0}, \dotsc, \ve{v_d}, \eps \ve{v_{d+1}}, \dotsc, \eps \ve{v_{d+t}}
+\]
+for any $\eps > 0$ (to be fixed later). Therefore, the $n$ columns of this matrix are linearly independent.
+Let $B$ be the matrix with rows
+\[
+\ve{v_1}, \dotsc, \ve{v_d}, \eps \ve{v_{d+1}}, \dotsc, \eps \ve{v_{d+t}}.
+\]
+Let $\ve{w_1}, \dotsc, \ve{w_n}$ be the columns of $B$. 
+By construction and \cref{claim:affine} they are affinely independent.
+Let $S$ denote the convex hull of these $(n-1)$-dimensional rational points.
+Polytope $S$ is a simplex.
+%Moreover, if we identify $\RR^m$ with the first $m$ coordinates of $\RR^{n-1}$ to lift polytope $\conv \{ p_1, \dotsc, p_{n}\}$ to a polytope $Q \in \RR^{n-1}$, then $d(0,S)^2 \leq d(0,Q)^2 + \eps^2 (n- m - 1) \leq d(0,Q)^2 + \eps^2 n$.
+Moreover, if $Q := \conv \{ \ve{p_1}, \dotsc, \ve{p_{n}}\}$, then
+\[
+d(\ve{0},S)^2 
+\leq d(\ve{0},Q)^2 + \eps^2 \sum_{i=d+1}^{d+t} \enorms{\ve{v_{i}}} 
+%\leq d(\ve{0},Q)^2 + \eps^2 (n- m - 1) 
+\leq d(\ve{0},Q)^2 + \eps^2 n
+\]
+(where we use that $\enorm{\ve{v_{i}}} \leq 1$, from the Gram-Schmidt construction).
+
+The reduction proceeds as follows:
+Let $T$ be the maximum of the absolute values of all numerators and denominators of entries in $(\ve{p_i})_{i=1}^n$ (which can be computed in strongly polynomial time\footnote{Equivalently, without loss of generality we can assume that the input is integral, and then take $C$ to be the maximum of the absolute values of all entries in $(\ve{p_i})_{i=1}^n$, as done in Schrijver's \cite[Section 15.2]{schrijver98}.}).
+From \cref{lem:mindist}, we have $d(\ve{0},Q)^2 \geq \frac{1}{d (dT)^{2d}}$ if $\ve{0} \notin Q$.
+Compute rational $\eps > 0$ so that $\eps^2 n < \frac{1}{d (dT)^{2d}}$. 
+For example, let $\eps := \frac{1}{nd (dT)^d}$.
+The reduction queries $d(\ve{0},S)^2$ for $S$ constructed as above and given by the choice of $\eps$ we just made. It then outputs YES if $d(\ve{0},S)^2 < \frac{1}{d (dT)^{2d}}$ and NO otherwise.
+%
+%The reduction proceeds as follows:
+%Using the guarantee from \cref{lem:mindist}, it first computes, in strongly polynomial time, a number $M$ as a function of the input so that $d(\ve{0},Q)^2 \geq 1/4^M$ if $\ve{0} \notin Q$.
+%(Specifically, fix the polynomial in \cref{lem:mindist} to be monotone non-decreasing $q(s + \size x)$, $s = \sum_i \size \ve{p_i}$. 
+%In our case, $x=0$. 
+%We pick a strongly polynomial time computable upper bound $s'$ to $s + \size x$. 
+%One such bound is of the form $s' := c d n \log_2 (C + 1) $, where $C$ is the maximum of the absolute values of all numerators and denominators of entries in $(\ve{p_i})_{i=1}^n$ and $c$ is a universal constant\footnote{Note that this is allowed in a strongly polynomial time algorithm: Equivalently, we can assume that the input is integral, and then take $C$ to be the maximum of the absolute values of all entries in $(\ve{p_i})_{i=1}^n$, as done in Schrijver's \cite[Section 15.2]{schrijver98}.}. 
+%We can then compute $M = p(s')$ in strongly polynomial time.)
+%Pick rational $\eps > 0$ so that $\eps^2 n < 1/4^{M}$.
+%The reduction queries $d(\ve{0},S)^2$ for $S$ constructed as above and given by the choice of $\eps$ we just made. It then outputs YES if $d(\ve{0},S)^2 < 1/4^M$ and NO otherwise.
+\end{proof}
+
+\begin{lemma}\label{lem:mindist}
+Let $P = \conv \{\ve{p_1}, \dotsc, \ve{p_n} \}$ be a V-polytope with $\ve{p_i} \in \QQ^d$. 
+%Let $\ve{x} \in \QQ^d$.
+Let $T$ be the maximum of the absolute values of all numerators and denominators of entries in $(\ve{p_i})_{i=1}^n$.
+If $\ve 0 \notin P$ then $d(\ve 0, P) \geq \frac{1}{ (dT)^{d} \sqrt{d}}$.
+\end{lemma}
+
+\begin{proof}
+The claim is clearly true if $P$ is empty.
+If $P$ is non-empty, let $\ve{y} = \proj_P(\ve{x})$.
+We have that every facet of $P$ can be written as $\ve a^T \ve x \leq k$, where $\ve a (\neq 0)$ is an integral vector, $k$ is an integer and the absolute values of the entries of $\ve a$ as well as $k$ are less than $(dT)^d$ (\cite[Theorem 3.6]{MR625550}).
+By assumption at least one these facet inequalities is violated by 0. 
+Denote by $\ve a^T \ve x \leq k$ one such inequality.
+Let $H = \{\ve{x} \suchthat \ve a^T \ve x = k \}$. 
+We have $\enorm{\ve y} = d(0,P) \geq d(0,H)$, and $d(0,H)^2 = k^2/\enorm{\ve a}^2 \geq \frac{1}{d (dT)^{2d}}$.
+The claim follows.
+\end{proof} 
+
+%\begin{lemma}
+%Let $P = \conv \{\ve{p_1}, \dotsc, \ve{p_n} \}$ be a rational V-polytope, $\ve{p_i} \in \QQ^d$. 
+%Let $\ve{x} \in \QQ^d$.
+%Let $s = \sum_i \size \ve{p_i}$.
+%If $\ve{x} \notin P$ then $d(\ve{x}, P) \geq 1/2^{\poly(s+\size \ve{x})}$.
+%\end{lemma}
+%
+%\begin{proof}
+%The claim is clearly true if $P$ is empty.
+%If $P$ is non-empty, let $\ve{y} = \proj_P(\ve{x})$.
+%Let $F$ be the unique face of $P$ so that $\ve{y}$ is in the relative interior of $F$ (this follows from the fact that the relative interiors of all non-empty faces of a polyhedron form a partition of the polyhedron, \cite[Theorem 18.2]{MR1451876}).
+%Let $S$ be the affine hull of $F$.
+%We have $S = \{\ve{z} \suchthat A\ve{z} = \ve{b} \}$, with $\size(A) + \size(\ve{b}) \leq \poly(s)$
+%%and $A$ of rank xxx 
+%(this follows from \cite[Theorem 10.2]{schrijver98}).
+%%(If $P$ is an H-polyhedron this is immediate, if $P$ is a V-polyhedron, use Schrijver's theorem).
+%Then $\ve{y} = \proj_S(\ve{x})$. It follows that $\ve{y}$ is characterized by the following optimality condition for projection onto affine subspace $S$:
+%\[
+%A\ve{y}=\ve{b}, \qquad \ve{y}-\ve{x} = A^T \ve{u}.
+%\]
+%(The first equation is feasibility of the quadratic programming formulation, 
+%the second is the Lagrange multiplier equation where $\ve{u}$ is the Lagrange multiplier of the equality constraints.)
+%This system has a unique solution $(\ve{y^*}, \ve{u^*})$ of size bounded by a polynomial in the sizes of $A, \ve{b}, \ve{x}$ \cite[Theorem 3.2b]{schrijver98} and therefore bounded by a polynomial in $s + \size(\ve{x})$.
+%This implies that $\size (d(\ve{x},P)^2) \leq \poly(s + \size \ve{x})$.
+%The claim follows.
+%\end{proof} 
+\fi 

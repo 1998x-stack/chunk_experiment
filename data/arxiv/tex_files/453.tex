@@ -1,0 +1,282 @@
+\begin{figure*}
+  \centering
+  \subfigure[Spectrum reduction v.s. $\lambda$.]{
+    \label{fig:spectrum-reduction-vs-lambda} %% label for second subfigure
+    \includegraphics[width=0.235\linewidth]{Peak_reduction}}
+    \subfigure[Time/Space complexity v.s. $\lambda$.]{
+    \label{fig:complexity-vs-lambda} %% label for second subfigure
+    \includegraphics[width=0.235\linewidth]{Peak_reduction_time_memory}}
+    \subfigure[Solving time.]{
+    \label{fig:solving-time} %% label for second subfigure
+    \includegraphics[width=0.235\linewidth]{Solving_time}}
+    \subfigure[Memory usage.]{
+    \label{fig:memory-usage} %% label for second subfigure
+    \includegraphics[width=0.235\linewidth]{Memory_usage}}
+  \caption{Performance and complexity of our heuristic algorithm. Here,
+  (a) and (b) show the performance and the complexity of the heuristic algorithm with different $\lambda$ values; (c) and (d) compare the solving time and memory usage of the global LP approach (LP)
+and the heuristic algorithm (HA) with $\lambda=0.5$.}
+  \label{fig:performance-complexity-heuristic} %% label for entire figure
+\end{figure*}
+
+
+
+
+\section{Empirical Evaluations} \label{sec:simulation}
+In this section, we use real-world 4G uplink traffic traces from Smartone, a major cellular network operator
+in Hong Kong, to evaluate the performance of our proposed D2D load balancing scheme.
+
+Our objectives are three-fold: (i) to evaluate the performance and complexity of our proposed low-complexity heuristic algorithm
+in Sec.~\ref{sec:heuristic},
+(ii) to evaluate the benefit in terms of spectrum reduction
+and the cost in terms of D2D traffic overhead ratio of D2D load balancing scheme,
+and (iii) to measure the impact of different system parameters.
+
+\subsection{Methodology}
+\textbf{Dataset:} Our Smartone dataset contains 510 cell sectors covering a highly-populated area of 22 km$^2$ in Hong Kong.
+We merge them based on their unique site locations and get 152 BSs/cells. The data traffic traces
+are sampled every 15 minutes, spanning a 29-day period from $2015/01/05$ to $2015/02/02$.
+
+\textbf{Network Topology:} Each BS's location is its corresponding site location.
+Each BS covers a circle area with radius 300m centered around its location. In each BS, 40 users are uniformly distributed
+in the coverage circle. Assume that the communication range for all user-to-BS links
+is 300m and the communication range for all D2D links is 30m. Then we can construct the cellular network topology
+$\mathcal{G}=(\mathcal{V},\mathcal{E})$.
+For each link $(u,v) \in \mathcal{E}$ with distance $d_{u,v}$, we use Shannon capacity to be the link rate, i.e.,
+$R_{u,v} = \log_2(1 + {P_td_{u,v}^{-3.5}}/{N})$,
+where $P_t=21$dBm is the transmit power and $N=-102$dBm is the noise power.
+
+
+\textbf{Traffic Model:} We let each slot last for 2 seconds and
+thus we have $T=24 \times 3600 /2 = 43200$ slots in each day.
+Each data point in the raw traffic trace is the aggregate traffic volume of 15 minutes.
+To get fine-granularity traffic demands, we randomly\footnote{When we say ``randomly", we draw a number from its range
+uniformly.} generate 120 positive real numbers in $(0,1]$ and
+then divide the aggregate traffic volume on a pro-rata basis according to the values of such 120 numbers.
+Thus, we get 120 traffic demands of different volumes for each data point.
+For each generated traffic demand $j$, we randomly assign it to a user $u_j$ from the total 40 users,
+randomly set its start time $s_j$ from the total $15\times 60/2=450$ slots, and randomly
+set its delay $(e_j-s_j+1)$ from the range $\{3,4,5\}$.
+
+
+\textbf{Tools:} We use the state-of-the-art LP solver Gurobi \cite{gurobi} and
+implement all evaluations with Python language.
+All evaluations are running in a cluster of 30 computers, each of which
+has a 8-core Intel Core-i7 3770 3.4Ghz CPU with 30GB memory, running
+CentOS 6.4.
+
+
+
+%
+%
+%\begin{figure}
+%  \centering
+%  % Requires \usepackage{graphicx}
+%  \includegraphics[width=0.8\linewidth]{Peak_reduction}\\
+%  \caption{Spectrum reduction v.s. $\lambda$.}\label{fig:spectrum-reduction-vs-lambda}
+%\end{figure}
+%
+%\begin{figure}
+%  \centering
+%  % Requires \usepackage{graphicx}
+%  \includegraphics[width=0.8\linewidth]{Peak_reduction_time_memory}\\
+%  \caption{Time and space complexity v.s. $\lambda$.}\label{fig:complexity-vs-lambda}
+%\end{figure}
+
+
+\begin{figure*}[t!]
+\begin{minipage}[t]{0.3\linewidth}
+  \centering
+  % Requires \usepackage{graphicx}
+	\includegraphics[width=\linewidth]{peak_reduction_day_4G_new}\\
+	\caption{Spectrum reduction (ant its upper bound) and overhead ratio in 29 days.}\label{fig:spectrum-reduction_day}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.3\linewidth}
+\centering
+\includegraphics[width=\linewidth]{Reduction_range_delay}
+\caption{\label{fig:impact-of-delay}  Impact of demand delay and D2D communication range.}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.3\linewidth}
+\centering
+\includegraphics[width=\linewidth]{Reduction_user}
+\caption{\label{fig:impact-of-users}  Impact of user density and demand intensity.}
+\end{minipage}
+\end{figure*}
+
+\subsection{Performance and Complexity of the Heuristic Algorithm}
+As seen soon, our global LP approach cannot be applied to the whole cellular network due to its high complexity.
+Instead, we should apply our low-complexity heuristic algorithm. In this section, we
+show the performance and complexity of our heuristic algorithm and
+hence justify why we can apply it to the whole cellular network.
+
+The global LP approach is the benchmark to evaluate the heuristic algorithm but
+we cannot use it for large-scale networks. We thus evaluate
+them for small-scale networks. More specifically,
+we divide the entire $22\text{km}^2$ region of 152 BSs into 22 small regions of 3 to 10 BSs.
+For each small region and each day,
+we use the global LP approach and the heuristic algorithm with different $\lambda$ values
+to solve the problem $\textsf{Min-Spectrum-D2D}$ and get the spectrum reduction and the overhead ratio.
+We then get the average spectrum reduction and average overhead ratio of both algorithms over
+all 22 small regions and all 29 days, as shown in Fig. \ref{fig:spectrum-reduction-vs-lambda}.
+Similarly, we show the normalized time/space complexity of our heuristic algorithm with different $\lambda$ values
+in Fig.~\ref{fig:complexity-vs-lambda}
+
+From Fig. \ref{fig:spectrum-reduction-vs-lambda} and Fig.~\ref{fig:complexity-vs-lambda},
+we can see the tradeoff between performance (in terms of spectrum reduction) and the time/space complexity
+controlled by parameter $\lambda$. Increasing $\lambda$ reduces the complexity but degrades the performance.
+However, our heuristic algorithm achieves close-to-optimal performance when $\lambda$ is in $[0,0.5]$ and we can achieve
+100x complexity reduction when we use $\lambda=0.5$.
+Since our results in Fig. \ref{fig:spectrum-reduction-vs-lambda} and Fig.~\ref{fig:complexity-vs-lambda}
+consider all 22 small regions of the entire region and all 29-day traffic traces,
+it is reasonable to apply our heuristic algorithm
+with $\lambda=0.5$ to the whole cellular network.
+Thus, in the rest of this section, we set $\lambda=0.5$ for our heuristic algorithm
+
+In Fig. \ref{fig:spectrum-reduction-vs-lambda}, we also show our spectrum reduction lower bound $(1-\lambda) \rho$ proposed in Theorem~\ref{thm:performance-heuristic}
+and our overhead ratio upper bound $\frac{ (d_{\max}-1) \sum_{j \in \mathcal{J}^{\textsf{D2D}  }(\lambda)} r_j }{
+(d_{\max}-1) \sum_{j \in \mathcal{J}^{\textsf{D2D}  }(\lambda)} r_j + \sum_{j \in \mathcal{J}} r_j}$ proposed in
+Theorem~\ref{the:overhead-upper-bound-heuristic}. As we can see, we verify the correctness of both bounds.
+More importantly, our empirical overhead ratio is much lower than the upper bound, almost close to 0, meaning
+that we can achieve the spectrum reduction with very low overhead.
+
+
+
+\begin{table}[t]
+	\centering
+	\caption{Four Different Problem Instances.}
+	\label{tab:simulation_instances}
+	\begin{tabular}{|l|l|l|l|l|l|l|l|}
+		\hline
+		Instance           & $|\mathcal{B}|$ & $|\mathcal{U}|$ & $|\mathcal{E}|$  & $|\mathcal{J}|$ & $\sum\limits_{b\in \mathcal{B}}|\mathcal{J}_b^{\text{D2D}}(\lambda)|$   & $T$     \\ \hline
+		S1                 & 3    & 120  & 155   & 34080          & 182  & 43200 \\ \hline
+		S2                 & 6    & 240  & 351   & 65520          &  377  & 43200 \\ \hline
+		S3                 & 9    & 360  & 674   & 103680         & 632 & 43200 \\ \hline
+		S4  			   & 152  & 6080 & 11794 & 1647480        & 11960  & 43200  \\ \hline
+	\end{tabular}
+\end{table}
+
+To more concretely compare our heuristic algorithm (with $\lambda=0.5$) and our global LP approach,
+we consider four different problem instances as shown in Tab. \ref{tab:simulation_instances}.
+They have different number of BSs, users, links, and demands. Instance S4 is our whole cellular network.
+We show their computational cost in Fig. \ref{fig:solving-time} and Fig. \ref{fig:memory-usage}.
+From instances S1-S3, we can see that our heuristic algorithm has much lower time/space complexity than our global LP approach.
+For our whole cellular network, i.e., instance S4, we cannot apply our global LP approach with our computational resources,
+but our heuristic algorithm takes less than 30 minutes of time and consumes less than 6GB of memory.
+The reason that we can get substantial complexity reduction is because the number of demands participating in
+D2D load balancing in our heuristic algorithm, i.e.,  $\sum_{b\in\mathcal{B}}|\mathcal{J}^{\text{D2D}}_b(\lambda)|$,
+is much smaller than the total number of demand, i.e., $|\mathcal{J}|$. As we can see from
+Tab.~\ref{tab:simulation_instances}, $\sum_{b\in\mathcal{B}}|\mathcal{J}^{\text{D2D}}_b(\lambda)|$ is only about 0.7\% of $|\mathcal{J}|$
+for instance S4.
+%
+%\begin{figure}
+%	\centering
+%	% Requires \usepackage{graphicx}
+%	\includegraphics[width=\linewidth]{Solving_time}\\
+%	\caption{Solving time. Here LP stands for our high-complexity LP solution in \eqref{equ:d2d-lp}
+%and HA stands for our proposed low-complexity heuristic algorithm in Sec.~\ref{sec:heuristic}.}\label{fig:solving-time}
+%\end{figure}
+%
+%\begin{figure}
+%	\centering
+%	% Requires \usepackage{graphicx}
+%	\includegraphics[width=\linewidth]{Memory_usage}\\
+%	\caption{Memory usage. Here LP stands for our high-complexity LP solution in \eqref{equ:d2d-lp}
+%and HA stands for our proposed low-complexity heuristic algorithm in Sec.~\ref{sec:heuristic}.}\label{fig:memory-usage}
+%\end{figure}
+%
+%
+%\begin{figure}
+%  \centering
+%    \subfigure[Solving time..]{
+%    \label{fig:solving-time} %% label for second subfigure
+%    \includegraphics[width=0.48\linewidth]{Solving_time}}
+%    \subfigure[Memory usage.]{
+%    \label{fig:memory-usage} %% label for second subfigure
+%    \includegraphics[width=0.48\linewidth]{Memory_usage}}
+%  \caption{Compare the solving time and memory usage of the high-complexity global LP approach (LP) in \eqref{equ:d2d-lp}
+%and the low-complexity heuristic algorithm (HA) in Sec.~\ref{sec:heuristic}.}
+%  \label{fig:solving-time-memory-usage} %% label for entire figure
+%\end{figure}
+
+\subsection{Spectrum Reduction and Overhead Ratio of D2D Load Balancing}
+
+
+
+
+
+
+As justified in the previous subsection, we apply our heuristic algorithm with $\lambda=0.5$ to
+the whole cellular network of all 152 BSs in the area of $22\text{km}^2$.
+We show the 29-day spectrum reduction and overhead ratio in Fig. \ref{fig:spectrum-reduction_day}.
+On average our proposed D2D load balancing scheme
+can reduce spectrum by 25\% and the overhead ratio is only 0.7\%. Thus,
+to serve the same set of traffic demands, cellular network operators like Smartone could
+reduce its spectrum requirement by 25\% at the cost of negligible 0.7\% more D2D traffic
+by using our D2D load balancing scheme.
+Fig. \ref{fig:spectrum-reduction_day} also verifies the upper bound, represented in Theorem \ref{the:trivial_upper_bound} and Theorem \ref{the:ratio_bound}.
+The average value of the upper bound of spectrum reduction is  68.69\%.
+
+
+%We also remark here that most of the benefit comes from inter-cell D2D communication, based on our separated simulation by disabling all inter-cell D2D links but only enabling all intra-cell D2D links, which shows negligible benefit.
+%Furthermore, Fig. \ref{fig:peak_reduction_day} verifies the upper bound, represented in Theorem \ref{the:trivial_upper_bound} and Theorem \ref{the:ratio_bound}.
+
+%However, due to the large-scale LP and our computational resource limit,
+%we divide the entire $22\text{km}^2$ area into 27 smaller regions, and
+%the number of BSs in each region ranges from 3 to 11.
+%We evaluate the peak traffic reduction of D2D load balancing for each region individually.
+%We then sum up the individual reductions to obtain the overall reduction for the entire area.
+%Since we essentially limit the D2D load balancing opportunities by this area dividing approach,
+%the obtained result gives a conservative estimate on the
+%maximum possible sum spectrum reduction achievable by D2D load balancing in the whole area.
+% In the case with D2D,
+%we get the optimal peak traffic for all BSs in each small region, and then sum up all 194 BSs to get the sum spectrum reduction. Fig. \ref{fig:peak_reduction_day} shows the sum spectrum reduction for 30-day traffic traces after employing D2D load balancing. It reveals that D2D load balancing can reduce sum spectrum by 35.27\% on average, while the average D2D traffic overhead ratio is 45.05\%. We also remark here that most of the benefit comes from inter-cell D2D communication, based on our separated simulation by disabling all inter-cell D2D links but only enabling all intra-cell D2D links, which shows negligible benefit. Furthermore, Fig. \ref{fig:peak_reduction_day} verifies the upper bound, represented in Theorem \ref{the:trivial_upper_bound} and Theorem \ref{the:ratio_bound}.
+
+
+
+
+
+
+
+%\subsection{Running Time and Memory Usage}
+%We also use the following three different-level instances in Tab. \ref{tab:simulation_instances}
+%to show the computational cost of LP problem $\textsf{PEAK-D2D}$.
+%Fig. \ref{fig:solving-time} and Fig. \ref{fig:memory-usage} show the respective running time
+%and the memory usage for solving the three instances. Clearly, the light instance S1 with only 3 BSs
+%can be solved quickly. The medium instance S2 with 6 BSs takes around 20 minutes and consumes around half
+%of the memory (8GB in total). However, for the heavy instance S3 with 9 BSs,
+%it takes about 2.7 hours by occupying almost all memory. This confirms  that
+%solving $\textsf{PEAK-D2D}$ is quite challenging. Thus how to design
+%low-complexity algorithms to solve it (either optimally or approximately) deserves further research efforts.
+
+
+
+
+
+
+%\begin{figure}
+%  \centering
+%  % Requires \usepackage{graphicx}
+%  \includegraphics[width=\linewidth]{Reduction_range_delay}\\
+%  \caption{Impact of delay.}\label{fig:impact-of-delay}
+%\end{figure}
+%
+%\begin{figure}
+%  \centering
+%  % Requires \usepackage{graphicx}
+%  \includegraphics[width=\linewidth]{Reduction_user}\\
+%  \caption{Impact of number of users per cell.}\label{fig:impact-of-users}
+%\end{figure}
+
+\subsection{Impact of System Parameters}
+In this subsection, we evaluate the impact of four system parameters:
+the demand delay, the D2D communication range, the number of users per cell (user density),
+and the number of demands per cell per 15 minutes (demand intensity).
+The results are shown in Fig.~\ref{fig:impact-of-delay} and Fig.~\ref{fig:impact-of-users}.
+We observe that our D2D load balancing scheme brings more spectrum reduction
+with larger demand delay, larger D2D communication range,
+larger user density, or larger demand intensity.
+The reason is as follows. Larger demand delay and larger demand intensity imply that traffic demands
+can be balanced with more freedom, and larger D2D communication range and larger user density result in
+better network connectivity, both of which enable D2D load balancing scheme to exploit more benefit.
+

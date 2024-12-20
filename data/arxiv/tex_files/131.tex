@@ -1,0 +1,173 @@
+\documentclass[a4paper]{article}
+
+%\pdfoutput=1 %may be needed for Arxiv submissions: if some graphics are in .pdf format, include this so that the .tex file is built using PDFLaTeX instead of LaTeX
+
+\usepackage{microtype}%if unwanted, comment out or use option "draft"
+\usepackage[usenames]{xcolor}
+\usepackage{bbm}
+\usepackage{lineno}
+\usepackage{hyperref}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{amsopn}
+\usepackage{authblk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% MACROS FOR COMMENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newcommand{\note}[1]{{\color{red} #1}}
+%\newcommand{\note}[1]{{}}
+
+\newcommand{\comment}[1]{{\color{blue} #1}}
+%\newcommand{\changed}[1]{{\color{blue} #1}}
+% to remove the blue colour, comment the above line and uncomment the following one
+\newcommand{\changed}[1]{{#1}}
+\newcommand{\anna}[1]{{\color{cyan} #1}}
+\newcommand{\alt}[1]{{\color{cyan} #1}}
+\newcommand{\uli}[1]{{\color{red}#1}}
+\newcommand{\remove}[1]{{}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% MORE MACROS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Triangulation complex
+\newcommand{\tcomplex}{\ensuremath{\mathbbm{T}}}
+
+%%% Flip complex
+\newcommand{\fcomplex}{\ensuremath{\mathbbm{X}}}
+
+%%% Orden-Santos Polytope
+\newcommand{\ospoly}{\ensuremath{\mathbbm{Y}}}
+\DeclareMathOperator{\skel}{skel}
+
+%
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{fact}[theorem]{Fact}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\bibliographystyle{plainurl}
+
+\title{A Proof of the Orbit Conjecture for Flipping Edge-Labelled Triangulations}
+\date{}
+%\titlerunning{A Proof of the Orbit Conjecture for Flipping Edge-Labelled Triangulations}
+
+\author[1]{Anna Lubiw}
+\author[2]{Zuzana Mas\'arov\'a}
+\author[2]{Uli Wagner}
+\affil[1]{School of Computer Science, University of Waterloo\\
+ Waterloo, ON, Canada, N2L 3G1\\
+  \texttt{alubiw@uwaterloo.ca}}
+\affil[2]{IST Austria\\
+  Am Campus 1, 3400 Klosterneuburg, Austria\\
+  \texttt{zuzana.masarova@ist.ac.at, uli@ist.ac.at}}
+  
+%\authorrunning{A.\, Lubiw, Z.\, Mas\'arov\'a and U.\, Wagner} %mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et. al.'
+%\Copyright{Anna Lubiw, Zuzana Mas\'arov\'a and Uli Wagner}%mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+%\subjclass{F.2.2 Nonnumerical Algorithms and Problems}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation". 
+%\keywords{triangulations, reconfiguration, flip, constrained triangulations, Delaunay triangulation, shellability, piecewise linear balls}% mandatory: Please provide 1-5 keywords
+  
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Given a triangulation of a point set in the plane, a \emph{flip} deletes an edge $e$ whose removal leaves a convex quadrilateral, and replaces $e$ by the opposite diagonal of the quadrilateral. 
+It is well known that any triangulation of a point set can be reconfigured to any other triangulation by some sequence of flips.
+We explore this question in the setting where each edge of a triangulation has a label, and a flip transfers the label of the removed edge to the new edge.
+%In the case of an edge-labelled triangulation, the new edge acquires the label of the removed edge $e$.
+It is not true that every labelled triangulation of a point set can be reconfigured to every other labelled triangulation via a sequence of flips, but we characterize when this is possible.
+%We characterize which permutations of the edge-labels of a triangulation are achievable by sequences of flips.
+There is an obvious necessary condition: for each label $l$,  
+if edge $e$ has label $l$ in the first triangulation and edge $f$ has label $l$ in the second triangulation,
+%if the permutation takes label $\ell$ from edge $e$ to edge $f$, 
+then there must be some sequence of flips that moves label $l$ from $e$ to $f$, ignoring all other labels.   
+Bose, Lubiw, Pathak and Verdonschot 
+formulated the \emph{Orbit Conjecture}, which states
+%conjectured 
+that this necessary condition is also sufficient, i.e.~that \emph{all} labels can be simultaneously mapped to their destination if and only if \emph{each} label individually can be mapped to its destination.
+We prove this conjecture. %Orbit Conjecture.
+Furthermore, we give a polynomial-time algorithm to find a sequence of flips 
+to reconfigure one labelled triangulation to another, if such a sequence exists, and
+we prove an upper bound of $O(n^7)$ % we've reduced the bound from 8 to 7
+on the length of the flip sequence.  
+%The best known lower bound is $O(n^3)$.  
+
+
+Our proof uses the topological % ok to add "topological"?
+result %fact 
+that 
+the sets of pairwise non-crossing edges on a planar point set form 
+a simplicial complex that 
+is homeomorphic to a high-dimensional ball 
+(this follows from a result of Orden and Santos; we 
+give a different proof based 
+on a shelling argument). 
+The dual cell complex of this simplicial ball, 
+called the
+%which we call the 
+\emph{flip complex}, has the usual flip graph as its $1$-skeleton.  We use properties 
+of the $2$-skeleton of the flip complex %this dual complex 
+to prove the Orbit Conjecture.
+
+%It follows that the flip graph of (unlabelled) triangulations can be enlarged to a \emph{simply-connected} $2$-dimensonal cell complex by adding quadrilateral and pentagonal $2$-cells that correspond to triangulations minus a pair of flippable edges whose removal creates either two internally disjoint convex quadrilaterals or a convex pentagon.
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input introduction
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% reductions 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input reductions.tex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% topology 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\input topology.tex
+\input topology1.tex
+\input topology2.tex
+\input topology3.tex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bounds 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input bounds.tex
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% conclusions 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input conclusions.tex
+
+%%
+%% Acknowledgements
+%%
+\subparagraph*{Acknowledgements}
+%\comment{
+This research was initiated at the 2016 Bellairs Workshop on Geometry and Graphs. We thank anonymous reviewers and participants of the 2017 Symposium on Computational Geometry for helpful suggestions.
+%} 
+
+%%
+%% Bibliography
+%%
+\bibliography{references}
+\newpage
+
+
+\end{document}

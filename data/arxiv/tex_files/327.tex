@@ -1,0 +1,354 @@
+\section{Implicit Decomposition}\label{sec:implicit}
+
+In this paper we introduce the concept of an implicit decomposition.
+The idea is to partition a graph into connected clusters such that all we need to store to
+represent the cluster is one representative, which we call the
+center of the cluster, and some small amount of information on that
+center (1 bit in our case).  The goal is to
+quickly answer queries on the cluster.  The queries we consider are:
+given a vertex find its center, and given a center
+find all its vertices.  To reduce the amount of \local-memory
+needed, we need all clusters to be roughly the same size.
+We start with some definitions, which consider only undirected
+graphs.
+
+For graph $G = (V,E)$ we refer to the subgraph induced by a subset of
+vertices as a \defn{cluster}.  A \defn{decomposition} of a connected
+graph $G=(V,E)$ is a vertex subset $S\subset V$, called
+\defn{centers}, and a function $\rho(v):V\to S$, such that the
+\defn{cluster} $C(s) = \{v \in V~|~\rho(v) = s\}$ for each center $s \in S$
+is connected.  A decomposition is a \defn{k-decomposition} if the
+size of each cluster is upper bounded by $k$, and $|S|=O(n/k)$
+(i.e. all clusters are about the same size).
+%% A decomposition is a
+%% \defn{k-diameter decomposition} if the diameter of each cluster is
+%% bounded by $k$.  If $k$ is ``small'' we refer to it as a low-diameter
+%% decomposition.
+We are often interested in the graph induced by the
+decomposition, and in particular:
+\begin{definition}[\clustergraph]
+Given the decomposition $(S,\rho)$ of a graph $G = (V,E)$, the \defn{\clustergraph} is the multigraph $G' = (S,\langle\ \{\rho(u),
+    \rho(v)\} : \{u,v\} \in E, \rho(u) \neq \rho(v)\ \rangle\ )$.
+    %(allowing for redundant edges).
+\end{definition}
+
+\begin{definition}[implicit decomposition]
+An \defn{implicit decomposition} of a connected graph
+$G=(V,E)$ is a decomposition $(S,\rho,\ell)$ such that $\rho(\cdot)$ is
+defined implicitly in terms of an algorithm given only $G$, $S$, and a
+(short) labeling $\ell(s)$ on $s \in S$.
+\end{definition}
+
+\begin{figure}[t]
+\centering
+  \includegraphics[width=.8\columnwidth]{figure/impdecomp.pdf}
+  \vspace{.05in}
+\caption{An example \implicit{} for $k = 4$ consisting of clusters $\{d,h,l\}, \{i,j,b\},\{e,f\},$ and $\{a,c,g,k\}$  .  In the graph,
+  $j's$ primary center is $e$ (i.e., $\rho_0(j) = e$) and its
+  secondary center is $b$ (i.e., $\rho(j) = b$).   Note $b$ is on a
+  shortest path to $e$.   Also note that $c$ is closer to the
+  secondary center $b$ than to $g$, but picks $g$ as its secondary
+  (and primary) center, since $g$ is its primary center.  In breaking
+  ties we assume lower letters have higher priorities.}
+\label{fig:cluster}
+ \end{figure}
+
+In this paper, we use \implicit{}s.  An example is given in
+Figure~\ref{fig:cluster}.  Our goal is to construct and query the
+decomposition quickly, while using short labels.  Our main result is
+the following.
+
+\begin{theorem}\label{thm:mainimp}
+An \implicit{} $(S,\rho,\ell)$ can be constructed on an
+undirected bounded-degree graph $G = (V,E)$ with $|V| = n$ such that:
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\item the construction takes
+$O(kn)$ operations and $O(n/k)$ writes, both in expectation;
+\item  $\rho(v), v \in V$ takes $O(k)$ operations in expectation
+and $O(k \log n)$ \whp{}, and no writes;
+\item $C(s), s \in S$ takes $O(k^2)$ operations in expectation,
+  and $O(k^2 \log n)$ \whp{} and no writes;
+\item the labels $\ell(s), s \in S$ are $1$-bit each; and,
+\item construction and queries take $O(k \log n)$ \local{}
+  memory \whp{}.
+\end{itemize}
+%The expectations and probabilities are over random values used
+%in the construction.
+\end{theorem}
+\noindent
+Note that this theorem indicates a linear tradeoff of reads
+(operations) and writes for the construction that is controlled by
+$k$.
+
+At a high level, the construction algorithm works by identifying a
+subset of centers such that every vertex can quickly find its nearest
+center without having to keep a pointer to it (which would require too
+many writes).  It first selects a random subset of the vertices where
+each vertex is selected with probability $1/k$.  We call these the
+\defn{primary centers} and denote them as $S_0$.  All other vertices
+are then assigned to the nearest such center.  Unfortunately, a
+cluster defined in this way can be significantly larger than $k$
+(super polynomial in $k$).  To handle this, the algorithm identifies an
+additional $O(n/k)$ \defn{secondary centers}, $S_1$.  Every vertex $v$
+is associated with a primary center $\rho_0(v) \in S_0$, and an actual
+center $\rho(v) \in S = S_0 \cup S_1$.  The only values the the
+algorithm stores are the set $S$ and the bits $\ell(s), s \in S$
+indicating whether it is primary or secondary.
+
+\newcommand{\p}{\mb{SP}}
+
+In our construction it is important to break ties among equal-length
+paths in a consistent way, such that subpaths of a shortest path are
+themselves a unique shortest path.  For this purpose we assume the
+vertices have a total ordering (and comparing two vertices takes
+constant time).  Among two equal hop-length paths from a vertex $u$,
+consider the first vertex where the paths diverge.  We say that the
+path with the higher priority vertex at that position is shorter.  Let
+$\p(u,v)$ be the shortest path between $u$ and $v$ under this
+definition for breaking ties, and $L(\p(u,v))$ be its length such that
+comparing $L(\p(u,v))$ and $L(\p(u,w))$ breaks ties as defined.  By
+our definition all subpaths of a shortest path are also unique
+shortest paths for a fixed vertex ordering.  Based on these
+definitions we specify $\rho_0(v)$ and $\rho$ as follows:
+
+$$\rho_0(v) = \argmin_{u \in S_0} L(v,u)$$
+$$\rho(v) = \argmin_{u \in S \wedge u \in {\scriptsize \p}(v,\rho_0(v))} L(v,u)$$
+
+The definitions indicate that a vertex's center is the first center
+encountered on the shortest path to the nearest primary center.  This
+could either be a primary or secondary center (see
+Figure~\ref{fig:cluster}). $\rho(v)$ is defined in this manner to
+prevent vertices from being reassigned to secondary centers created in
+other primary clusters, which could result in oversized clusters.
+
+
+We now describe how to find $\rho(v)$ for every vertex $v$.
+First, we find $v$'s closest primary center by running a
+BFS from $v$ until we hit a vertex in $S_0$. The BFS orders the vertices by $L(\p(v,\cdot))$.
+% If during the BFS, the
+%algorithm puts the neighbors of a vertex in the queue in priority
+%order, the BFS will visit vertices ordered by $L(\p(v,\cdot))$.
+%One might
+%think that finding the actual center $\rho(v)$ can work the same way
+%by selecting the first secondary center that is found. However, such a search might identify a
+%secondary center along a path that is different from the primary center's path, and this
+%is inconsistent with our definition.  So instead,
+To find $\rho(v)$
+we first search for the primary center of $v$ ($\rho_0(v)$) and then
+identify the first center on the path from $v$ to $\rho_0(v)$,
+possibly $\rho_0(v)$ itself.
+
+\begin{lemma}
+\label{lemma:findcenter}
+$\rho(v)$ can be found in $O(k)$ operations in expectation, and
+$O(k \log n)$ operations \whp{}, and using
+$O(k \log n)$ \local{} memory \whp{}.
+\end{lemma}
+\begin{proof}
+Note that the search order from a vertex is deterministic and
+independent of the
+%probability $1/k$
+sampling used to select $S_0$.
+Therefore, the expected number of vertices visited before hitting a
+vertex in $S_0$ is $k$.  By tail bounds, the probability
+of visiting $O(c k \log n)$ vertices before hitting one in $S_0$ is
+at most $1/n^c$.  The search is a BFS, so it takes time linear
+in the number of vertices visited.  Since the vertices are of bounded
+degree, placing them in priority order in the queue is easy.  Once the
+primary center is found, a search back on the path gives the actual center.
+We assume that \local{} memory is
+used for the search so no writes to the asymmetric memory are
+required.  The memory used is proportional to the search size, which
+is proportional to the number of operations; $O(k)$ in expectation and $O(k
+\log n)$ \whp{}.
+\end{proof}
+
+The space requirement for the \local{} memory is $O(k \log n)$, which is considered to be realistic and easy to satisfied since we set $k=\sqrt{\wcost{}}$ when using this decomposition later in this paper.
+
+We use the following lemma\hide{, whose proof is in
+Appendix~\ref{sec:appendix-implicit},} to help find $C(s)$ for a center $s$.
+
+\begin{lemma}
+	\label{lemma:clustertree}
+	The union of the shortest paths $\p(v,\rho(v))$ for $v \in V$
+        define a rooted spanning tree on each cluster, with the center
+        as the root (assuming the path edges are directed to $\rho(v)$).
+\end{lemma}
+
+\begin{proof}%[{\bf Proof of Lemma~\ref{lemma:clustertree}}]
+	We first show that this is true for the clusters defined by the
+	primary centers $S$ ($\rho_0(v))$.
+        We use the notation
+        $\p(u,v)+\p(v,w)$ to indicate joining the two shortest paths
+        at $v$. Consider a vertex $v$ with
+        Consider a vertex $v$ with
+	$\rho_0(v) = s$, and consider all the vertices $P$ on the shortest
+	path from $v$ to $s$.  The claim is that for each $u \in P, \rho(u) =
+	s$ and $\mb{SP}(u,s)$ is a subpath of $P$. This implies a
+	rooted tree. To see that $\rho(u) = s$ note that the shortest path
+	from $u$ to a primary vertex $t$ has length $L(\mb{SP}(u,t))$. We can write the
+	length of the shortest path from $v$ to $t$ as
+	$L(\mb{SP}(v,t)) \leq L(\mb{SP}(v,u) + \mb{SP}(u,t))$ and the length of the
+	shortest path from $v$ to $s$ as
+	$L(\mb{SP}(v,s)) = L(\mb{SP}(v,u) + \mb{SP}(u,s))$.
+	We know that since $\rho_0(v) = s$
+	that $L(\mb{SP}(v,s)) < L(\mb{SP}(v,t))$ $\forall t \neq s$. Through substitution and subtraction,
+	we see that $L(\mb{SP}(u,s)) < L(\mb{SP}(u,t))$ $\forall t \neq s$. This means that $\rho_0(u) = s$.
+	We know that $\mb{SP}(u,s)$ cannot contain the edge $b$ that $v$ takes to reach $u$
+	in $\mb{SP}(v,s)$ since $u \in \mb{SP}(v,s)$. Since the search from $u$ excluding
+	$b$ will have the same priorities as the search from $v$ when it
+	reaches $u$, $\mb{SP}(u,s)$ is a subpath of $P$.
+	
+	Now consider the clusters defined by $\rho(v)$.  The secondary centers
+	associated with a primary center $s$ partition the tree for $s$ into
+	subtrees, each rooted at one of those centers and going down until
+	another center is hit.  Each vertex in the tree for $s$ will be
+	assigned the correct partition by $\rho(v)$ since each will be
+	assigned to the first secondary center on the way to the primary
+	center.
+\end{proof}
+
+
+The set of solid edges in Figure~\ref{fig:cluster} is an example of
+the spanning forest.  This gives the following.
+
+\begin{corollary}
+	\label{cor:clustertree}
+For any vertex $v$, $\p(v,\rho(v)) \subseteq C(\rho(v))$.
+\end{corollary}
+
+\begin{lemma}
+\label{lemma:findcluster}
+For any vertex $s \in S$, its cluster $C(s)$
+can be found in $O(k \lvert C(s)\rvert)$ operations in expectation and $O(k
+\lvert C(s)\rvert \log n)$ operations \whp{}, and using $O(\lvert C(v)\rvert + k\log n)$ \local{} memory \whp{}.
+\end{lemma}
+\begin{proof}
+For any center $s \in S$, identifying all the vertices in its cluster
+$C(s)$ can be implemented as a BFS starting at $s$.  For each vertex
+$v \in V$ that the BFS visits, the algorithm checks if $\rho(v) = s$.
+If so, we add $v$ to $C(s)$ and put its unvisited neighbors in the BFS
+queue, otherwise we do neither.
+By Corollary~\ref{cor:clustertree}, any
+vertex $v$ for which $\rho(v) = s$ must have a path to $s$ only through
+other vertices whose center is $v$.   Therefore the algorithm will
+visit all vertices in $C(s)$.  Furthermore, since the graph has
+bounded degree it will only visit $O(C(s))$ vertices not in $C(s)$.
+Each visit to a vertex $u$ requires finding $\rho(v)$.  Our bound on the
+number of operations therefore follows from Lemma~\ref{lemma:findcenter}.
+We use $O(|C(v)|)$ \local{} memory for storing the queue and $C(v)$,
+and $O(k\log n)$ \whp{} for calculating $\rho(v)$.
+\end{proof}
+
+\input{algorithm-implicit}
+
+We now show how to select the secondary centers such that
+the size of each cluster is at most $k$.
+Algorithm~\ref{algo:genclusters} describes the process.  By
+Lemma~\ref{lemma:clustertree}, before the secondary centers are
+added, each primary vertex in $s \in S_0$ defines a rooted tree of
+paths from the vertices in its cluster to $s$.  The function
+\mf{SecondaryCenters} then recursively cuts up this tree into subtrees
+rooted at each $u$ that is identified.
+
+\begin{lemma}\label{lemma:genclusters}
+Algorithm~\ref{algo:genclusters} runs in
+$O(n k)$ operations and $O(n/k)$ writes (both in expectation), and
+$O(k \log n)$ \local{} memory \whp{} on the \seqmodel{} Model.
+It generates a $k$-implicit
+decomposition $S$ of $G$ with labels distinguishing $S_0$ from $S_1$.
+\end{lemma}
+
+\begin{proof}
+The algorithm creates clusters of size at most $k$ by construction (it
+partitions any cluster bigger than $k$ using the added vertices $u$).
+Each call to \mf{SecondaryCenters} (without recursive calls) will use
+$O(k^2)$ operations in expectation since we visit $k$ vertices and each one
+has to search back to $v$ to determine if $v$ is its center.  Each
+call also uses $O(k \log n)$ space for the search \whp{} since we need
+to store the $k$ elements found so far and each $\rho(v)$ uses $O(k
+\log n)$ space for the search \whp{}.  Before making the recursive
+calls, we can throw out the \local{} memory and write out $u$ to $S_1$,
+requiring one write per call to \mf{SecondaryCenters}.
+
+We are left with showing there are at most $O(n/k)$ calls to
+\mf{SecondaryCenters}.  There are $n/k$ primary clusters in
+expectation.  If there are too many (beyond some constant factor above
+the expectation), we can try again.  Since the graph has bounded
+degree, we can find a vertex that partitions
+the tree such that its subtree and the rest of the tree are both at
+most a constant fraction~\cite{rosenberg2001graph}.  We can now count all internal nodes
+of the recursion against the leaves.  There are at most $O(n/k)$
+leaves since each defines a cluster of size $\Theta(k)$.  Therefore
+there are $O(n/k)$ calls to \mf{SecondaryCenters}, giving the overall
+bounds stated.
+\end{proof}
+
+\myparagraph{Parallelizing the decomposition}
+To parallelize the decomposition in Algorithm~\ref{algo:genclusters},
+we make one small change; in addition to adding the
+secondary cluster $u$ at each recursive call to \mf{SecondaryCenters},
+we add all children of $v$.  This guarantees that the height of the tree
+decreases by at least one on each recursive call, and only increases
+the number of writes by a constant factor.  This gives the following
+lemma. %, whose proof we defer to Appendix~\ref{sec:appendix-implicit}.
+
+\begin{lemma}\label{lemma:pargenclusters}
+Algorithm~\ref{algo:genclusters} runs in
+depth $O((k \log n) (k^2 \log n + \omega))$ \whp{} on the
+\ourmodel.
+\end{lemma}
+\begin{proof}
+	Certainly selecting the set $S_0$ can be done in parallel.
+	Furthermore the calls to \mf{SecondaryCenters} on line 4 can be
+	made recursively in parallel.  The depth will be proportional to the
+	depth to each call to \mf{SecondaryCenters} (not including
+	recursive calls) multiplied by the depth of the recursion.
+	To bound the depth, in the parallel version we also mark the children of the root as secondary centers, which does not increase the number of secondary centers asymptotically (due to the bounded-degree assumption).
+	In this way one is removed from the height of the tree on each recursive call.
+	The depth of the recursion is at most the depth of the tree
+	associated with the primary center $\rho_0(v)$.  This is bounded by
+	$O(k \log n)$ \whp{} since by Lemma~\ref{lemma:findcenter} every
+	vertex finds its primary center within $O(k \log n)$ steps \whp{}.
+	The depth of \mf{SecondaryCenters} (without recursion) is just the
+	number of operations ($O(k^2 \log n)$ \whp{}) plus the depth of the one
+	write of $u$ (which costs $\omega$).  This gives the bound.
+\end{proof}
+
+
+
+\myparagraph{Extension to unconnected graphs} Note that once a
+connected component contains at least one primary center, the
+definition and Theorem~\ref{thm:mainimp} hold.  However, it is
+possible that in a small component, the search of $\rho(\cdot)$
+exhausts all connected vertices without finding any primary centers
+(vertices in the initial sample, $S_0$).  In this case, we check
+whether the size of the cluster is at least $k$, and if so, we mark as
+a primary center the vertex that is the smallest according to the
+total order on vertices.
+% Actually in the sequential setting marking any vertex suffices, but in
+% parallel, we require this deterministic decision so that the searches
+% from all vertices atomic write to the same location and only one of
+% them will make the actual write.
+This marks at most $n/k$ primary centers and the rest of the algorithm
+remains unchanged.  This step is added after line~\ref{line:sample} in
+Algorithm~\ref{algo:genclusters}, and requires $O(nk)$ work and
+operations, $O(n/k)$ writes, and $O(k)$ \depth.  The cost bound
+therefore is not changed.  If the component is smaller than $k$, we
+use the smallest vertex in the component as a center implicitly, but
+never write it out.  The $\rho(\cdot)$ function can easily return this
+in $O(k)$ operations.
+
+\hide{
+\myparagraph{Extension to unconnected graphs}
+In the above discussion, we assumed the input graph is connected.
+However, for some problems, like graph connectivity, the graph is not necessarily connected.
+In Appendix~\ref{sec:appendix-implicit}, we show how to extend the definition of \implicit{} and the algorithm to generate the cluster centers for unconnected input graphs.
+%We now extend the definition of \implicit{} and the algorithm to generate the cluster centers for unconnected input graphs.
+}
+
+
+

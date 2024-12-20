@@ -1,0 +1,1986 @@
+
+\chapter[eMLTT$_{\!\mathcal{T}_{\text{eff}}}$: an extension of eMLTT with fibred algebraic effects]{eMLTT$_{\mathcal{T}_{\text{eff}}}$: an extension of eMLTT \\with fibred algebraic effects}
+\label{chap:fibalgeffects}
+
+\index{ e@eMLTT$_{\mathcal{T}_{\text{eff}}}$ (extension of eMLTT with fibred algebraic effects)}
+While eMLTT makes it clear how to account for type-dependency in composite effectful dependently typed programs (using the combination of sequential composition and computational $\Sigma$-types), it  provides programmers with no way to use specific computational effects in their code, such as exceptions, nondeterminism, state, I/O, etc. In this chapter, we address this limitation by extending eMLTT with corresponding language primitives and definitional equations. This extension of eMLTT is based on the algebraic treatment of computational effects---see Section~\ref{sect:algebraictreatmentofeffects} for an overview.  Thus it allows us to uniformly capture a wide range of computational effects in eMLTT.
+
+In Section~\ref{sect:fibeffecttheories}, we define a notion of fibred effect theory so as to specify computational effects using operations and equations. 
+Unlike the existing work on algebraic effects, our operation symbols are dependently typed, enabling us to capture precise notions of computation, such as state with location-dependent store types and dependently typed update monads. 
+In Section~\ref{sect:fibalgeffectsineMLTT}, we show how to extend eMLTT with computational effects specified by a given fibred effect theory ${\mathcal{T}_{\text{eff}}}$. In particular, we extend its computation terms with algebraic operations, and its equational theory with the corresponding  definitional equations. We call the resulting language eMLTT$_{\mathcal{T}_{\text{eff}}}$. 
+
+In Section~\ref{sect:emlttalgeffectsmetatheory}, we show how to extend the meta-theory of eMLTT to eMLTT$_{\mathcal{T}_{\text{eff}}}$. \linebreak
+In Section~\ref{sect:derivableequationsforeMLTTwithfibalgeffects}, we present some useful definitional equations derivable in eMLTT$_{\mathcal{T}_{\text{eff}}}$. In Section~\ref{sect:fibalgeffectsmodel}, we equip eMLTT$_{\mathcal{T}_{\text{eff}}}$ with a denotational semantics,  showing how to define a sound interpretation of it in a fibred adjunction model based on the families of sets fibration and models of a countable Lawvere theory we derive from $\mathcal{T}_{\text{eff}}$. Finally, in Section~\ref{ref:genericeffects}, we briefly discuss an equivalent extension of eMLTT with generic effects.
+
+
+\section{Fibred algebraic effects}
+\label{sect:fibeffecttheories}
+
+In this section we develop a means to uniformly specify a wide range of computational effects, ranging from well-known examples such as exceptions, nondeterminism, state, IO, etc. to a less well-known example of (dependently typed) update monads. 
+
+Following the work of Plotkin and Pretnar in the simply typed setting~\cite{Plotkin:HandlingEffects}, we develop a notion of fibred effect theory so as to specify computational effects in terms of operation symbols and equations. 
+The former denote the sources of computational effects, with the latter describing their computational properties. 
+Following Plotkin and Pretnar, we begin by defining a notion of \emph{fibred effect signature} (given by a finite set of dependently typed operation symbols) and then extend it to a notion of \emph{fibred effect theory} (given by extending a fibred effect signature with a finite set of equations).
+To emphasise the dependently typed nature of our operation symbols, we refer to the computational effects specified by these theories as \emph{fibred algebraic effects}. 
+\index{algebraic effect!fibred --}
+
+\subsection{Fibred effect signatures}
+
+As mentioned earlier, our fibred effect signatures consist of operation symbols that are dependently typed. We specify these dependent types internally in a certain fragment of eMLTT, consisting of  \emph{pure value types} and \emph{pure value terms}, as defined below. 
+
+\begin{definition}
+\index{type!value --!pure --}
+An eMLTT value type is said to be \emph{pure} if it is constructed only from $\Nat$, $1$, $\Sigma \, x \!:\! A .\, B $, $\Pi \, x \!:\! A .\, B$, $0$, $A + B$, and $V =_A W$, with $A$ pure in propositional equality.
+\end{definition}
+
+In other words, a value type is pure exactly when it contains neither $U$ nor $\multimap$.
+It is also worth noting that pure value types are very similar to the discrete value types we used in Section~\ref{sect:extensionofeMLTTwithrecursion}---the only difference being in the argument type of the value $\Pi$-type. For pure types, the argument type has to be pure, whereas for discrete types the argument type could be arbitrary, as discreteness is determined by the result type.
+
+\begin{definition}
+\index{term!value --!pure --}
+An eMLTT value term is said to be \emph{pure} if it does not contain $\thunk{}$ terms and homomorphic lambda abstractions, and all its type annotations are pure.
+\end{definition}
+
+Based on this fragment of eMLTT, we now define a notion of fibred effect signature.
+
+\begin{definition}
+\index{signature!fibred effect --}
+\index{ I@$I$ (input type of an operation symbol)}
+\index{ O@$O$ (output type of an operation symbol)}
+\index{ op@$\sigalgop$ (operation symbol in a fibred effect signature)}
+\index{type!input --}
+\index{type!output --}
+\index{ S@$\mathcal{S}_{\text{eff}}$ (fibred effect signature)}
+A \emph{fibred effect signature} $\mathcal{S}_{\text{eff}}$ is a finite set of typed operation symbols
+\[
+\sigalgop : (x \!:\! I) \longrightarrow O
+\]
+where $\lj {\diamond} I$ and $\lj {x \!:\! I} O$ are well-formed pure value types, called the \emph{input} and \emph{output} type of $\sigalgop$, respectively.
+\end{definition}
+
+Analogously to types and terms that involve variable bindings, the variable $x$ is bound in $O$ in the type of $\sigalgop : (x \!:\! I) \longrightarrow O$; and we do not distinguish between $\alpha$-equivalent types of operation symbols. We also assume that in any mathematical context, the bound variable $x$ in the type of $\sigalgop$ is always chosen to be different from the free variables of that context.
+As a further simplification, if the variable $x$ is not free in $O$, we omit the variable binding and simply write the type of $\sigalgop$ simply as $I \longrightarrow O$.
+
+Intuitively, in models where dependent value types denote families of sets (see the model of eMLTT$_{\mathcal{T}_{\text{eff}}}$ given in Section~\ref{sect:fibalgeffectsmodel}), one thinks of  $\sigalgop : (x \!:\! I) \longrightarrow O$ as describing an $I$-indexed family of algebraic operations $\sigalgop_i$, each of whose arity is the cardinality of the set denoted by $O[i/x]$. 
+From a computational perspective, the input type of an operation should be understood as specifying the values used to parameterise the corresponding effect, e.g., the memory locations to be accessed; and the output type of an operation as specifying the values that are produced by performing the corresponding effect, e.g., for the $\mathsf{get}$ operation, the value stored in the memory. 
+Based on these intuitions, $I$ could also be called a \emph{parameter} type and $O$ an \emph{arity} type, e.g., as in \cite{Plotkin:HandlingEffects}.
+
+We now give some examples of fibred effect signatures for important computational effects, 
+starting with ones based on simply typed effect signatures from~\cite{Plotkin:HandlingEffects}.
+
+\begin{example}[Exceptions]
+\label{ex:fibsigofexceptions}
+\index{signature!fibred effect --!-- of exceptions}
+\index{ Exc@$\Exception$ (type of exception names)}
+Assuming given a well-formed pure value type $\lj \diamond \Exception$ of exception names, the signature $\mathcal{S}_{\text{EXC}}$ of exceptions is given by one operation symbol
+\[
+\mathsf{raise} : \Exception \longrightarrow 0
+\]
+
+The idea is that $\mathsf{raise}$ denotes the effect of raising an exception corresponding to a given value of type $\Exception$. The output type of $\mathsf{raise}$ is the empty type $0$ because after raising an exception in a program, there is no further continuation to be evaluated.
+\end{example}
+
+\begin{example}[Binary nondeterminism]
+\label{ex:fibsigofnondeterminism}
+\index{signature!fibred effect --!-- of binary nondeterminism}
+The signature $\mathcal{S}_{\text{ND}}$ of binary nondeterminism is given by one operation symbol
+\[
+\mathsf{choose} : 1 \longrightarrow 1 + 1
+\]
+
+The idea is that $\mathsf{choose}$ denotes the effect of nondeterministically making a binary
+choice, with the outcome witnessed by returning either the value $\inl {} \star$ or $\inr {} \star$. \end{example}
+
+\begin{example}[Global state]
+\label{ex:fibsigofstate}
+\index{signature!fibred effect --!-- of global state}
+\index{ St@$\State$ (type of store values)}
+Assuming given a well-formed pure value type $\lj \diamond \State$ of store values, the signature $\mathcal{S}_{GS}$ of global state is given by two operation symbols
+\[
+\mathsf{get} : 1 \longrightarrow \State 
+\qquad
+\mathsf{put} : \State \longrightarrow 1 
+\]
+
+The idea is that $\mathsf{get}$ denotes the effect of reading and returning the current value of the store; and $\mathsf{put}$ denotes the effect of setting the store to a given value of type $\State$. 
+\end{example}
+
+Observe that in the previous example, $\mathsf{get}$ and $\mathsf{put}$ operate on the whole state. Below, we consider a common variation of the signature of global state that incorporates multiple memory locations. However, in contrast to the simply typed effect signature for global state with locations, where all locations have to store values of the same type, e.g., see~\cite{Plotkin:HandlingEffects},
+the presence of dependent types allows us to make the type of store values dependent on locations, giving a more realistic presentation of global state. 
+
+\begin{example}[Global state with locations]
+\label{ex:fibsigofstatewithlocations}
+\index{signature!fibred effect --!-- of global state with locations}
+\index{ Loc@$\Location$ (type of memory locations)}
+\index{ Val@$\Value$ (type of values stored at memory locations)}
+Assuming well-formed pure value types 
+\[
+\lj \diamond \Location
+\qquad
+\lj {x \!:\! \Location} \Value
+\]
+of memory locations and values stored at them, respectively, the signature $\mathcal{S}_{GSL}$ of global state with locations is  given by two operation symbols
+\[
+\mathsf{get} : (x \!:\! \Location) \longrightarrow \Value
+\qquad
+\mathsf{put} : \Sigma\, x \!:\! \Location .\, \Value \longrightarrow 1
+\]
+
+Observe that compared to the operation symbols given in Example~\ref{ex:fibsigofstate}, this $\mathsf{get}$ and $\mathsf{put}$ take the memory location to be accessed as an additional value argument.
+\end{example}
+
+In the simply typed setting, where $\Value$ would not be allowed to depend on $\Location$, this signature would need to be given either i) by restricting all locations to store values of the same type (as already suggested earlier), or ii) by families of operation symbols
+\[
+\mathsf{get}_V : 1 \longrightarrow \Value_V
+\qquad
+\mathsf{put}_V : \Value_V \longrightarrow 1
+\]
+where $\mathsf{get}$, $\mathsf{put}$, and $\Value$ are all indexed by closed normal forms $V$ of type $\Location$. 
+
+However, if we were to extend a simply typed programming language with primitives corresponding to the second approach, we must bear in mind that in state-manipulating programs it is often desirable to use $\mathsf{get}$ and $\mathsf{put}$ with non-normal and open arguments of type $\Location$. While this could be achieved to some extent using case analysis on the given value argument of type $\Location$, the lack of dependent types means that the corresponding derived operation would have the following imprecise type:
+\[
+\mathsf{get} : \Location \longrightarrow \Value_{V_1} ~+~ \ldots ~+~ \Value_{V_n}
+\]
+where we use $V_1, \ldots, V_n$ to range over the closed normal forms of type $\Location$.
+
+
+As a final example of well-known and important computational effects, we present the fibred effect signature of interactive character input/output. This signature does not use any type-dependency and is therefore exactly the same as the one given in~\cite{Plotkin:HandlingEffects}.
+
+\begin{example}[Input/output]
+\label{ex:fibsigofIO}
+\index{signature!fibred effect --!-- of input/output}
+\index{ Chr@$\Character$ (type of characters)}
+Assuming a well-formed pure value type $\lj \diamond \Character$ of characters, the signature $\mathcal{S}_{\text{I/O}}$ of input/output is given by two operation symbols
+\[
+\mathsf{read} : 1 \longrightarrow \Character
+\qquad
+\mathsf{write} : \Character \longrightarrow 1
+\]
+
+The idea is that $\mathsf{read}$ denotes the effect of reading a character from the terminal; and $\mathsf{write}$ denotes the effect of writing the given character to the terminal. Note that the same signature can also be used to describe input/output over, say, a network.
+\end{example}
+
+Observe that the signature of input/output given in Example~\ref{ex:fibsigofIO} is essentially the same as the signature of global state given in Example~\ref{ex:fibsigofstate}, modulo the names of the operation symbols and their types; these two computational effects differ in the equations one  imposes on them---see Examples~\ref{ex:fibtheoryofglobalstate} and~\ref{ex:fibtheoryofIO} for details. 
+
+Further, observe that analogously to the signature $\mathcal{S}_{GSL}$ of global state with locations, one can also extend $\mathcal{S}_{\text{I/O}}$ with type-dependency by considering multiple terminals (or network channels) and making the values read from and written to terminals (resp. network channels) dependent on terminal names (resp. channel names).
+
+In addition to these well-known effect theories from the algebraic effects literature, we also want to draw the reader's attention to a less well-known example of global state, in which the store is changed not by overwriting but by applying (potentially small) updates to it. This notion of global state is modelled by   update monads that were introduced and thoroughly studied by the author in a joint paper with Uustalu~\cite{Ahman:UpdateMonads}. 
+
+\begin{example}[Update monads]
+\label{ex:fibsigofupdatemonad}
+\index{signature!fibred effect --!-- of an update monad}
+\index{ Upd@$(\Updates,\mathsf{o},\oplus)$ (monoid of updates)}
+\index{ @$\downarrow$ (action of the monoid of updates on the set of store values)}
+\index{monoid}
+Assuming given two well-formed pure value types
+\[
+\lj {\diamond} \State
+\qquad
+\lj {\diamond} \Updates
+\]
+of store values and store updates, together with well-typed closed pure value terms
+\[
+\downarrow\, : \State \to \Updates \to \State
+\qquad
+\mathsf{o} : \Updates
+\qquad
+\oplus : \Updates \to \Updates \to \Updates
+\]
+satisfying the following five closed equations (in the equational theory of eMLTT):
+\[
+V \downarrow \mathsf{o} = V 
+\qquad
+V \downarrow (W_1 \oplus W_2) = (V \downarrow W_1) \downarrow W_2
+\]
+\[
+W \oplus \mathsf{o} = W
+\qquad
+\mathsf{o} \oplus W = W
+\qquad
+(W_1 \oplus W_2) \oplus W_3 = W_1 \oplus (W_2 \oplus W_3)
+\]
+the signature $\mathcal{S}_{\text{UPD}}$ of a (simply typed) update monad is given by two operation symbols
+\[
+\mathsf{lookup} : 1 \longrightarrow \State
+\qquad
+\mathsf{update} : \Updates \longrightarrow 1
+\]
+
+For better readability, we omit the empty contexts and $\,\vdash$ in the typing of $\downarrow$, $\mathsf{o}$, and $\oplus$, and in the equations. Further, we omit the types of the equations and assume that all value terms are well-typed according to the typing of $\downarrow$, $\mathsf{o}$, $\oplus$. To improve the readability further, we also use infix notation when applying $\downarrow$ and $\oplus$ to their arguments.
+
+The idea is that $(\Updates, \mathsf{o}, \oplus)$ forms a monoid of updates which can be applied to the store values via its action $\downarrow$ on $\State$; $\mathsf{lookup}$ denotes the effect of reading the current value of the store; and $\mathsf{update}$ denotes the effect of applying the update given by a value argument of type $\Updates$ to the current store. Regarding the monoid, the intuition is that $\mathsf{o}$ denotes the ``do nothing" update and $\oplus$ is used to combine successive updates.
+\end{example}
+
+
+While (simply typed) update monads are useful for modelling state changes by (small) incremental updates, their simply typed nature means that one must be able to meaningfully describe the action of all possible updates on all possible store values---see the type of $\downarrow$ given in Example~\ref{ex:fibsigofupdatemonad}. To address this limitation, we introduced a dependently typed generalisation of update monads in the above-mentioned joint paper with Uustalu. These monads are parameterised not by a monoid and its action on the store values, but instead by a dependently typed generalisation of monoids and their actions, in which the type of updates is allowed to depend on the type of store values, enabling us to precisely specify which updates are applicable to particular store values. 
+
+This dependently typed generalisation of monoids and their actions is known in the literature under the name of \emph{directed containers}---see the author's joint paper with Chapman and Uustalu~\cite{Ahman:Dcontainers} for more details and their original use for modelling tree-like datastructures with a well-behaved notion of sub-datastructure.
+
+
+\begin{example}[Dependently typed update monads]
+\label{ex:fibsigofdeptypedupdatemonad}
+\index{signature!fibred effect --!-- of a dependently typed update monad}
+\index{directed container}
+\index{ St@$(\State,\Updates,\downarrow,\mathsf{o},\oplus)$ (directed container of store values and updates)}
+Assuming given two well-formed pure value types
+\[
+\lj {\diamond} \State
+\qquad
+\lj {x \!:\! \State} \Updates
+\]
+of store values and store updates, together with well-typed closed pure value terms
+\[
+\begin{array}{c}
+\downarrow\, : \Pi\, x \!:\! \State .\, \Updates \to \State
+\qquad
+\mathsf{o} : \Pi\, x \!:\! \State .\, \Updates
+\\[1mm]
+\oplus : \Pi\,x \!:\! \State .\, \Pi y \!:\! \Updates .\, \Updates[x \downarrow y/x] \to \Updates
+\end{array}
+\]
+satisfying the following five closed equations (in the equational theory of eMLTT):
+\[
+\begin{array}{c}
+V \downarrow (\mathsf{o}\,\, V) = V 
+\qquad
+V \downarrow (W_1 \oplus_{V} W_2) = (V \downarrow W_1) \downarrow W_2
+\\[2mm]
+W \oplus_{V} (\mathsf{o}\,\, (V \downarrow W)) = W
+\qquad
+(\mathsf{o}\,\, V) \oplus_V W = W
+\\[2mm]
+(W_1 \oplus_V W_2) \oplus_V W_3 = W_1 \oplus_V (W_2 \oplus_{V \downarrow W_1} W_3)
+\end{array}
+\]
+the signature $\mathcal{S}_{\text{DUPD}}$ of a dependently typed update monad is given by two operation symbols
+\[
+\mathsf{lookup} : 1 \longrightarrow \State
+\qquad
+\mathsf{update} : \Pi\, x \!:\! \State .\, \Updates \longrightarrow 1
+\]
+
+In addition to the presentational conventions used in Example~\ref{ex:fibsigofupdatemonad}, we further improve readability by writing the first argument to $\oplus$ as a subscript in the equations.
+%
+\end{example}
+
+In~\cite[Examples~10 and~11]{Ahman:UpdateMonads}, it is demonstrated that dependently typed update monads can be used for natural state-based modelling of \emph{non-overflowing  buffers} and \emph{non-under\-flowing stacks}, by ensuring that the size of the data written to a buffer does not exceed the remaining free space, and by not allowing an empty stack to be popped.
+
+It is worth noting that differently from~\cite{Ahman:UpdateMonads}, where algebras of dependently typed update monads are studied using a single operation symbol, typed as 
+\[
+\mathsf{act} : \Pi\, x \!:\! \State .\, \Updates \longrightarrow \State
+\]
+we present dependently typed update monads here using two operation symbols, analogously to how we have presented the global state and simply typed update monads in the previous examples.  We omit the details of the equivalence of these presentations and instead refer the reader to~\cite[Section~2.3]{Ahman:UpdateMonads} where the relationship between the corresponding one and two operation presentations is discussed for the simply typed case---the equivalence for the dependently typed case is proved analogously. 
+
+We note that in~\cite{Ahman:UpdateMonads} the two operation presentation was considered only for simply typed update monads because it followed naturally from the analysis of simply typed update monads as compatible compositions of reader and writer monads. 
+For the dependently typed generalisation of update monads, it is currently not known whether it is possible to build them naturally as a composition of two or more ordinary monads. 
+In particular, we only know how to build dependently typed update monads from reader and writer monad like relative monads~\cite{Altenkirch:RelMon2}, as discussed in~\cite[Section~3]{Ahman:UpdateMonads}.
+
+\subsection{Fibred effect theories}
+
+Next, again following~\cite{Plotkin:HandlingEffects}, we describe the computational behaviour of the  effects specified by a fibred effect signature using equations between \emph{effect terms}. 
+
+\index{variable!effect --}
+\index{ w@$w, \ldots$ (effect variables)}
+Specifically, assuming a countably infinite set of \emph{effect variables} that is disjoint from the sets of value and computation variables, and ranged over by $w, \ldots$, the effect terms $T$ are built from these effect variables, algebraic operations corresponding to the operation symbols in the given fibred effect signature, and elimination forms for pure value types, as defined in Definition~\ref{def:fibeffectterms}. 
+Intuitively, these effect terms denote the computation trees one can build from the operation symbols in the given signature.
+
+
+\begin{definition}
+\label{def:fibeffectterms}
+\index{term!effect --}
+\index{ T@$T,\ldots$ (effect terms)}
+The \emph{effect terms} derivable from a fibred effect signature $\mathcal{S}_{\text{eff}}$ are given by the following grammar:
+\[
+\begin{array}{r c l @{\qquad\qquad\qquad\quad}l}
+T & ::= & w\, (V) &
+\\
+& \vertbar & \sigalgop_V(y .\, T) & (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})
+\\
+& \vertbar & \pmatchsf V {(x_1 \!:\! A_1, x_2 \!:\! A_2)} {} T
+\\
+& \vertbar & \multicolumn{2}{l}{\mathsf{case~} V \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_1 \!:\! A_1)} \mapsto T_1}, {\seminr {\!} {\!\!(x_2 \!:\! A_2)} \mapsto T_2})}
+\end{array}
+\]
+where all value types and terms are assumed to be pure; and where
+\begin{itemize}
+\item in $\sigalgop_V(y .\, T)$, the value variable $y$ is bound in $T$;
+\item in $\pmatchsf V {(x_1 \!:\! A_1, x_2 \!:\! A_2)} {} T$, the value variable $x_1$ is bound in $A_2$ and $T$, and the value variable $x_2$ is bound in $T$; and
+\item in $\casesf V {} {\seminl {\!} {\!\!(x_1 \!:\! A_1)} \mapsto T_1} {\seminr {\!} {\!\!(x_2 \!:\! A_2)} \mapsto T_2}$, the value variable $x_1$ is bound in $T_1$ and the value variable $x_2$ is bound in $T_2$.
+\end{itemize}
+\end{definition}
+
+\index{ FEV@$F\hspace{-0.05cm}EV(T)$ (set of free effect variables of $T$)}
+We write $F\!EV(T)$ for the set of \emph{free effect variables} of the effect term $T$.
+
+It is worth noting that effect variables can appear only in applied form. This is so because in this CPS-style calculus of effect terms, effect variables denote continuations that have to be applied to values before they can be used in computation. See the rules given in Definition~\ref{def:wellformedeffectterms} for details about how these value terms have to be typed.
+
+Furthermore, observe that the definition of effect terms does not include elimination forms for neither propositional equality nor the type of natural numbers. On the one hand, as the former is only useful in  terms that get assigned dependent types, we do not need it for effect terms which will not be assigned types at all. On the other hand, while the latter would allow us to build compound computation trees using primitive recursion, we are unaware of interesting computational effects whose specification in terms of operations and equations would require the use of primitive recursion, even in the simply typed setting. However, observe that one is still free to use either of these elimination forms in the pure value terms  that appear in effect terms. 
+
+We proceed by defining well-formed effect terms using the judgement $\lj {\Gamma \vertbar \Delta} T$, where $\Gamma$ is a pure value context and $\Delta$ is an effect context.
+
+\begin{definition}
+\index{context!value --!pure --}
+An eMLTT value context $\Gamma$ is said to be \emph{pure} if $A_i$ is a pure value type for every $x_i \!:\! A_i$ in $\Gamma$.
+\end{definition}
+
+\begin{definition}
+\index{context!effect --}
+\index{ D@$\Delta$ (effect context)}
+An \emph{effect context} $\Delta$ is a finite list $w_1 \!:\! A_1, \ldots, w_n \!:\! A_n$ of pairs of effect variables $w_{i}$ and pure value types $A_{i}$, such that all the effect variables $w_{i}$ are distinct. 
+\end{definition}
+
+\begin{definition}
+\label{def:wellformedeffectcontext}
+\index{context!effect --!well-formed --}
+An effect context $\Delta$ is said to be \emph{well-formed} in a pure value context $\Gamma$, written $\lj \Gamma \Delta$, if $\vdash \Gamma$ and if we have $\lj \Gamma {A_i}$, for every $w_{i} \!:\! A_{i}$ in $\Delta$.
+\end{definition}
+
+\begin{definition}
+\label{def:wellformedeffectterms}
+\index{term!effect --!well formed --}
+\emph{Well-formed} effect terms are given by the following rules:
+
+
+\vspace{0.15cm}
+
+\[
+\mkrule
+{\lj {\Gamma \vertbar \Delta_1, w \!:\! A, \Delta_2} {w\,(V)}}
+{\lj \Gamma {\Delta_1, w \!:\! A, \Delta_2} \quad \vj \Gamma V A}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrulelabel
+{\lj {\Gamma \vertbar \Delta} {\sigalgop_V(y .\, T)}}
+{
+\lj \Gamma \Delta 
+\quad 
+\vj \Gamma V I 
+\quad 
+\lj {\Gamma, y \!:\! O[V/x] \vertbar \Delta} {T}
+}
+{(\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})}
+\]
+
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\lj {\Gamma \vertbar \Delta} {\pmatchsf V {(x_1 \!:\! A_1, x_2 \!:\! A_2)} {} T}}
+{
+\lj \Gamma \Delta 
+\quad
+\vj \Gamma V \Sigma\, x_1 \!:\! A_1 .\, A_2
+\quad
+\lj {\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2 \vertbar \Delta} T
+}
+\]
+
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\lj {\Gamma \vertbar \Delta} {\mathsf{case~} V \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_1 \!:\! A_1)} \mapsto T_1}, {\seminr {\!} {\!\!(x_2 \!:\! A_2)} \mapsto T_2})}}
+{
+\lj \Gamma \Delta 
+\quad
+\vj \Gamma V A_1 + A_2
+\quad
+\lj {\Gamma, x_1 \!:\! A_1 \vertbar \Delta} T_1
+\quad
+\lj {\Gamma, x_2 \!:\! A_2 \vertbar \Delta} T_2
+}
+\]
+\end{definition}
+
+Next, we prove two meta-theoretical results about effect terms that are analogous to Propositions~\ref{prop:freevariablesofwellformedexpressions} and~\ref{prop:wellformedcomponentsofjudgements} which we established for eMLTT in Chapter~\ref{chap:syntax}.
+
+\begin{proposition}
+\label{prop:freevariablesofeffectterms}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$, then 
+\[
+FVV(T) \subseteq V\!ars(\Gamma)
+\qquad
+F\!EV(T) \subseteq V\!ars(\Delta)
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$. We use Proposition~\ref{prop:freevariablesofwellformedexpressions} to derive inclusions $FVV(A) \subseteq V\!ars(\Gamma)$ and $FVV(V) \subseteq V\!ars(\Gamma)$ for well-formed pure value types $\lj \Gamma A$ and well-typed pure value terms $\vj \Gamma V A$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:wellformedfibredeffecttermhaswellformedcontext}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$, then $\lj \Gamma \Delta$.
+\end{proposition}
+
+\begin{proof}
+By induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$.
+\end{proof}
+
+Further, when we combine Proposition~\ref{prop:wellformedfibredeffecttermhaswellformedcontext} with Definition~\ref{def:wellformedeffectcontext}, we get the following corollary.
+
+\begin{corollary}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$, then $\vdash \Gamma$.
+\end{corollary}
+
+We are now ready to define the notion of fibred effect theory so as to specify both the side-effect causing dependently typed effects and their computational behaviour.
+
+\begin{definition}
+\index{theory!fibred effect --}
+\index{ T@$\mathcal{T}_{\text{eff}}$ (fibred effect theory)}
+\index{ E@$\mathcal{E}_{\text{eff}}$ (set of equations of a fibred effect theory)}
+\index{ S@$(\mathcal{S}_{\text{eff}},\mathcal{E}_{\text{eff}})$ (fibred effect theory)}
+A \emph{fibred effect theory} $\mathcal{T}_{\text{eff}}$ is given by a fibred effect signature $\mathcal{S}_{\text{eff}}$ and a finite set $\mathcal{E}_{\text{eff}}$ of equations $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$, where $\lj {\Gamma \vertbar \Delta} {T_1}$ and $\lj {\Gamma \vertbar \Delta} {T_2}$ are two well-formed  effect terms derived from $\mathcal{S}_{\text{eff}}$. 
+\end{definition}
+
+We conclude this section by revisiting the examples of computational effects we discussed earlier and equip the corresponding signatures with equations, where appropriate. We follow~\cite{Plotkin:HandlingEffects} for the fibred effect signatures given in Examples~\ref{ex:fibsigofexceptions}--\ref{ex:fibsigofIO}, and the joint paper with Uustalu~\cite{Ahman:UpdateMonads} for the equational presentation of (dependently typed) update monads. 
+
+To improve the readability of our examples, we omit the value argument $V$ in the effect term $\sigalgop_V(y .\, T)$ when the input type of $\sigalgop$ is $1$. For the same reason, we also omit the variable binding in the effect term $\sigalgop_V(y .\, T)$ when the output type of $\sigalgop$ is $1$.
+
+\begin{example}[Exceptions]
+\label{ex:fibtheoryofexceptions}
+\index{theory!fibred effect --!-- of exceptions}
+The fibred effect theory $\mathcal{T}_{\text{EXC}}$ of exceptions is given by the signature $\mathcal{S}_{\text{EXC}}$ and no equations.
+\end{example}
+
+\begin{example}[Binary nondeterminism]
+\label{ex:fibtheoryofnondeterminism}
+\index{theory!fibred effect --!-- of binary nondeterminism}
+The fibred effect theory $\mathcal{T}_{\text{ND}}$ of binary nondeterminism is given by the signature $\mathcal{S}_{\text{ND}}$ and the following three equations:
+\[
+\ljeq {\diamond \vertbar w \!:\! 1} {\mathsf{choose}(x .\, w\, (\star))} {w\, (\star)}
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c@{~} c@{~} l}
+{\diamond \vertbar w_1 \!:\! 1, w_2 \!:\! 1} & \vdash & {\mathsf{choose}(x .\, \mathsf{case~} x \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_1 \!:\! 1)} \mapsto w_1\, (\star)}, {\seminr {\!} {\!\!(x_2 \!:\! 1)} \mapsto w_2\, (\star)}))}
+\\[-0.5mm]
+& = & {\mathsf{choose}(x .\, \mathsf{case~} x \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_1 \!:\! 1)} \mapsto w_2\, (\star)}, {\seminr {\!} {\!\!(x_2 \!:\! 1)} \mapsto w_1\, (\star)}))}
+\end{array}
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c}
+\hspace{-10cm}
+{\diamond \vertbar w_1 \!:\! 1, w_2 \!:\! 1, w_3 \!:\! 1} \vdash 
+\\[-1mm]
+\hspace{0.2cm}
+\mathsf{choose}\big(x .\, \mathsf{case~} x \mathsf{~of}_{} \mathsf{~} \big(\seminl {\!} {\!\!(x_1 \!:\! 1)} \mapsto 
+\mathsf{choose}(x'\!  .\, \mathsf{case~} x' \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_3 \!:\! 1)} \mapsto w_1\, (\star)}, 
+\\[-0.5mm]
+\hspace{9.7cm}
+{\seminr {\!} {\!\!(x_4 \!:\! 1)} \mapsto w_2\, (\star)})), 
+\\[-1.5mm]
+\hspace{-1.75cm}
+{\seminr {\!} {\!\!(x_2 \!:\! 1)} \mapsto w_3\, (\star)}\big)\big) 
+\\[1mm]
+\hspace{-5.95cm}
+= \mathsf{choose}\big(x  .\, \mathsf{case~} x \mathsf{~of}_{} \mathsf{~} \big(\seminl {\!} {\!\!(x_1 \!:\! 1)} \mapsto w_1\, (\star), 
+\\[-0.5mm]
+\hspace{3.7cm}
+\seminr {\!} {\!\!(x_2 \!:\! 1)} \mapsto \mathsf{choose}(x'\! .\, \mathsf{case~} x' \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x_3 \!:\! 1)} \mapsto w_2\, (\star)}, 
+\\[-0.5mm]
+\hspace{10.05cm}
+{\seminr {\!} {\!\!(x_4 \!:\! 1)} \mapsto w_3\, (\star)}))\big)\big)
+\end{array}
+\]
+
+The idea is that nondeterministic choices are not observable if the continuation does not depend on the choice (1st equation); the choices are fair (2nd equation); and different nondeterministic choices are independent of each other (3rd equation).
+\end{example}
+
+\pagebreak
+
+\begin{example}[Global state]
+\label{ex:fibtheoryofglobalstate}
+\index{theory!fibred effect --!-- of global state}
+The fibred effect theory $\mathcal{T}_{\text{GS}}$ of global state is given by the signature $\mathcal{S}_{\text{GS}}$ and the following three equations:
+\[
+{\diamond \vertbar w \!:\! 1} \vdash \mathsf{get}(x .\, \mathsf{put}_x(w\, (\star))) = w\, (\star)
+\]
+
+\[
+{x \!:\! \State \vertbar w \!:\! \State} \vdash \mathsf{put}_x(\mathsf{get}(y .\, w\, (y))) = \mathsf{put}_x(w\, (x))
+\vspace{0.15cm}
+\]
+
+\[
+{x \!:\! \State, y \!:\! \State \vertbar w \!:\! 1} \vdash \mathsf{put}_x(\mathsf{put}_y(w\, (\star))) = \mathsf{put}_y(w\, (\star))
+\]
+
+These equations describe the expected behaviour $\mathsf{get}$ and $\mathsf{put}$: trivial store changes are not observable (1st equation); $\mathtt{get}$ returns the most recent value the store has been set to (2nd equation); and $\mathtt{put}$ overwrites the contents of the store (3rd equation).
+\end{example}
+
+\begin{example}[Global state with locations]
+\label{ex:fibtheoryofglobalstatewithlocations}
+\index{theory!fibred effect --!-- of global state with locations}
+The fibred effect theory $\mathcal{T}_{\text{GSL}}$ of global state with locations is given by the signature $\mathcal{S}_{\text{GSL}}$ and the following five equations:
+\[
+{x \!:\! \Location \vertbar w \!:\! 1} \vdash \mathsf{get}_x(y .\, \mathsf{put}_{\langle x , y \rangle}(w\, (\star))) = w\, (\star)
+\vspace{0.15cm}
+\]
+
+\[
+{x \!:\! \Location, y \!:\! \Value \vertbar w \!:\! \Value} \vdash \mathsf{put}_{\langle x , y \rangle}(\mathsf{get}_x(y' .\, w\, (y'))) = \mathsf{put}_{\langle x , y \rangle}(w\, (y))
+\vspace{0.15cm}
+\]
+
+\[
+{x \!:\! \Location, y_1 \!:\! \Value, y_2 \!:\! \Value \vertbar w \!:\! 1} \vdash \mathsf{put}_{\langle x , y_1 \rangle}(\mathsf{put}_{\langle x , y_2 \rangle}(w\, (\star))) = \mathsf{put}_{\langle x , y_2 \rangle}(w\, (\star))
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c}
+\hspace{-6.75cm}
+{x_1 \!:\! \Location, x_2 \!:\! \Location \vertbar w \!:\! \Value[x_1/x] \times \Value[x_2/x]} \vdash 
+\\[-0.5mm]
+\hspace{0.75cm}
+\mathsf{get}_{x_1}(y_1.\, \mathsf{get}_{x_2}(y_2 .\, w\, (\langle y_1 , y_2 \rangle))) = 
+\mathsf{get}_{x_2}(y_2 .\, \mathsf{get}_{x_1}(y_1 .\, w\, (\langle y_1 , y_2 \rangle)))
+\qquad (x_1 \neq x_2)
+\end{array}
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c}
+\hspace{-5.45cm}
+{x_1 \!:\! \Location, x_2 \!:\! \Location, y_1 \!:\! \Value[x_1/x], y_2 \!:\! \Value[x_2/x] \vertbar w \!:\! 1} \vdash
+\\[-0.5mm]
+\hspace{2.25cm}
+\mathsf{put}_{\langle x_1, y_1 \rangle}(\mathsf{put}_{\langle x_2, y_2 \rangle}(w\, (\star))) = \mathsf{put}_{\langle x_2, y_2 \rangle}(\mathsf{put}_{\langle x_1, y_1 \rangle}(w\, (\star)))
+\qquad (x_1 \neq x_2)
+\end{array}
+\vspace{0.15cm}
+\]
+
+Observe that the first three equations are $\Location$-indexed variants of the equations from Example~\ref{ex:fibtheoryofglobalstate}. The last two equations describe that $\mathsf{get}$ and $\mathsf{put}$ effects for different locations commute with each other. To this end, the last two equations both come with a side-condition requiring the locations denoted by $x_1$ and $x_2$ to be different. 
+
+\end{example}
+
+Similarly to~\cite{Plotkin:HandlingEffects}, this notation for side-conditions is an informal short-hand for a formal presentation based on using case analysis. Specifically, we assume a decidable (for simplicity, boolean-valued) equality on locations, given by a closed well-typed pure value term  $ {\mathtt{eq}} : {\Location \times \Location \to 1 + 1}$, and then write the right-hand sides of these equations using case analysis. For example, the last equation is formally written as
+\[
+\begin{array}{c}
+\hspace{-5cm}
+{x_1 \!:\! \Location, x_2 \!:\! \Location, y_1 \!:\! \Value[x_1/x], y_2 \!:\! \Value[x_2/x] \vertbar w \!:\! 1} \vdash
+\\[0.5mm]
+\hspace{-5.35cm}
+\mathsf{put}_{\langle x_1, y_1 \rangle}(\mathsf{put}_{\langle x_2, y_2 \rangle}(w\, (\star))) 
+\\[1mm]
+\hspace{0.1cm}
+= \mathsf{case~} (\mathtt{eq}~ \langle x_1, x_2 \rangle) \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(x'_1 \!:\! 1)} \mapsto \mathsf{put}_{\langle x_1, y_1 \rangle}(\mathsf{put}_{\langle x_2, y_2 \rangle}(w\, (\star)))}, 
+\\[-0.5mm]
+\hspace{4.2cm}
+{\seminr {\!} {\!\!(x'_2 \!:\! 1)} \mapsto \mathsf{put}_{\langle x_2, y_2 \rangle}(\mathsf{put}_{\langle x_1, y_1 \rangle}(w\, (\star)))})
+\end{array}
+\]
+
+
+\begin{example}[Input/output]
+\label{ex:fibtheoryofIO}
+\index{theory!fibred effect --!-- of input/output}
+The fibred effect theory $\mathcal{T}_{\text{I/O}}$ of input/output is given by the signature $\mathcal{S}_{\text{I/O}}$ and no equations.
+\end{example}
+
+
+\begin{example}[Update monads]
+\label{ex:fibtheoryofupdatemonads}
+\index{theory!fibred effect --!-- of an update monad}
+The fibred effect theory $\mathcal{T}_{\text{UPD}}$ of an update monad is given by the signature $\mathcal{S}_{\text{UPD}}$ and the following three equations:
+\[
+{\diamond \vertbar w \!:\! 1} \vdash \mathsf{lookup}(x .\, \mathsf{update}_{\mathsf{o}}(w\, (\star))) = w\, (\star)
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c@{~} c@{~} l}
+{x \!:\! \Updates \vertbar w \!:\! \State \times \State} & \vdash & \mathsf{lookup}(y .\, \mathsf{update}_x(\mathsf{lookup}(y' .\, w\, (\langle y , y' \rangle))) 
+\\[-0.5mm]
+& = & \mathsf{lookup}(y .\, \mathsf{update}_x(w\, (\langle y , y \downarrow x \rangle))))
+\end{array}
+\vspace{0.15cm}
+\]
+
+\[
+{x \!:\! \Updates, y \!:\! \Updates \vertbar w \!:\! 1} \vdash \mathsf{update}_x(\mathsf{update}_y(w\, (\star))) = \mathsf{update}_{x \, \oplus \, y}(w\, (\star))
+\]
+
+These equations are similar to those given for global state in Example~\ref{ex:fibtheoryofglobalstate}, but instead of describing only overwriting-based store manipulations, they describe store manipulations using the action $\downarrow$ of the monoid $(\Updates, \mathsf{o}, \oplus)$ on store values. Further, observe how $\oplus$ is used to combine consecutive updates in the third equation.
+\end{example}
+
+In~\cite{Ahman:UpdateMonads}, we also consider other,  equivalent sets of equations for the algebras of simply typed update monads, based on the different ways they can constructed from other monads, e.g., as a compatible composition of reader and writer monads.
+
+\begin{example}[Dependently typed update monads]
+\label{ex:fibtheoryofdeptypedupdatemonads}
+\index{theory!fibred effect --!-- of a dependently typed update monad}
+The fibred effect theory $\mathcal{T}_{\text{DUPD}}$ of a dependently typed update monad is given by the signature $\mathcal{S}_{\text{DUPD}}$ and the following three equations:
+\[
+{\diamond \vertbar w \!:\! 1} \vdash \mathsf{lookup}(x .\, \mathsf{update}_{\lambda\, y : \State .\, \mathsf{o}\, y}(w\, (\star))) = w\, (\star)
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c@{~} c@{~} l}
+{x \!:\! (\Pi\, x' \!:\! \State .\, \Updates[x'/x]) \vertbar w \!:\! \State \times \State} & \vdash & \mathsf{lookup}(y .\, \mathsf{update}_{x}(\mathsf{lookup}(y' .\, w\, (\langle y , y' \rangle)))  
+\\[-0.5mm]
+& = & \mathsf{lookup}(y .\, \mathsf{update}_x(w\, (\langle y , y \downarrow (x\,\, y) \rangle))))
+\end{array}
+\vspace{0.15cm}
+\]
+
+\[
+\begin{array}{c}
+\hspace{-4.8cm}
+{x \!:\! (\Pi\, x' \!:\! \State .\, \Updates[x'/x]), y \!:\! (\Pi\, y' \!:\! \State .\, \Updates[y'/x]) \vertbar w \!:\! 1} \vdash 
+\\[-0.5mm]
+\hspace{2.5cm}
+\mathsf{update}_x(\mathsf{update}_y(w\, (\star))) = \mathsf{update}_{\lambda\, x''.\, (x\,\, x'') \, \oplus_{x''} \, (y\,\, (x'' \,\downarrow\, (x\,\, x'')))}(w\, (\star))
+\end{array}
+\]
+
+These three equations are analogous to the equations given for simply typed update monads in Example~\ref{ex:fibtheoryofupdatemonads}, except for  
+the 1st and 3rd equation now having to account for the input type of $\mathsf{update}$ being $\Pi\, x \!:\! \State.\, \Updates$ instead of simply $\Updates$. 
+\end{example}
+
+\section{Extending eMLTT with fibred algebraic effects} 
+\label{sect:fibalgeffectsineMLTT}
+
+In this section we show how to extend eMLTT with fibred algebraic effects given by a fibred effect theory $\mathcal{T}_{\text{eff}} = (\mathcal{S}_{\text{eff}},\mathcal{E}_{\text{eff}})$. We call the resulting language eMLTT$_{\mathcal{T}_{\text{eff}}}$. 
+
+\begin{definition}
+\label{def:extensionofeMLTTsyntaxwithfibalgeffects}
+\index{extension of eMLTT!-- with fibred algebraic effects}
+\index{algebraic operation}
+The syntax of eMLTT$_{\mathcal{T}_{\text{eff}}}$ is given by extending eMLTT's computation terms with \emph{algebraic operations}:
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+M & ::= & \ldots \,\,\,\vertbar\,\,\, \algop^{\ul{C}}_V(y .\, M)
+\end{array}
+\]
+for all operation symbols $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$ and all  computation types $\ul{C}$.
+\end{definition}
+
+In $\algop^{\ul{C}}_V(y .\, M)$, the value variable $y$ is bound in $M$.
+Similarly to effect terms, we omit the variable binding in $\algop^{\ul{C}}_V(y .\, M)$ for better readability when the output type of $\sigalgop$ is $1$. Analogously, 
+we also omit the value argument $V$ when the input type of $\sigalgop$ is $1$. 
+
+The different kinds of substitution we defined for eMLTT extend straightforwardly to eMLTT$_{\mathcal{T}_{\text{eff}}}$: we extend the (simultaneous) substitution of value terms with
+\[
+(\algop^{\ul{C}}_V(y .\, M))[\overrightarrow{W}/\overrightarrow{x}] \defeq \algop^{\ul{C}[\overrightarrow{W}/\overrightarrow{x}]}_{V[\overrightarrow{W}/\overrightarrow{x}]}(y .\, M[\overrightarrow{W}/\overrightarrow{x}])
+\]
+and keep the substitution of computation and homomorphism terms for computation variables unchanged. 
+The properties of substitution we established for eMLTT in Sections~\ref{sect:syntax} and~\ref{sect:completeness} also extend straightforwardly to eMLTT$_{\mathcal{T}_{\text{eff}}}$---the  proof principles remain unchanged, and the cases for the algebraic operations are treated analogously to other computation terms that involve variable bindings and type annotations.
+
+Unless stated otherwise, the types and terms we use in the rest of this chapter are those of eMLTT$_{\mathcal{T}_{\text{eff}}}$.
+This also includes the definitions of pure value types and pure value terms appearing in effect terms because every pure eMLTT value type (resp. term) can be trivially considered as a pure eMLTT$_{\mathcal{T}_{\text{eff}}}$ value type (resp. term).
+
+Next, we extend the typing rules and equational theory of eMLTT with fibred algebraic effects. However, 
+before doing so, we first need to define a translation of effect terms into eMLTT$_{\mathcal{T}_{\text{eff}}}$. While it might be more natural to translate effect terms into computation terms, we have decided to translate them into value terms instead. We do so to avoid having to define another similar translation in Chapter~\ref{chap:handlers}. We note that this choice does not restrict the definitional equations between computation terms that one can derive from the equations given in $\mathcal{E}_{\text{eff}}$, as illustrated later in this section.
+
+In order to simplify the presentation of eMLTT$_{\text{eff}}$, we assume that
+\[
+\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n
+\qquad
+\Delta = w_1 \!:\! A'_1, \ldots, w_m \!:\! A'_m
+\] 
+throughout this section.
+In order to further improve the readability, we use vector notation for sets of value terms, i.e., we write $\overrightarrow{V_i}$ for a set of value terms $\{V_1, \ldots, V_n\}$. 
+\index{ V@$\overrightarrow{V_i}$ (shorthand for $\{V_1, \ldots, V_n\}$)}
+
+We also note that we only translate well-formed effect terms $\lj {\Gamma \vertbar \Delta} {T}$ because it makes it easier to account for the substitution of value terms for effect variables in the definition of the translation. In particular, the later results refer to value terms substituted for all effect variables in $\Delta$, not just for the free variables appearing in $T$.
+
+\begin{definition}
+\label{def:transofefftermstovalueterms}
+\index{translation of effect terms into value terms}
+\index{ T@$\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{j}}; \overrightarrow{W_{\sigalgop}}}$ (translation of effect terms into value terms)}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, a value type $A$, value terms $V_{i}$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{\!j}$ (for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$), and value terms $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), the \emph{translation} of the effect term $T$ into a value term $\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}$ is defined by recursion on the structure of $T$ as follows:
+\[
+\begin{array}{l c l}
+\efftrans {w_{\!j}\, (V)} {} & \defeq & V'_{\!j}\,\, (V[\overrightarrow{V_i}/\overrightarrow{x_i}])
+\\[2mm]
+\efftrans {\sigalgop_V(y .\, T)} {} & \defeq & W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {}\rangle
+\\[2mm]
+\multicolumn{3}{l}{\efftrans {\pmatchsf V {(y_1 \!:\! B_1, y_2 \!:\! B_2)} {} T} {}}
+\\
+\multicolumn{3}{l}{\hspace{3cm} \defeq \,\,\,\,\,\, \pmatch {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {(y_1 \!:\! B_1[\overrightarrow{V_i}/\overrightarrow{x_i}], y_2 \!:\! B_2[\overrightarrow{V_i}/\overrightarrow{x_i}])} {y .\, A} {\efftrans T {}} }
+\\[2mm]
+\multicolumn{3}{l}{\efftrans {\mathsf{case~} V \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(y_1 \!:\! B_1)} \mapsto T_1}, {\seminr {\!} {\!\!(y_2 \!:\! B_2)} \mapsto T_2})} {}}
+\\
+\multicolumn{3}{l}{\hspace{4cm} \defeq \,\,\,\,\,\, \mathtt{case~} V[\overrightarrow{V_i}/\overrightarrow{x_i}] \mathtt{~of}_{y.\,A} \mathtt{~} ({\inl {\!} {\!\!(y_1 \!:\! B_1[\overrightarrow{V_i}/\overrightarrow{x_i}])} \mapsto \efftrans {T_1} {}},} \\[-0.5mm]
+\multicolumn{3}{l}{\hfill {\inr {\!} {\!\!(y_2 \!:\! B_2[\overrightarrow{V_i}/\overrightarrow{x_i}])} \mapsto \efftrans {T_2} {}})}
+\end{array}
+\]
+where in the last two cases the value variable $y$ is chosen fresh. While in the above we omit the subscripts on the translation for better readability, it is important to note that in the cases where the given effect term $T$ involves variable bindings, the set of value terms $\overrightarrow{V_i}$ is extended with the corresponding value variables in the right-hand side. For example, the right-hand side of the algebraic operations case is formally written as
+\[
+W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle
+\]
+\end{definition}
+
+
+Later, in Proposition~\ref{prop:welltypednessoftranslatingeffectterms}, we show that under appropriate well-formedness assumptions about the value type $A$ and the value terms $V_i$, $V'_{\!j}$,  and $W_{\sigalgop}$, the translation of the effect term $T$ results in a well-typed value term $\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}$ of type $A$. 
+
+
+Using this translation, we can now extend the typing rules and definitional equations of eMLTT with fibred algebraic effects.
+
+\begin{definition}
+\label{def:extensionofeMLTTwithfibalgeffects}
+\index{well-formed syntax}
+The \emph{well-formed syntax} of eMLTT$_{\mathcal{T}_{\text{eff}}}$
+is given by extending the typing rules for eMLTT's well-typed  computation terms with
+\vspace{0.2cm}
+\[
+\mkrulelabel
+{\cj \Gamma {\algop^{\ul{C}}_V(y .\, M)} {\ul{C}}}
+{
+\vj \Gamma V I
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} {M} {\ul{C}}
+}
+{(\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})}
+\]
+and the equational theory of eMLTT with rules for
+\begin{itemize}
+\item congruence equations:
+\[
+\hspace{-0.5cm}
+\mkrulelabel
+{\ceq \Gamma {\algop^{\ul{C}}_V(y .\, M)} {{\algop^{\ul{D}}_W(y .\, N)}} {\ul{C}}}
+{
+\veq \Gamma V W I
+\quad
+\ljeq \Gamma {\ul{C}} {\ul{D}}
+\quad
+\ceq {\Gamma, y \!:\! O[V/x]} {M} {N} {\ul{C}}
+}
+{(\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})}
+\]
+\item general algebraicity\footnote{We are using the terminology of~\cite[Section~5.3]{Pretnar:Thesis}.} equation:
+\index{algebraicity equation!general --}
+\[
+\mkrulelabel
+{\ceq \Gamma {K[\algop^{\ul{C}}_V(y . M)/z]} {\algop^{\ul{D}}_V(y . K[M/z])} {\ul{D}}}
+{
+\vj \Gamma V {I} 
+\quad 
+\cj {\Gamma, y \!:\! O[V/x]} M {\ul{C}} 
+\quad 
+\hj \Gamma {z \!:\! \ul{C}} K {\ul{D}}}
+{(\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})}
+\]
+\item equations of the given fibred effect theory:
+\[
+\mkrulelabel
+{
+\veq {\Gamma'} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+}
+{
+\begin{array}{c@{\qquad\quad} l}
+\lj {\Gamma'} \ul{C}
+\\[-0.5mm]
+\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} & (1 \leq i \leq n)
+\\[0.5mm]
+\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}} & (1 \leq j \leq m)
+\end{array}
+}
+{(\ljeq {\Gamma \vertbar \Delta} {T_1\!} {\!T_2} \in \!\mathcal{E}_{\text{eff}})}
+\]
+with the well-typed value terms $\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I .\, O \to U\ul{C}) \to U\ul{C}}$ given by
+\[
+\begin{array}{c}
+\hspace{-8cm}
+W_{\sigalgop} \defeq \lambda x' \!:\! (\Sigma\, x \!:\! I.\, O \to U\ul{C}).\, 
+\\
+\hspace{1.75cm}
+\pmatch {x'} {(x \!:\! I, y \!:\! O \to U\ul{C})} {x''\!.\, U\ul{C}} {\thunk (\algop^{\ul{C}}_{x}(y'.\, \force {\ul{C}} {(y\,\, y')}))} 
+\end{array}
+\]
+for each operation symbol $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, with $x''$  chosen fresh.
+\end{itemize}
+\end{definition}
+
+Finally, is worth noting that we include the equations of the given fibred effect theory in eMLTT$_{\mathcal{T}_{\text{eff}}}$ as definitional equations between value terms, rather than as equations between computation terms. This is analogous to how we have defined the translation of effect terms, namely,  into value terms rather than computation terms.
+Nevertheless, the expected equations between computation terms are still derivable, using thunking and forcing. For example, we can derive the following definitional equation:
+\[
+\ceq {\Gamma} {\mathtt{get}^{\ul{C}}(x .\, \mathtt{put}^{\ul{C}}_x(M))} {M} {\ul{C}}
+\]
+from the equation 
+\[
+{\diamond \vertbar w \!:\! 1} \vdash \mathsf{get}(x .\, \mathsf{put}_x(w\, (\star))) = w\, (\star)
+\]
+given in the global state theory $\mathcal{T}_{\text{GS}}$ as follows:
+
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \mathtt{get}^{\ul{C}}(x .\, \mathtt{put}^{\ul{C}}_x(M))
+\\
+=\,\, & \force {\ul{C}} (\thunk (\mathtt{get}^{\ul{C}}(x .\, \force {\ul{C}}(\thunk ( \mathtt{put}^{\ul{C}}_x(\force {\ul{C}} (\thunk M)))))))
+\\
+=\,\, & \force {\ul{C}} \big(\big(\lambda x' \!:\! 1 \times (\State \to U\ul{C}) .\, 
+\\[-1mm]
+& \hspace{0.5cm} \pmatch {x'} {(x'_1 \!:\! 1, x'_2 \!:\! \State \to U\ul{C})} {} {\thunk (\mathtt{get}^{\ul{C}}(x .\, \force {\ul{C}} (x'_2\,\, x)))\big)}\,  
+\\[-1mm]
+& \hspace{5.05cm} \langle \star , \lambda\, x \!:\! \State .\, \thunk (\mathtt{put}^{\ul{C}}_x(\force {\ul{C}} (\thunk M))) \rangle \big)
+\\
+=\,\, & \force {\ul{C}} \big(\big(\lambda x' \!:\! 1 \times (\State \to U\ul{C}) .\, 
+\\[-1mm]
+& \hspace{1cm} \pmatch {x'} {(x'_1 \!:\! 1, x'_2 \!:\! \State \to U\ul{C})} {} {\thunk (\mathtt{get}^{\ul{C}}(x .\, \force {\ul{C}} (x'_2\,\, x)))\big)}\,  
+\\[-1mm]
+& \hspace{2cm} \big\langle \star , \lambda\, x \!:\! \State .\, (\lambda x'' \!:\! \State \times (1 \to U\ul{C}) .\, 
+\\[-1mm]
+& \hspace{3cm} \pmatch {x''} {(x''_1 \!:\! \State, x''_2 \!:\! 1 \to U\ul{C})} {} {\\& \hspace{3.9cm} \thunk (\mathtt{put}^{\ul{C}}_{x''_1}(\force {\ul{C}} (x''_2\,\, \star)))})\, \langle x , \lambda\, x''' \!:\! 1 .\, \thunk M \rangle \big\rangle \big)
+\\
+=\,\, & \force {\ul{C}} \big(\big(\lambda x' \!:\! 1 \times (\State \to U\ul{C}) .\, 
+\\[-1mm]
+& \hspace{0.35cm} \pmatch {x'} {(x'_1 \!:\! 1, x'_2 \!:\! \State \to U\ul{C})} {} {\thunk (\mathtt{get}^{\ul{C}}(x .\, \force {\ul{C}} (x'_2\,\, x)))\big)}\,  
+\\[-1mm]
+& \hspace{0.8cm} \big\langle \star , \lambda\, x \!:\! \State .\, (\lambda x'' \!:\! \State \times (1 \to U\ul{C}) .\, 
+\\[-1mm]
+& \hspace{1.55cm} \pmatch {x''} {(x''_1 \!:\! \State, x''_2 \!:\! 1 \to U\ul{C})} {} {\\[-1mm]& \hspace{2.25cm} \thunk (\mathtt{put}^{\ul{C}}_{x''_1}(\force {\ul{C}} (x''_2\,\, \star)))}) \, \langle x , \lambda\, x''' \!:\! 1 .\, (\lambda\, y \!:\! 1 .\, \thunk M)\, \star \rangle \big\rangle \big)
+\\
+=\,\, & \force {\ul{C}} \big(\efftrans {\mathtt{get}(x .\, \mathtt{put}_x(w\, (\star)))} {U\ul{C}; \emptyset; \lambda\, y : 1. \thunk M; \overrightarrow{W_{\sigalgop}}} \big)
+\\
+=\,\, & \force {\ul{C}} \big(\efftrans {w\, (\star)} {U\ul{C}; \emptyset; \lambda\, y : 1. \thunk M; \overrightarrow{W_{\sigalgop}}} \big)
+\\
+=\,\, & \force {\ul{C}} ((\lambda\, y : 1.\, \thunk M)\, \star)
+\\
+=\,\, & \force {\ul{C}} (\thunk M)
+\\
+=\,\, & M : \ul{C}
+\end{align*}
+\end{fleqn}
+where the well-typed value terms $W_{\mathsf{get}}$ and $W_{\mathsf{put}}$ are respectively given by
+\[
+\begin{array}{c}
+\hspace{-8.5cm}
+W_{\mathsf{get}} \defeq \lambda x' \!:\! 1 \times (\State \to U\ul{C}).\, 
+\\[-1mm]
+\hspace{2cm}
+\pmatch {x'} {(x'_1 \!:\! 1, x'_2 \!:\! \State \to U\ul{C})} {} {\thunk (\mathsf{get}^{\ul{C}}(x.\, \force {\ul{C}} {(x'_2\,\, x)}))}
+\\[2mm]
+\hspace{-8.4cm}
+W_{\mathsf{put}} \defeq \lambda x'' \!:\! \State \times (1 \to U\ul{C}).\, 
+\\[-1mm]
+\hspace{2.1cm}
+\pmatch {x''} {(x''_1 \!:\! \State, x''_2 \!:\! 1 \to U\ul{C})} {} {\thunk (\mathsf{put}^{\ul{C}}_{x''_1}(\force {\ul{C}} {(x''_2\,\, \star)}))}
+\end{array}
+\]
+
+\section{Meta-theory} 
+\label{sect:emlttalgeffectsmetatheory}
+
+In this section we show how to extend the meta-theory we established for eMLTT in Section~\ref{sect:metatheory} (and in the beginning of Section~\ref{sect:completeness}) to eMLTT$_{\mathcal{T}_{\text{eff}}}$. While some of these results extend straightforwardly from eMLTT to eMLTT$_{\mathcal{T}_{\text{eff}}}$ (either the proof remains the same or it can be easily adapted), others require little more work. In particular, as the definitional equations now involve the translation of effect terms, some of the results below need to be now proved in conjunction with corresponding results about the translation. We omit the propositions and theorems whose proofs extend straightforwardly to eMLTT$_{\mathcal{T}_{\text{eff}}}$ and only comment on those whose proofs are more involved.
+
+\subsection*{Extending Proposition~\ref{prop:freevariablesofwellformedexpressions} to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$}
+
+We begin by recalling that in Proposition~\ref{prop:freevariablesofwellformedexpressions} we showed that the free value variables of well-formed eMLTT expressions and definitional equations are included in their respective value contexts. For example, given $\ceq \Gamma M N \ul{C}$, we showed that
+\[
+FVV(M) \subseteq V\!ars(\Gamma)
+\qquad
+FVV(N) \subseteq V\!ars(\Gamma)
+\qquad
+FVV(\ul{C}) \subseteq V\!ars(\Gamma)
+\]
+
+When extending Proposition~\ref{prop:freevariablesofwellformedexpressions} to eMLTT$_{\mathcal{T}_{\text{eff}}}$, we keep the basic proof principle the same: we prove $(a)$--$(j)$ for the different kinds of types, terms, and definitional equations simultaneously, by induction on the given derivations. 
+
+The new cases for algebraic operations, and the corresponding congruence and general algebraicity equations are proved analogously to other computation terms and definitional equations that involve variable bindings and type annotations. However, in order to account for the case that corresponds to the third group of definitional equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, we need to prove the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} simultaneously with Proposition~\ref{prop:effecttermtranslationinclusionofvariables} below.
+
+\begin{proposition}
+\label{prop:effecttermtranslationinclusionofvariables}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, a value type $A$, value terms $V_{i}$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{\!j}$ (for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$), and value terms $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), then we have
+\[
+FVV(\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}) 
+\vspace{-0.15cm}
+\]
+\[
+\subseteq
+\vspace{-0.1cm}
+\]
+\[
+FVV(A) \,\cup\!\! \bigcup_{V_i \in \overrightarrow{V_i}} \! FVV(V_i) \,\cup\!\!\! \bigcup_{V'_{\!j} \in \overrightarrow{V'_{\!j}}} \! FVV(V'_{\!j}) \,\cup\!\!\!\!\!\!\! \bigcup_{W_{\sigalgop} \in \overrightarrow{W_{\sigalgop}}} \!\!\!\!\!\! FVV(W_{\sigalgop}) 
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$, using the simultaneously proved eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} to show inclusions for the sets of free value variables of the pure value types and pure value terms appearing in $T$. The proof also uses the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofsubsstitutionsimultaneous} that shows how the sets of free value variables are computed for expressions involving substitution. 
+
+As a representative example, we consider the case of algebraic operations, for which we need to show that the following inclusion holds:
+\[
+FVV(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)
+\vspace{-0.3cm}
+\]
+\[
+\subseteq
+\vspace{-0.1cm}
+\]
+\[
+FVV(A) \,\cup\!\! \bigcup_{V_i \in \overrightarrow{V_i}} \! FVV(V_i) \,\cup\!\!\! \bigcup_{V'_{\!j} \in \overrightarrow{V'_{\!j}}} \! FVV(V'_{\!j}) \,\cup\!\!\!\!\!\!\! \bigcup_{W_{\sigalgop} \in \overrightarrow{W_{\sigalgop}}} \!\!\!\!\!\! FVV(W_{\sigalgop}) 
+\]
+%
+
+First, according to how the set of free value variables of a value term is computed, we know that the following sequence of equations holds:
+\[
+\begin{array}{c}
+FVV(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i} ,\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)
+\\
+=
+\\[1mm]
+FVV(W_{\sigalgop}) \,\cup\, FVV(V[\overrightarrow{V_i}/\overrightarrow{x_i}]) \,\cup\, FVV\big(\lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\big)
+\\
+=
+\\[1mm]
+\hspace{-7.225cm}
+FVV(W_{\sigalgop}) \,\cup\, FVV(V[\overrightarrow{V_i}/\overrightarrow{x_i}]) \,\,\,\cup\, 
+\\
+\hspace{3.35cm}
+FVV(O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]) \,\cup\, \big(FVV(\efftrans {T} {A; \overrightarrow{V_i} ,\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}) - \ia y \big)
+\end{array}
+\]
+%
+
+Next, by using Proposition~\ref{prop:freevariablesofsubsstitutionsimultaneous} with  $V[\overrightarrow{V_i}/\overrightarrow{x_i}]$, we get that
+\[
+FVV(V[\overrightarrow{V_i}/\overrightarrow{x_i}]) \subseteq (FVV(V) - \overrightarrow{x_i}) \,\,\cup \bigcup_{V_i \in \overrightarrow{V_i}} \! FVV(V_i)
+\]
+
+However, as we know that $\vj \Gamma V I$, we can use $(e)$ of the simultaneously proved eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} on this derivation to get $FVV(V) \subseteq V\!ars(\Gamma)$. 
+
+Further, according to the definition of the translation of effect terms into value terms, we also know that $\overrightarrow{x_i} = V\!ars(\Gamma)$. As a result, we can conclude that
+\[
+FVV(V[\overrightarrow{V_i}/\overrightarrow{x_i}]) \subseteq (FVV(V) - V\!ars(\Gamma)) \,\cup\!\! \bigcup_{V_i \in \overrightarrow{V_i}} \!  FVV(V_i) = \bigcup_{V_i \in \overrightarrow{V_i}} \!  FVV(V_i)
+\] 
+Using these same arguments with $O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]$, we also get that
+\[
+FVV(O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]) \subseteq \bigcup_{V_i \in \overrightarrow{V_i}} \!  FVV(V_i)
+\]
+%
+
+\pagebreak
+
+Next, by using the induction hypothesis on $\lj {\Gamma, y \!:\! O[V/x] \vertbar \Delta} T$, we get
+\[
+FVV(\efftrans T {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}) 
+\]
+\[
+\subseteq 
+\]
+\[
+FVV(A) \,\cup\!\!\!\! \bigcup_{V_i \in \overrightarrow{V_i},\, y} \!\!\! FVV(V_i) \,\cup\!\!\!  \bigcup_{V'_{\!j} \in \overrightarrow{V'_{\!j}}} \!\! FVV(V'_{\!j}) \,\cup\!\!\!\!\!\!\! \bigcup_{W_{\sigalgop} \in \overrightarrow{W_{\sigalgop}}} \!\!\!\!\!\! FVV(W_{\sigalgop}) 
+\]
+%
+
+Finally, by observing that $y$ is fresh according to our chosen variable convention, we can combine the  inclusions we proved above to get the required inclusion
+\[
+FVV(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)
+\vspace{-0.25cm}
+\]
+\[
+\subseteq
+\]
+\[
+FVV(A) \,\cup\!\! \bigcup_{V_i \in \overrightarrow{V_i}} \! FVV(V_i) \,\cup\!\!\! \bigcup_{V'_{\!j} \in \overrightarrow{V'_{\!j}}} \! FVV(V'_{\!j}) \,\cup\!\!\!\!\!\!\! \bigcup_{W_{\sigalgop} \in \overrightarrow{W_{\sigalgop}}} \!\!\!\!\!\! FVV(W_{\sigalgop}) 
+\vspace{-0.25cm}
+\]
+\end{proof}
+
+We now return to the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} and the case of its proof that corresponds to the third group of definitional equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}. 
+
+Specifically, in this case the given derivation ends with
+\[
+\mkrulelabel
+{
+\veq {\Gamma'} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+}
+{
+\begin{array}{c@{\qquad\qquad} l}
+\lj {\Gamma'} \ul{C}
+\\
+\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} & (1 \leq i \leq n)
+\\
+\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}} & (1 \leq j \leq m)
+\end{array}
+}
+{(\ljeq {\Gamma \vertbar \Delta} {T_1\!} {\!T_2} \in \!\mathcal{E}_{\text{eff}})}
+\]
+with the well-typed value terms $\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I .\, O \to U\ul{C}) \to U\ul{C}}$ defined as
+\[
+\begin{array}{c}
+\hspace{-8.75cm}
+W_{\sigalgop} \defeq \lambda x' \!:\! (\Sigma\, x \!:\! I.\, O \to U\ul{C}).\, 
+\\
+\hspace{2cm}
+\pmatch {x'} {(x \!:\! I, y \!:\! O \to U\ul{C})} {x''\!.\, U\ul{C}} {\thunk (\algop^{\ul{C}}_{x}(y'.\, \force {\ul{C}} {(y\,\, y')}))} 
+\end{array}
+\]
+for each the operation symbols $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, 
+and we need to show that
+\[
+\begin{array}{c}
+FVV(U\ul{C}) \subseteq V\!ars(\Gamma')
+\\[2.5mm]
+FVV(\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}) \subseteq V\!ars(\Gamma')
+\\[3mm]
+FVV(\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}) \subseteq V\!ars(\Gamma')
+\end{array}
+\]
+
+First, we use $(c)$ on $\lj {\Gamma'} {\ul{C}}$ to get the inclusion $FVV(\ul{C}) \subseteq V\!ars(\Gamma')$, from which then $FVV(U\ul{C}) \subseteq V\!ars(\Gamma')$ follows trivially because we have $FVV(U\ul{C}) = FVV(\ul{C})$. 
+
+Next, by using $(e)$ on the other derivations in the premise of the given rule, we get $FVV(V_i) \subseteq V\!ars(\Gamma')$, $FVV(V'_{\!j}) \subseteq V\!ars(\Gamma')$, and $FVV(W_{\sigalgop}) \subseteq V\!ars(\Gamma')$ for all value terms $V_i$, $V'_{\!j}$, and $W_{\sigalgop}$ mentioned in the subscripts of the translations of $T_1$ and $T_2$. 
+
+Finally, combining the above inclusions with the inclusion given by the simultaneously proved Proposition~\ref{prop:effecttermtranslationinclusionofvariables}, the required three inclusions follow straightforwardly.
+
+\subsection*{Extending Theorem~\ref{thm:substitution} (Value term substitution) to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$}
+\index{substitution theorem!syntactic --!-- for value terms}
+
+We begin by recalling that in Theorem~\ref{thm:substitution} we showed that the substitution rule is admissible in eMLTT for substituting value terms for value variables. When extending Theorem~\ref{thm:substitution} to eMLTT$_{\mathcal{T}_{\text{eff}}}$, we keep the basic proof principle the same: we prove $(a)$--$(l)$ for different kinds of types, terms, and definitional equations simultaneously, with $(a)$--$(b)$ proved by induction on the length of the given value context $\Gamma_2$, and $(c)$--$(l)$  by induction on the given derivations; and this theorem as a whole is proved simultaneously with the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of the weakening theorem (Theorem~\ref{thm:weakening}). 
+
+The new cases for algebraic operations, and the corresponding congruence and general algebraicity equations are analogous to other computation terms and definitional equations that involve variable bindings and type annotations. However, in order to account for the case that corresponds to the third group of equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, we additionally need to prove Proposition~\ref{prop:effecttermstranslationsubstitution} below. It is worth noting that this  proposition does not need to be proved simultaneously with the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Theorem~\ref{thm:substitution}, the latter simply uses it in its proof. 
+%
+It is also worth highlighting that as a consequence of extending Theorem~\ref{thm:substitution} to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$, 
+the analogous theorem about simultaneous substitutions (Theorem~\ref{thm:simultaneoussubstitution}) also holds for eMLTT$_{\!\mathcal{T}_{\text{eff}}}$.
+
+\begin{proposition}
+\label{prop:effecttermstranslationsubstitution}
+Given an effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, a value type $A$, value terms $V_{i}$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{\!j}$ (for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$), value terms $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), a value variable $y$, and a value term $W$, then 
+\[
+\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y] = \efftrans T {A[W/y]; \overrightarrow{V_i[W/y]}; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$. 
+
+As a representative example, we consider the case of algebraic operations, for which we need to show that the following equation holds:
+\[
+\begin{array}{c}
+(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y' \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)[W/y] 
+\\[-1mm]
+=
+\\[-1mm]
+\hspace{-8.5cm}
+(W_{\sigalgop}[W/y])\, \langle V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}] , 
+\\
+\hspace{2.75cm}
+\lambda\, y' \!:\! O[V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A[W/y]; \overrightarrow{V_i[W/y]}, y'; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}\rangle
+\end{array}
+\]
+
+First, by using the definition of substitution, we get that
+\[
+\begin{array}{c}
+(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y' \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i} ,\, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)[W/y]
+\\[-1mm]
+=
+\\[1mm]
+(W_{\sigalgop}[W/y])\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}][W/y] , \lambda\, y' \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x][W/y] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y]\rangle
+\end{array}
+\]
+
+Next, by using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} on the assumed derivation of $\vj \Gamma V I$, we get  $FVV(V) \subseteq V\!ars(\Gamma) = \{x_1, \ldots, x_n\}$. 
+Based on this inclusion, we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:simultaneoussubstlemma1} to prove the following equation:
+\[
+V[\overrightarrow{V_i}/\overrightarrow{x_i}][W/y] = V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}]
+\]
+Further, using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of Propositions~\ref{prop:freevariablesofwellformedexpressions} and~\ref{prop:simultaneoussubstlemma1}, we also get that
+\[
+O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x][W/y] = O[V[\overrightarrow{V_i}/\overrightarrow{x_i}][W/y]/x] = O[V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}]/x]
+\]
+
+Next, by using the induction hypothesis on $\lj {\Gamma, y' \!:\! O[V/x] \vertbar \Delta} T$, we get that 
+\[
+\efftrans {T} {A; \overrightarrow{V_i}\!, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y] = \efftrans {T} {A[W/y]; \overrightarrow{V_i[W/y]}, y'[W/y]; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}
+\]
+However, as $y \neq y'$ due to our adopted variable conventions, the above is equivalent to  
+\[
+\efftrans {T} {A; \overrightarrow{V_i}\!, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y] = \efftrans {T} {A[W/y]; \overrightarrow{V_i[W/y]}, y'; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}
+\]
+
+Finally, when we combine the above equations, we get the required equation
+\[
+\begin{array}{c}
+(W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y' \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i}\!, y'; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle)[W/y] 
+\\[-1mm]
+=
+\\[-1mm]
+\hspace{-8.5cm}
+(W_{\sigalgop}[W/y])\, \langle V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}] , 
+\\
+\hspace{2.75cm}
+\lambda\, y' \!:\! O[V[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A[W/y]; \overrightarrow{V_i[W/y]}, y'; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}\rangle
+\end{array}
+\]
+\end{proof}
+
+We now return to the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Theorem~\ref{thm:substitution} and the case of its proof that corresponds to the third group of definitional equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}. 
+
+Specifically, in this case we are given
+$
+\vj {\Gamma'_1} W A
+$
+and
+\[
+\mkrulelabel
+{
+\veq {\Gamma'_1, y \!:\! A, \Gamma'_2} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+}
+{
+\begin{array}{c@{\qquad\quad} l}
+\lj {\Gamma'_1, y \!:\! A, \Gamma'_2} \ul{C}
+\\
+\vj {\Gamma'_1, y \!:\! A, \Gamma'_2} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} & (1 \leq i \leq n)
+\\
+\vj {\Gamma'_1, y \!:\! A, \Gamma'_2} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}} & (1 \leq j \leq m)
+\end{array}
+}
+{(\ljeq {\Gamma \vertbar \Delta} {T_1\!} {\!T_2} \in \!\mathcal{E}_{\text{eff}})}
+\]
+with the value terms $\vj {\Gamma'_1, y \!:\! A, \Gamma'_2} {W_{\sigalgop}} {(\Sigma\, x \!:\! I .\, O \to U\ul{C}) \to U\ul{C}}$ defined as
+\[
+\begin{array}{c}
+\hspace{-8.75cm}
+W_{\sigalgop} \defeq \lambda x' \!:\! (\Sigma\, x \!:\! I.\, O \to U\ul{C}).\, 
+\\
+\hspace{2cm}
+\pmatch {x'} {(x \!:\! I, y' \!:\! O \to U\ul{C})} {x''\!.\, U\ul{C}} {\thunk (\algop^{\ul{C}}_{x}(y''.\, \force {\ul{C}} {(y'\,\, y'')}))} 
+\end{array}
+\]
+for each $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, 
+and we need to prove the following equation:
+\[
+\veq {\Gamma'_1, \Gamma'_2[W/y]} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y]} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y]} {U\ul{C}[W/y]}
+\]
+
+First, we use $(e)$ on the assumed derivation of $\lj {\Gamma'_1, y \!:\! A, \Gamma'_2} {\ul{C}}$ to get a derivation \linebreak of $\lj {\Gamma'_1, \Gamma'_2[W/y]} {\ul{C}[W/y]}$. 
+
+Next, by using $(g)$ on the other assumptions of the given rule, in combination with 
+the properties of (simultaneous) substitution we established in Sections~\ref{sect:syntax} and~\ref{sect:completeness}, and the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} proved earlier, we get derivations of 
+\[
+\begin{array}{c}
+\vj {\Gamma'_1, \Gamma'_2[W/y]} {V_i[W/y]} {A_i[V_1[W/y]/x_1, \ldots, V_{i-1}[W/y]/x_{i-1}]}
+\\[2mm]
+\vj {\Gamma'_1, \Gamma'_2[W/y]} {V'_{\!j}[W/y]} {A'_{\!j}[\overrightarrow{V_i[W/y]}/\overrightarrow{x_i}] \to U\ul{C}[W/y]}\end{array}
+\]
+for all $1 \leq i \leq n$ and $1 \leq j \leq m$, respectively. 
+
+
+Next, we use the rule for the third group of definitional equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, together with the derivations we have constructed above, to prove
+%
+\[
+\begin{array}{c}
+\hspace{-5cm}
+{\Gamma'_1, \Gamma'_2[W/y]} \vdash {\efftrans {T_1} {U\ul{C}[W/y]; \overrightarrow{V_i[W/y]}; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}} = 
+\\
+\hspace{6cm}
+{\efftrans {T_2} {U\ul{C}[W/y]; \overrightarrow{V_i[W/y]}; \overrightarrow{V'_{\!j}[W/y]}; \overrightarrow{W_{\sigalgop}[W/y]}}} : {U\ul{C}[W/y]}
+\end{array}
+\]
+
+Finally, we use Proposition~\ref{prop:effecttermstranslationsubstitution} to turn the this proof into the required proof of
+\[
+\veq {\Gamma'_1, \Gamma'_2[W/y]} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y]} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}[W/y]} {U\ul{C}[W/y]}
+\]
+
+\subsection*{Extending Proposition~\ref{prop:wellformedcomponentsofjudgements} to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$}
+
+We begin by recalling that in Proposition~\ref{prop:wellformedcomponentsofjudgements} we showed that the judgements of well-formed expressions and definitional equations only involve well-formed contexts and types, and well-typed terms. For example, given $\ceq \Gamma M N {\ul{C}}$, we showed that
+\[
+\cj \Gamma M \ul{C}
+\qquad
+\cj \Gamma N \ul{C}
+\]
+
+When extending Proposition~\ref{prop:wellformedcomponentsofjudgements} to eMLTT$_{\mathcal{T}_{\text{eff}}}$, we keep the basic proof principle the same: we prove $(a)$--$(j)$ for different kinds of types, terms, and definitional equations simultaneously, by induction on the given derivations, using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of the weakening and substitution theorems, where required.
+
+The new cases for algebraic operations,  and the corresponding congruence and general algebraicity equations are analogous to other computation terms and definitional equations that involve variable bindings and type annotations. However, in order to account for the case that corresponds to the third group of equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, we additionally need to prove Proposition~\ref{prop:welltypednessoftranslatingeffectterms} below. It is worth noting that this  proposition does not need to be proved simultaneously with the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements}, the latter simply uses it in its proof.
+
+
+\begin{proposition}
+\label{prop:welltypednessoftranslatingeffectterms}
+\index{translation of effect terms into value terms! well-typedness of --}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, a value type $A$, value terms $V_{i}$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{\!j}$ (for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$), value terms $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), and a value context $\Gamma'$ such that
+\begin{itemize}
+\item $\vdash \Gamma'$, 
+\item $\lj {\Gamma'} A$, 
+\item $\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$,  
+\item $\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[V_1/x_1, \ldots, V_n/x_n] \to A}$, and 
+\item $\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I .\, O \to A) \to A}$,  
+\end{itemize}
+then 
+the result of the translation of $T$ is well-typed as $\vj {\Gamma'} {\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {A}$.
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$, using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of the weakening and substitution theorems, where necessary.
+
+As a representative example, we consider the case of algebraic operations, for which we need to construct a derivation of
+\[
+\vj {\Gamma'} {W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i}\!, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle} {A}
+\]
+
+First, by using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Theorem~\ref{thm:simultaneoussubstitution} (simultaneous value term substitution) with the derivation of $\vj \Gamma V I$, we get a derivation of
+\[
+\vj {\Gamma'} {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {I[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+However, as $\lj {\diamond} I$, we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} to get that $FVV(I) = \emptyset$, and 
+thus we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Propopsition~\ref{prop:valuesubstlemma1simultaneous} to get 
+\[
+\vj {\Gamma'} {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {I}
+\]
+As a consequence, we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Theorem~\ref{thm:simultaneoussubstitution} (simultaneous value term substitution) with the derivation of $\lj {x \!:\! I} O$, to also get a derivation of
+\[
+\lj {\Gamma'} {O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]}
+\]
+
+Next, as $y$ is fresh by our adopted variable conventions, we have a derivation of $\lj {} {\Gamma', y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]}$ 
+and thus we can use the induction hypothesis to get 
+\[
+\vj {\Gamma', y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]} {\efftrans {T} {A; \overrightarrow{V_i}\!, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {A}
+\]
+
+Next, by using the typing rule for lambda abstraction, we get a derivation of
+\[
+\vj {\Gamma'} {\lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i}\!, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] \to A}
+\]
+
+Finally, by using the typing rules for function application and pairing, together with the derivations constructed above, we get the required derivation of
+\[
+\vj {\Gamma'} {W_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i}\!, y; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}\rangle} {A}
+\]
+\end{proof}
+
+We now return to the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements} and the case of its proof that corresponds to the third group of definitional equations given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}.
+
+Specifically, in this case the given derivation ends with
+\[
+\mkrulelabel
+{
+\veq {\Gamma'} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+}
+{
+\begin{array}{c@{\qquad\quad} l}
+\lj {\Gamma'} \ul{C}
+\\
+\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} & (1 \leq i \leq n)
+\\
+\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}} & (1 \leq j \leq m)
+\end{array}
+}
+{(\ljeq {\Gamma \vertbar \Delta} {T_1\!} {\!T_2} \in \!\mathcal{E}_{\text{eff}})}
+\]
+
+\pagebreak
+\noindent
+and we need to construct derivations for
+\[
+\vj {\Gamma'} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+\qquad
+\vj {\Gamma'} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+\]
+both of which follow immediately from Proposition~\ref{prop:welltypednessoftranslatingeffectterms} proved above.
+
+
+\section{Derivable equations}
+\label{sect:derivableequationsforeMLTTwithfibalgeffects}
+
+
+In this short section we present some useful equations that are derivable in eMLTT$_{\mathcal{T}_{\text{eff}}}$, in addition to the equations that we showed to be derivable in eMLTT in Section~\ref{sect:derivableequations}. Namely, by using the general algebraicity equation from Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, we can derive more specialised algebraicity equations that  describe the commutativity of algebraic operations with specific computation terms. Many of these equations appear in languages with algebraic effects based on CBPV without stacks, e.g., see~\cite{Kammar:AlgebraicFoundations,Pretnar:Thesis}.
+
+\begin{proposition}
+\label{prop:specialisedalgebraicity}
+\index{algebraicity equation!specialised --}
+The following definitional equations between computation terms are derivable in eMLTT$_{\mathcal{T}_{\text{eff}}}$, for every operation symbol $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$:
+
+\[
+\mkrule
+{\ceq \Gamma {\doto {\algop^{FA}_V(y .\, M)} {y' \!:\! A} {\ul{C}} {N}} {\algop^{\ul{C}}_V(y.\, \doto M {y' \!:\! A} {\ul{C}} {N})} {\ul{C}}}
+{
+\vj \Gamma V I
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {FA}
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, y' \!:\! A} N \ul{C}
+}
+\vspace{0.35cm}
+\]
+
+\[
+\mkrule
+{\ceq \Gamma {\langle W , \algop^{\ul{C}[W/y']}_V(y .\, M) \rangle_{(y' : A).\, \ul{C}}} {\algop^{\Sigma\, y' : A .\, \ul{C}}_V(y.\, \langle W , M \rangle_{(y' : A).\, \ul{C}})} {\Sigma\, y' \!:\! A .\, \ul{C}}}
+{
+\vj \Gamma V I
+\quad
+\vj \Gamma W A
+\quad
+\lj {\Gamma, y' \!:\! A} \ul{C}
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {\ul{C}[W/y']}
+}
+\vspace{0.35cm}
+\]
+
+\[
+\mkrule
+{\ceq \Gamma {\doto {\algop^{\Sigma\, y' : A .\, \ul{C}}_V(y .\, M)} {(y' \!:\! A, z \!:\! \ul{C})} {\ul{D}} K} {\algop^{\ul{D}}_V(y .\, \doto M {(y' \!:\! A, z \!:\! \ul{C})} {\ul{D}} K)} {\ul{D}}}
+{
+\vj \Gamma V I
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {\Sigma\, y' \!:\! A .\, \ul{C}}
+\quad
+\lj \Gamma \ul{D}
+\quad
+\hj {\Gamma, y' \!:\! A} {z \!:\! \ul{C}} K \ul{D} 
+}
+\vspace{0.35cm}
+\]
+
+\[
+\mkrule
+{\ceq \Gamma {\lambda \, y' \!:\! A .\, \algop^{\ul{C}}_V(y.\, M)} {\algop^{\Pi\, y' : A .\, \ul{C}}_V(y .\, \lambda\, y' \!:\! A .\, M)} {\Pi\, y' \!:\! A .\, \ul{C}}}
+{
+\vj \Gamma V I
+\quad
+\lj {\Gamma, y' \!:\! A} {\ul{C}}
+\quad
+\cj {\Gamma, y \!:\! O[V/x], y' \!:\! A} {M} {\ul{C}} 
+}
+\vspace{0.35cm}
+\]
+
+\[
+\mkrule
+{\ceq \Gamma {(\algop^{\Pi\, y' : A .\, \ul{C}}_V(y.\, M))(W)_{(y' : A).\,\ul{C}}} {\algop^{\ul{C}[W/y']}_V(y.\, M(W)_{(y' : A).\,\ul{C}})} {\ul{C}[W/y']}}
+{
+\vj \Gamma V I
+\quad
+\vj \Gamma W A
+\quad
+\lj {\Gamma, y' \!:\! A} \ul{C}
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {\Pi\, y' \!:\! A .\, \ul{C}}
+}
+\vspace{0.35cm}
+\]
+
+\[
+\mkrule
+{\ceq \Gamma {W(\algop^{\ul{C}}_V(y.\, M))_{\ul{C}, \ul{D}}} {\algop^{\ul{D}}_V(y.\, W(M)_{\ul{C}, \ul{D}})} {\ul{D}}}
+{
+\vj \Gamma V I
+\quad
+\vj \Gamma W {\ul{C} \multimap \ul{D}}
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M \ul{C}
+}
+\]
+\end{proposition}
+
+\pagebreak
+
+\begin{proof}
+All six equations are proved similarly, by using the general algebraicity equation from Definition~\ref{def:extensionofeMLTTwithfibalgeffects} in combination with the definition of substituting  computation terms for computation variables, e.g., the first equation is proved as follows:
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \doto {\algop^{FA}_V(y .\, M)} {y' \!:\! A} {\ul{C}} {N}
+\\
+=\,\, & (\doto {z} {y' \!:\! A} {\ul{C}} {N})[\algop^{FA}_V(y .\, M)/z]
+\\
+=\,\, & \algop^{\ul{C}}_V(y. (\doto {z} {y' \!:\! A} {\ul{C}} {N})[M/z])
+\\
+=\,\, & \algop^{\ul{C}}_V(y. \doto {z[M/z]} {y' \!:\! A} {\ul{C}} {N})
+\\
+=\,\, & \algop^{\ul{C}}_V(y. \doto {M} {y' \!:\! A} {\ul{C}} {N}) : \ul{C}
+\vspace{-1cm}
+\end{align*}
+\end{fleqn}
+\end{proof}
+
+
+\section{Interpreting eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ in a fibred adjunction model}
+\label{sect:fibalgeffectsmodel}
+
+In this section we equip eMLTT$_{\mathcal{T}_{\text{eff}}}$ with a denotational semantics by showing how to interpret it in a fibred adjunction model based on the prototypical model of dependent types, the families of sets fibration. More precisely, the fibred adjunction model we use is based on the lifting of the adjunction $F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} \!\dashv\, U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} : \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set) \longrightarrow \Set$ to families fibrations (see Theorem~\ref{thm:liftedfibradjmodels} and Corollary~\ref{cor:modelsoflawveretheories}), where $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ is a countable Lawvere theory that we derive from the given fibred effect theory $\mathcal{T}_{\text{eff}} = (\mathcal{S}_{\text{eff}},\mathcal{E}_{\text{eff}})$. 
+
+It is worth noting that compared to the level of generality with which we investigated the denotational semantics of eMLTT in Chapter~\ref{chap:interpretation}, 
+we only study the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}$ in one specific fibred adjunction model. We leave an investigation of a more general class of models for future work. In particular, we expect that our future study of fibred notions of universal algebra and Lawvere theories (see Section~\ref{sect:fiblawveretheories}) will also provide us with a good general notion of a model for eMLTT$_{\mathcal{T}_{\text{eff}}}$. Further, defining the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}$ in a model based on families of sets should make it more accessible to the less categorically inclined audience of this thesis.
+
+
+In order to reuse the established theory concerning countable Lawvere theories (see Section~\ref{sect:algebraictreatmentofeffects}), we restrict our attention to fibred effect theories which we call \emph{countable}, by imposing conditions on how certain contexts and types must be interpreted in the families of sets fibration $\mathsf{fam}_{\Set} : \Fam(\Set) \longrightarrow \Set$, using the interpretation function $\sem{-}$ that we defined for eMLTT in Section~\ref{sect:interpretation}. Note that as the input and output types of operation symbols are given by well-formed pure eMLTT value types, the soundness results we established in Section~\ref{sect:soundness} ensure that $\sem{-}$ is defined on them.
+
+\index{ F@$\sem{\Gamma; A}_{1}$ (first component of the object $\sem{\Gamma; A}$)}
+\index{ F@$\sem{\Gamma; A}_{2}$ (second component of the object $\sem{\Gamma; A}$)}
+For better readability, we use the convention that if $\sem{\Gamma; A} = (X, B)$ in $\Fam(\Set)$, then we write $\sem{\Gamma; A}_{1}$ for the set $X$ and $\sem{\Gamma; A}_{2}$ for the functor $B : X \longrightarrow \Set$, and similarly for the interpretation $\sem{\Gamma;\ul{C}}$ of computation types in $\Fam(\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set))$. Analogously, if $\sem{\Gamma;V} = (f,g)$ in $\Fam(\Set)$, then we write $\sem{\Gamma;V}_1$ for $f$ and $\sem{\Gamma;V}_2$ for $g$, and similarly for the interpretation of computation and homomorphism terms.
+\index{ F@$\sem{\Gamma; V}_{1}$ (first component of the morphism $\sem{\Gamma; V}$)}
+\index{ F@$\sem{\Gamma; V}_{2}$ (second component of the morphism $\sem{\Gamma; V}$)}
+
+\begin{definition}
+\label{def:countableeffecthteory}
+\index{theory!fibred effect --!countable --}
+\index{signature!fibred effect --!countable --}
+A fibred effect theory $\mathcal{T}_{\text{eff}} = (\mathcal{S}_{\text{eff}}, \mathcal{E}_{\text{eff}})$ is \emph{countable} if $\sem{x \!:\! I; O}_{2}$ is a family of countable sets, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, and if $\sem{\Gamma; A'_{\!j}}_{2}$ is a family \linebreak of countable sets, for all equations $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and variables $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$.
+\end{definition}
+
+In the rest of this section, we assume that the given fibred effect theory $\mathcal{T}_{\text{eff}}$ is countable.
+
+Next, we show how to derive the countable Lawvere theory $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ from the given fibred effect theory  $\mathcal{T}_{\text{eff}}$. In particular, we first show that $\mathcal{T}_{\text{eff}}$ gives rise to a countable equational theory $\mathbb{T}_{\!\mathcal{T}_{\text{eff}}} = (\mathbb{S}_{\!\mathcal{T}_{\text{eff}}},\mathbb{E}_{\!\mathcal{T}_{\text{eff}}})$, from which we can then derive the countable Lawvere theory $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ following Definition~\ref{def:lawveretheoryfromequationaltheory} and Proposition~\ref{prop:lawveretheoryfromequationaltheory}. 
+
+The construction of $\mathbb{T}_{\mathcal{T}_{\text{eff}}}$ is based on the intuitive reading of operation symbols discussed in Section~\ref{sect:fibeffecttheories}, i.e., every operation symbol $\sigalgop : (x \!:\! I) \longrightarrow O$ can be viewed as an $\sem{\diamond;I}_2(\star)$-indexed family of operation symbols in the ordinary universal-algebraic sense. 
+
+We recall that an analogous expansion of effect theories to countable equational theories was also used by Plotkin and Pretnar in their work on handlers in the simply typed setting, see~\cite[Section~4]{Plotkin:HandlingEffects}. In this thesis, we want to emphasise that countable fibred effect theories, despite their additional type-dependency, can be also naturally expanded into  countable equational theories.
+
+\begin{definition}
+\index{ S@$\mathbb{S}_{\mathcal{T}_{\text{eff}}}$ (countable signature derived from a countable fibred effect theory $\mathcal{T}_{\text{eff}}$)}
+The \emph{countable signature} $\mathbb{S}_{\mathcal{T}_{\text{eff}}}$ is given by operation symbols $\mathsf{op}_i$, each with arity $\vert \sem{x \!:\! I; O}_{2}\, \langle \star , i \rangle \vert$, for all operation symbols $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$ and all $i$ in $\sem{\diamond; I}_{2}(\star)$, where, as standard, we use $\vert X \vert$ to denote the cardinality of the set $X$.
+\end{definition}
+
+As we have assumed $\mathcal{T}_{\text{eff}}$ to be countable, the previous definition is well-formed because the arities $\vert \sem{x \!:\! I; O}_{2}\, \langle \star , i \rangle \vert$ of operations $\sigalgop_i$ are guaranteed to be countable.
+
+\begin{proposition}
+\index{ T@$T^\gamma$ (term of a countable equational theory, derived from an effect term $T$)}
+\index{ D@$\Delta^\gamma$ (context of a countable equational theory, derived from an effect context $\Delta$)}
+Every well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from ${\mathcal{S}_{\text{eff}}}$ determines a set of well-formed terms $\lj {\Delta^\gamma} {T^\gamma}$ derivable from $\mathbb{S}_{\mathcal{T}_{\text{eff}}}$, for all $\gamma$ in $\sem{\Gamma}$, where $\Delta^\gamma$ is a context of variables $x^{a}_{w_{\!j}}$ for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$ and $a$ in $\sem{\Gamma; A'_{\!j}}_{2}(\gamma)$.
+\end{proposition}
+
+\begin{proof}
+First, we note that as we have assumed $\mathcal{T}_{\text{eff}}$ to be countable, every $\sem{\Gamma; A'_{\!j}}_{2}$ is a family of countable sets. As a result, every context $\Delta^\gamma$ is a countable list of variables.
+
+Next, the terms $T^\gamma$ are computed by recursion on the structure of $T$, as follows: 
+\[
+\begin{array}{l c l}
+(w_{\!j}(V))^\gamma & \defeq & x_{w_{\!j}}^{(\sem{\Gamma;V}_{2})_\gamma(\star)}
+\\[4mm]
+(\sigalgop_V(y.\, T))^\gamma & \defeq & \mathsf{op}_{i}(T^{\langle \gamma , o \rangle})_{1 \,\leq\, o \,\leq\, \vert \sem{x : I; O}_{2}\, \langle \star , i \rangle \vert} \hfill (\text{where } i \defeq (\sem{\Gamma;V}_{2})_\gamma(\star))
+\\[4mm]
+\multicolumn{3}{l}{(\pmatchsf V {(y_1 \!:\! B_1, y_2 \!:\! B_2)} {} T)^{\gamma} \,\,\,\,\,\, \defeq \,\,\,\,\,\, T^{\langle \langle \gamma , b_1 \rangle , b_2 \rangle} \qquad (\text{when } (\sem{\Gamma;V}_2)_\gamma(\star) = \langle b_1 , b_2 \rangle)}
+\\[4mm]
+\multicolumn{3}{l}{(\mathsf{case~} V \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(y_1 \!:\! B_1)} \mapsto T_1}, {\seminr {\!} {\!\!(y_2 \!:\! B_2)} \mapsto T_2}))^{\gamma} \,\,\,\,\,\, \defeq \,\,\,\,\,\, T_1^{\langle \gamma , b \rangle}}
+\\[-1mm]
+&& \hfill (\text{when } (\sem{\Gamma;V}_2)_\gamma(\star) = \mathsf{inl}\, b)
+\\[4mm]
+\multicolumn{3}{l}{(\mathsf{case~} V \mathsf{~of}_{} \mathsf{~} ({\seminl {\!} {\!\!(y_1 \!:\! B_1)} \mapsto T_1}, {\seminr {\!} {\!\!(y_2 \!:\! B_2)} \mapsto T_2}))^{\gamma} \,\,\,\,\,\, \defeq \,\,\,\,\,\, T_2^{\langle \gamma , b \rangle}}
+\\[-1mm]
+&& \hfill (\text{when } (\sem{\Gamma;V}_2)_\gamma(\star) = \mathsf{inr}\, b)
+\end{array}
+\]
+
+Observe that for better readability, we use $o$ to denote both a natural number between $1$ and $\vert \sem{x : I; O}_{2}\, \langle \star , i \rangle \vert$, and the corresponding element of $\sem{x : I; O}_{2}\, \langle \star , i \rangle$.
+
+Finally, we can construct the required derivations of well-formed terms $\lj {\Delta^\gamma} {\!T^\gamma}$ \linebreak by straightforward induction on the given derivation of the effect term $\lj {\Gamma \vertbar \Delta} \!T$.
+\end{proof}
+
+\begin{definition}
+\label{def:countableeqthfromeffth}
+\index{ T@$\mathbb{T}_{\hspace{-0.05cm}\mathcal{T}_{\text{eff}}}$ (countable equational theory derived from a countable fibred effect theory $\mathcal{T}_{\text{eff}}$)}
+\index{ E@$\mathbb{E}_{\hspace{-0.05cm}\mathcal{T}_{\text{eff}}}$ (set of equations of a countable equational theory derived from a countable fibred effect theory $\mathcal{T}_{\text{eff}}$)}
+The \emph{countable equational theory} $\mathbb{T}_{\!\mathcal{T}_{\text{eff}}}$ is given by the countable signature $\mathbb{S}_{\mathcal{T}_{\text{eff}}}$ and a set $\mathbb{E}_{\!\mathcal{T}_{\text{eff}}}$, which is the least set containing equations $\ljeq {\Delta^\gamma} {T^\gamma_1} {T^\gamma_2}$, for all  $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and all $\gamma$ in $\sem{\Gamma}$, that is closed under the rules of reflexivity, symmetry, transitivity, replacement, and substitution (see Definition~\ref{def:countableequationaltheory}).
+\end{definition}
+
+\index{ L@$\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ (countable Lawvere theory derived from a countable fibred effect theory $\mathcal{T}_{\text{eff}}$)}
+\index{ I@$I_{\mathcal{T}_{\text{eff}}}$ (countable Lawvere theory derived from a countable fibred effect theory $\mathcal{T}_{\text{eff}}$)}
+Now, we know from Definition~\ref{def:lawveretheoryfromequationaltheory} and Proposition~\ref{prop:lawveretheoryfromequationaltheory} that there exists a category $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ and a corresponding countable Lawvere theory $I_{\mathcal{T}_{\text{eff}}} : \aleph^{\text{op}}_{\!1} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$, both built from $\mathbb{T}_{\!\mathcal{T}_{\text{eff}}}$. There also exists an adjunction $F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} \!\dashv\, U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} : \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set) \longrightarrow \Set$. 
+
+Using 
+Corollary~\ref{cor:modelsoflawveretheories}, we can lift this adjunction to a split fibred one between the families fibrations $\mathsf{fam}_{\Set}$ and $\mathsf{fam}_{\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)}$, giving us a fibred adjunction model
+\vspace{-2.5cm}
+\[
+\xymatrix@C=0.5em@R=7em@M=0.5em{
+\ar@{}[dd]^-{\!\!\quad\qquad\qquad\qquad\qquad\perp}
+\\
+\Fam(\Set) \ar@/_2.5pc/[d]_-{\mathsf{fam}_{\Set}} \ar@{}[d]_-{\dashv\,\,\,\,\,\,\,\,\,\,} \ar@{}[d]^-{\,\,\,\,\,\,\,\,\,\,\dashv} \ar@/^2.5pc/[d]^-{\ia {-}} \ar@/^1.25pc/[rrrrrrrrrr]^-{\widehat{F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}} &  &&&&&&&&& \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\, \ar@/^1.25pc/[llllllllll]^-{\widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}}  & \hspace{-1.5cm} \Fam(\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)) \ar@/^2pc/[dlllllllllll]^-{\!\!\!\!\!\!\quad\qquad\mathsf{fam}_{\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)}}
+\\
+\mathcal{\Set} \ar[u]_-{1}
+}
+\]
+suitable for modelling eMLTT. In the rest of this section, we show that this fibred adjunction model is also suitable for defining a sound interpretation for eMLTT$_{\mathcal{T}_{\text{eff}}}$. 
+
+\pagebreak
+
+\begin{definition}
+\index{interpretation function}
+\index{ @$\sem{-}$ (interpretation function)}
+We extend the \emph{interpretation} of eMLTT to eMLTT$_{\mathcal{T}_{\text{eff}}}$ by defining it on algebraic operations $\algop^{\ul{C}}_V(y .\, M)$, for each $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, as follows:
+\[
+\mkrule
+{
+\xymatrix@C=7em@R=7.5em@M=0.5em{
+\txt<10pc>{$\sem{\Gamma; \algop^{\ul{C}}_V(y .\, M)}_1 $\\$ \defeq $\\$ \sem{\Gamma}$}
+\ar[ddd]_-{\id_{\sem{\Gamma}}}
+&
+\txt<10pc>{$(\sem{\Gamma; \algop^{\ul{C}}_V(y .\, M)}_2)_{\gamma} $\\$ \defeq $\\$ 1$}
+\ar[d]_-{\langle \id_1 \rangle_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)}}
+\\
+&
+\bigsqcap_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)} 1
+\ar[d]_-{\bigsqcap_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)} ((\sem{\Gamma, y : O[V/x]; M}_2)_{\langle \gamma , o \rangle})}
+\\
+&
+\bigsqcap_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))
+\ar[d]_-{\sigalgop^{\sem{\Gamma;\ul{C}}_2(\gamma)}_{(\sem{\Gamma; V}_2)_\gamma(\star)}}
+\\
+\sem{\Gamma}
+&
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[2mm]
+(\sem{\Gamma;V}_2)_{\gamma} : 1 \longrightarrow \sem{\diamond; I}_2(\star)
+\\[2mm]
+\sem{\Gamma;O[V/x]}_1 = \sem{\Gamma} \in \Set
+\\[2mm]
+\sem{\Gamma;O[V/x]}_2(\gamma) = \sem{\Gamma, x \!:\! I; O}_2\, \langle \gamma , (\sem{\Gamma;V}_2)_\gamma(\star) \rangle  \in \Set
+\\[2mm]
+\sem{\Gamma, y \!:\! O[V/x]; M}_1 =  \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (\sem{\Gamma;O[V/x]}_2(\gamma))} : \sem{\Gamma, y \!:\! O[V/x]} \longrightarrow \sem{\Gamma, y \!:\! O[V/x]}
+\\[2mm]
+(\sem{\Gamma, y \!:\! O[V/x]; M}_2)_{\langle \gamma , o \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma; \ul{C}}_2(\gamma))
+\end{array}
+}
+\]
+\index{ op@$\sigalgop^{\sem{\Gamma;\ul{C}}_2(\gamma)}_{(\sem{\Gamma; V}_2)_\gamma(\star)}$ (algebraic operation)}
+where the function (\emph{algebraic operation}) $\sigalgop^{\sem{\Gamma;\ul{C}}_2(\gamma)}_{(\sem{\Gamma; V}_2)_\gamma(\star)}$ is defined using the countable-product preservation property of $\sem{\Gamma;\ul{C}}_2(\gamma)$ as the following composite function:
+\[
+\hspace{-3cm}
+\xymatrix@C=2em@R=3.75em@M=0.5em{
+\bigsqcap_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))
+\ar[d]_-{=}
+\\
+\bigsqcap_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)} ((\sem{\Gamma;\ul{C}}_2(\gamma))(1))
+\ar[d]_-{\cong}
+\\
+(\sem{\Gamma;\ul{C}}_2(\gamma))(+_{o \in \sem{\Gamma; O[V/x]}_2(\gamma)}\, 1)
+\ar[d]_-{=}
+\\
+(\sem{\Gamma;\ul{C}}_2(\gamma))(\vert \sem{\Gamma; O[V/x]}_2(\gamma) \vert)
+\ar[d]_-{(\sem{\Gamma;\ul{C}}_2(\gamma))(\lj {\overrightarrow{x_o}\,} {\,\sigalgop_{(\sem{\Gamma;V}_2)_\gamma(\star)}(x_o)_{1 \,\leq\, o \,\leq\, \vert \sem{\Gamma; O[V/x]}_2(\gamma) \vert}})}
+\\
+(\sem{\Gamma;\ul{C}}_2(\gamma))(1)
+\ar[d]_-{=}
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+}
+\]
+\end{definition}
+
+As the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}$ is defined \emph{a priori} partially, analogously to the interpretation of eMLTT, we again have to separately show that $\sem{-}$ is defined on all well-formed contexts, types, and terms; and that it validates the equational theory of eMLTT$_{\mathcal{T}_{\text{eff}}}$. 
+While most of the results proved for eMLTT in Section~\ref{sect:soundness} (the propositions relating  weakening and substitution to reindexing along semantic projection and substitution morphisms) extend to the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}$ without any substantial additional work, the soundness theorem (Theorem~\ref{thm:soundness}) needs more attention. 
+
+In particular, in order to prove the soundness theorem for eMLTT$_{\mathcal{T}_{\text{eff}}}$, we first need to relate two ways of interpreting well-formed effect terms. Specifically,  we relate the interpretations of i) the translation of an effect term $\lj {\Gamma \vertbar \Delta} T$ and ii) the corresponding terms $\lj {\Delta^\gamma} {T^\gamma}$ derivable from the countable signature $\mathbb{S}_{\mathcal{T}_{\text{eff}}}$, as discussed next. 
+
+We note that in order to conveniently reuse the next proposition in Chapter~\ref{chap:handlers} to prove the soundness of the interpretation of the user-defined algebra type, we state it in terms of the given fibred effect signature $\mathcal{S}_{\text{eff}}$ rather than the fibred effect theory $\mathcal{T}_{\text{eff}}$.
+
+\begin{proposition}
+\label{prop:relatingsemanticsoffibeffectterms}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, a computation type $\ul{C}$, value terms $V_{i}$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{\!j}$ (for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$), value terms $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), and a value context $\Gamma'$ such that
+\begin{itemize}
+\item $\sem{\Gamma'} \in \Set$, 
+\item $\sem{\Gamma';V_i}_1 = \id_{\sem{\Gamma'}}  : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}$, and 
+\item $(\sem{\Gamma';V_i}_2)_{\gamma\,'} : 1 \longrightarrow $
+\\[-7.5mm]
+
+\hspace{1cm} $\sem{x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i - 1};A_i}_2\, \langle \langle \langle \star , (\sem{\Gamma'; V_1}_2)_{\gamma\,'}(\star) \rangle , \ldots \rangle , (\sem{\Gamma'; V_{i - 1}}_2)_{\gamma\,'}(\star) \rangle$, 
+\end{itemize}
+together with a value type $A$ and a family of models $\mathcal{M}_{\gamma\,'} : \mathcal{L}_{\mathcal{T}^{d}_{\text{eff}}} \longrightarrow \Set$ (for all $\gamma\,'$ in $\sem{\Gamma'}$) of the Lawvere theory $I_{\mathcal{T}^{d}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^{d}_{\text{eff}}}$ (where ${\mathcal{T}^{d}_{\text{eff}}} \defeq (\mathcal{S}_{\text{eff}}, \emptyset)$) such that
+\index{ T@${\mathcal{T}^{d}_{\text{eff}}}$ (fibred effect theory $(\mathcal{S}_{\text{eff}}, \emptyset)$)}
+\begin{itemize}
+\item $\sem{\Gamma';A}_1 = \sem{\Gamma'}$, 
+\item $\sem{\Gamma';A}_2(\gamma\,') = \mathcal{M}_{\gamma\,'}(1)$, 
+\item $\sem{\Gamma';V'_{\!j}}_1 = \id_{\sem{\Gamma'}}  : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}$, 
+\item $(\sem{\Gamma';V'_{\!j}}_2)_{\gamma\,'} : 1 \longrightarrow \bigsqcap_{a \in \sem{\Gamma;A'_{\!j}}_2(\gamma)}(\sem{\Gamma';A}_2(\gamma\,'))$, 
+\item $\sem{\Gamma';W_{\sigalgop}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}$, and
+\item $(\sem{\Gamma';W_{\sigalgop}}_2)_{\gamma\,'} = \bigsqcap_{\langle i , f \rangle} \sigalgop^{\mathcal{M}_{\gamma\,'}}_{i} \,\comp\,\, \bigsqcap_{\langle i , f \rangle} (\star \mapsto f) \,\comp\,\, \langle \id_1 \rangle_{\langle i , f \rangle}$
+\\[-7.5mm]
+
+\hspace{3.5cm} $: 1 \longrightarrow \bigsqcap_{\langle i , f \rangle \in \bigsqcup_{i \in \sem{\diamond;I}_2(\star)} \bigsqcap_{o \in {\sem{x : I ; O}_2\, \langle \star , i \rangle}} (\sem{\Gamma';A}_2(\gamma\,'))} (\sem{\Gamma';A}_2(\gamma\,'))$, 
+\end{itemize}
+then 
+\[
+\sem{\Gamma'; \efftrans T {\!\!A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\]
+and, for all $\gamma\,'$ in $\sem{\Gamma'}$, the function 
+\[
+(\sem{\Gamma'; \efftrans T {\!\!A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_2)_{\gamma\,'} : 1 \longrightarrow \sem{\Gamma';A}_2(\gamma\,')
+\]
+is defined and equal to the following composite function:
+\[
+\xymatrix@C=4em@R=5em@M=0.5em{
+1 
+\ar[rr]^-{\langle (\sem{\Gamma';V'_{\!j}}_2)_{\gamma\,'} \rangle_{w_{\!j} : A'_{\!j} \in \Delta}}
+&&
+\bigsqcap_{w_{\!j} : A'_{\!j} \in \Delta} \bigsqcap_{a \in {\sem{\Gamma;A'_{\!j}}_2(\gamma)}} (\sem{\Gamma';A}_2(\gamma\,'))
+\ar[d]^-{\cong}
+\\
+\sem{\Gamma';A}_2(\gamma\,')
+&
+\mathcal{M}_{\gamma\,'}(1)
+\ar[l]^-{=}
+&
+\mathcal{M}_{\gamma\,'}(\vert \Delta^\gamma \vert)
+\ar[l]^-{\mathcal{M}_{\gamma\,'}(\lj {\Delta^\gamma\,\,} {\,T^\gamma})}
+}
+\]
+where $\vert \Delta^\gamma \vert$ denotes the length of the context $\Delta^\gamma$; and where we use the abbreviation
+\[
+\gamma \,\defeq \langle \langle \langle \star , (\sem{\Gamma'; V_1}_2)_{\gamma\,'}(\star) \rangle , \ldots \rangle , (\sem{\Gamma'; V_n}_2)_{\gamma\,'}(\star) \rangle
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the given derivation of $\lj {\Gamma \vertbar \Delta} T$, using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of Propositions~\ref{prop:semweakening2},~\ref{prop:semsubstitution2},~\ref{prop:semweakening5}, and~\ref{prop:semsubstitution5} to relate syntactic weakening and substitution to their semantic counterparts. 
+We postpone the straightforward but lengthy details of this proof to Appendix~\ref{sect:proofofprop:relatingsemanticsoffibeffectterms}.
+\end{proof}
+
+We are now ready to prove the soundness of the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}$ in the fibred adjunction model given by the split fibred adjunction $\widehat{F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}} \dashv\, \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}$.
+
+\subsection*{Extending Theorem~\ref{thm:soundness} (Soundness) to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$}
+\index{soundness theorem}
+
+We begin by recalling that in Theorem~\ref{thm:soundness} we showed that the \emph{a priori} partially defined interpretation function $\sem{-}$  is defined on well-formed types and contexts, and well-typed terms, and that it maps definitionally equal contexts, types, and terms to equal objects and morphisms. For example, given $\ceq \Gamma M N \ul{C}$, we showed that
+\[
+\sem{\Gamma;M} 
+=
+\sem{\Gamma;N} 
+: 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{C}})
+\]
+
+
+When extending Theorem~\ref{thm:soundness} to eMLTT$_{\mathcal{T}_{\text{eff}}}$, we keep the basic proof principle the same: $(a)$--$(l)$ are proved simultaneously, by induction on the given derivations, using the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of Propositions~\ref{prop:semweakening2},~\ref{prop:semsubstitution2},~\ref{prop:semsubstitution3}, and~\ref{prop:semsubstitution4} to relate weakening and substitution to their semantic counterparts. As mentioned earlier, these propositions extend straightforwardly from eMLTT to eMLTT$_{\mathcal{T}_{\text{eff}}}$.
+
+The case for algebraic operations is analogous to other computation terms that involve variable bindings and type annotations. Namely, the premises of the typing rule for algebraic operations and the induction hypotheses are enough to satisfy the conditions required for $\sem{\Gamma;\algop^{\ul{C}}_V(y.\, M)} : 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{C}})$ to be defined. 
+
+The case for the congruence rule for algebraic operations is also straightforward. Similarly to the typing rule for algebraic operations, the premises of this rule and the induction hypotheses are enough to ensure that we have $\sem{\Gamma;\algop^{\ul{C}}_V(y.\, M)} = \sem{\Gamma;\algop^{\ul{D}}_W(y.\, N)}$.
+
+Finally, we discuss the cases corresponding to the general algebraicity equation and the equations involving the translation of effect terms into value terms in detail.
+
+\vspace{0.2cm}
+
+\noindent\textbf{General algebraicity equation:} In this case, the given derivation ends with
+\vspace{0.2cm}
+\[
+\mkrulelabel
+{\ceq \Gamma {K[\algop^{\ul{C}}_V(y . M)/z]} {\algop^{\ul{D}}_V(y . K[M/z])} {\ul{D}}}
+{
+\vj \Gamma V {I} 
+\quad 
+\cj {\Gamma, y \!:\! O[V/x]} M {\ul{C}} 
+\quad 
+\hj \Gamma {z \!:\! \ul{C}} K {\ul{D}}}
+{(\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})}
+\]
+and we need to show that
+\[
+\sem{\Gamma;{K[\algop^{\ul{C}}_V(y . M)/z]}} = \sem{\Gamma;{\algop^{\ul{D}}_V(y . K[M/z])}} : 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{D}})
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing 
+\[
+\sem{\Gamma;{K[\algop^{\ul{C}}_V(y . M)/z]}}_1 = \sem{\Gamma;{\algop^{\ul{D}}_V(y . K[M/z])}}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+(\sem{\Gamma;{K[\algop^{\ul{C}}_V(y . M)/z]}}_2)_\gamma = (\sem{\Gamma;{\algop^{\ul{D}}_V(y . K[M/z])}}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\]
+
+First, we use $(d)$ on the given derivation of $\vj \Gamma V {I}$, $(e)$ on the given derivation of \linebreak $\cj {\Gamma, y \!:\! O[V/x]} M {\ul{C}}$, and $(f)$ on the given derivation of $\hj \Gamma {z \!:\! \ul{C}} K {\ul{D}}$, in combination with the propositions that relate weakening and substitution to reindexing along semantic projection and substitution morphisms, to get 
+\[
+\begin{array}{c}
+\sem{\Gamma;V}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[3mm]
+(\sem{\Gamma;V}_2)_\gamma : 1 \longrightarrow \sem{\diamond; I}_2(\star)
+\\[3mm]
+\sem{\Gamma, y \!:\! O[V/x]; M}_1 = \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (\sem{x : I; O}_2\, \langle \star , (\sem{\Gamma;V}_2)_\gamma(\star) \rangle)} : \sem{\Gamma, y \!:\! O[V/x]} \longrightarrow \sem{\Gamma, y \!:\! O[V/x]}
+\\[3mm]
+(\sem{\Gamma, y \!:\! O[V/x]; M}_2)_{\langle \gamma, o \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\\[3mm]
+\sem{\Gamma; z \!:\! \ul{C}; K}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[3mm]
+(\sem{\Gamma; z \!:\! \ul{C}; K}_2)_\gamma : \sem{\Gamma;\ul{C}}_2(\gamma) \longrightarrow \sem{\Gamma;\ul{D}}_2(\gamma)
+\end{array}
+\]
+
+Next, we observe that the first required equation
+\[
+\sem{\Gamma;{K[\algop^{\ul{C}}_V(y . M)/z]}}_1 = \sem{\Gamma;{\algop^{\ul{D}}_V(y . K[M/z])}}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\]
+follows straightforwardly by unfolding the definition of $\sem -$ for both sides of the equation, and by noting that the first components of all involved morphisms are identities.
+
+Finally, for all $\gamma$ in $\sem{\Gamma}$, the second required equation
+\[
+(\sem{\Gamma;{K[\algop^{\ul{C}}_V(y . M)/z]}}_2)_\gamma = (\sem{\Gamma;{\algop^{\ul{D}}_V(y . K[M/z])}}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\]
+follows from the commutativity of the diagram below, where the two top-to-bottom composite morphisms, along the perimeter of the diagram, can be shown to be equal to the two sides of the above equation, using the definition of $\sem -$ and Proposition~\ref{prop:semsubstitution3}.
+
+
+\[
+\hspace{-0.5cm}
+\scriptsize
+\xymatrix@C=5em@R=4em@M=0.5em{
+&
+1
+\ar[d]^-{\langle \id_1 \rangle_{o \in \sem{\Gamma; O [V/x]}_2(\gamma)}}
+\ar@/_3pc/[dddl]_-{(\sem{\Gamma;\algop^{\ul{C}}_V(y.\, M)}_2)_\gamma}^<<<<<<<<<<<<<<<<<{\qquad\dscomment{\text{def. of } \sem{-}}}
+&
+\\
+&
+\bigsqcap_o 1
+\ar[d]_-{\bigsqcap_o ((\sem{\Gamma, y; M}_2)_{\langle \gamma , o \rangle})}^-{\qquad\dscomment{\text{weakening}}}
+\ar@/^2.5pc/[ddr]^-{\quad\bigsqcap_o ((\sem{\Gamma, y ; K[M/z]}_2)_{\langle \gamma , o \rangle})}_>>>>>>>>>>>{\dscomment{\text{Proposition~\ref{prop:semsubstitution3}}}\quad\,\,\,\,\,}
+\\
+&
+\bigsqcap_o (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))
+\ar@/_1.5pc/[dd]_-{=}
+\ar[dl]^-{\sigalgop^{\sem{\Gamma;\ul{C}}_2(\gamma)}_{(\sem{\Gamma;V}_2)_\gamma(\star)}}
+\ar@/_1pc/[dr]_-{\bigsqcap_o (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}((\sem{\Gamma; z : \ul{C}; K}_2)_\gamma))\qquad\quad}
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\ar[dddddd]_-{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}((\sem{\Gamma; z : \ul{C}; K}_2)_\gamma)}
+&
+&
+\bigsqcap_o (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma)))
+\ar[d]^-{=}_<<<<{\dscomment{\text{def. of } U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}\qquad\qquad\qquad\qquad}
+\ar@/^5.5pc/[dddddd]
+\\
+&
+\bigsqcap_o ((\sem{\Gamma;\ul{C}}_2(\gamma))(1))
+\ar[d]_-{\cong}_-{\dscomment{\text{def. of } \sigalgop^{\sem{\Gamma;\ul{C}}_2(\gamma)}_{(\sem{\Gamma;V}_2)_\gamma(\star)}}\qquad\quad}^-{\qquad\qquad\dscomment{\text{preservation of countable products}}}
+\ar[r]^-{\bigsqcap_o (((\sem{\Gamma; z : \ul{C}; K}_2)_\gamma)_1)}
+&
+\bigsqcap_o ((\sem{\Gamma;\ul{D}}_2(\gamma))(1))
+\ar@/^1pc/[dd]^-{\cong}^>>>>>{\qquad\dscomment{\text{def.}}}
+\\
+&
+(\sem{\Gamma;\ul{C}}_2(\gamma))(\vert \sem{\Gamma;O[V/x]}_2(\gamma) \vert)
+\ar[ddd]^<<<<<<<<<<<<<<<<<<<<<{(\sem{\Gamma;\ul{C}}_2(\gamma))(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_{(\sem{\Gamma;V})_\gamma(\star)}(x_o)_o})}
+\ar[dr]^-{\,\,\,\,\,\,\qquad((\sem{\Gamma; z : \ul{C}; K}_2)_\gamma)_{\vert \sem{\Gamma;O[V/x]}_2(\gamma) \vert}}
+&
+\\
+&
+&
+(\sem{\Gamma;\ul{D}}_2(\gamma))(\vert \sem{\Gamma;O[V/x]}_2(\gamma) \vert)
+\ar[dd]_>>>>>>{(\sem{\Gamma;\ul{D}}_2(\gamma))(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_{(\sem{\Gamma;V})_\gamma(\star)}(x_o)_o})}^-{\!\!\!\qquad\sigalgop^{\sem{\Gamma;\ul{D}}_2(\gamma)}_{(\sem{\Gamma;V}_2)_\gamma(\star)}}_-{\dscomment{\text{nat. of } (\sem{\Gamma; z : \ul{C}; K}_2)_\gamma}\qquad\qquad\,\,\,\,\,\,\,\,\,}
+\\
+&
+&
+\\
+&
+(\sem{\Gamma;\ul{C}}_2(\gamma))(1)
+\ar[r]_-{((\sem{\Gamma; z : \ul{C}; K}_2)_\gamma)_1}
+\ar@/^2pc/[uuuuul]^-{=}
+&
+(\sem{\Gamma;\ul{D}}_2(\gamma))(1)
+\ar[d]^-{=}_-{\dscomment{\text{def. of } U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad}
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\ar[rr]_-{\id_{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))}}
+&
+&
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+}
+\]
+
+\vspace{0.75cm}
+
+\noindent\textbf{Equations involving the translation of effect terms:} In this case, the given derivation ends with
+\[
+\mkrulelabel
+{
+\veq {\Gamma'} {\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {\efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} {U\ul{C}}
+}
+{
+\begin{array}{c@{\qquad\quad} l}
+\lj {\Gamma'} \ul{C}
+\\
+\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} & (1 \leq i \leq n)
+\\
+\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}} & (1 \leq j \leq m)
+\end{array}
+}
+{(\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \!\mathcal{E}_{\text{eff}})}
+\]
+where 
+\[
+\begin{array}{c}
+\hspace{-8cm}
+W_{\sigalgop} \defeq \lambda x' \!:\! (\Sigma\, x \!:\! I.\, O \to U\ul{C}).\, 
+\\
+\hspace{1.75cm}
+\pmatch {x'} {(x \!:\! I, y \!:\! O \to U\ul{C})} {x''\!.\, U\ul{C}} {\thunk (\algop^{\ul{C}}_{x}(y'.\, \force {\ul{C}} {(y\,\, y')}))} 
+\end{array}
+\]
+and we need to show 
+\[
+\sem{\Gamma';\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} = \sem{\Gamma'; \efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}} : 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma';\ul{C}})
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing 
+\[
+\sem{\Gamma';\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_1 = \sem{\Gamma'; \efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\]
+and, for all $\gamma\,'$ in $\sem{\Gamma'}$, that 
+\[
+(\sem{\Gamma';\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_2)_{\gamma\,'} = (\sem{\Gamma'; \efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_2)_{\gamma\,'} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\]
+
+First, we use $(c)$ on the given derivation of $\lj {\Gamma'} \ul{C}$ and $(d)$ on the given derivations of  $\vj {\Gamma'} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$ and $\vj {\Gamma'} {V'_{\!j}} {A'_{\!j}[\overrightarrow{V_i}/\overrightarrow{x_i}] \to U\ul{C}}$, for all $1 \leq i \leq n$ and $1 \leq j \leq m$, in combination with the propositions that relate weakening and substitution to reindexing along semantic projection and substitution morphisms, to get 
+\[
+\begin{array}{c}
+\sem{\Gamma';\ul{C}}_1 = \sem{\Gamma'}
+\\[3mm]
+\sem{\Gamma';\ul{C}}_2 : \sem{\Gamma'} \longrightarrow \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)
+\\[3mm]
+\sem{\Gamma';V_i}_1 = \id_{\sem{\Gamma'}}  : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\\[3mm]
+\hspace{-10.5cm}
+(\sem{\Gamma';V_i}_2)_{\gamma\,'} : 1 \longrightarrow 
+\\[-1mm]
+\hspace{2cm}
+\sem{x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i - 1};A_i}_2\, \langle \langle \langle \star , (\sem{\Gamma'; V_1}_2)_{\gamma\,'}(\star) \rangle , \ldots \rangle , (\sem{\Gamma'; V_{i - 1}}_2)_{\gamma\,'}(\star) \rangle
+\\[3mm]
+\sem{\Gamma';V'_{\!j}}_1 = \id_{\sem{\Gamma'}}  : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\\[3mm]
+(\sem{\Gamma';V'_{\!j}}_2)_{\gamma\,'} : 1 \longrightarrow \bigsqcap_{a \in \sem{\Gamma;A'_{\!j}}_2(\gamma)}(U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma';\ul{C}}_2(\gamma\,')))
+\end{array}
+\]
+where
+\[
+\gamma \defeq \langle \langle \langle \star , (\sem{\Gamma'; V_1}_2)_{\gamma\,'}(\star) \rangle , \ldots \rangle , (\sem{\Gamma'; V_n}_2)_{\gamma\,'}(\star) \rangle
+\]
+In particular, we prove equations involving simultaneous substitutions, e.g.,   
+\[
+\begin{array}{c}
+\sem{\Gamma';A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}_2(\gamma\,')
+\\
+=
+\\
+\sem{x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i - 1};A_i}_2\, \langle \langle \langle \star , (\sem{\Gamma'; V_1}_2)_{\gamma\,'}(\star) \rangle , \ldots \rangle , (\sem{\Gamma'; V_{i - 1}}_2)_{\gamma\,'}(\star) \rangle
+\end{array}
+\]
+by first noting that analogously to the proof of Theorem~\ref{thm:simultaneoussubstitution}, we can first show that 
+\[
+A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}] = A_i[x'_1/x_1]\ldots[x'_{i-1}/x_{i-1}][V_1/x'_1]\ldots[V_{i-1}/x'_{i-1}]
+\]
+
+\pagebreak
+\noindent
+for freshly chosen value variables $x'_1, \ldots, x'_{i-1}$, and then use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ versions of the propositions
+that relate weakening and (unary) substitution to reindexing along semantic projection and substitution morphisms (in particular, see Proposition~\ref{prop:semsubstitution5}).
+
+Next, by letting ${\mathcal{T}^{d}_{\text{eff}}} \defeq (\mathcal{S}_{\text{eff}}, \emptyset)$, we get that  $\mathbb{E}_{\!\mathcal{T}^{d}_{\text{eff}}} \subseteq \mathbb{E}_{\!\mathcal{T}_{\text{eff}}}$, based on the definitions of $\mathbb{E}_{\!\mathcal{T}^{d}_{\text{eff}}}$ and $\mathbb{E}_{\!\mathcal{T}_{\text{eff}}}$. Using this inclusion, we get a morphism of countable Lawvere theories from $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ to $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$, by defining the corresponding functor $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ as identity on objects and by sending every tuple of terms (i.e., a morphism in $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$) to its equivalence class (i.e., a morphism in $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$). 
+
+It is well-known that any morphism of countable Lawvere theories induces a functor between the corresponding categories of models, defined by composition of countable product preserving functors,  and going in the opposite direction. Concretely, for the purposes of this thesis, there exists a functor $\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set) \longrightarrow \Mod(\!\mathcal{L}_{\mathcal{T}^d_{\text{eff}}},\Set)$, meaning that every model of $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \!\longrightarrow\! \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ is also a model of $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \!\longrightarrow\! \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$. 
+
+In particular, the above observation means that $\sem{\Gamma';\ul{C}}_2(\gamma\,') : \mathcal{L}_{\mathcal{T}_{\text{eff}}} \longrightarrow \Set$ is also a model of $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$, for all $\gamma\,'$ in $\sem{\Gamma'}$.
+
+
+Another observation we make is that by unfolding the definition of $\sem{-}$ for lambda abstractions, pattern-matching, thunking, algebraic operations, and forcing, we get 
+\[
+\begin{array}{c}
+\hspace{-4cm}
+(\sem{\Gamma';W_{\sigalgop}}_2)_{\gamma\,'} = \bigsqcap_{\langle i , f \rangle} \sigalgop^{\mathcal{M}_{\gamma\,'}}_{i} \,\comp\,\, \bigsqcap_{\langle i , f \rangle} (\star \mapsto f) \,\comp\,\, \langle \id_1 \rangle_{\langle i , f \rangle}
+\\[1mm]
+\hspace{1.5cm}: 1 \longrightarrow \bigsqcap_{\langle i , f \rangle \in \bigsqcup_{i \in \sem{\diamond;I}_2(\star)} \bigsqcap_{o \in {\sem{x : I ; O}_2\, \langle \star , i \rangle}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma';\ul{C}}_2(\gamma\,')))} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma';\ul{C}}_2(\gamma\,')))
+\end{array}
+\]
+
+As a consequence of these observations, we can now use Proposition~\ref{prop:relatingsemanticsoffibeffectterms} to prove the required equations. In more detail, the first required equation
+\[
+\sem{\Gamma';\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_1 = \sem{\Gamma'; \efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\]
+follows immediately from Proposition~\ref{prop:relatingsemanticsoffibeffectterms}. To prove the second required equation
+\[
+(\sem{\Gamma';\efftrans {T_1} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_2)_{\gamma\,'} = (\sem{\Gamma'; \efftrans {T_2} {U\ul{C}; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}}_2)_{\gamma\,'} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\]
+for all $\gamma\,'$ in $\sem{\Gamma'}$, we combine Proposition~\ref{prop:relatingsemanticsoffibeffectterms} with the following commuting diagram:
+\[
+\xymatrix@C=2em@R=3em@M=0.5em{
+1
+\ar[d]_-{\langle (\sem{\Gamma';V'_{\!j}}_2)_{\gamma\,'} \rangle_{w_{\!j} : A'_{\!j} \in \Delta}}
+\\
+\bigsqcap_{w_{\!j} : A'_{\!j} \in \Delta} \bigsqcap_{a \in {\sem{\Gamma;A'_{\!j}}_2(\gamma)}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma';\ul{C}}_2(\gamma\,')))
+\ar[d]_-{\cong}
+\\
+(\sem{\Gamma';\ul{C}}_2(\gamma\,'))(\vert \Delta^\gamma \vert)
+\ar@/_4pc/[dd]_-{(\sem{\Gamma';\ul{C}}_2(\gamma\,'))(\lj {\Delta^\gamma\,\,} {\,T_1^\gamma})}^-{\,\,\,\,\,\,\,\quad\dcomment{\ljeq {\Delta^\gamma} {T_1^\gamma} {T_2^\gamma}}}
+\ar@/^4pc/[dd]^-{(\sem{\Gamma';\ul{C}}_2(\gamma\,'))(\lj {\Delta^\gamma\,\,} {\,T_2^\gamma})}
+\\
+\\
+(\sem{\Gamma';\ul{C}}_2(\gamma\,'))(1)
+\ar[d]_-{=}
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma';\ul{C}}_2(\gamma\,'))
+}
+\]
+where the equation $\ljeq {\Delta^\gamma} {T_1^\gamma} {T_2^\gamma}$ follows from the assumed equation $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$, based on the way the set of equations $\mathbb{E}_{\!\mathcal{T}_{\text{eff}}}$ is derived from $\mathcal{S}_{\text{eff}}$ in Definition~\ref{def:countableeqthfromeffth}.
+
+
+
+
+\section{Generic effects}
+\label{ref:genericeffects}
+
+\index{generic effect}
+\index{ g@$\mathtt{gen}_{\sigalgop}$ (generic effect)}
+It is worth noting that instead of extending eMLTT with algebraic operations $\algop^{\ul{C}}_V(y.\, M)$, for all operation symbols $\sigalgop : (x \!:\! I) \longrightarrow O$ in the given fibred effect signature $\mathcal{S}_{\text{eff}}$, we could have alternatively extended eMLTT with \emph{generic effects}, analogously to the simply typed setting~\cite{Plotkin:AlgOperations}. More precisely, we could have extended eMLTT's computation terms with function constants $\mathtt{gen}_{\sigalgop} : \Pi\, x \!:\! I .\, FO$, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$.
+
+While algebraic operations are more convenient to reason about (equationally), generic effects are closer to the language primitives that programmers are familiar, e.g., from ML-style languages. 
+However, analogously to the simply typed setting, these two ways of extending eMLTT are in fact equivalent, as we show below. 
+
+On the one hand, we can define generic effects using algebraic operations as
+\[
+\mathtt{gen}_{\sigalgop} \defeq  \lambda\, x \!:\! I .\, \algop^{FO}_x(y.\, \return y)
+\]
+Clearly, the right-hand side has type $\Pi\, x \!:\! I .\, FO$ in the empty context, by simply using the typing rules for lambda abstraction, algebraic operations, and returning a value.
+
+On the other hand, we can define algebraic operations using generic effects as
+\[
+\algop^{\ul{C}}_V(y.\, M) \defeq \doto {(\mathtt{gen}_{\sigalgop}\, V)} {y \!:\! O[V/x]} {} {M}
+\]
+Clearly, if $\vj \Gamma V I$, $\lj \Gamma {\ul{C}}$, and $\cj {\Gamma, y \!:\! O[V/x]} M {\ul{C}}$, the right-hand side is well-typed in $\Gamma$ at computation type $\ul{C}$, by simply using the typing rule for sequential composition.
+
+\begin{proposition}
+These two definitions of generic effects and algebraic operations in terms of each other constitute an isomorphism. 
+\end{proposition}
+
+\begin{proof}
+The proof is exactly the same as one would have in the simply typed setting, modulo the possibility of $O$ depending on values of type $I$.
+
+In one direction, we have
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \doto {\big((\lambda\, x \!:\! I .\, \algop^{FO}_x(y.\, \return y))\, V\big)} {y \!:\! O[V/x]} {} {M}
+\\
+=\,\, & \doto {\big((\lambda\, x \!:\! I .\, \algop^{FO}_x(y.\, \return y))\, V\big)} {y' \!:\! O[V/x]} {} {M[y'/y]}
+\\
+=\,\, & \doto {\algop^{FO[V/x]}_V(y.\, \return y)} {y' \!:\! O[V/x]} {} {M[y'/y]}
+\\
+=\,\, & \algop^{\ul{C}}_V\big(y.\, \doto {(\return y)} {y' \!:\! O[V/x]} {} {M[y'/y]}\big)
+\\
+=\,\, & \algop^{\ul{C}}_V(y.\, M) : \ul{C}
+\end{align*}
+\end{fleqn}
+
+In the other direction, we have 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \lambda\, x \!:\! I .\, \doto {(\mathtt{gen}_{\sigalgop}\, x)} {y \!:\! O} {} {\return y}
+\\
+=\,\, & \lambda\, x \!:\! I .\, \doto {(\mathtt{gen}_{\sigalgop}\, x)} {y \!:\! O} {} {z[\return y/z]}
+\\
+=\,\, & \lambda\, x \!:\! I .\, \mathtt{gen}_{\sigalgop}\, x
+\\
+=\,\, & \mathtt{gen}_{\sigalgop} : \Pi\, x \!:\! I .\, FO
+\end{align*}
+\end{fleqn}
+\end{proof}
+
+

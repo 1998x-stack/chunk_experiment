@@ -1,0 +1,54 @@
+\section{Non-bounded degree graphs}\label{sec:nonconstant}
+
+Algorithm~\ref{algo:genclusters}, which generates \implicit{}, and the sublinear-write algorithms on graph connectivity and biconnectivity all require the input graph to have bounded-degree.
+This is a strong assumption and in Appendix~\ref{sec:appendix-unbounded} we discussed how to adapt the algorithms to an arbitrary graph.
+This construction leads to Theorem~\ref{thm:main-sublinear}.
+%in this section we discuss how to relax this constraint to an arbitrary input graph.
+
+\hide{
+The challenge of unbounded degree does not affect most of the subroutines in our framework including computing $\rho(\cdot)$, BFS search in connectivity, computing \low{} and \high{} and tree queries in biconnectivity algorithms, etc.
+It raises in generating spanning trees either in a cluster (in line~\ref{line:partitionvertex}) to find the partition vertex that cuts of a constant fraction of a tree.
+
+%Thus, as a result of this construction and Theorem~\ref{thm:biconn}, we have the following.
+
+\begin{corollary}
+Graph connectivity oracle and biconnectivity queries on a graph can be preprocessed with $O(m\sqrt{\wcost})$ work, $O(m/\sqrt{\wcost})$ writes, and $O(\wcost{}^{3/2}\log^3 n)$ depth on the \ourmodel{} model.  A query also takes $O(\wcost)$ expected operations and $O(\wcost{}\log n)$ \whp{}.
+\end{corollary}
+
+This bound using \implicit{} requires less work when $m=O(n\sqrt{\wcost})$.
+Otherwise the linear-write version is more efficient on the \ourmodel{} model.
+}
+\hide{
+Here we discuss a solution to generate another graph $G'$ which has bounded degree with $O(m)$ vertices and edges, and the connectivity queries on the original graph $G$ can be answered in $G'$ equivalently.
+
+The overall idea is to build a tree structure with \defn{virtual nodes} for each vertex that has more than a constant degree.
+Each virtual node will represent a certain range of the edge list.
+Considering a star with all other vertices connecting to a specific vertex $v_1$, we build a binary tree structure with 2 virtual nodes on the first level $v_{1,2\to n/2}$, $v_{1,n/2+1\to n}$, 4 virtual nodes on the second level $v_{1,2\to n/4},\cdots,v_{1,3n/4+1\to n}$ and so on.
+We replace the endpoint of an edge from the original graph $G$ with the leaf node in this tree structure that represents the corresponding range with a constant number of edges.
+Notice that if both endpoints of an edge have large degrees, then they both have to be redirected.
+
+The simple case is for a sparse graph in which most of the vertices are bounded-degree, and the sum of the degrees for vertices with more than a constant number of edges is $O(n/k)$ (or $O(n/\sqrt{\wcost})$).
+In this case we can simply explicitly build a tree structure for the edges of a vertex.
+
+Otherwise, we require the adjacency array of the input graph to have the following property: each edge can query its positions in the edge lists for both endpoints.
+Namely, an edge $(u,v)$ knows it is the $i$-th edge in $u$'s edge list and $j$-th edge in $v$'s edge list.
+To achieve this, either an extra pointer is stored for each edge, or the edge lists are presorted and the label can be binary searched (this requires $O(\log n)$ work for each edge lookup).
+With this information, there exists an implicit graph $G'$ with bounded-degree.
+The binary tree structures can be defined such that given an internal tree node, we can find the three neighbors (two neighbors for the root) without explicitly storing the newly added vertices and edges.
+Notice that the new graph $G'$ now has $O(m)$ vertices including the virtual ones.
+The virtual nodes help to generate \implicit{} and require no writes unless they are selected to be either primary or secondary centers.
+
+Graph connectivity is obviously not affected by this transformation.
+It is easy to check that a bridge in the original graph $G$ is also a bridge in the new graph $G'$ and vice versa.
+In the biconnectivity algorithm, an edge in $G$ can be split into multiple edges in $G'$, but this will not change the biconnectivity property within a biconnected component, unless the component only contains one bridge edge, which can be checked separately.
+}
+
+
+
+
+
+
+
+
+
+

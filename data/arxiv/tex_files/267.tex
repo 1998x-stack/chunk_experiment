@@ -1,0 +1,850 @@
+\section{Defining the partitions}
+
+In this section, we assemble all the ingredients to show that there exists a partition for the Langevin chain such that $\min_{2\le i\le L, A\in \cal P_i}(\Gap(M_i|_A))$ is large, and each part in the partition also has significant probability. Hence the partition will be sufficient for the partitioning technique discussed in previous section.
+
+The high-level plan is to use Theorem~\ref{thm:gt14} to find the partitions for each temperature. Indeed, if we have a mixture of $n$ gaussians, it is not hard to show that the $(n+1)$-st eigenvalue is large:
+
+\begin{lem}[Eigenvalue gap for mixtures]\label{lem:m+1-eig} 
+
+Let $p_i (x)= e^{-f_i(x)}$ be probability distributions on $\Om$ and let $p(x) = \sumo in \weight_i p_i(x)$,  
+where $\weight_1,\ldots, \weight_n>0$ and $\sumo in \weight_i=1$. %Let $w_{\min}=\min_{1\le i\le n}\weight_i$.
+%Keep the setup of Lemma~\ref{lem:close-to-sum}. 
+%Further suppose that
+%$$
+%\int_{\R^d} e^{-\be f_1}\dx=\cdots = \int_{\R^d} e^{-\be f_n}\dx
+%$$
+%for all $\be>0$. (E.g., this holds for gaussians of equal variance.)
+Suppose that for 
+each $p_i$, 
+%$\fc{e^{-%\be 
+%f_i}}{\int_{\R^d} e^{-
+%%\be 
+%f_i}\dx}$, 
+a Poincar\'e inequality holds with constant $C%_\be
+$.
+
+Then the ($n+1$)-th eigenvalue of $\sL$ satisfies
+$$
+\la_{n+1}(-\sL) \ge \rc C. %_\be.
+$$
+\end{lem}
+
+We defer the proof to Section~\ref{subsec:gap}. 
+However, there are still many technical hurdles that we need to deal with before we can apply Theorem~\ref{thm:gt14} on spectral partitioning.
+\begin{enumerate}
+\item When the temperature is different, the distribution (which is proportional to $e^{-\beta f(x)}$) is no longer a mixture of gaussians. We show that it is still close to a mixture of gaussians in the sense that the density function is point-wise within a fixed multiplicative factor to the density of a mixture of gaussians (Section~\ref{subsec:multiplicative}). This kind of multiplicative guarantee allows us to relate the Poincar\'e constants between the two distributions.
+\item We then show (Section~\ref{subsec:smallsetpoincare}) a Poincar\'e inequality for all small sets. This serves two purposes in the proof: (a) it shows that the inner-conductance is large. (b) it shows that if a set has small conductance then it cannot be small. We also deal with the problem of continuous time here by taking a fixed time $t$ and running the Markov chain in multiples of $t$. 
+\item Now we can prove Lemma~\ref{lem:any-partition}, which shows that if we discretize the continuous-space Markov chain, then there exists good partitioning in the resulting discrete-space Markov chain (Section~\ref{subsec:main}).
+\item We then show that if we restrict the Langevin chain to a large ball, and then discretize the space in the large ball finely enough, then in the limit the spectral gap of the discretized chain is the same as the spectral gap of the continuous-space Markov chain (Section~\ref{subsec:finepartition}).
+\item  Finally in Section~\ref{subsec:compactset} we show it is OK to restrict the Langevin chain restricted to a large ball.
+\end{enumerate}
+
+\subsection{Proving the eigenvalue gap}
+\label{subsec:gap}
+Now we prove Lemma~\ref{lem:m+1-eig}. The main idea is to use the variational characterization of eigenvalues, and show that there can be at most $n$ ``bad'' directions. 
+
+\begin{proof}
+We use the variational characterization of eigenvalues:
+$$
+\la_{n+1}(-\sL) = \maxr{\text{subspace }S\subeq L^2(p)}{ \dim S = n}\min_{g\perp_p S}
+\fc{-\an{g,\sL g}}{\ve{g}_p^2}.
+$$
+To lower-bound this, it suffices to produce a $n$-dimensional subspace $S$ and lower-bound $\fc{\int_{\R^d}\ve{\nb g}^2p\dx}{\ve{g}_p^2}$ for $g\perp S$.
+We choose
+\begin{align}
+S &= \spn\set{\fc{p_i}{p}}{1\le i\le n}.
+\end{align}
+Take $g\perp_p \fc{p_i}{p}$ for each $i$. Then, since a Poincar\'e inequality holds on $p_i$,
+\begin{align}
+\int_{\R^d} g\fc{p_i}p p\dx&=0\\
+\implies
+\fc{\int_{\R^d}\ve{\nb g}^2 p_i\dx}{\Var_{p_i}(g)} = 
+\fc{\int_{\R^d}\ve{\nb g}^2 p_i\dx}{\ve{g}_{p_i}^2}
+&\ge\rc C.
+\end{align}
+Thus
+\begin{align}
+\fc{\int_{\R^d}\ve{\nb g}^2p\dx}{\ve{g}_p^2}
+& = \fc{\sumo im \int_{\R^d}\ve{\nb g}^2w_ip_i\dx}{\sumo in  w_i \ve{g}_{p_i}^2}\ge \rc C,
+\end{align}
+as needed.
+\end{proof}
+
+\subsection{Scaled temperature approximates mixture of gaussians}
+\label{subsec:multiplicative}
+The following lemma shows that changing the temperature is approximately the same as changing the variance of the gaussian. We state it more generally, for arbitrary mixtures of distributions in the form $e^{-f_i(x)}$. 
+
+\begin{lem}[Approximately scaling the temperature]\label{lem:close-to-sum}
+Let $p_i (x)= e^{-f_i(x)}$ be probability distributions on $\Om$ such that for all $\be>0$, $\int e^{-\be f_i(x)}\dx<\iy$. Let 
+\begin{align}
+p(x) & = \sumo in \weight_i p_i(x)\\
+f(x) &= -\ln p(x)
+\end{align}
+where $\weight_1,\ldots, \weight_n>0$ and $\sumo in \weight_i=1$. Let $w_{\min}=\min_{1\le i\le n}\weight_i$.
+
+Define the distribution at inverse temperature $\be$ to be $p_\be(x)$, where
+\begin{align}
+g_\be(x) &= e^{-\be f(x)}\\
+Z_\be &= \int_{\Om} e^{-\be f(x)}\dx\\
+p_\be(x) &= \fc{g_\be(x)}{Z_\be}.
+\end{align}
+Define the distribution $\wt p_\be(x)$ by
+\begin{align}
+\wt g_\be(x) &= \sumo in \weight_i e^{-\be f_i(x)}\\
+\wt Z_\be &= \int_{\Om} \sumo in {\weight_i e^{-\be f_i(x)}}\dx\\
+\wt p_\be(x) &= \fc{\wt g_\be(x)}{\wt Z_\be}.
+\end{align}
+Then for $0\le \be\le 1$ and all $x$,
+\begin{align}
+%\wt g_\be(x) \le g_\be(x) &\le \rc{w_{\min}} \wt g_\be(x) \\
+\label{eq:scale-temp1}
+g_\be(x) &\in \ba{1,\rc{w_{\min}}} \wt g_\be\\
+\label{eq:scale-temp2}
+p_\be(x)& \in \ba{1, \rc{w_{\min}}}\wt p_\be \fc{\wt Z_\be}{Z_\be}\sub \ba{w_{\min}, \rc{w_{\min}}}\wt p_\be.
+\end{align}
+%
+%
+%\begin{align}
+%p_i(x) &= \prc{2\pi}^{n/2}e^{-\fc{\ve{x-\mu_i}^2}2}\\
+%p(x)&=\sumo in \weight_i p_i(x)
+%\end{align}• 
+%be a mixture of gaussians with weights $\weight_i$, where $\sumo in \weight_i=1$. Let $f(x) = -\ln p(x)$, so that $p(x)=e^{-f(x)}$.
+%Let 
+%$$
+%p_\be(x) = e^{-\be f(x)}.
+%$$
+%and
+%\begin{align}
+%\wt p_{i, \be}(x)& = \prc{2\pi}^{\fc n2}e^{-\be\fc{\ve{x-\mu_i}^2}2}\\
+%\wt p_\be(x) &= \sumo in \weight_i\wt p_{i,\be}(x).
+%\end{align}
+%Then 
+%$$
+%1
+%\le
+%\fc{\wt p_\be(x)}{p(x)} \le \rc{\min\weight_i}.
+%$$
+\end{lem}
+\begin{proof}
+By the Power-Mean inequality,
+\begin{align}
+g_\be(x) &= \pa{\sumo in w_i e^{-f_i(x)}}^\be\\
+&\ge \sumo in w_i e^{-\be f_i(x)} = \wt g_\be(x).
+\end{align}
+On the other hand, given $x$, setting $j=\amin_i f_i(x)$, 
+\begin{align}
+g_\be(x) & = \pa{\sumo in w_i e^{-f_i(x)}}^\be\\
+&\le (e^{-f_j(x)})^{\be}\\
+&\le \rc{w_{\min}}\sumo in w_i e^{-\be f_i(x)} = \rc{w_{\min}} \wt g_\be(x).
+\end{align}
+This gives~\eqref{eq:scale-temp1}. This implies $\fc{\wt Z_\be}{Z_\be} \in [w_{\min},1]$, which gives~\eqref{eq:scale-temp2}.
+%Fix $x$, and let $j=\amin_i f_i(x)$. Then
+%\begin{align}
+%\ln g_\be(x) &= \be \ln \sumo in \weight_i e^{-f_i(x)}\\
+%&\in \ba{\be \ln \weight_j e^{-f_i(x)}, \be \ln e^{-f_j(x)}}\\
+%&= \ba{\be (\ln w_{\min} - f_j(x)), -\be f_j(x)}\\
+%&\subeq [\ln w_{\min} - \be f_j(x), -\be f_j(x)]\\
+%g_\be(x) &\in \ba{w_{\min}, 1} e^{-\be f_j(x)}\\
+%&\subeq \ba{w_{\min},\rc{w_{\min}}}\wt g_\be(x)\label{eq:q-wmin}
+%\end{align}
+%where the last line follows from $\wt g_\be(x) =\sumo in \weight_i e^{-\be f_i(x)}\in [1,\rc{w_{\min}}] e^{-\be f_j(x)}$.
+%Integrating over $x$ gives
+%\begin{align}
+%Z_\be &\in \ba{w_{\min}, \rc{w_{\min}}} \wt Z_\be\label{eq:z-wmin}.
+%\end{align}
+%Putting together~\eqref{eq:q-wmin} and~\eqref{eq:z-wmin} gives
+%\begin{align}
+%p_\be(x) &\in \ba{w_{\min}^2, \rc{w_{\min}^2}} \wt p_\be(x).
+%\end{align}
+\end{proof}
+
+\subsection{Poincar\'e inequalities on small subsets}
+\label{subsec:smallsetpoincare}
+%\begin{thm}[Poincar\'e constant for gaussians]
+%The gaussian measure $p(x) =
+%\rc{2\pi}^{\fc n2} e^{-\fc{\ve{x}^2}2}$ satisfies a Poincar\'e inequality
+%$$
+%\int \ve{\nb f}^2\,dp \ge C \Var_p(f).
+%$$
+%\fixme{What is the constant?}
+%\end{thm}
+%
+
+In this section we prove Poincar\'e inequalities for small sets. In fact we need to prove that this property is true robustly, in order to transform the continuous time Markov chain to a discrete time Markov chain.
+
+\begin{df}
+Given a measure $p$ on $\Om$, say that a Poincar\'e inequality with constant $C$ 
+holds on sets of measure $\le D$ if whenever $p(\Supp(g))\le D$, 
+$$
+\cal E_p(g) = \int_{\Om} \ve{\nb g}^2p\dx\ge \rc C \Var_p(g).
+$$
+\end{df}
+
+This is robust in the following sense: If the above condition is satisfied, then $g$ still satisfies a Poincar\'e inequality even if it is not completely supported on a small set, but just has a lot of mass on a small set.
+
+The main reason we need the robust version is that when we transform the continuous time Markov chain to a discrete time Markov chain, even if we initialized in a small set after some time the probability mass is going to spill over to a slightly larger set.
+
+\begin{lem}[Robustly Poincar\'e on small sets]\label{lem:poincare-small}
+Let $A\subeq \R^d$ be a subset. 
+Suppose that for $p$, a Poincar\'e inequality with constant $C$ holds on sets of measure $\le 2p(A)$. Then if 
+\begin{align}\label{eq:conc-A}
+\int_A g^2 p\dx \ge k\int_{\R^d} g^2p\dx
+\end{align}
+with $k>2p(A)$, then
+$$
+\cal E_p(g) \ge \fc{1}{20C}\pa{1-\fc{2p(A)}{k}}k\int_{\R^d} g^2p\dx.
+$$
+\end{lem}
+We lower-bound $\cal E_p(g)$ by showing that \eqref{eq:conc-A} implies that not much of $g$'s mass comes from when $g^2$ is small, so that much of $g$'s mass comes from the intersection of the set $B'$ where $g$ is large and the set $A$. This means we can use the Poincar\'e inequality on a ``sliced'' version of $g$ on $A$.
+
+\begin{proof}
+By scaling we may assume $\int g^2p\dx=1$. It suffices to show that $\cal E(g) \ge \fc{1}{20C}\pa{1-\fc{2p(A)}{k}}k$.
+
+Let 
+\begin{align}
+B &= \set{x\in \Om}{g(x)^2 \ge \fc{k}{2p(A)}}\\
+h(x) &=\begin{cases}
+0,& g(x)^2 \le \fc{k}{2p(A)}\\
+g(x) - \sfc{k}{2p}, &g(x) > \sfc{k}{2p(A)}\\
+g(x) + \sfc{k}{2p}, & g(x) < -\sfc{k}{2p(A)}.
+\end{cases}
+\end{align}
+i.e., we ``slice'' out the portion where $g(x)^2$ is large and translate it to 0. (Note we cannot just take $h(x) = g(x) \one_B(x)$ because this is discontinuous. Compare with~\cite[Proposition 3.1.17]{bakry2013analysis}.)
+\begin{align}
+\cal E_p(g) &= \int\ve{\nb g}^2p\dx \\
+&\ge \int \ve{\nb h}^2p\dx = \cal E(h).
+\end{align}
+By Cauchy-Schwarz, noting that $\Supp(h)\subeq B$ and $\Vol_p(B) \le \fc{2p(A)}{k}$,
+\begin{align}
+\pa{\int hp\dx}^2 & \le \pa{\int h^2p\dx} \fc{2p(A)}{k}.
+\end{align}•
+We can lower bound ${\int h^2p\dx}$ as follows. Let $B'=\set{x\in \Om}{g(x)^2 \ge \fc{2k}{3p(A)}}$.
+\begin{align}
+\int_A g^2p\dx &\ge k\\
+\int_{A\cap {B'}^c} g^2 p\dx &\le \fc{2k}{3p(A)}p(A) = \fc{2k}{3}\\
+\int_{A\cap B'} g^2 p\dx &\ge k - \fc{2k}3 = \fc k3\\
+\int_\Om h^2p\dx &\ge \int_{A\cap B'} \fc{h^2}{g^2} g^2 p\dx \\
+&\ge 0.15\int_{A\cap B'} g^2p\dx\\
+&\ge \rc{20}k.
+\end{align}
+where we used the fact that when $y^2 \ge\fc{2k}{2p(A)}$, $\fc{(y-\sfc{k}{2p(A)})^2}{y^2}\ge \fc{\pa{\sfc{2k}{3p} - \sfc{k}{2p}}^2}{\fc{2k}{3p}} >0.15$.
+Putting everything together,
+\begin{align}
+\label{eq:var-lb}
+\Var(h) &= \pa{\int_B h^2p\dx} - \pa{\int_B hp\dx}^2 \\
+&\ge \pa{1-\fc{2p(A)}{k}}\pa{\int_B h^2p\dx}\\
+&\ge \pa{1-\fc{2p(A)}{k}}\fc{k}{20}\\
+\cal E_p(g)&\ge \cal E_p(h)\\
+&\ge \rc C\Var(h) =\rc C\pa{1-\fc{2p(A)}{k}}\fc{k}{20}.
+\end{align}•
+\end{proof}
+
+
+%Define the conductance of a set $A$ to be 
+%$$
+%\phi(A) = \lim_{\ep\to 0^+} \fc{p(A_\ep)-p(A)}{\ep}
+%$$
+%where
+%$$
+%A_\ep = \set{x}{d(x,A)\le \ep}.
+%$$
+
+\begin{lem}[Conductance from small-set Poincar\'e]\label{lem:sse}
+Let $A\subeq \Om$ be a set.
+Suppose that a Poincar\'e inequality with constant $C$ holds on sets of measure $\le 2p(A)$.
+Let 
+$$\phi_t(A) = \int_A% \Pj(x_t\nin A|x)
+P_t(x,A^c)
+ \fc{p(x)}{p(A)}\dx$$
+be the conductance of a set $A$ after running Langevin for time $t$. %(Here $x_t$ is the random variable: the state after time $t$ after starting Langevin diffusion at $x$.) 
+Then
+\begin{align}
+\phi_t(A) &\ge \min\bc{\rc 2, \fc{1}{80C}\pa{1-4p(A)}t}.
+\end{align}•
+\end{lem}
+A Poincar\'e inequality can be thought of as giving a lower bound on ``instantaneous'' conductance. We show that this implies good conductance for a finite time $T$. What could go wrong is that the rate of mass leaving a set $A$ is large at time 0 but quickly goes to 0. We show using Lemma~\ref{lem:poincare-small} that this does not happen until significant mass has escaped.
+\begin{proof}
+We want to bound
+\begin{align}
+\phi_t(A) &= 1-\rc{p(A)}\int %\Pj(x_t\in A|x) 
+P_t(x,A)
+\one_Ap(x)\dx\\
+&=1-\rc{p(A)} \int (P_t\one_A)\one_Ap(x)\dx\\
+&=1-\rc{p(A)} \an{P_t\one_A, \one_A}_p\\
+&=1-\rc{p(A)} \an{P_{t/2}\one_A, P_{t/2}\one_A}_p
+\end{align}
+since $(P_t)_{t\ge 0}$ is a one-parameter semigroup and is self-adjoint with respect to $p$.
+Now by definition of $\sL$, 
+\begin{align}
+%\ddd t\an{P_t f, f}_p &= \ddd t\an{P_{t/2}f, P_{t/2}f}_p\\
+%&=-2\cal E(P_{t/2}f)\\
+%&\le -2C \Var_p(P_{t/2}f).
+\ddd t\an{P_t g, P_tg}_p &=
+2\an{P_tg,\ddd tP_tg}_p 
+=2\an{P_tg, \sL P_tg}_p = 
+-2\cal E(P_{t}g)
+\end{align}
+Let $t_0$ be the minimal $t$ such that 
+\begin{align}
+\int_A\ve{P_t\one_A}^2 p\dx&\le \rc2 \int_A \ve{\one_A}^2p\dx = \rc2 p(A).
+\end{align}
+(Let $t=\iy$ if this never happens; however, \eqref{eq:condA} will show that $t<\iy$.)
+For $t<2t_0$, by Lemma~\ref{lem:poincare-small},
+\begin{align}
+\ddd t \int\ve{P_t \one_A}^2p\dx %= \ddd t \Var(P_t\one_A)
+&\le -2\cal E(P_t\one_A)\\
+&\le -2 \fc{1}{40C}(1-4p(A)) \ddd t \int\ve{P_t \one_A}^2p\dx\\%\Var(P_t\one_A)\\
+&\le -\fc{1}{20C}(1-4p(A)) \ddd t \int\ve{P_t \one_A}^2p\dx.
+\end{align}
+%\Var(P_t\one_A)\\
+This differential inequality implies exponential decay, a fact known as Gronwall's inequality.
+\begin{align}
+\int\ve{P_t \one_A}^2p\dx &\le e^{-\fc{C}{20}(1-4p(A))t}\ub{\int_A\ve{\one_A}^2p\dx}{p(A)}\\
+\phi_t(A)&\le 1-\rc{P(A)} \ve{P_{t/2}\one_A}_p^2\\
+&\le 1-e^{-\fc{1}{40C}(1-4p(A))t}\le \max\pa{\rc2, \fc{1}{80C}(1-4p(A))t}\label{eq:condA}
+\end{align}
+where the last inequality follows because
+because $\ddd xe^{-x}\ge \rc 2$ when $e^{-x}\ge \rc 2$.
+
+For $t\ge 2t_0$, we have, because $\int_A\ve{P_t\one_A}^2p\dx$ is decreasing, $\ve{P_{t/2}\one_A}_p^2\le 
+\ve{P_{t_0}\one_A}_p^2=
+\rc 2p(A)$ so $\phi_t(A)\ge \rc 2$.
+\end{proof}
+
+\begin{lem}[Easy direction of relating Laplacian of projected chain]\label{lem:proj-eig}
+Let $(\Om, P)$ be a reversible %(discrete or continuous) 
+Markov chain and $\ol P$ its projection with respect to some partition $\cal P=\{A_1,\ldots, A_n\}$ of $\Om$. 
+Let $\cL = I-P$, $\ol \cL = I-\ol P$. 
+%Let the Laplacians be $\cal L$ and $\ol{\cal L}$. Then for each $n$,
+$$
+\la_n(\cL)\le \la_n(\ol{\cL}).
+$$
+\end{lem}
+\begin{proof}
+The action of $\ol{\cal L}$ on functions on $[n]$ is the same as the action of $\cal L$ on the subspace of functions that are constant on each set in the partition, denoted by $L^2(\cal P)$. This means that $L^2([n])$ under the action of $\ol \cL$ embeds into $L^2(p)$ under the action of $\cL$. 
+Let $\pi=\E[\cdot |\cal P]:L^2(p)\to L^2(\cal P)$ be the projection; note that for $h\in L^2(\cal P)$, $\an{h,\pi g} = \an{h,g}$. 
+%\fixme{Expand. Also we only need this for discrete.}
+
+By the variational characterization of eigenvalues, we have that for some $S$,
+\begin{align}
+\la_{n}(\cL) &= \minr{g\perp_p S}{g\in L^2(p)} \fc{\an{g,\cL g}}{\ve{g}_p^2} \le 
+\minr{f\perp_p \pi(S)}{g\in L^2(\cal P)}\fc{\an{f,\cL g}}{\ve{g}_p^2}
+\le \maxr{S\subeq L^2(\cal P)}{\dim(S)=n-1} \fc{\an{g, \cL g}}{\ve{g}_p^2} = \la_n(\ol\cL).
+\end{align}
+\end{proof}
+\begin{lem}[Small-set Poincar\'e inequality for mixtures]\label{lem:small-poincare}
+Keep the setup of Lemma~\ref{lem:close-to-sum}. 
+Further suppose that
+$$
+Z_\be = 
+\int_{\R^d} e^{-\be f_1}\dx=\cdots = \int_{\R^d} e^{-\be f_n}\dx.
+$$
+(E.g., this holds for gaussians of equal variance.)
+Suppose that a Poincar\'e inequality holds for each $\wt p_{\be,i} = \fc{e^{-\be f_i}}{Z_\be}$ with constant $C_\be$.
+
+%Write $p_\be(x) = \sumo im \weight_i p_{\be,i}(x)$ where $
+Then on $p_\be$, a Poincar\'e inequality holds with constant $\fc{2C_\be}{w_{\min}}$ on sets of size $\le \fc{w_{\min}^2}2$.
+\end{lem}
+\begin{proof}
+Let $A=\Supp(g)$. Then for all $j$, by Lemma \ref{lem:close-to-sum},
+\begin{align}
+w_{\min}\wt p_{\be,j}(A) &\le \weight_j \wt p_{\be, j}(A)\le 
+\sumo in \wt p_{\be,i}(A) = \wt p_\be(A) 
+\le \rc{w_{\min}} p_\be(A)
+%\le \rc{w_{\min}^2} p_\be(A) 
+\le \fc{w_{\min}}2\\
+\implies
+\wt p_{\be,j}(A) & \le \rc 2.
+\end{align}
+%Now again by Lemma \ref{lem:close-to-sum},
+%\begin{align}
+%\int_{\R^d} f^2p\dx &\le \rc{w_{\min}^2} \int_{\R^d} f^2 \sumo im \weight_i \wt p_{\be,i}\dx
+%\end{align}
+%so there exists $j$ such that
+%\begin{align}
+%\int f^2 \wt p_{\be,j}\dx &\ge w_{\min}^2\pa{\int f^2p\dx}\ge {w_{\min}^2}\Var(f).
+%\end{align}
+%As in~\eqref{eq:var-lb}, using $p_{\be,j}(A)\le \rc 2$, 
+%\begin{align}
+%\Var_{\wt p_{\be, j}}(f) &\ge 
+%\pa{\int g^2\wt p_{\be, j}\dx} - \pa{\int g\wt p_{\be, j}\dx}^2\\
+%&\ge \rc 2 \int f^2 \wt p_{\be,j}\dx\\
+%&\ge \fc{k^2}2\Var(f).
+%\end{align}
+As in~\eqref{eq:var-lb}, using $\wt p_{\be,j}(A)\le \rc 2$, 
+\begin{align}
+\Var_{\wt p_{\be, j}}(g) &\ge 
+\pa{\int_A g^2\wt p_{\be, j}\dx} - \pa{\int_A g\wt p_{\be, j}\dx}^2\\
+&\ge \rc 2 \int_A g^2 \wt p_{\be,j}\dx
+\end{align}
+Then
+\begin{align}
+\cE_{\wt p_\be}(f) 
+&= \int_{A} \ve{\nb f}^2 \sumo in w_j \wt p_{\be,j}(x)\dx\\
+&\ge \rc{C_\be} \sumo in w_i \Var_{\wt p_{\be,j}}(f)\\
+&\ge\rc{C_\be}\sumo in w_i \rc 2 \int_A f^2 \wt p_{\be,j}(x) \,dx\\
+&\ge \rc{2C_\be} \Var_{\wt p_\be}(f).
+\end{align}
+Using Lemma~\ref{lem:close-to-sum} and
+ Lemma~\ref{lem:poincare-liy}(3), $p_\be$ satisfies a Poincar\'e inequality with constant $\fc{2C_\be}{w_{\min}}$.
+%By the Poincar\'e inequality for $\wt p_{\be, j}$, using Lemma~\ref{lem:close-to-sum} for the first inequality,
+%\begin{align}
+%\cal E_{p_\be}(f) \ge 
+%w_{\min}^2 \cal E_{\wt p_{\be}}(f)\ge 
+%w_{\min}^3\cal E_{\wt p_{\be,i}}(f) \ge w_{\min}^3C_\be \Var_{\wt p_{\be,i}}(f)\ge \fc{C_\be w_{\min}^5}{2}\Var(f).
+%\end{align}•
+\end{proof}
+
+%\begin{thm}
+%Suppose that the Poincar\'e constant for Langevin diffusion with $f$ is $C$. Let $g$ be a \fixme{smooth} function such that $\ve{f-g}_\iy\le \ep$. Then the Poincar\'e constant for Langevin diffusion with $g$ is at most $Ce^{2\ep}$. %Thus, the mixing time is at most multiplied by a factor of $
+%\end{thm}
+
+\subsection{Existence of partition}
+\label{subsec:main}
+
+Now we are ready to prove the main lemma of this section, which gives the partitioning for any discrete space, discrete time Markov chain. In later subsections we will connect this back to the continuous space Markov chain.
+
+\begin{lem}\label{lem:any-partition}
+%Let $$p(x) = \sumo in \weight_i \prc{2\pi}^{\fc m2} \weight_i q_i(x).$$
+%Let $\cal P=\{A_1,\ldots, A_n\}$ be any partition of $\R^d$. Let $\ol P$ be the projected chain with respect to this partition; the states are $[n]$.
+%Then there exists a partition $\cal Q$ of $[n]$ into at most $m$ components that is a $(?,?)$-clustering.
+Let $p(x)\propto e^{-f(x)}$ be a probability density function on $\R^d$. 
+Let $C$ and $\mu\le 1$ be such that the Langevin chain on $f(x)$ satisfies $\la_{n+1}(\sL)\ge \rc{C}$, and a Poincar\'e inequality holds with constant $2C$ on sets of size $\le \mu$.
+
+Let $\cal P=\{A_1,\ldots, A_m\}$ be any partition of $B\subeq \R^d$.
+Let $( \R^d, P_T)$ be the discrete-time Markov chain where each step is running continuous Langevin for time $T\le \fc C2$, $(B, P_T|_B)$ be the same Markov chain restricted to $B$, and $([m], \ol{P_T|_B})$ is the projected chain with respect to $\cal P$. 
+
+Suppose that $B$ satisfies the following.
+\begin{enumerate}
+%\item
+%$p(B)\ge \rc 2$.
+\item
+For all $x\in B$, $P_T(x,B^c) \le \fc{T}{1000C}$. 
+\item
+$\la_{n+1}(I-P_T|_B) \ge \fc 34\pa{\la_{n+1}(I-P_T) - \fc{T}{6C}}$.
+%\rc2 \la_{n+1} (I-P_T)$.
+\end{enumerate}•
+
+Then there exists $\ell \le n$ and a partition $\cal J$ of $[m]$ into $\ell$ sets  $J_1,\ldots, J_\ell$ such that the following hold.
+\begin{enumerate}
+\item
+$\cal J$ is a $\pa{\Om\pf{T^2}{C^2m^8}, O\pf{T}{C}}$-clustering.
+\item
+Every set in the partition has measure at least $\fc{\mu}{2}$.
+\end{enumerate}
+\end{lem}
+\begin{proof}
+First we show that the $(n+1)$th eigenvalue is large. Note that the eigenvalues of $P_T$ are the exponentials of the eigenvalues of $\sL$.
+\begin{align}
+\la_{n+1}(I-\ol{P_T|_B}) 
+& \ge \la_{n+1}(I - P_T|_B)&\text{Lemma~\ref{lem:proj-eig}}\\
+&\ge \fc34\pa{ \la_{n+1}(I-P_T)-\fc{T}{6C}} & \text{assumption}\\
+&= \fc34(1-e^{-\la_{n+1}(-\sL)T}-\fc{T}{6C})
+\ge \fc34(1-e^{-T/C} - \fc{T}{6C})\\
+&\ge \fc34\pa{ \min\bc{\rc 2 , \fc T{2C}} - \fc{T}{6C}} = \fc{T}{4C}
+%\min\bc{1, \fc TC}.
+\end{align}
+Let $c$ be a small constant to be chosen.
+Let $k\le n+1$ be the largest integer so that 
+\begin{align}
+\la_{k-1}(I-\ol{P_T|_B}) &\le \fc{c^2 T^2}{C^2n^6}
+%\fc{c^2\min\{C^{-2}T^2,1\}}{m^6}.
+\end{align}
+Then
+$\la_k(I-\ol{P_T|_B}) >\fc{c^2 T^2}{C^2n^6}$.
+By Theorem~\ref{thm:gt14}, for some $1\le \ell \le k-1$, there exists a clustering with parameters 
+\begin{align}
+\pa{
+\Om\pf{\la_k}{k^2}, O(\ell^3\sqrt{\la_{\ell}})
+} = 
+\pa{\Om\pf{c^2 T^2}{C^2n^8}
+,
+O\pf{cT}{C}
+}
+\end{align}
+
+Now consider a set $J$ in the partition. 
+Let $A=\bigcup_{j\in J} A_j$.
+Suppose by way of contradiction that $p(A)\le \fc{\mu}{2}$.
+%By Lemma~\ref{lem:small-poincare}, a Poincar\'e inequality holds with constant $\fc{C_\be w_{\min}}{2}$ on sets of size $\le 2\ol p(J)$.
+By Lemma~\ref{lem:sse} and noting $p(A)<\rc 2$, the conductance of $A$ in $\R^d$ is
+\begin{align}\label{eq:cond-below}
+\phi_T(A)
+\ge 
+\fc{1}{80(2C)}(1-4p(A))T
+\ge 
+\fc{T}{320C}.
+\end{align}
+The conductance of $A$ in $B$ satisfies
+\begin{align}
+O\pf{cT}{C} \ge \phi_T|_{B}(A).
+\end{align}
+Now by assumption, $\fc{\int_A P(x,B^c)p(x)\dx}{p(A)}\le \fc{T}{1000C}$, so
+\begin{align}\label{eq:cond-above}
+O\pf{cT}{C} + \fc{T}{1000C}\ge \phi_T(A)
+\end{align}
+For $c$ chosen small enough, together \eqref{eq:cond-below} and \eqref{eq:cond-above} give a contradiction.
+\end{proof}
+
+\subsection{Making arbitrarily fine partitions}
+\label{subsec:finepartition}
+%
+%\begin{lem}\label{lem:vars-close}
+%Suppose that $p,q$ are probability measures such that 
+%$$
+%\be\le \fc{p}{q}\le \rc{\be}.
+%$$
+%Then
+%$$
+%\EE_p \ba{(f-\EE_p f)^2} \ge
+%\be\EE_q \ba{(f-\EE_q f)^2}.
+%$$
+%\end{lem}
+%
+%\begin{proof}
+%%Without loss of generality, assume $\EE_p f\ge \EE_q f=0$. (Otherwise, translate $f$ and then replace $f$ with $-f$.)
+%%\fixme{To be filled in.}
+%\begin{align}
+%\EE_p \ba{(f-\EE_p f)^2} \ge
+%\be \EE_q \ba{(f-\EE_p f)^2} \ge
+%\be \EE_q \ba{(f-\EE_q f)^2}
+%\end{align}
+%where the second inequality uses the fact that the mean minimizes the mean square error.
+%\end{proof}
+
+In this section we show when the discretization is fine enough, the spectral gap of the discrete Markov chain approaches the spectral gap of the continuous-space Markov chain.
+
+We will need the following fact from topology.
+\begin{lem}[Continuity implies uniform continuity on compact set]\label{lem:unif-cont}
+If $(\Om,d)$ is a compact metric space and $g:\Om\to \R$ is continuous, then for every $\ep>0$ there is $\de$ such that for all $x,x'\in \Om$ with $d(x,x')<\de$, 
+%$x$ and all $d(y,y')<\de$,
+%$$|f(x,y)-f(x,y')|<\ep.$$
+%a finite partition $\cal P$ of $\Om$ into rectangles such that on each $I\in \cal P$, for all $y$, $|f(x,y) - f(x',y)|<\ep$ for $x,x'\in I$.
+$$|g(x)-g(x')|<\ep.$$
+\end{lem}
+%\begin{proof}
+%Consider the following function.
+%\begin{align}
+%g(x,y) &=\max\set{0\le r\le 1}{\forall x',y'\in \Om,d(x,x')<r, d(y,y')<r\implies |f(x,y)-f(x',y')|<\ep}.
+%%\max\set{0\le r\le 1}{\forall x\in \Om, d(y,y')< r, |f(x,y)-f(x,y')|< \ep}.
+%\end{align}
+%$g$ satisfies the following properties.
+%\begin{enumerate}
+%\item
+%$g(x,y)$ is well-defined and $g(x,y)>0$ for all $y$: This follows from continuity of $f$.
+%%By continuity of $f$, for each $x$, there exists a rectangle such around $(x,y)$ such that $f$ varies by at most $\fc{\ep}{2}$ on that rectangle. By compactness of $\Om\times \{y\}$, there is a finite cover of $\Om\times \{y\}$ by such rectangles. We can find a tube $\Om\times B_r(y)$ contained in the union of these rectangles. This $r>0$ works. 
+%%
+%%It is clear that the set $\set{0\le r\le 1}{\forall x\in \Om, d(y,y')< r, |f(x,y)-f(x,y')|< \ep}$ is closed, so the maximum exists.
+%\item
+%$g(x,y)$ is continuous: We have that $g(x,y) \ge g(x',y') - \max(d(x,x'), d(y,y'))$. The reverse is also true, $g(x',y')\ge g(x,y) - \max(d(x,x'),d(y,y'))$. 
+%\end{enumerate}
+%A continuous function on a compact set attains a minimum. Thus $g(x,y)$ attains a minimum $>0$. Take $\de=\min_{x,y} g(x,y)$.
+%%Thus for each $y$, $\min_x g(x,y)$ exists and is $>0$. The function $y\mapsto \min_xg(x,y)$ is a continuous function in $y$, so it also attains a minimum $>0$. Take $\de = \min_y\min_x g(x,y)$.
+%\end{proof}
+
+We know that the gap of a projected chain is at least the gap of the original chain, $\text{Gap}(\ol M)\ge \text{Gap}(M)$ (Lemma~\ref{lem:proj-eig}). We show that if the size of the cells goes to 0, then the reverse inequality also holds. Moreover, the convergence is uniform in the size of the cells.
+\begin{lem}\label{lem:limit-chain}\label{l:uniform_convergence}
+Let $M=(\R^d, P')$ be a reversible Markov chain where
+the kernel $P':\Om\times \Om\to \R$ is continuous and $>0$ everywhere
+and the stationary distribution $p':\Om\to \R$ is a continuous function.
+
+Fix a compact set $\Om\sub \R^n$. 
+%P(x,dy) &= \de_x(dy)  P_{\text{rej}}(x) + P_{\text{tr}}(x,y)\,dy
+Then 
+$$
+\lim_{\de\searrow 0}\inf_{K, \cal P} \fc{\Gap(\ol{M|_K}^{\cal P})}{\Gap(M|_K)} = 1
+$$
+where the infimum is over all compact sets $K\subeq \Om$ and all partitions $\cal P$ of $K$ composed of sets $A$ with $\diam(A)<\de$. 
+\end{lem}
+\begin{proof}
+By Lemma~\ref{lem:unif-cont} on $\ln P'(x,y) : \Om\times \Om \to \R$ and $p'(x)$,  there exists $\de>0$ such that for all $x,y\in \Om$ such that $d(x,x')<\de$ and $d(y,y')<\de$, 
+\begin{align}\label{eq:unif-cont-p}
+\fc{P'(x',y')}{P'(x,y)}&\in [e^{-\ep},e^{\ep}]\\
+\label{eq:unif-cont-p2}
+\fc{p'(x)}{p'(x')} &\in [e^{-\ep},e^{\ep}].
+\end{align}
+We also choose $\de$ small enough so that for all sets $A$ with diameter $<\de$, $p(A)<\ep$. 
+
+Let $P$ and $p$ denote the kernel and stationary distribution for $M|_{K}$, and let
+\begin{align}
+P(x,dy) &= \de_x(dy)  P_{\text{rej}}(x) + P_{\text{tr}}(x,y)\,dy,
+\end{align}•
+where $P_{\text{rej}}(x)=P'(x,K^c)$ and $P_{\text{tr}} = P'$ (the notation is to remind us that this is when a transition succeeds). 
+Let 
+\begin{align}
+P_{\text{acc}}(x) = 1-P_{\text{rej}}(x) = \int_Y P_{\text{tr}}(x,y)\dy.
+\end{align}
+
+Consider a partition $\cal P$ all of whose components have diameter $<\de$. Let the projected chain be $\ol{M|_K} = (\ol \Om, \ol P)$ with stationary distribution $\ol p$. We let capital letters $X,Y$ denote the elements of $\ol \Om$, or the corresponding subsets of $\Om$, and $\ol f$ denote a function $\ol\Om\to \R$. 
+Let $Q$ be the probability distribution on $\Om\times \Om$ given by $Q(x,dy) = p(x)P(x,dy)$, and similarly define $\ol Q(X,Y) = \ol p(X)\ol P(X,Y)$. Also write 
+\begin{align}
+\ol P(X,Y) &=\one_{X=Y}\ol P_{\text{rej}}(X) + 
+\ol P_{\text{tr}}(X,Y)\\
+\ol P_{\text{rej}}(X) &=\int_X p(x)P_{\text{rej}}(x)\dx=1-\ol P_{\text{acc}}(X)\\
+\ol P_{\text{tr}}(X,Y) &= \int_X p(x) P_{\text{tr}}(x,y)\dx.
+\end{align}
+
+We have
+\begin{align}
+\label{eq:gap-p}
+\text{Gap}(M) &= \inf_{g}\fc{\iint (g(x)-g(y))^2 p(x)P(x,dy)\dx}{2\int (g(x)-\EE_p g(x))^2p(x)\dx}
+= \inf_{g}\fc{\EE_{x,y\sim Q} [g(x)-g(y)]^2}{\EE_{x\sim p}[g(x)-\EE_pg]^2}
+\\
+\text{Gap}(\ol M) &= \inf_{\ol g}\fc{\sum_{X,Y} (\ol g(X)-\ol g(Y))^2 \ol p(X)\ol P(X,Y)\dx\dy}{2\int (\sum_{X}\ol g(X)-\EE_{\ol p} \ol g(X))^2\ol p(\ol X)\dx}
+%\fixme{=\fc{\EE_{X,Y\sim \ol Q} (\ol f(X) - \ol f(Y))^2}{\EE_{X\sim \ol p} (\ol f(X) - \EE_{\ol p} \ol f)^2}}
+\\
+& = \inf_{g}
+\fc{\sum_{X,Y} \pa{\EE_p[g|X]- \EE_p[g|Y]}^2 \ol p(X)\ol P(X,Y)}{2\int (\EE_p [g|\cal P](x) - \EE_p[g])^2p(x)\dx}
+= \inf_{g}\fc{\EE_{X,Y\sim \ol Q} [\EE_p[g|X] - \EE_p [g|Y]]^2}{\EE_{X\sim  p}[\EE_p [g|X] - \EE_p[g]]^2}
+.
+\label{eq:gap-ol-p2}
+%\fc{\iint_{X\times Y} (\E[f(x)|\cal P]-\E[f(y)|\cal P])^2 \fc{\ol p(X)}{}
+%\ol P(X,Y)\dx\dy}{\int (\sum_{X}\ol f(X)-\EE_{\ol p} \ol f(X))^2\ol p(\ol X)\dx}
+\end{align}
+We will relate these two quantities.
+
+Consider the denominator of \eqref{eq:gap-p}. By the Pythagorean theorem, it equals the variation between sets in the partition, given by the denominator of~\eqref{eq:gap-ol-p2}, plus the variation within sets in the partition.
+%\begin{align}
+%\int (f(x)-\EE_p f(x))^2p(x)\dx
+%= \int (\EE_p [f|\cal P](x) - \EE_p[f])^2p(x)\dx
+%+ \int (f(x) - \EE_p [f|\cal P](x))^2p(x)\dx.
+%\end{align}
+\begin{align}\label{eq:denom-pythag}
+\EE_{x\sim p} [g(x)-\EE_p g]^2 &= 
+\EE_{x\sim p} [\EE_p[g|\cal P](x) - \EE_p g]^2 
++\EE_{x\sim p} [g(x) - \EE_p[g|\cal P](x)]^2.
+\end{align}
+
+We also decompose the numerator of \eqref{eq:gap-p}. First we show that we can approximate $p(x)P_{\text{tr}}(x,y)$ with a distribution where $y$ is independent of $x$ given the set $X$ containing $x$. Using~\eqref{eq:unif-cont-p} and \eqref{eq:unif-cont-p2},
+\begin{align}
+p(x) \ol P_{\text{tr}}(X,Y) \fc{p(y)}{\ol p(Y)} 
+&= \fc{p(x) p(y) \iint_{X\times Y}p(x') P_{\text{tr}}(x',y')\dx'\dy'}{\ol p(X) \ol p(Y)}\\
+&\le e^{2\ep}\fc{p(x) P_{\text{tr}}(x,y) \iint_{X\times Y} p(x') p(y')\dx'\dy'}{\ol p(X)\ol p(Y)}\\
+& = e^{2\ep}p(x)P_{\text{tr}}(x,y).
+\label{eq:decouple}
+\end{align}
+
+Let $R$ be the distribution on $\Om\times\Om$ defined as follows:
+\begin{align}
+X,Y&\sim \ol Q, &
+x&\sim p|_X &
+y&\sim p|_Y.
+\end{align}•
+%%Pick $x\sim p$. Suppose that $x\in X$. 
+%With probability $\ol P_{\text{tr}}(X,Y)$, pick $Y$. With the remaining probability ($\ol P_{\text{rej}}(X)$), pick $Y=X$. In either case, then pick $y\sim p|_Y$.
+%%Then with probability $\ol P_{\text{rej}}(X)$, take $y=x$. With probability $P_{\text{tr}}(X,Y)$, pick $Y$ and then pick $y\sim p|_Y$. 
+We then have by~\eqref{eq:decouple} that
+\begin{align}
+\iint_{\Om\times \Om}(g(x)-g(y))^2 p(x)P(x,y)\dx\dy
+&= \iint_{\Om\times \Om}(g(x)-g(y))^2 p(x)P_{\text{tr}}(x,y)\dx\dy\\
+&\ge e^{-2\ep}\iint_{\Om\times \Om}(g(x)-g(y))^2 p(x) \ol P_{\text{tr}}(X,Y) \fc{p(y)}{\ol p(Y)} \dx\dy
+\\
+&=e^{-2\ep}\Big[\EE_{(x,y)\sim R} [g(x)-g(y)]^2\\
+&\quad 
+ - \sum_{X} \iint_{X\times X}[g(x)-g(y)]^2 p(x) \ol P_{\text{rej}}(X)\fc{p(y)}{\ol p(X)}\dx\dy\Big].
+\label{eq:pre-pythag}
+\end{align}
+We use the Pythagorean Theorem: letting $\cal B$ be the $\si$-algebra of $\Om$,
+\begin{align}
+\EE_R[g(x)-g(y)|\cal P\times \cal B] &= \EE_p[g|X] - g(y),\\
+\EE_R[g(x)-g(y)|\cal P\times \cal P] &= \EE_p[g|X] - \EE_p[g|Y].
+\end{align}
+Then 
+\begin{align}
+\eqref{eq:pre-pythag}
+&= e^{-2\ep} \Big[\EE_{(x,y)\sim R} [(\EE_p[g|X] - \EE_p[g|Y])^2
++ (g(x)-\E[g|\cal P](x))^2 + (g(y) - \E[g|\cal P](y))^2]\\
+&\quad  - \sum_X \iint_{X\times X} [(g(x)-\E[g|\cal P](x))^2 + (g(y) - \E[g|\cal P](y))^2] \ol p(X) \ol P_{\text{rej}}(X) \fc{p(y)}{\ol p(Y)}\dx\dy\Big]\\
+&= e^{-2\ep} \Big[
+%\sum_{X,Y} (\EE_p[f|X] - \EE_p[f|Y])^2\ol p(X)\ol P(X,Y) 
+\EE_{x,y\sim Q} [g(x)-g(y)]^2\\
+&\quad + \iint_{X\times Y} [(g(x)-\E[g|\cal P](x))^2 + (g(y)-\E[g|\cal P](y))^2] \ol p(X) \ol P_{\text{tr}}(X,Y) \fc{p(y)}{\ol p(Y)}\dx\dy
+\Big]\label{eq:numer-decomp}
+\end{align}
+
+%We use the Pythagorean theorem conditioning on $\cal P \ot \cal P$. First calculate that for $g(x,y)=f(x)-f(y)$, $x\in X$, $y\in Y$,
+%\begin{align}
+%\E[g|\cal P \ot \cal P](x,y) &= \EE_p[f|X] - \EE_p[f|Y]
+%\end{align}
+%The Pythagorean theorem then gives
+%\begin{align}
+%\EE_{x,y\sim Q} [f(x)-f(y)]^2
+%&= \EE_{X,Y\sim \ol Q} [(\EE_p [f|X]- \EE_p[f|Y])^2] \\
+%&\quad + \sum_{X,Y}\iint_{X\times Y} [(f(x)-\EE_p [f|X]) - (f(y)-\EE_p[f|Y])]^2 p(x)P(x,y)\dx\dy.
+%%\iint (f(x)-f(y))^2 p(x)P(x,y)\dx\dy
+%%&=
+%%\sum_{X,Y}
+%%\Big(\EE_p[f|X] - \EE_p[f|Y])^2 \ol p(X) \ol P(X,Y)\\
+%%&\quad + \iint_{X\times Y} [(f(x)-\EE_p [f|X]) - (f(y)-\EE_p[f|Y])]^2 p(x)P(x,y)\dx\dy\Big).
+%\end{align}
+Thus, using $\fc{a'+b'}{a+b}\ge \min\bc{\fc{a'}{a},\fc{b'}{b}}$ for $a',b',a,b>0$, and the decompositions~\eqref{eq:denom-pythag} and~\eqref{eq:numer-decomp},
+\begin{align}
+%\fc{\iint (f(x)-f(y))^2 p(x)P(x,y)\dx\dy}{\int (f(x)-\EE_p f(x))^2p(x)\dx}
+\fc{\EE_{x,y\sim Q} [g(x)-g(y)]^2}{2\EE_{x\sim p} [g(x)-\EE_p g]^2}
+&\ge e^{-2\ep} \min
+\Big\{
+\fc{ \EE_{X,Y\sim \ol Q} [(\EE_p [g|X]- \EE_p[g|Y])^2]
+%\sum_{X,Y}(\EE_p[f|X] - \EE_p[f|Y])^2 \ol p(X) \ol P(X,Y)
+}{
+%\int (\EE_p [f|\cal P](x) - \EE_p[f])^2p(x)\dx
+2\EE_{x\sim p} [\EE_p [g|\cal P](x) - \EE_pg]^2
+},\\
+&\quad 
+%\fc{\sum_{X,Y}\iint_{X\times Y}[(f(x)-\EE_p [f|X]) - (f(y)-\EE_p[f|Y])]^2 p(x)P(x,y)\dx\dy}{ %\int (f(y) - \EE_p [f|\cal P](y))^2p(y)\dy
+\fc{
+\sum_{X,Y} (\iint_{X\times Y} [(g(x)-\E[g|\cal P](x))^2 + (g(y)-\E[g|\cal P](y))^2] \ol p(X) \ol P_{\text{tr}}(X,Y) \fc{p(y)}{\ol p(Y)}\dx\dy)}{
+2\EE_{x\sim p} [g(x) - \EE_p[g|\cal P](x)]^2
+}\Big\}.
+\label{eq:pythag-2}
+\end{align}
+The first ratio in the minimum is at least $\text{Gap}(\ol P)$ by~\eqref{eq:gap-ol-p2}. 
+We now bound the second ratio~\eqref{eq:pythag-2}. 
+
+%Hence letting $P(X,y):= \fc{\int_X p(x')P(x',y)\dx'\dy}{\int_X p(x')\dx}$, 
+The numerator of~\eqref{eq:pythag-2} is 
+\begin{align}
+ &\ge 
+%e^{-\ep} \sum_X\sum_Y\pa{
+%\iint_{X\times Y} 
+%[(f(x)-\EE_p [f|X]) - (f(y)-\EE_p[f|Y])]^2
+%p(x) \fc{\int_X p(x')P(x',y)\dx'}{\int_Xp(x')\dx'}\dx\dy
+%}\\
+%&=
+%e^{-\ep} \sum_X\sum_Y\pa{
+%\iint_{X\times Y} 
+%[(f(x)-\EE_p [f|X]) - (f(y)-\EE_p[f|Y])]^2
+%\fc{p(x)}{\ol p(X)} \fc{p(X,y)}{\ol P(X,Y)} \dx\dy
+%}\ol p(X) \ol P(X,Y)\\
+%&=
+%e^{-\ep} \EE_{X\sim \ol p}\EE_{Y\sim \ol P(X,\cdot)} \pa{
+%\EE_{(x,y)\sim (p|_X,P(X,\cdot)|_Y)}
+%[(f(x)-\E [f|X]) - (f(y)-\E[f|Y])]^2
+%}.
+\min_X\ol P_{\text{acc}}(X) \EE_{(x,y)\sim R} [(g(x)-\E[g|\cal P](x))^2 + (g(y)-\E[g|\cal P](y))^2]\\
+&= 2\min_X \ol P_{\text{acc}}(X) \EE_{x\sim p}[g(x)-\E[g|\cal P](x)]^2.
+\end{align}
+We claim that $\ol P_{\text{acc}}(X) \ge (1-\ep)\Gap(\ol M)$. Consider $\ol g(Y) = \one_{X=Y}$. 
+Then 
+\begin{align}
+\Gap(\ol P) &\le 
+\fc{\EE_{X,Y\sim \ol Q} [\ol g(X)-\ol g(Y)]^2}
+{2[\EE_{x\sim \ol p}[\ol g(X)^2] - [\EE_{x\sim \ol p} \ol g(X)]^2]}\\
+&\le \fc{2\ol Q(X,X^c)}{2[\ol p(X)-\ol p(X)^2]}\\
+&\le \fc{\ol P_{\text{acc}}(X)}{1-\ol p(X)}\\
+&\le  \fc{\ol P_{\text{acc}}(X)}{1-\ep}
+\end{align}
+ 
+%Since $(x,y)\sim (p|_X,P(X,\cdot)|_Y)$ is a product distribution, by additivity of variance this is
+%\begin{align}
+%&\ge 
+%e^{-\ep} \EE_{X\sim \ol p}\EE_{Y\sim \ol P(X,\cdot)} \pa{
+%\EE_{x\sim p|_X}
+%[f(x)-\EE_p[f|X]]^2
+%+ 
+%\EE_{y\sim p(X,\cdot)|_Y}
+%[f(y)-\EE_p[f|Y]]^2
+%}.
+%\end{align}
+%Note that drawing $X\sim \ol p$ and $x\sim p|_X$ is equivalent to drawing $x\sim p$, and 
+%by stationarity of $\ol p$, 
+%drawing $X\sim \ol p$, $Y\sim \ol P(X,\cdot)$, and $y\sim P(X,\cdot)|_Y$ is equivalent to drawing $y\sim p$. 
+%%$Y\sim \ol p$ and $y\sim p|_Y$.  
+%Thus this equals
+%\begin{align}
+%&= e^{-\ep} \pa{\EE_{x \sim p} [f(x)-\E[f|\cal P](x)]^2 + \EE_{y \sim p} [f(y)-\E[f|\cal P](y)]^2}\\
+%&= 2e^{-\ep}\EE_{x \sim p} [f(x)-\E[f|\cal P](x)]^2.
+%\end{align}
+%
+Putting everything together, 
+\begin{align}
+\Gap(M|_K) &\ge e^{-2\ep}\min\{\Gap(\ol{M|_K}), (1-\ep) \Gap(\ol{M|_K})\}.
+\end{align}
+Combined with Lemma~\ref{lem:proj-eig} ($\Gap(\ol{M|_K})\ge \Gap(M|_K)$) and letting $\ep\searrow0$, this finishes the proof.
+\end{proof}
+
+%\fixme{Apply this to $P|_{K}$ for large enough $K$. We need to choose $K$ so that $\text{Gap}(P|_K)\ge \text{Gap}(P)-\ep$. How to do this? This should be true for nice $K$ (ex. a large ball). (It is however not true for all $K$ such that $P(K)\approx 1$.)}
+
+%Let $\cE_{p|_{\Om}}(f) := \int_{\Om} \ve{\nb f}^2p(x)\,dx/p(\Om)$.
+\subsection{Restriction to large compact set}
+
+Finally we show it is OK to restrict to a large compact set. Intuitively this should be clear as the gaussian density functions are highly concentrated around their means.
+
+\label{subsec:compactset}
+\begin{lem}\label{lem:rest-large}
+Let $p_\be(x)\propto e^{-\be f(x)}$ where $f(x)=-\ln \sumo in w_ip_i(x)$ and $p_i(x)$ is the pdf of a gaussian with mean $\mu_i$. Let $B_R=\set{x\in \R^d}{\ve{x}\le R}$. 
+%is $\al$-strongly convex for all $\ve{x}\ge r$. Let $B_R$ denote the ball of radius $R$ around 0.
+
+For any $T>0$, for any $\ep_1>0$, there exists %,\ep_2>0$ there exists 
+%there exists $C>0$ and 
+$R$ such that for any $r\ge R$,
+\begin{enumerate}
+\item
+For any $x\in B_R$, $P_T(x,B^c)\le e^{-\be T/2}$. 
+\item For any $f$ with $\Supp(f)\subeq B_R$, 
+\begin{align}\fc{\cE_{P_T|_{B_R}}(g)}{\Var_{p|_{B_R}}(g)}
+&\ge (1-\ep_1) \pa{\fc{\cE_{P_T}(g)}{\Var_{p}(g)}-e^{-\be T/2}}
+%\ep_2.
+\end{align}
+%For all $T>0$, $\ep>0$ there exists $R$ such that for any $r\ge R$, 
+%\begin{align}
+%\fc{\cE_{P_T|_{B_R}}(f)}{\Var{p|_{B_R}}(f)}
+%&\ge
+%\fc{\cE_{P_T}(f)}{\Var{p}(f)}-\ep.
+%\end{align}
+\item
+For all $m$, $\la_m(P_T|_{B_R})\ge (1-\ep_1)(\la_m(P_T)-e^{-\be T/2})$.
+%-\ep_2$. 
+\end{enumerate}
+\end{lem}
+Note that we can improve the $e^{-\be T/2}$ to arbitrary $\ep_2>0$ with a more careful analysis using martingale concentration bounds, but this weaker version suffices for us.
+\begin{proof}
+Let $\mu$ be such that $\ve{\mu_i}\le D$ for all $1\le i\le m$. Let $Y_t =\ve{X_t}^2$. By It\^{o}'s Lemma,
+\begin{align}
+dY_t & = 
+2\an{X_t, -\be \nb f(X_t)\,dt + \sqrt 2 \,dB_t} + 2d \cdot dt\\
+&=\pa{-2\an{X_t, 
+\fc{-\be \sumo in w_i (X_t-\mu_i) e^{-\ve{X_t-\mu_i}^2/2}}{\sumo in w_i e^{-\ve{X_t-\mu_i}^2/2}}} +2 d} dt + \sqrt 8 (X_t-\mu)^*dB_t\\
+&= -2\pa{\an{X_t, 
+\fc{\be \sumo in w_i [(X_t-\mu)+(\mu-\mu_i)] e^{-\ve{X_t-\mu_i}^2}}{\sumo in w_i e^{-\ve{X_t-\mu_i}^2}}}  +  2d} dt +\sqrt 8 (X_t-\mu)^*dB_t\\
+&\le (-2\be Y_t +\be D \ve{X_t}+ 2d)dt + \sqrt 8 (X_t-\mu)^*dB_t\\
+&\le \pa{-\be Y_t + \fc{D^2\be}{4}+2d} dt+ \sqrt 8 (X_t-\mu)^*dB_t
+\end{align}
+Let $C=\fc{D^2\be}4+2d$ and consider the change of variable $Z_t = e^{\be t}(Y_t-\fc{C}{\be})$. Since this is linear in $Y_t$, It\^o's Lemma reduces to the usual change of variables and
+\begin{align}
+dZ_t &\le \be e^{\be t} \pa{Y_t-\fc{C}{\be}}dt 
++ e^{\be t} ((-\be Y_t + C) dt + \sqrt 8 (X_t-\mu^*)dB_t)\\
+&\le \sqrt 8 e^{\be t} (X_t-\mu)^* dB_t.
+\end{align}
+Suppose $Z_0$ is a point with norm $\le R$. 
+By the martingale property of the It\^o integral and Markov's inequality,
+\begin{align}
+\E\ba{ e^{\be T} \pa{\ve{X_T}^2  -\fc{C}{\be}}}
+&= \E Z_T\le Z_0 = \ve{X_0}^2-\fc{C}{\be}\\
+\implies
+\E \ve{X_T}^2 &\le e^{-\be T} \ve{X_0}^2 + \fc{C}{\be} (1-e^{-\be T})\\
+\Pj(\ve{X_T}\ge R) &\le \fc{e^{-\be T}(R^2+\fc{C}{\be}(1-e^{-\be T}))}{R^2}\\
+&\le e^{-\be T/2}
+\end{align}
+for all $R$ large enough.  This shows the first part.
+
+Note that the restricted $P_T|_{B_R}$ operates on functions $g$ with $\Supp(g)\subeq B_R$ as 
+\begin{align}
+P_T|_{B_R} g(x) &= \int_{B_R} P_T|_{B_R} (x,\dy) g(x)\\
+&=\int_{B_R} P_T(x,y) g(x)\dy + P_T(x,B_R^c) g(x)\\
+&= \one_{B_R} [P_Tg(x)  + P_T(x,B_R^c) g(x)]
+\end{align}
+Without loss of generality we may assume that $\E g=0$. (This is unchanged by whether we take $x\sim p$ or $x\sim p|_{B_R}$.)
+Then for $R$ large enough, 
+\begin{align}
+\an{P_T|_{B_R} g, g}_p
+& \le \an{P_Tg,g}_p + e^{-\be T/2}\ve{g}_p^2\\
+\an{(I-P_T|_{B_R})g,g}_{p|_{B_R}} &\ge
+\fc{\an{(I-P_T|_{B_R})g, g}_p}{p(B_R)}\\
+&\ge \fc{\an{(I-P_T)g,g} - e^{-\be T/2}\ve{g}^2}{p(B_R)}\\
+\fc{\cE_{p_T|_{B_R}}(g)}{\Var_{p|_{B_R}}(g)}
+& \ge \rc{p(B_R)}\pa{\fc{\cE_{p_T}(g)}{\Var_{p}(g)} - e^{-\be T/2}}.
+%\ve{f}^2}{p(B_R)}.
+\end{align}
+Taking $R$ large enough, $\rc{p(B_R)}$ can be made arbitrarily close to $1$. 
+The inequality for eigenvalues follows from the variational characterization as in the proof of Lemma~\ref{lem:poincare-liy}.
+\end{proof}

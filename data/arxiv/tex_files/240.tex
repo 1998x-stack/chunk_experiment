@@ -1,0 +1,1527 @@
+
+\chapter{Semantic preliminaries}
+\label{chap:preliminaries}
+
+To make our work accessible to a wider audience, we begin by recalling some preliminaries of category-theoretic models of computational effects (monads, adjunctions, and Lawvere theories) 
+and dependent types (split fibrations and split comprehension categories). 
+We assume familiarity with basic category theoretical concepts such as categories, functors, and natural transformations---we refer the reader to Mac Lane's book~\cite{MacLane:CatWM} for an in-depth overview. 
+Later in the thesis, we also assume familiarity with basic enriched category theory---see Kelly's book~\cite{Kelly:EnrichedCats} for an in-depth overview. 
+
+We also note that throughout this chapter (and more generally, 
+throughout this entire thesis), we assume the Axiom of Choice in results involving sets and functions.
+
+\section{Models of computational effects}
+\label{sect:modelsofeffects}
+
+We begin by recalling the definitions and key properties of category-theoretic structures used for modelling computational effects: monads, adjunctions, and Lawvere theories, including their relationships. For more details, see~\cite{MacLane:CatWM,Barr:Toposes,Manes:AlgTheories,Borceux:HandbookVol2,Power:CountableTheories}. 
+
+\subsection{Monads}
+
+The uniform category-theoretic study of computational effects dates back to the seminal work of Moggi~\cite{Moggi:ComputationalLambdaCalculus,Moggi:NotionsofComputationandMonads}, who recognised that all computational effects commonly used in programming languages can be modelled using (strong) monads. 
+
+\begin{definition}
+\label{def:monad}
+\index{monad}
+\index{ T@$\mathbf{T}$ (monad)}
+\index{ T@$(T,\eta,\mu)$ (monad)}
+\index{ e@$\eta$ (unit of a monad)}
+\index{ m@$\mu$ (multiplication of a monad)}
+Given a category $\mathcal{V}$, a \emph{monad} $\mathbf{T} = (T,\eta,\mu)$ 
+on $\mathcal{V}$ is given by a functor $T : \mathcal{V} \longrightarrow \mathcal{V}$ and two natural transofrmations, the \emph{unit} $\eta : \id_{\mathcal{V}} \longrightarrow T$ and the \emph{multiplication} $\mu : T \comp T \longrightarrow T$, 
+subject to the following commuting diagrams:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+T \ar[r]^-{\eta \,\comp\, T} \ar[dr]_-{\id_T\!\!\!} & T \comp T \ar[d]_-{\mu} & T \ar[l]_-{T \,\comp\, \eta} \ar[dl]^-{\id_T}
+\\
+& T
+}
+\qquad\qquad
+\xymatrix@C=3em@R=3em@M=0.5em{
+T \comp T \comp T \ar[r]^-{T \,\comp\, \mu} \ar[d]_-{\mu \,\comp\, T} & T \comp T \ar[d]^-{\mu}
+\\
+T \comp T \ar[r]_-{\mu} & T
+}
+\]
+\end{definition}
+
+Through the work of Wadler~\cite{Wadler:Monads}, who popularised the use of monads as a convenient means to structure functional programs, and the subsequent adoption of monads as a uniform mechanism to include computational effects in Haskell, functional programmers are probably more familiar with the Kleisli triple presentation of monads.
+
+\begin{definition}
+\index{Kleisli!-- triple}
+\index{ f@$f^\dagger$ (Kleisli extension)}
+\index{Kleisli!-- extension}
+\index{ ob@$\mathsf{ob}(\hspace{-0.05cm}\mathcal{V})$ (class of objects of a category $\mathcal{V}$)}
+Given a category $\mathcal{V}$, a \emph{Kleisli triple} $(T,\eta,(-)^\dagger)$ on $\mathcal{V}$ is given by a mapping $T : \mathsf{ob}(\!\mathcal{V}) \longrightarrow \mathsf{ob}(\!\mathcal{V})$, a family of morphisms $\eta_A : A \longrightarrow T(A)$ (for all $A$ in $\mathcal{V}$) and morphisms $f^\dagger : T(A) \longrightarrow T(B)$ (for all $f : A \longrightarrow T(B)$ in $\mathcal{V}$) 
+such that
+\[
+\eta_A^\dagger = \id_{T(A)}
+\qquad
+f^\dagger \comp \eta_A = f
+\qquad
+g^\dagger \comp f^\dagger = (g^\dagger \comp f)^\dagger
+\]
+for all $f : A \longrightarrow T(B)$ and $g : B \longrightarrow T(C)$.
+\end{definition}
+
+As is well-known, these two definitions are in fact equivalent.
+
+\begin{proposition}[{\cite[Theorem~3.18]{Manes:AlgTheories}}]
+Monads and Kleisli triples on a category $\mathcal{V}$ are in a 1-to-1 correspondence, with $f^\dagger$ and $\mu$ defined respectively as follows:
+\[
+f^\dagger \defeq \mu_B \comp T(f)
+\qquad
+\mu_A \defeq \id_{T(A)}^\dagger
+\]
+\end{proposition}
+
+Moggi's insight was that for a suitable monad $(T,\eta,\mu)$, the object $T(A)$ can be used to model effectful computations that return values modelled by $A$;
+the unit $\eta$ can be used to model the effect-free computation that returns a value and does not perform any effects; and the multiplication $\mu$ (or, equivalently, the Kleisli extension $(-)^\dagger$) can be used to model the sequential composition of effectful computations, e.g., the $\mathtt{let}$-expression in the ML-family of languages.
+Based on this monadic approach to  denotational semantics, Moggi also developed two simply typed languages to provide a formal basis for proving equivalences between effectful programs, namely, the computational $\lambda$-calculus~\cite{Moggi:ComputationalLambdaCalculus} and the monadic metalanguage~\cite{Moggi:NotionsofComputationandMonads}. These languages were later refined by Levy to a single fine-grain call-by-value language~\cite[Appendix~A.3.2]{Levy:CBPV}. 
+
+\index{ Set@$\Set$ (category of sets and functions)}
+Below we list some computational effects that Moggi considered and recall the underlying functors of the corresponding monads (for simplicity, on the category $\Set$):  
+\begin{itemize}
+\item for \emph{exceptions}, the monad is given on objects by $T_{\text{EXC}}(A) \defeq A + E$;
+\index{monad!exceptions --}
+\item for \emph{nondeterminism}, the monad is given on objects by $T_{\text{ND}}(A) \defeq \mathcal{P}_{\text{fin}}^+(A)$;
+\index{monad!nondeterminism --}
+\item for \emph{global state}, the monad is given on objects by $T_{\text{GS}}(A) \defeq S \Rightarrow (A \times S)$;
+\index{monad!global state}
+\index{ A@$A \times B$ (Cartesian product of $A$ and $B$)}
+\index{ A@$A \Rightarrow B$ (exponential object)}
+\item for \emph{I/O}, the monad is given on objects by $T_{\text{I/O}}(A) \defeq \mu\, X .\, A + (I \Rightarrow X) + (O \times X)$; and 
+\index{monad!I/O --}
+\index{ m@$\mu X .\, F(X)$ (least fixed point of the endofunctor $F$)}
+\item for \emph{continuations}, the monad is given on objects by $T_{\text{CONT}}(A) \defeq (A \Rightarrow R) \Rightarrow R$, 
+\index{monad!continuations --}
+\end{itemize}
+where $E$ is a set of exception names, $S$ of store values, $I$ of input values, $O$ of output values,  and $R$ of results. We omit the definitions of $\eta$ and $\mu$ for each of these monads; they can be  readily found in~\cite{Moggi:NotionsofComputationandMonads}. These monads also generalise straightforwardly to categories $\mathcal{V}$ other than $\Set$, as long as $\mathcal{V}$ has appropriate structure, e.g., coproducts for the exceptions monad, and Cartesian products and exponentials for global state.
+
+It is worth noting that the global state monad only models state where the store is changed by overwriting. In contrast, the author has also studied models of a more fine-grained notion of state where the store is changed by applying (potentially small) updates to it. 
+For this notion of state, the store is modelled using a set $S$, the updates using a monoid $(P,\mathsf{o},\oplus)$, and the interaction of the two using an action $\downarrow$ of the monoid on $S$.
+The corresponding \emph{update monad} is given on objects by $T_{\text{UPD}}(A) \defeq S \Rightarrow (P \times A)$. 
+\index{monad!update --}
+For more details about update monads, see the author's joint paper with Uustalu~\cite{Ahman:UpdateMonads}.
+
+This paper also describes a natural \emph{dependently typed generalisation} of update monads, where one uses a dependently typed generalisation of a monoid, a \emph{directed container} $(S,P,\downarrow,\mathsf{o},\oplus)$~\cite{Ahman:Dcontainers}. In short, in $(S,P,\downarrow,\mathsf{o},\oplus)$, $P$ is not a set but instead an $S$-indexed family of sets, with $\downarrow$, $\mathsf{o}$, and $\oplus$ typed accordingly, thus providing fine-grained control over which updates are applicable to specific stores---see Example~\ref{ex:fibsigofdeptypedupdatemonad} for more details.
+The corresponding dependently typed update monad is then given on objects by\footnote{Given a set $X$ and an $X$-indexed family of sets $Y$, then $\bigsqcap_{x \in X} Y_x$ is the $X$-indexed product of $Y_x$'s.} $T_{\text{DUPD}}(A) \defeq \bigsqcap_{s \in S} (P_s \times A)$.
+\index{monad!update --!dependently typed --}
+We discuss the equational presentations of (dependently typed) update monads in Examples~\ref{ex:fibsigofupdatemonad},~\ref{ex:fibsigofdeptypedupdatemonad},~\ref{ex:fibtheoryofupdatemonads},  and~\ref{ex:fibtheoryofdeptypedupdatemonads}. 
+
+Moggi also observed that monads by themselves are not sufficient to model computations in non-empty contexts of variables. Correspondingly, one requires the given monad $(T,\eta,\mu)$ to also be strong, so as to ensure that every morphism of the form $A \times B \longrightarrow T(C)$ canonically induces a morphism of the form $A \times T(B) \longrightarrow T(C)$. 
+
+
+\begin{definition}
+\label{def:strengthofmonad}
+\index{monad!strong --}
+\index{ sigma@$\sigma$ (strength of a monad)}
+A monad $\mathbf{T} = (T,\eta,\mu)$ on a category $\mathcal{V}$ with Cartesian products is said to be \emph{strong} if it is equipped with a natural transformation 
+\[
+\sigma : (-) \times T(=) \longrightarrow T((-) \times (=))
+\]
+making the following four diagrams commute:
+\[
+\xymatrix@C=3em@R=4em@M=0.5em{
+1 \times T(A) \ar[r]^-{\sigma_{I,A}} \ar[dr]_-{\lambda_{T(A)}} & T(1 \times A) \ar[d]^-{T(\lambda_A)}
+\\
+& T(A)
+}
+\]
+
+\vspace{0.1cm}
+
+\[
+\xymatrix@C=3em@R=4em@M=0.5em{
+(A \times B) \times T(C) \ar[d]_-{\alpha_{A,B,T(C)}} \ar[rr]^-{\sigma_{A \,\times\, B,C}} && T((A \times B) \times C) \ar[d]^-{T(\alpha_{A,B,C})}
+\\
+A \times (B \times T(C)) \ar[r]_-{\id_A \times\, \sigma_{B,C}} & A \times T(B \times C) \ar[r]_-{\sigma_{A,B \,\times\, C}} & T(A \times (B \times C))
+}
+\]
+
+\vspace{0.1cm}
+
+\[
+\xymatrix@C=3em@R=4em@M=0.5em{
+A \times B \ar[r]^-{\id_A \times\, \eta_B} \ar[dr]_-{\eta_{A \,\times\, B}} & A \times T(B) \ar[d]^-{\sigma_{A,B}}
+\\
+& T(A \times B)
+}
+\]
+
+\vspace{0.1cm}
+
+\[
+\xymatrix@C=3em@R=4em@M=0.5em{
+A \times T(T(B)) \ar[d]_-{\id_A \times\, \mu_B} \ar[r]^-{\sigma_{A,T(B)}} & T(A \times T(B)) \ar[r]^-{T(\sigma_{A,B})} & T(T(A \times B)) \ar[d]^-{\mu_{A \,\times\, B}}
+\\
+A \times T(B) \ar[rr]_-{\sigma_{A,B}} && T(A \times B)
+}
+\]
+where $\lambda_A : I \times A \overset{\cong}{\longrightarrow} A$ and $\alpha_{A,B,C} : (A \times B) \times C \overset{\cong}{\longrightarrow} A \times (B \times C)$ are components of the canonical natural isomorphisms induced by the Cartesian monoidal structure of $\mathcal{V}$.
+The notion of strength easily generalises to arbitrary monoidal categories, see~\cite{Kock:StrongMonads}.
+\end{definition}
+
+We conclude by recalling a well-known result that every monad on $\Set$ has a unique strength $\sigma$, given by $\sigma_{A,B} \defeq \langle a , d \rangle \mapsto T(b \mapsto \langle a , b \rangle)(d)$. One way to show this result is to first observe that a strong monad on a monoidal closed category $\mathcal{V}$ can be equivalently characterised as a $\mathcal{V}$-enriched monad on $\mathcal{V}$ (see~\cite{Kock:StrongMonads}), and as it happens, every monad on $\Set$ is trivially $\Set$-enriched. The uniqueness of $\sigma$ then follows from $\Set$ having enough points, in that for any two functions $f,g \!:\! A \longrightarrow B$, we have that $(\forall h \!:\! 1 \longrightarrow A .\, f \comp h = g \comp h)$ implies $f = g$ (see~\cite[Proposition~3.4]{Moggi:NotionsofComputationandMonads} for more details).
+
+\subsection{Adjunctions}
+\label{sect:adjunctionsbackground}
+
+A decade after Moggi's seminal work, Levy~\cite{Levy:CBPV} gave a more fine-grained analysis of effects based on adjunctions, using them to account for the clear separation between values and computations in his Call-By-Push-Value (CBPV) language. Adjunctions were also important in Egger et al.'s~\cite{Egger:EnrichedEffectCalculus} subsequent work on the linear aspects of effects, and for giving a denotational semantics to their Enriched Effect Calculus (EEC). 
+
+
+\begin{definition}
+\label{def:adjunction}
+\index{adjunction}
+\index{adjoint!left --}
+\index{adjoint!right --}
+\index{ F@$F \dashv\, U$ (adjunction)}
+\index{ e@$\eta$ (unit of an adjunction)}
+\index{ e@$\varepsilon$ (counit of an adjunction)}
+An \emph{adjunction} $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ between categories $\mathcal{V}$ and $\mathcal{C}$ is given by two functors, the \emph{left adjoint} $F : \mathcal{V} \longrightarrow \mathcal{C}$ and the \emph{right adjoint} $U : \mathcal{C} \longrightarrow \mathcal{V}$, and two natural transformations, the \emph{unit} $\eta : \id_{\mathcal{V}} \longrightarrow U \comp F$ and the \emph{counit} $\varepsilon : F \comp U \longrightarrow \id_{\mathcal{C}}$, 
+subject to the following two commuting diagrams:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+U \ar[r]^-{\eta \,\comp\, U} \ar[dr]_-{\id_U\!\!} & U \comp F \comp U \ar[d]^-{U \,\comp\, \varepsilon}
+&
+F \ar[r]^-{F \,\comp\, \eta} \ar[dr]_-{\id_F\!\!} & F \comp U \comp F \ar[d]^-{\varepsilon \,\comp\, F}
+\\
+& U
+&
+& F
+}
+\]
+\end{definition}
+
+As a convention, we write $A,B,\ldots$ for the objects of $\mathcal{V}$ and $\ul{C},\ul{D},\ldots$ for the objects of $\mathcal{C}$. While this notation coincides with our notation for value and computation types, we make sure that it is clear from the context whether $A$ and $\ul{C}$ mean types or objects.
+
+Similarly to monads, there are other, equivalent ways in which one can define adjunctions. We recall the other commonly used definition based on hom-sets.
+
+\begin{definition}
+\label{def:adjunctionhomsets}
+\index{adjunction!hom-set presentation of an --}
+\index{ @$\cong$ (isomorphism)}
+\index{ V@$\mathcal{V}(A,B)$ (hom-set between objects $A$ and $B$ in $\mathcal{V}$)}
+A \emph{hom-set presentation} of an adjunction ${F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}}$  consists of two functors, the left adjoint ${F : \mathcal{V} \longrightarrow \mathcal{C}}$ and the right adjoint ${U : \mathcal{C} \longrightarrow \mathcal{V}}$, and an isomorphism of hom-sets $\mathcal{C}(FA,\ul{C}) \cong \mathcal{V}(A,U\ul{C})$ that is natural in both $A$ and $\ul{C}$.
+\end{definition}
+
+A useful property of adjoints is that they are unique up-to-isomorphism. 
+
+\begin{proposition}[{\cite[Section~IV.1]{MacLane:CatWM}}]
+\label{prop:adjointsareunique}
+\index{ @$\cong$ (natural isomorphism)}
+Given $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ and $F' \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$, then there exists a natural isomorphism $F \cong F'$. Analogously, given $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ and $F \dashv\, U' : \mathcal{C} \longrightarrow \mathcal{V}$, then there exists a natural isomorphism $U \cong U'$. 
+\end{proposition}
+
+\index{ V@$\mathcal{V}^\text{op}$ (opposite category of $\mathcal{V}$)}
+Analogously to using monads for giving denotational semantics to effectful languages, adjunctions by themselves are not sufficient to model CBPV and EEC's terms in non-empty contexts. To this end, one requires the adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ to be \linebreak $\Set^{\mathcal{V}^\text{op}}$-enriched in the models of CBPV and $\mathcal{V}$-enriched in the models of EEC. 
+
+
+Next, we recall the close relationship between adjunctions and monads.
+
+\begin{proposition}[{\cite[Section~VI.1]{MacLane:CatWM}}]
+\label{prop:monadfromadjunction}
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ between categories $\mathcal{V}$ and $\mathcal{C}$, we get a monad $(U \comp F, \eta, U \comp \varepsilon \comp F)$ on the category $\mathcal{V}$.
+\end{proposition}
+
+\begin{definition}
+\label{def:resolutionofamonad}
+\index{resolution!-- of a monad}
+Given a monad $(T,\eta,\mu)$ on a category $\mathcal{V}$, a \emph{resolution} of $(T,\eta,\mu)$ is given by a category $\mathcal{C}$ and an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ such that $(T,\eta,\mu)$ coincides with the monad canonically derived from this adjunction, as given in Proposition~\ref{prop:monadfromadjunction}.
+\end{definition}
+
+While there does not exist a unique resolution of a monad, it is well-known that there exist two canonical resolutions: the \emph{Kleisli} and \emph{Eilenberg-Moore} resolutions. In fact, these two resolutions turn out to be the initial and terminal object in the category of resolutions of a monad, respectively---see~\cite[Chapter~VI]{MacLane:CatWM} for more details. These resolutions are also a common source of models of languages such as CBPV and EEC.
+
+\begin{definition}
+\label{def:kleisliresolution}
+\index{resolution!-- of a monad!Kleisli --}
+\index{ V@$\mathcal{V}_{\mathbf{T}}$ (Kleisli category of a monad $\mathbf{T}$ on $\mathcal{V}$)}
+\index{category!Kleisli --}
+\index{ F@$F_{\mathbf{T}} \dashv U_{\mathbf{T}}$ (Kleisli resolution)}
+Given a monad $\mathbf{T} = (T,\eta,\mu)$ on a category $\mathcal{V}$, its \emph{Kleisli resolution} is given by a category $\mathcal{V}_{\mathbf{T}}$ 
+and an adjunction $F_{\mathbf{T}} \dashv U_{\mathbf{T}} : \mathcal{V}_{\mathbf{T}} \longrightarrow \mathcal{V}$, 
+where the objects of $\mathcal{V}_{\mathbf{T}}$ are the objects of $\mathcal{V}$; and the morphisms $A \longrightarrow B$ in $\mathcal{V}_{\mathbf{T}}$ are the morphisms $A \longrightarrow T(A)$ in $\mathcal{V}$. The left and right adjoints are defined as follows:
+\[
+\begin{array}{c}
+F_{\mathbf{T}}(A) \defeq A 
+\qquad
+F_{\mathbf{T}}(f) \defeq \eta_B \comp f
+\qquad
+U_{\mathbf{T}}(A) \defeq T(A)
+\qquad
+U_{\mathbf{T}}(h) \defeq \mu_B \comp T(h)
+\end{array}
+\]
+where $f : A \longrightarrow B$ in $\mathcal{V}$ and $h : A \longrightarrow B$ in $\mathcal{V}_{\mathbf{T}}$.
+\end{definition}
+
+\begin{definition}
+\label{def:EMresolution}
+\index{resolution!-- of a monad!Eilenberg-Moore --}
+\index{ EM@EM (Eilenberg-Moore)}
+\index{ V@$\mathcal{V}^{\mathbf{T}}$ (Eilenberg-Moore category of a monad $\mathbf{T}$ on $\mathcal{V}$)}
+\index{category!Eilenberg-Moore --}
+\index{ F@$F^{\mathbf{T}} \dashv U^{\mathbf{T}}$ (Eilenberg-Moore resolution)}
+Given a monad $\mathbf{T} = (T,\eta,\mu)$ on a category $\mathcal{V}$, its \emph{Eilenberg-Moore (EM-) resolution} is given by a category $\mathcal{V}^{\mathbf{T}}$ 
+and an adjunction $F^{\mathbf{T}} \dashv U^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{V}$. 
+The objects of $\mathcal{V}^{\mathbf{T}}$ are given by pairs $(A,\alpha)$ of an object $A$ in $\mathcal{V}$ and a morphism \linebreak $\alpha : T(A) \longrightarrow A$ in $\mathcal{V}$ such that the following two diagrams commute:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+A \ar[dr]_-{\id_A} \ar[r]^-{\eta_A} & T(A) \ar[d]^-{\alpha}
+&
+T(T(A)) \ar[d]_-{\mu_A} \ar[r]^-{T(\alpha)} & T(A) \ar[d]^-{\alpha}
+\\
+&
+A
+&
+T(A) \ar[r]_-{\alpha} & A
+}
+\]
+A morphism $h : (A,\alpha) \longrightarrow (B,\beta)$ in $\mathcal{V}^{\mathbf{T}}$ is given by a morphism $h : A \longrightarrow B$ in $\mathcal{V}$ such that the following diagram commutes:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+T(A) \ar[r]^-{T(h)} \ar[d]_-{\alpha} & T(B) \ar[d]^-{\beta}
+\\
+A \ar[r]_-{h} & B
+}
+\]
+The left and right adjoints are defined as follows:
+\[
+F^{\mathbf{T}} (A) \defeq (T(A),\mu_A)
+\qquad
+F^{\mathbf{T}} (f) \defeq T(f)
+\qquad
+U^{\mathbf{T}} (A,\alpha) \defeq A
+\qquad
+U^{\mathbf{T}} (h) \defeq h
+\]
+where $f : A \longrightarrow B$ in $\mathcal{V}$ and $h : (A,\alpha) \longrightarrow (B,\beta)$ in $\mathcal{V}^{\mathbf{T}}$.
+\end{definition}
+
+The category $\mathcal{V}^{\mathbf{T}}$ is called the \emph{Eilenberg-Moore (EM-) category} of the monad $\mathbf{T}$. Its objects are commonly known as the \emph{Eilenberg-Moore (EM-) algebras}
+\index{Eilenberg-Moore!-- algebra}
+ of $\mathbf{T}$ and its morphisms as the EM-algebra \emph{homomorphisms}.
+For a given EM-algebra $(A,\alpha)$, 
+\index{ A@$(A,\alpha)$ (Eilenberg-Moore algebra)}
+the object $A$ is typically called the \emph{carrier}, 
+\index{Eilenberg-Moore!-- algebra!carrier of an --}
+and the morphism $\alpha$ the \emph{structure map}.
+\index{Eilenberg-Moore!-- algebra!structure map of an --}
+
+It is worth noting that some computationally important monads can be naturally decomposed into resolutions other than their Kleisli and EM-resolutions. 
+Below we assume that the monads in question are given on some Cartesian closed category $\mathcal{V}$.
+
+\begin{proposition}
+\label{prop:statemonadresolution}
+\index{resolution!-- of the state monad}
+The global state monad, given by $T_{\text{GS}}(A) \defeq S \Rightarrow (A \times S)$, can be decomposed into the resolution given by $(-) \times S \dashv\, S \Rightarrow (-) : \mathcal{V} \longrightarrow \mathcal{V}$.
+\end{proposition}
+
+\begin{proposition}
+\label{prop:continuationsmonadresolution}
+\index{resolution!-- of the continuations monad}
+The continuations monad, given by $T_{\text{CONT}}(A) \defeq (A \Rightarrow R) \Rightarrow R$, can be decomposed into the resolution given by $(-) \Rightarrow R \dashv\, (-) \Rightarrow R : \mathcal{V}^{\text{op}} \longrightarrow \mathcal{V}$.
+\end{proposition}
+
+We conclude our discussion about monads and adjunctions by recalling some known results about the existence of products and coproducts in the EM-category of a monad. 
+We later use these results and their natural fibrational generalisations as a basis for constructing examples of models of eMLTT---see Section~\ref{sect:examplesoffibadjmodels} for details.
+
+In the interest of generality, we state these existence results in terms of limits and colimits, from which the results for Cartesian products and coproducts follow as simple corollaries. To this end, we first recall the definitions of limits and colimits.
+
+\begin{definition}
+\index{diagram of given shape}
+\index{ D@$\mathcal{D}$ (shape of a diagram)}
+\index{ J@$J$ (diagram)}
+Given any category $\mathcal{V}$ and a small category $\mathcal{D}$, we say that a functor $J : \mathcal{D} \longrightarrow \mathcal{V}$ is a \emph{diagram of shape $\mathcal{D}$}.
+\end{definition}
+
+\begin{definition}
+\label{def:cone}
+\index{cone}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$ and an object $A$ in $\mathcal{V}$, we say that a natural transformation $\alpha : \Delta(A) \longrightarrow J$ is a \emph{cone over $J$}. We call $A$ the \emph{vertex} of $\alpha$.
+\index{cone!vertex of a --}
+\end{definition}
+
+\index{functor!diagonal --}
+\index{ D@$\Delta$ (diagonal functor)}
+In the above definition, $\Delta : \mathcal{V} \longrightarrow \mathcal{V}^{\mathcal{D}}$ 
+is the standard \emph{diagonal functor} that maps an object $A$ in $\mathcal{V}$ to the constant functor that maps every $D$ in $\mathcal{D}$ to the given $A$ in $\mathcal{V}$.
+
+\begin{definition}
+\index{morphism!-- of cones}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, and two cones $\alpha : \Delta(A) \longrightarrow J$ and $\beta : \Delta(B) \longrightarrow J$, we say that a morphism $h : A \longrightarrow B$ in $\mathcal{V}$ is \emph{a morphism of cones} from $\alpha$ to $\beta$ if for all objects $D$ in $\mathcal{D}$, we have 
+$
+\beta_D \comp h = \alpha_D
+$.
+\end{definition}
+
+\begin{definition}
+\index{limit}
+\index{ proj@$\mathsf{pr}^{J}$ (limit of $J$)}
+\index{ lim@$\mathsf{lim}(J)$ (vertex of the limit of $J$)}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, a \emph{limit of $J$} is the terminal cone over $J$, which we write as  $\mathsf{pr}^{J} : \Delta(\mathsf{lim}(J)) \longrightarrow J$. 
+For any other cone $\alpha : \Delta(A) \longrightarrow J$, we write $\langle \alpha \rangle$ for the unique mediating morphism of cones from $\alpha$ to $\mathsf{pr}^{J}$.
+\index{ a@$\langle \alpha \rangle$ (unique mediating morphism of cones from $\alpha$ to $\mathsf{pr}^{J}$)}
+\end{definition}
+
+\begin{definition}
+If the category $\mathcal{V}$ has limits for all diagrams  $J : \mathcal{D} \longrightarrow \mathcal{V}$, we say that $\mathcal{V}$ has \emph{limits of shape} $\mathcal{D}$. Further, if the category $\mathcal{V}$ has limits of all shapes $\mathcal{D}$, we say that $\mathcal{V}$ has all \emph{small limits} and that $\mathcal{V}$ is \emph{complete}.
+\index{category!complete --}
+\index{limit!small --}
+\end{definition}
+
+\begin{definition}
+\index{pullback}
+A \emph{pullback} of morphisms $f : A \longrightarrow C$ and $g : B \longrightarrow C$ in $\mathcal{V}$ is the limit of a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, where $\mathcal{D}$ is given by morphisms ${i : D_1 \longrightarrow D_3}$ and ${j : D_2 \longrightarrow D_3}$; and $J$ is given by  $J(i) \defeq f$ and $J(j) \defeq g$.
+\end{definition}
+
+\index{pullback!-- square}
+\index{ @$\lrcorner$ (notation for pullback squares)}
+As standard, we denote the existence of the pullback of $f : A \longrightarrow C$ and $g : B \longrightarrow C$ in $\mathcal{V}$ using a diagram of the following form, commonly called a \emph{pullback square}:
+\[
+\xymatrix@C=3.5em@R=3.5em@M=0.5em{
+\mathsf{lim}(J) \ar[r]^{\mathsf{pr}^{J}_{D_1}} \ar[d]_{\mathsf{pr}^{J}_{D_2}}^<{\,\big\lrcorner} & A \ar[d]^{f}
+\\
+B \ar[r]_{g} & C
+}
+\]
+As also standard, we often leave the diagram $J$ and the corresponding terminal cone implicit, and instead write pullback squares as in Definition~\ref{def:kernelpair} below.
+
+\begin{definition}
+\label{def:kernelpair}
+\index{kernel pair}
+A \emph{kernel pair} of a morphism $f : A \longrightarrow B$ is a pair of morphisms $g,h : C \longrightarrow A$ that form the pullback of $f$ and $f$, as illustrated in the following diagram:
+\[
+\xymatrix@C=3.5em@R=3.5em@M=0.5em{
+C \ar[r]^{h} \ar[d]_{g}^<{\,\big\lrcorner} & A \ar[d]^{f}
+\\
+A \ar[r]_{f} & B
+}
+\]
+\end{definition}
+
+\begin{definition}
+\index{cocone}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$ and an object $A$ in $\mathcal{V}$, we say that a natural transformation $\alpha : J \longrightarrow \Delta(A)$ is a \emph{cocone over $J$}. We call $A$ the \emph{vertex} of $\alpha$.
+\index{cocone!vertex of a --}
+\end{definition}
+
+
+\begin{definition}
+\index{morphism!-- of cocones}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, and two cocones $\alpha : J \longrightarrow \Delta(A)$ and $\beta : J \longrightarrow \Delta(B)$, we say that a morphism $h : A \longrightarrow B$ in $\mathcal{V}$ is \emph{a morphism of cocones} from $\alpha$ to $\beta$ if for all objects $D$ in $\mathcal{D}$, we have 
+$
+h \comp \alpha_D = \beta_D
+$.
+\end{definition}
+
+\begin{definition}
+\label{def:colimits}
+\index{colimit}
+\index{ in@$\mathsf{in}^{J}$ (colimit of $J$)}
+\index{ colim@$\mathsf{colim}(J)$ (vertex of the colimit of $J$)}
+Given a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, a \emph{colimit of $J$} is the initial cocone over $J$, which we write as $\mathsf{in}^{J} : J \longrightarrow \Delta(\mathsf{colim}(J))$. 
+For any other cocone $\alpha : J \longrightarrow \Delta(A)$, we write $[\alpha]$ for the unique mediating morphism of cocones from $\mathsf{in}^{J}$ to $\alpha$.
+\index{ a@$[\alpha]$ (unique mediating morphism of cocones from $\mathsf{in}^{J}$ to $\alpha$)}
+\end{definition}
+
+\begin{definition}
+If the category $\mathcal{V}$ has colimits for all diagrams  $J : \mathcal{D} \longrightarrow \mathcal{V}$, we say that $\mathcal{V}$ has \emph{colimits of shape} $\mathcal{D}$. Further, if the category $\mathcal{V}$ has colimits of all shapes $\mathcal{D}$, we say that $\mathcal{V}$ has all \emph{small colimits} and that $\mathcal{V}$ is \emph{cocomplete}.
+\index{category!cocomplete --}
+\index{colimit!small --}
+\end{definition}
+
+\begin{definition}
+\index{pushout}
+A \emph{pushout} of morphisms $f : A \longrightarrow B$ and $g : A \longrightarrow C$ in $\mathcal{V}$ is the colimit of a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, where $\mathcal{D}$ is given by morphisms ${i : D_1 \longrightarrow D_2}$ and ${j : D_1 \longrightarrow D_3}$; and $J$ is given by  $J(i) \defeq f$ and $J(j) \defeq g$.
+\end{definition}
+
+\begin{definition}
+\index{coequalizer}
+A \emph{coequalizer} of a parallel pair of morphisms $f,g : A \longrightarrow B$ in $\mathcal{V}$ is the colimit of a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$, where $\mathcal{D}$ consists of a parallel pair of morphisms $i,j : D_1 \longrightarrow D_2$; and $J$ is given by $J(i) \defeq f$ and $J(j) \defeq g$.
+\end{definition}
+
+\begin{definition}
+\index{section}
+A \emph{section} of a morphism $f : A \longrightarrow B$ is a morphism $g : B \longrightarrow A$ that is a right inverse to $f$, i.e., $f \comp g = \id_B$.
+\end{definition}
+
+\begin{definition}
+\index{coequalizer!reflexive --}
+A \emph{reflexive coequalizer} is a coequalizer of a parallel pair of morphisms $f,g : A \longrightarrow B$ that have a common section. \end{definition}
+
+
+\index{ 2@$\mathbf{2}$ (discrete two-object category)}
+We now list the results about the existence of limits and colimits in the EM-category of a monad.
+The cases of Cartesian products and coproducts follow as simple corollaries to these results if we take $\mathcal{D} \defeq \mathbf{2}$, where $\mathbf{2}$ is the discrete two-object category. 
+
+\begin{proposition}[{\cite[Proposition~4.3.1]{Borceux:HandbookVol2}}]
+\label{prop:limitsinEMcategory}
+Given a monad $\mathbf{T}$ on a category $\mathcal{V}$ and a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}^{\mathbf{T}}$, then there exists a limit of $J$ if there exists a limit of the composite diagram $U^{\mathbf{T}} \comp J$. In particular, if $\mathcal{V}$ has all limits of shape $\mathcal{D}$, then $\mathcal{V}^{\mathbf{T}}$ also has all limits of shape $\mathcal{D}$.
+\end{proposition}
+
+\begin{proposition}[{\cite[Proposition~4.3.2]{Borceux:HandbookVol2}}]
+\label{prop:colimitsinEMcategory1}
+Given a monad $\mathbf{T} = (T,\eta,\mu)$ on a category $\mathcal{V}$ and a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}^{\mathbf{T}}$ such that there exists a colimit of the composite functor $U^{\mathbf{T}} \comp J$ which is preserved by $T$, then there exists a colimit of $J$ and it is preserved by $U^{\mathbf{T}}$. In particular, if $\mathcal{V}$ has all colimits of shape $\mathcal{D}$ and they are preserved by $T$, then $\mathcal{V}^{\mathbf{T}}$ also has all colimits of shape $\mathcal{D}$ and they are preserved by $U^{\mathbf{T}}$.
+\end{proposition}
+
+\begin{proposition}[{\cite[Corollary~2]{Linton:Coequalizers}}]
+\label{prop:colimitsinEMcategory2}
+Given a monad $\mathbf{T}$ on a cocomplete category $\mathcal{V}$, then $\mathcal{V}^{\mathbf{T}}$ is cocomplete if it has reflexive coequalizers. 
+\end{proposition}
+
+\begin{proposition}[{\cite[Theorem~4.3.5 (i)]{Borceux:HandbookVol2}}]
+\label{prop:EMcategoryiscompletecocompleteandregular}
+Given a monad $\mathbf{T}$ on a complete, cocomplete, and regular category $\mathcal{V}$ in which every regular epimorphism has a section, then $\mathcal{V}^{\mathbf{T}}$ is complete, cocomplete, and regular.
+\end{proposition}
+
+In particular, recall that a category is \emph{regular} 
+\index{category!regular --}
+when i) every morphism in it has a kernel pair, ii) every kernel pair has a coequalizer, and iii) the pullback of a regular epimorphism 
+\index{epimorphism!regular --}
+(a coequalizer of some parallel pair of morphisms) along any morphism exists and is again a regular epimorphism---see~\cite[Chapter~2]{Borceux:HandbookVol2} for more details.
+
+Finally, it is worth highlighting a useful result about the EM-categories of monads on $\Set$ that follows as a straightforward corollary to Propositions~\ref{prop:limitsinEMcategory} and~\ref{prop:EMcategoryiscompletecocompleteandregular}. We use this result in Section~\ref{sect:fibadjmodelsfromfamiliesofsets} to construct examples of models of eMLTT.
+
+\begin{proposition}
+\label{prop:EMcategoryonSetiscompleteandcocomplete}
+For any monad $\mathbf{T}$ on $\Set$, $\Set^{\mathbf{T}}$ is both complete and cocomplete.
+\end{proposition}
+
+\begin{proof}
+Completeness of $\Set^{\mathbf{T}}$ follows directly from Proposition~\ref{prop:limitsinEMcategory} because it is well-known that $\Set$ is complete. Cocompleteness of $\Set^{\mathbf{T}}$ then follows from Proposition~\ref{prop:EMcategoryiscompletecocompleteandregular} because it is well-known that $\Set$ is also cocomplete, and that by the Axiom of Choice, every epimorphism (i.e., surjective function) in $\Set$ has a section. Further, it is also well-know that $\Set$ is a regular category (e.g., see~\cite[Example~2.4.2]{Borceux:HandbookVol2}).
+\end{proof}
+
+
+
+
+
+\subsection{Algebraic treatment of computational effects}
+\label{sect:algebraictreatmentofeffects}
+
+While Moggi's seminal work shows that strong monads provide a uniform means to model basic combinators on effectful computations (returning values and sequential composition), it leaves two important questions unanswered: 
+\begin{itemize}
+\item Given any programming language with its computational effects, which monad should we use to model this language?
+\item Given monads for two or more computational effects, how should we combine them into a monad for the combination of these effects?
+\end{itemize}
+In particular, recall that the monads Moggi considered were defined on a case-by-case basis for specific computational effects. Further, while his subsequent work with Cenciarelli~\cite{Cenciarelli:Modularity} on monad transformers (pointed endofunctors on the category of strong monads) provides some means of modularity for combining monads, these transformers are defined on a similar case-by-case basis for specific computational effects.
+
+\index{algebraic effect}
+An elegant answer to both questions is provided by the algebraic treatment of computational effects, as originally proposed and developed by Plotkin and Power~\cite{Plotkin:SemanticsForAlgOperations,Plotkin:NotionsOfComputation,Plotkin:AlgOperations}. In this  approach, one represents computational effects algebraically using a set of operation symbols (representing the sources of effects) and a set of equations (describing their computational properties). Consequently, computational effects that fit this approach are commonly called \emph{algebraic}. 
+A good source of examples of algebraic effects is~\cite{Plotkin:HandlingEffects}. 
+We also discuss examples of common algebraic effects in Section~\ref{sect:fibeffecttheories}.
+
+Plotkin and Power's key insight was that computational effects themselves, when represented using operations and equations, canonically determine the monads and adjunctions that one can use to model effectful languages. 
+For example, the global state monad is determined by operations for reading from and writing to the store, together with a set of  equations describing the natural computational behaviour of reading and writing, as given in~\cite{Plotkin:NotionsOfComputation}. 
+In the same way one can recover most of Moggi's monads, with the notable exception of the continuation monad that is not algebraic~\cite{Hyland:Continuations}.
+
+Focussing on operations and equations also enables computational effects and the corresponding monads to be composed modularly. For example, Hyland et al.~\cite{Hyland:CombiningEffects} explain various commonly used monad transformers in terms of two canonical constructions on equational theories, the \emph{sum} and \emph{tensor product} of equational theories. For both constructions, the set of operation symbols of the resulting theory is given by the union of the sets of operation symbols of the given theories, and the set of equations of the resulting theory includes the union of the sets of equations of the given theories. For the tensor product, the set of equations of the resulting theory additionally includes equations ensuring that operations from different given theories commute with each other. The algebraic treatment of computational effects has also resulted in a general account of effect handlers~\cite{Plotkin:HandlingEffects}, and has been successfully applied to effect-dependent optimisations~\cite{Kammar:AlgebraicFoundations}, operational semantics~\cite{Plotkin:TensorsOfModels,Saleh:OpSemantics}, and a logic of effects~\cite{Plotkin:Logic}.
+
+In more detail, Plotkin and Power modelled algebraic computational effects using equationally presented  Lawvere theories, making use of the wealth of existing theory and the particularly good properties of Lawvere theories and their models. Informally, a Lawvere theory is an abstract, category-theoretic  description of the clone of equational theories.
+%
+Plotkin and Power's original work has since been extended to account for more general notions of algebraic effects. For example: i) countable Lawvere theories~\cite{Power:CountableTheories} enable one to model natural number valued global state, ii) enriched Lawvere theories~\cite{Power:EnrichedLawvereTheories,Hyland:CombiningEffects,Hyland:DiscreteLawTh} enable one to model partiality and recursion, and iii) indexed Lawvere theories~\cite{Power:IndexedLawvereTheories} and parameterised algebraic theories~\cite{Staton:Instances} enable one to model local computational effects, such as the allocation of fresh names and references. 
+
+In this thesis, we use \emph{countable Lawvere theories} for modelling algebraic effects. 
+We recall their definition and some key properties below---see~\cite{Power:CountableTheories} for more details.
+In particular, on the one hand, countable Lawvere theories are general enough to be used to model the corresponding extensions of eMLTT we discuss in Chapters~\ref{chap:fibalgeffects} and~\ref{chap:handlers}. On the other hand, they are sufficiently  concrete to be accessible to a wide audience. 
+
+
+\begin{definition}
+\label{def:countablelawveretheory}
+\index{Lawvere theory!countable --}
+\index{ I@$I$ (countable Lawvere theory)}
+\index{ L@$\mathcal{L}$ (countable Lawvere theory)}
+\index{category!skeleton of the -- of countable sets}
+\index{ ab@$\aleph_{\hspace{-0.05cm}1}$ (skeleton of the category of countable sets)}
+A \emph{countable Lawvere theory} is given by a small category $\mathcal{L}$ with countable products and a strict countable-product preserving identity-on-objects functor  $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$, 
+where $\aleph_{\!\!1}$ is the skeleton of the category of countable sets and all functions between them (countable coproducts in $\aleph_{\!\!1}$ are given by cardinal sum).
+\end{definition}
+
+It is worthwhile to note that the objects of $\mathcal{L}$ are exactly those of $\aleph_{\!\!1}^{\text{op}}$, or equivalently, those of $\aleph_{\!\!1}$. In more concrete terms, every object of $\mathcal{L}$ is either a natural number or the distinguished symbol $\omega$ denoting the cardinality of countable sets. 
+
+In the rest of this thesis we let $n,m,\ldots$ to range over the objects of $\aleph_{\!\!1}$; we ensure that it is clear from the context whether $n$ denotes a natural number or the symbol $\omega$.
+
+\begin{definition}
+\index{morphism!-- of countable Lawvere theories}
+A \emph{morphism} of countable Lawvere theories, from $I_1 : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_1$ to \linebreak $I_2 : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_2$, is given by a strict countable-product preserving functor from $\mathcal{L}_1$ to $\mathcal{L}_2$ that commutes with the functors $I_1$ and $I_2$. This gives us the category $\Law$.
+\index{ Law@$\Law$ (category of countable Lawvere theories)}
+\end{definition}
+
+\begin{definition}
+\index{Lawvere theory!countable --!model of a --}
+A \emph{model} of a countable Lawvere theory $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$ in a category $\mathcal{V}$ with countable products is a countable-product preserving functor $\mathcal{M} : \mathcal{L} \longrightarrow \mathcal{V}$.
+\index{ M@$\mathcal{M}$ (model of a countable Lawvere theory)}
+\end{definition}
+
+\begin{definition}
+\index{morphism!-- of models of a countable Lawvere theory}
+\index{ Mod@$\Mod(\hspace{-0.05cm}\mathcal{L},\mathcal{V})$ (category of models  in $\mathcal{V}$ of a countable Lawvere theory $\mathcal{L}$)}
+A \emph{morphism} of models $\mathcal{M}_1 : \mathcal{L} \longrightarrow \mathcal{V}$ and $\mathcal{M}_2 : \mathcal{L} \longrightarrow \mathcal{V}$ of a countable Lawvere theory $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$ in a category $\mathcal{V}$ with countable products is given by a natural transformation from $\mathcal{M}_1$ to $\mathcal{M}_2$. This gives us a category $\Mod(\!\mathcal{L},\mathcal{V})$.
+\end{definition}
+
+The category $\Mod(\!\mathcal{L},\mathcal{V})$ comes equipped with a canonical forgetful functor to $\mathcal{V}$, whose left adjoint, if it exists, enables us to derive the corresponding monad on $\mathcal{V}$.
+
+\begin{definition}
+The canonical \emph{forgetful functor} $U_{\!\mathcal{L}} : \Mod(\!\mathcal{L},\mathcal{V}) \longrightarrow \mathcal{V}$ is given by 
+\[
+U_{\!\mathcal{L}}(\mathcal{M}) \defeq \mathcal{M}(1)
+\qquad
+U_{\!\mathcal{L}}(\alpha) \defeq \alpha_1
+\]
+\end{definition}
+
+\begin{proposition}
+If the forgetful functor $U_{\!\mathcal{L}}$ has a left adjoint $F_{\mathcal{L}}$, then it exhibits $\Mod(\!\mathcal{L},\mathcal{V})$ as equivalent to the EM-category for the monad given by  $T_{\mathcal{L}} \defeq U_{\!\mathcal{L}} \comp F_{\mathcal{L}}$.
+\index{ T@$(T_{\mathcal{L}},\eta_{\mathcal{L}},\mu_{\mathcal{L}})$ (monad derived from a countable Lawvere theory $\mathcal{L}$)}
+\index{ F@$F_{\hspace{-0.05cm}\mathcal{L}} \dashv\, U_{\hspace{-0.05cm}\mathcal{L}}$ (canonical adjunction for models of a countable Lawvere theory $\mathcal{L}$)}
+\end{proposition}
+
+\begin{proposition}
+\label{prop:leftadjointexistswhenlocallycountablypresentable}
+The left adjoint $F_{\mathcal{L}}$ exists when $\mathcal{V}$ is locally countably presentable.
+\end{proposition}
+
+\index{category!locally countably presentable --}
+\index{object!countably presentable --}
+\index{colimit!countably directed --}
+We recall that $\mathcal{V}$ is \emph{locally countably presentable} if it is cocomplete and there is a set $\mathcal{A}$ of countably presentable objects such that every object in $\mathcal{V}$ is a  countably directed colimit of objects in $\mathcal{A}$. We also recall that $A$ is a \emph{countably presentable object} if its hom-functor $\mathcal{V}(A,-) : \mathcal{V} \longrightarrow \Set$ preserves countably directed colimits. Finally, we recall that a \emph{countably directed colimit} is the colimit of a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}$ whose shape $\mathcal{D}$ is given by a partial order in which every countable subset has an upper bound.
+See~\cite[Chapter~1]{Adamek:LocallyPresentableCats} for more details about locally presentable categories. 
+%
+
+In particular, we recall from op.~cit. that $\Set$ is locally countably presentable. 
+
+\begin{corollary}
+Given any countable Lawvere theory $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$, there exists an adjunction $F_{\mathcal{L}} \dashv\, U_{\!\mathcal{L}} : \Mod(\!\mathcal{L},\Set) \longrightarrow \Set$.
+\end{corollary}
+
+We later use these adjunctions as a basis for giving a denotational semantics to the extensions of eMLTT with fibred algebraic effects and their handlers, see Chapters~\ref{chap:fibalgeffects} and~\ref{chap:handlers} for details. In order to show that these models of eMLTT support the computational $\Sigma$- and $\Pi$-types, we recall another important property of $\Mod(\!\mathcal{L},\Set)$ from~\cite{Power:CountableTheories}.
+
+\begin{proposition}
+\label{prop:modelsoflawveretheoriesinsetcocomplete}
+For any countable Lawvere theory $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$, the category $\Mod(\!\mathcal{L},\Set)$ is both complete and cocomplete.
+\end{proposition}
+
+Next, we show how to specify countable Lawvere theories using operation symbols and equations, the key idea underlying the algebraic treatment of computational effects, as discussed earlier. We follow Plotkin and Pretnar~\cite{Plotkin:HandlingEffects} in using countable equational theories~\cite{Gratzer:UniversalAlgebra} for freely generating countable Lawvere theories. Equivalently, and more abstractly, one could also specify countable Lawvere theories using single-sorted countable-product sketches~\cite{Barr:CatThForCS}, e.g., as discussed by Power in~\cite{Power:CountableTheories}.
+We choose to use countable equational theories instead of the corresponding sketches with the aim of making our work more accessible to a functional programming audience.
+
+\begin{definition}
+\index{signature!countable --}
+\index{ S@$\mathbb{S}$ (countable signature)}
+A \emph{countable signature} is given by set $\mathbb{S}$ of operation symbols $\mathsf{op}$, 
+\index{ op@$\mathsf{op}$ (operation symbol in a countable signature)}
+and an assignment $\mathsf{op} : n$ of an arity to each $\mathsf{op}$ in $\mathbb{S}$, where $n$ is an object of $\aleph_{\!\!1}$.
+\end{definition}
+
+\begin{definition}
+\index{ t@$t,u,\ldots$ (terms derived from a countable signature)}
+\index{term!-- derived from a countable signature}
+\index{ x@$x,y,\ldots$ (variables of terms derived from a countable signature)}
+\index{ @$\leq$ (less-than-equal order on natural numbers)}
+Given a countably infinite set of variables ranged over by $x,y,\ldots$, 
+the set of \emph{terms} $t,u,\ldots$ 
+derivable from a countable signature $\mathbb{S}$ is given by the grammar
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+t & ::= & x \,\,\,\vertbar\,\,\, \mathsf{op}(t_i)_{1 \leq i \leq n}
+\end{array}
+\] 
+where $n$ is the arity of the operation symbol $\mathsf{op}$, given either by a natural number or the distinguished symbol $\omega$\footnote{In this thesis, we use the convention that if the arity $n$ of $\sigalgop$ is the distinguished symbol $\omega$, then the notation $1 \leq i \leq n$ stands for $i \in \mathbb{N}$, where $\mathbb{N}$ is the set of natural numbers.}. As a convention, if $n = 1$, we write $\mathsf{op}(t)$ for $\mathsf{op}(t_i)_{1 \leq i \leq 1}$.
+\end{definition}
+
+We can then define substitution by straightforward structural recursion.
+
+\begin{definition}
+\label{def:eqtheorysimultaneoussubstitution}
+\index{ t@$t[u/x]$ (substitution of $u$ for $x$ in $t$)}
+Given terms $t$, $u_1$, \ldots, $u_n$, and variables $x_1$, \ldots, $x_n$, then the \emph{simultaneous substitution} of $u_1$, \ldots, $u_n$ for $x_1$, \ldots, $x_n$ in $t$, written $t[u_1/x_1, \ldots, u_n/x_n]$, or $t[\overrightarrow{u_i}/\overrightarrow{x_i}]$ for short, is defined by recursion on the structure of $t$ as follows:
+\[
+\begin{array}{l c l}
+x_i[\overrightarrow{u_i}/\overrightarrow{x_i}] & \defeq & u_i
+\\
+y[\overrightarrow{u_i}/\overrightarrow{x_i}] & \defeq & y \qquad\qquad\qquad\qquad\qquad\qquad (\text{if~} y \not\in \{x_1, \ldots, x_n\})
+\\
+\mathsf{op}(t_j)_{1 \leq j \leq m}[\overrightarrow{u_i}/\overrightarrow{x_i}] & \defeq & \mathsf{op}(t_j[\overrightarrow{u_i}/\overrightarrow{x_i}])_{1 \leq j \leq m}
+\end{array}
+\]
+\end{definition}
+
+\begin{definition}
+A \emph{context} $\Delta$ is a countable list of distinct variables.
+\index{ D@$\Delta$ (context of variables for well-formed terms derived from a countable signature)}
+\index{context!-- of variables for well-formed terms derived from a countable signature}
+\end{definition}
+
+\begin{definition}
+We say that a term $t$ derived from $\mathbb{S}$ is \emph{well-formed} in context $\Delta$ when there exists a derivation for the judgement $\lj \Delta t$ using the following rules:
+\index{term!-- derived from a countable signature!well-formed --}
+\[
+\mkrule
+{\lj \Delta x}
+{x \in \Delta}
+\qquad
+\mkrulelabel
+{\lj \Delta {\mathsf{op}(t_i)_{1 \leq i \leq n}}}
+{\lj \Delta t_i \qquad (1 \leq i \leq n)}
+{(\mathsf{op} : n \in \mathbb{S})}
+\]
+\end{definition}
+
+It is then straightforward to show that these derivations are closed under the standard rules of weakening, exchange of variables, and substitution.
+
+\begin{proposition}
+\mbox{}
+\begin{itemize}
+\item Given a term $t$ and a variable $x$ such that  $\lj {\Delta} t$ and $x \not\in \Delta$, then we have $\lj {\Delta, x} t$.
+\item Given a term $t$ such that $\lj {\Delta, x, y, \Delta'} t$, then we have $\lj {\Delta, y, x, \Delta'} t$.
+\item Given a term $t$ and terms $u_1, \ldots, u_n$ such that $\lj {\overrightarrow{x_i}} t$ and $\lj {\Delta} {u_i}$ (for all $x_i$), then we have $\lj {\Delta} {t[\overrightarrow{u_i}/\overrightarrow{x_i}]}$.
+\end{itemize}
+\end{proposition}
+
+\begin{proof}
+All three cases are proved by induction on the given derivation.
+\end{proof}
+
+\begin{definition}
+\label{def:countableequationaltheory}
+\index{theory!countable equational --}
+\index{ T@$\mathbb{T}$ (countable equational theory)}
+A \emph{countable equational theory} $\mathbb{T}$ is given by a countable signature $\mathbb{S}$ and a set $\mathbb{E}$ 
+\index{ E@$\mathbb{E}$ (set of equations of a countable equational theory)}
+of equations $\ljeq \Delta t u$ between well-formed terms $\lj \Delta t$ and $\lj \Delta u$, closed under the rules of reflexivity, symmetry, transitivity, replacement, and substitution:
+\[
+\begin{array}{c}
+\mkrule
+{\ljeq \Delta t t}
+{\lj \Delta t}
+\qquad
+\mkrule
+{\ljeq \Delta t u}
+{\ljeq \Delta u t}
+\qquad
+\mkrule
+{\ljeq \Delta {t_1} {t_3}}
+{\ljeq \Delta {t_1} {t_2} \quad \ljeq \Delta {t_2} {t_3}}
+\\[4mm]
+\mkrule
+{\ljeq \Delta {t[\overrightarrow{u_i}/\overrightarrow{x_i}]} {t[\overrightarrow{u'_i}/\overrightarrow{x_i}]}}
+{\lj {\overrightarrow{x_i}} t \quad \ljeq \Delta {u_i} {u'_i} \quad (\text{for all } x_i)}
+\qquad
+\mkrule
+{\ljeq \Delta {t[\overrightarrow{u_i}/\overrightarrow{x_i}]} {t'[\overrightarrow{u_i}/\overrightarrow{x_i}]}}
+{\ljeq {\overrightarrow{x_i}} t t' \quad \lj \Delta {u_i} \quad (\text{for all } x_i)}
+\end{array}
+\]
+\end{definition}
+
+Next, we show how to construct a countable Lawvere theory from a given countable equational theory, 
+based on the intuition that a countable Lawvere theory $I : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}$ is an abstract, category-theoretic description of a clone of  countable equational theories. 
+In particular, one should think of morphisms $n \longrightarrow 1$ in $\mathcal{L}$ as terms in $n$ variables. 
+
+\begin{definition}
+\label{def:lawveretheoryfromequationaltheory}
+Given a countable equational theory $\mathbb{T} = (\mathbb{S},\mathbb{E})$, we define a category $\mathcal{L}_{\mathbb{T}}$, 
+\index{ L@$\mathcal{L}_{\mathbb{T}}$ (countable Lawvere theory derived from a countable equational theory $\mathbb{T}$)}
+whose 
+\begin{itemize}
+\item objects $n$ are those of $\aleph_{\!\!1}$ (i.e., $n$ is either a natural number or the distinguished symbol $\omega$ denoting the cardinality of countable sets);  
+\item morphisms $n \longrightarrow m$ are given by $m$-tuples $(\lj {\overrightarrow{x_i}} {t_{\!j}})_{1 \leq j \leq m}$ of equivalence classes of terms in $n$ variables (for convenience, we refer to these equivalence classes via their representatives, i.e., we write $\lj {\overrightarrow{x_i}} {t_{\!j}}$ for the equivalence class $[\lj {\overrightarrow{x_i}} {t_{\!j}}]$);
+\item identity morphisms are given by tuples of variables, i.e., given an object $n$ in $\mathcal{L}_{\mathbb{T}}$, the identity morphism $\id_n : n \longrightarrow n$ is given by the tuple $(\lj {\overrightarrow{x_i}} {x_{\!j}})_{1 \leq j \leq n}$; and
+\item composition of morphisms is given by substitution, i.e., given two morphisms $n_1 \longrightarrow n_2$ and $n_2 \longrightarrow n_3$, given by the tuples $(\lj {\overrightarrow{x_i}} {t_{\!j}})_{1 \leq j \leq n_2}$ and $(\lj {\overrightarrow{y_{\!j}}} {u_k})_{1 \leq k \leq n_3}$, then their composite is given by the tuple $(\lj {\overrightarrow{x_i}} {u_k[\overrightarrow{t_{\!j}}/\overrightarrow{y_{\!j}}]})_{1 \leq k \leq n_3}$.
+\end{itemize}
+\end{definition}
+
+
+\begin{proposition}
+\label{prop:clonehascountableproducts}
+The category $\mathcal{L}_{\mathbb{T}}$ has countable products.
+\end{proposition}
+
+\begin{proof}
+Given a countable set $\mathbb{I}$ and objects $n_i$ in $\mathcal{L}_{\mathbb{T}}$, for all $i$ in $\mathbb{I}$, their countable product $\bigsqcap_{i \in \mathbb{I}} n_i$ is given by their cardinal sum $+_{\!i \in \mathbb{I}}\, n_i$. 
+\index{ @$+_{i \in \mathbb{I}}$ (cardinal sum)}
+By the Axiom of (Countable) Choice, the cardinal sum of countably many objects $\omega$ is again $\omega$, and therefore an object of $\mathcal{L}_{\mathbb{T}}$. 
+\index{ projb@$\mathsf{proj}_{j}$ ($j$'th projection for countable products)}
+The $j$'th projection $\mathsf{proj}_{j} : \bigsqcap_{i \in \mathbb{I}} n_i \longrightarrow n_{\!j}$ is given by the following $n_{\!j}$-tuple of variables:
+\[
+(\lj {\overrightarrow{x_l}} {x_{+_{\!(1 \,\leq\, l \,\leq\, j \,-\, 1)}\,\, n_l \,+\, k}})_{1 \,\leq\, k \,\leq\, n_{\!j}}
+\]
+Given morphisms $m \longrightarrow n_i$, represented by tuples of terms 
+$(\lj {\overrightarrow{y_k}} {t_{i,j}})_{1 \,\leq\, j \,\leq\, n_i}$, 
+for all $i$ in $\mathbb{I}$, the unique mediating morphism $m \longrightarrow \bigsqcap_{i \in \mathbb{I}} n_i$ is given by the $+_{\!i \in \mathbb{I}}\, n_i$-tuple of terms
+\[
+(\lj {\overrightarrow{y_l}} {t_{f(k)}})_{1 \,\leq\, k \,\leq\, +_{\!i \in \mathbb{I}}\, n_i}
+\]
+where the auxiliary function $f$ is given by
+\[
+f \defeq j \mapsto (i , j - +_{\!(1 \,\leq\, k \,\leq\, i \,-\, 1)}\,\, n_k) 
+\qquad
+\quad
+(\text{when } +_{\!(1 \,\leq\, k \,\leq\, i \,-\, 1)}\, n_k < j \leq +_{\!(1 \,\leq\, k \,\leq\, i)}\,\, n_k)
+\]
+%
+The proof that these definitions indeed equip $\mathcal{L}_{\mathbb{T}}$ with countable products is straightforward. It involves unfolding the definition of composition of morphisms in $\mathcal{L}_{\mathbb{T}}$ and then using standard properties of substitution. We omit the details of this proof.
+%
+\end{proof}
+
+
+\begin{proposition}
+\label{prop:lawveretheoryfromequationaltheory}
+\index{ I@$I_{\mathbb{T}}$ (countable Lawvere theory derived from a countable equational theory $\mathbb{T}$)}
+The functor $I_{\mathbb{T}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathbb{T}}$, given by
+\[
+I_{\mathbb{T}}(n) \defeq n
+\qquad
+I_{\mathbb{T}}(f) \defeq (\lj {\overrightarrow{x_i}} {x_{f(j)}})_{1 \,\leq\, j \,\leq\, m} : n \longrightarrow m \qquad (\text{where } f : n \longrightarrow m \in \aleph_{\!\!1}^{\text{op}})
+\]
+is a countable Lawvere theory.
+\end{proposition}
+
+\begin{proof}
+First, we prove that $I_{\mathbb{T}}$ is indeed a functor, by proving the following equations:
+\begin{fleqn}[0.75cm]
+\begin{align*}
+& I_{\mathbb{T}}(\id_n) \qquad\qquad\qquad\qquad\qquad
+&
+& I_{\mathbb{T}}(g \comp f)
+\\
+=\,\, & (\lj {\overrightarrow{x_i}} {x_{\id_n(j)}})_{1 \,\leq\, j \,\leq\, n} 
+&
+=\,\, & (\lj {\overrightarrow{x_i}} {x_{f(g(k))}})_{1 \,\leq\, k \,\leq\, n_3} 
+\\
+=\,\, & (\lj {\overrightarrow{x_i}} {x_{\!j}})_{1 \,\leq\, j \,\leq\, n}
+&
+=\,\, & (\lj {\overrightarrow{x_i}} {y_{g(k)}[\overrightarrow{x_{f(j)}}/\overrightarrow{y_{\!j}}]})_{1 \,\leq\, k \,\leq\, n_3} 
+\\
+=\,\, & \id_{I_{\mathbb{T}}(n)}
+&
+=\,\, & (\lj {\overrightarrow{y_{\!j}}} {y_{g(k)}})_{1 \,\leq\, k \,\leq\, n_3} \comp (\lj {\overrightarrow{x_i}} {x_{f(j)}})_{1 \,\leq\, j \,\leq\, n_2}
+\\
+&&
+=\,\, & I_{\mathbb{T}}(g) \comp I_{\mathbb{T}}(f)
+\end{align*}
+\end{fleqn}
+where $f : n_1 \longrightarrow n_2$ and $g : n_2 \longrightarrow n_3$ are morphisms in $\aleph_{\!\!1}^{\text{op}}$.
+
+We also need to show that $I_{\mathbb{T}}$ strictly preserves countable products in $\aleph_{\!\!1}^{\text{op}}$. Specifically, we need to prove that the following three equations hold:
+\index{ Product@$\bigsqcap_{i \in \mathbb{I}}$ (countable product)}
+\[
+I_{\mathbb{T}}(\bigsqcap_{i \in \mathbb{I}} n_i) = \bigsqcap_{i \in \mathbb{I}} (I_{\mathbb{T}}(n_i))
+\qquad
+I_{\mathbb{T}}(\mathsf{proj}_j) = \mathsf{proj}_j
+\qquad
+I_{\mathbb{T}}(\langle f_i \rangle_{i \in \mathbb{I}}) = \langle I_{\mathbb{T}}(f_i) \rangle_{i \in \mathbb{I}}
+\]
+
+
+To this end, we recall from~\cite{Power:CountableTheories} that the countable products in $\aleph_{\!\!1}^{\text{op}}$ are given by countable coproducts in $\aleph_{\!\!1}$, which are in turn given by the cardinal sum of objects in $\aleph_{\!\!1}$.
+In particular, given a countable set $\mathbb{I}$ and objects $n_i$ in $\aleph_{\!\!1}^{\text{op}}$ (for all $i$ in $\mathbb{I}$), their countable product $\bigsqcap_{i \in \mathbb{I}} n_i$ is given by $+_{\!i \in \mathbb{I}}\,\, n_i$. Consequently, we can show that 
+\[
+\begin{array}{c}
+I_{\mathbb{T}}(\bigsqcap_{i \in \mathbb{I}} n_i) = \bigsqcap_{i \in \mathbb{I}} n_i = +_{\!i \in \mathbb{I}}\,\, n_i = \bigsqcap_{i \in \mathbb{I}} n_i = \bigsqcap_{i \in \mathbb{I}} (I_{\mathbb{T}}(n_i))
+\end{array}
+\]
+
+Next, we recall that the $j$'th projection morphism $\mathsf{proj}_j : \bigsqcap_{i \in \mathbb{I}} n_i \longrightarrow n_{\!j}$ in $\aleph_{\!\!1}^{\text{op}}$ is given by the corresponding $j$'th injection function in $\aleph_{\!\!1}$, namely, by a function $n_{\!j} \longrightarrow +_{\!i \in \mathbb{I}}\,\, n_i$ given by $k \mapsto +_{\!(1 \,\leq\, l \,\leq\, j \,-\, 1)}\,\, n_l \,+\, k$. Consequently, we can show that
+\[
+\begin{array}{c}
+I_{\mathbb{T}}(\mathsf{proj}_j) = (\lj {\overrightarrow{x_l}} {x_{+_{\!(1 \,\leq\, l \,\leq\, j \,-\, 1)}\,\, n_l \,+\, k}})_{1 \,\leq\, k \,\leq\, n_{\!j}} = \mathsf{proj}_j : \bigsqcap_{i \in \mathbb{I}} (I_{\mathbb{T}}(n_i))\longrightarrow I_{\mathbb{T}}(n_{\!j})
+\end{array}
+\]
+
+Finally, we recall that given a countable set $\mathbb{I}$ and morphisms $f_i : m \longrightarrow n_i$ in $\aleph_{\!\!1}^{\text{op}}$ (for all $i$ in $\mathbb{I}$), the unique mediating morphism $\langle f_i \rangle_{i \in \mathbb{I}} : m \longrightarrow \bigsqcap_{i \in \mathbb{I}} n_i$ 
+\index{ f@$\langle f_i \rangle_{i \in \mathbb{I}}$ (unique mediating morphism for countable products)}
+in $\aleph_{\!\!1}^{\text{op}}$ is given by the corresponding unique mediating morphism for countable coproducts in $\aleph_{\!\!1}$, namely, by a function $[f_i]_{i \in \mathbb{I}} : +_{\!i \in \mathbb{I}}\,\, n_i \longrightarrow m$ defined as
+\index{ f@$[f_i]_{i \in \mathbb{I}}$ (unique mediating morphism for countable coproducts)} 
+\[
+[f_i]_{i \in \mathbb{I}} \defeq 
+j \mapsto f_{\!i}(j - +_{\!(1 \,\leq\, k \,\leq\, i \,-\, 1)}\,\, n_k)
+\qquad
+\quad\!\!\!
+(\text{when } +_{\!(1 \,\leq\, k \,\leq\, i-1)}\, n_k < j \leq +_{\!(1 \,\leq\, k \,\leq\, i)}\,\, n_k)
+\]
+Now, if we write $t_{i,f_i(k)}$ for ${y_{f_i(k)}}$, and unfold the definitions of $I_{\mathbb{T}}(f_i)$ and $\langle I_{\mathbb{T}}(f_i) \rangle_{i \in \mathbb{I}}$, we see that showing 
+$
+I_{\mathbb{T}}(\langle f_i \rangle_{i \in \mathbb{I}}) = \langle I_{\mathbb{T}}(f_i) \rangle_{i \in \mathbb{I}}$
+amounts to proving the following equation:
+\[
+(\lj {\overrightarrow{y_l}} {y_{[ f_i ]_{i \in \mathbb{I}}(k)}})_{1 \,\leq\, k \,\leq\, +_{\!i \in \mathbb{I}}\,\, n_i} = (\lj {\overrightarrow{y_l}} {t_{f(k)}})_{1 \,\leq\, k \,\leq\, +_{\!i \in \mathbb{I}}\, n_i}
+\]
+where the auxiliary function $f$ is defined as in the proof of Proposition~\ref{prop:clonehascountableproducts}. We prove this equation by showing that for every $k$, the $k$'th terms in the two tuples are equal. 
+As $1 \leq k \leq +_{\!i \in \mathbb{I}}\, n_i$, there must be a $i$ such that $+_{\!(1 \,\leq\, l \,\leq\, i-1)}\, n_l < k \leq +_{\!(1 \,\leq\, l \,\leq\, i)}\,\, n_l$. Based on this observation, we can show that the $k$'th terms in these tuples are equal:
+\[
+{y_{[ f_i ]_{i \in \mathbb{I}}(k)}} 
+= 
+{y_{\!f_{\!i}(k \,-\, +_{\!(1 \,\leq\, l \,\leq\, i \,-\,1)}\,\, n_l)}} 
+= 
+t_{i, f_{\!i}(k \,-\, +_{\!(1 \,\leq\, l \,\leq\, i \,-\, 1)}\,\, n_l)} 
+= 
+t_{f(k)}
+\]
+\end{proof}
+
+We conclude this section by formally presenting the equational theory of global state 
+\index{theory!countable equational --!-- of global state}
+which we used as an informal example of algebraic effects towards the beginning of this section. In particular, given a countable set $S$ of store values, the countable equational theory of global state is given by an $\vertbar S \vertbar\!$-ary\footnote{As standard in the literature, we write $\vertbar X \vertbar$ for the \emph{cardinality} of a given set $X$.} operation symbol $\mathsf{get} : \!\vertbar S \vertbar$ and an $\vertbar S \vertbar\!$-indexed family of unary operation symbols $\mathsf{put}_s : 1$, and the following equations:
+\[
+\begin{array}{c}
+\ljeq {x} {\mathsf{get}(\mathsf{put}_s(x))_{1 \,\leq\, s \,\leq\, \vertbar S \vertbar}} {x}
+\\[2mm]
+\ljeq {\overrightarrow{x_s}} {\mathsf{put}_{s'}(\mathsf{get}(x_s)_{1 \,\leq\, s \,\leq\, \vertbar S \vertbar})} {\mathsf{put}_{s'}(x_{s'})}
+\\[2mm]
+\ljeq {x} {\mathsf{put}_{s}(\mathsf{put}_{s'}(x))} {\mathsf{put}_{s'}(x)}
+\end{array}
+\]
+closed under the rules of reflexivity, symmetry, transitivity, replacement, and substitution. 
+The monad one obtains from the corresponding countable Lawvere theory is the standard one for global state, given on objects by $T_{\text{GS}}(A) \defeq \vert S \vert \Rightarrow (A \times \vert S \vert)$, see~\cite{Plotkin:NotionsOfComputation}. 
+
+\section{Fibred category theory}
+\label{sect:fibrationsbasics}
+
+In this section we recall some basic definitions and results from fibred category theory which we use through Chapters~\ref{chap:fibadjmodels}--\ref{chap:handlers}
+for giving a denotational semantics to eMLTT and its extensions. A much more detailed overview of fibred category theory, including its use in modelling various type theories and logics, can be found in~\cite{Jacobs:Book}. While the results we present in this section are well-known (see~op.~cit.), we spell out some of the proofs to introduce the reader to the style of proofs used in fibred category theory.
+
+We have chosen to work with fibred category theory because it provides a natural framework for developing denotational semantics of dependently typed languages. In particular, i) functors model type-dependency; ii) split fibrations model substitution; and iii) the notion of comprehension models context extension. However, it is worth noting that the ideas we develop in this thesis also apply to other models of dependent types, such as categories with families, categories with attributes, and contextual categories\footnote{In the field of homotopy type theory, the latter are also known under the name of C-systems~\cite{Voevodsky:CSystems}.}. We suggest~\cite{Hofmann:SyntaxAndSemantics,Pitts:CategoricalLogic} for an overview of these models of dependent types.
+
+We begin our overview of fibred category theory with some common terminology.
+
+\begin{definition}
+Given a functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, we say that an object $A$ in $\mathcal{V}$ is \emph{over} an object $X$ in $\mathcal{B}$ when $p(A) = X$. Analogously, we say that a morphism $f : A \longrightarrow B$ in $\mathcal{V}$ is \emph{over} a morphism $g : X \longrightarrow Y$ in $\mathcal{B}$ when $p(A) = X$, $p(B) = Y$, and $p(f) = g$.
+\end{definition}
+
+\begin{definition}
+\index{morphism!vertical --}
+Given a functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, we say that a morphism $f : A \longrightarrow B$ in $\mathcal{V}$ is \emph{vertical} when $p(A) = p(B) = X$ and $p(f) = \id_{X}$. 
+\end{definition}
+
+\begin{definition}
+\index{category!fibre --}
+Given a functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and an object $X$ in $\mathcal{B}$, we write $\mathcal{V}_X$ for the \emph{fibre (category)} over $X$, 
+\index{ V@$\mathcal{V}_X$ (fibre (category) over $X$)}
+i.e., for the subcategory of $\mathcal{V}$ consisting of objects over $X$ and vertical morphisms over $\id_X$.
+\end{definition}
+
+Next, we define two important concepts in fibred category theory: Cartesian morphisms and fibrations. We also recall some basic but useful facts about these concepts.
+
+\begin{definition}
+\index{morphism!Cartesian --}
+Given a functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, a morphism ${f : A \longrightarrow B}$ in $\mathcal{V}$ is said to be \emph{Cartesian} over a morphism ${g : X \longrightarrow Y}$ in $\mathcal{B}$ if ${p(f) = g}$, and if for all ${i : C \longrightarrow B}$ in $\mathcal{V}$ and ${j : p(C) \longrightarrow X}$ in $\mathcal{B}$ such that ${p(i) = g \comp j}$, there exists a unique mediating morphism $h : C \longrightarrow A$ over $j$ such that $f \,\comp\, h = i$, as illustrated in the following  diagram:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+C \ar@/^2pc/[rr]^{i} \ar@{-->}[r]_{h} & A \ar[r]_{f} & B && \text{in} & \mathcal{V} \ar[d]^{p}
+\\
+p(C) \ar[r]^{j} \ar@/_2pc/[rr]_{p(i)}  & X \ar[r]^{g = p(f)} & Y && \text{in} & \mathcal{B}
+}
+\]
+\end{definition}
+
+Throughout the rest of this thesis, we often do not mention the morphism $g$ explicitly because it is equal to $p(f)$. In that case, we simply say that $f$ is a Cartesian morphism. In addition, we often omit the lower part of such diagrams and only work with the top part when the morphism $j$ is clear from the surrounding context.
+
+
+An important property of Cartesian morphisms worth noting is that they are unique up-to a unique isomorphism, as made precise in the next proposition.
+
+\begin{proposition}[{\cite[Exercise~1.1.1 (i)]{Jacobs:Book}}]
+\label{prop:cartesianmorphismsareunique}
+Given a functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, and two Cartesian morphisms $f : A \longrightarrow C$ and $g : B \longrightarrow C$ such that $p(f) = p(g)$, then there is a unique vertical isomorphism $\psi_{f,g} : A \overset{\cong}{\longrightarrow} B$ such that $f = g \comp \psi_{f,g}$.
+\index{ psi@$\psi_{f,g}$ (vertical isomorphism witnessing the uniqueness of Cartesian morphisms)}
+\end{proposition}
+
+\begin{proof}
+To improve readability, we let $X \defeq p(A)$. As a consequence, also $p(B) = X$.
+
+Then, we define $\psi_{f,g} : A \longrightarrow B$ as the unique mediating morphism over $\id_X$ in 
+\[
+\xymatrix@C=5em@R=3em@M=0.5em{
+A \ar@{-->}[r]_{\psi_{f,g}} \ar@/^2pc/[rr]^{f} & B \ar[r]_-{g} & C
+}
+\]
+and $\psi^{-1}_{f,g} : B \longrightarrow A$ as the unique mediating morphism over $\id_X$ in the diagram
+\[
+\xymatrix@C=5em@R=3em@M=0.5em{
+B \ar@{-->}[r]_{\psi^{-1}_{f,g}} \ar@/^2pc/[rr]^{g} & A \ar[r]_-{f} & C
+}
+\]
+
+Clearly, both $\psi^{-1}_{f,g} \comp \psi_{f,g} : A \longrightarrow A$ and $\psi_{f,g} \comp \psi^{-1}_{f,g} : B \longrightarrow B$ are vertical over \linebreak $\id_X :  X \longrightarrow X$, and they are determined uniquely.
+Therefore, it  remains to show that
+\[
+\psi^{-1}_{f,g} \comp \psi_{f,g} = \id_A
+\qquad
+\psi_{f,g} \comp \psi^{-1}_{f,g} = \id_B
+\]
+which we do by using the universal properties of the Cartesian morphisms $f$ and $g$, respectively. In particular, we observe that the following two diagrams commute:
+\[
+\xymatrix@C=7em@R=2em@M=0.5em{
+&&& \ar@{}[d]_{\dcomment{\text{def. of } \psi_{f,g}} \qquad\qquad\qquad\qquad\qquad}
+\\
+\ar@{}[d]^>>>{\qquad\qquad\qquad\,\,\, \dcomment{\text{composition}}} & B \ar[dr]^-{\psi^{-1}_{f,g}} \ar@/^1.5pc/[rrd]^{g} & & \ar@{}[d]_{\dcomment{\text{def. of } \psi^{-1}_{f,g}} \qquad\qquad\qquad}
+\\
+A \ar[rr]_{\psi^{-1}_{f,g} \,\comp\, \psi_{f,g}} \ar[ur]^-{\psi_{f,g}} \ar@/^7pc/[rrr]^{f} && A \ar[r]_-{f} & C
+}
+\]
+\[
+\xymatrix@C=7em@R=2em@M=0.5em{
+&&& \ar@{}[d]_{\dcomment{\text{def. of } \psi^{-1}_{f,g}} \qquad\qquad\qquad\qquad\qquad}
+\\
+\ar@{}[d]^>>>{\qquad\qquad\qquad\,\,\, \dcomment{\text{composition}}} & A \ar[dr]^-{\psi_{f,g}} \ar@/^1.5pc/[rrd]^{f} & & \ar@{}[d]_{\dcomment{\text{def. of } \psi_{f,g}} \qquad\qquad\qquad}
+\\
+B \ar[rr]_{\psi_{f,g} \,\comp\, \psi^{-1}_{f,g}} \ar[ur]^-{\psi^{-1}_{f,g}} \ar@/^7pc/[rrr]^{g} && B \ar[r]_-{g} & C
+}
+\]
+from which it follows that the composite morphisms $\psi^{-1}_{f,g} \comp \psi_{f,g}$ and $\psi_{f,g} \comp \psi^{-1}_{f,g}$ are equal to the unique mediating morphisms over $\id_X$ induced by $f$ and $g$, respectively. Namely, the commutativity of these two diagrams shows that these composite morphisms satisfy the same universal properties that uniquely determine these mediating morphisms. However, as the identity morphisms $\id_{A}$ and $\id_{B}$ also satisfy the same universal properties, these composite morphisms are in fact equal to $\id_{A}$ and $\id_{B}$.
+\end{proof}
+
+\begin{proposition}[{\cite[Exercise~1.1.4 (ii)]{Jacobs:Book}}]
+\label{prop:cartesianmorphismscompose}
+The composition of two Cartesian morphisms is itself a Cartesian morphism.
+\end{proposition}
+
+\begin{proof}
+According to the definition of Cartesian morphisms, given a functor ${p \!:\! \mathcal{V} \!\longrightarrow\! \mathcal{B}}$, two Cartesian morphisms $f : A \longrightarrow B$ and $g : B \longrightarrow C$, a morphism ${i : D \longrightarrow C}$ in $\mathcal{V}$, and a morphism ${j : p(D) \longrightarrow p(A)}$ in $\mathcal{B}$ such that ${p(i) = p(g) \comp p(f) \comp j}$, we need to construct a unique mediating morphism $h : D \longrightarrow A$ over $j$ such that $g \comp f \comp h = i$, as in 
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+D \ar@/^2pc/[rrr]^{i} \ar@{-->}[r]_{h} & A \ar[r]_{f} & B \ar[r]_-{g} & C
+}
+\]
+
+First, we use the universal property of the Cartesian morphism $g : B \longrightarrow C$
+to construct a unique mediating morphism $h' : D \longrightarrow B$ over $p(f) \comp j$, 
+as illustrated below:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+D \ar@/^2pc/[rrr]^{i} \ar@{-->}[rr]_{h'} & & B \ar[r]_-{g} & C
+}
+\]
+
+Next, we use the universal property of the Cartesian morphism $f : A \longrightarrow B$
+to construct a unique morphism $h : D \longrightarrow A$ over $j$, 
+as illustrated below:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+D \ar@/^2pc/[rrr]^{h'} \ar@{-->}[rr]_{h} & & A \ar[r]_-{f} & B
+}
+\]
+After combining $g \comp h' = i$ and $f \comp h = h'$, we see that $h$ also satisfies $g \comp f \comp h = i$.
+
+Finally, we need to show that $h$ is the unique morphism over $j$ satisfying $g \comp f \comp h = i$. This  follows straightforwardly from the definitions of $h'$ and $h$. Namely, given any other morphism $h'' : D \longrightarrow A$ over $j$ such that $g \comp f \comp h'' = i$, we first get $f \comp h'' = h'$ by using the uniqueness of $h'$, and then $h'' = h$ by using the uniqueness of $h$.
+\end{proof}
+
+\begin{definition}
+\index{fibration}
+\index{category!total --}
+\index{category!base --}
+\index{ p@$p,q,\ldots$ (fibrations)}
+A functor ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ is called a \emph{fibration} if for every object $B$ in $\mathcal{V}$ and every morphism $g : X \longrightarrow p(B)$ in $\mathcal{B}$, there exists a morphism $f : A \longrightarrow B$ that is Cartesian over $g$. We refer to $\mathcal{V}$ as the \emph{total} category and to $\mathcal{B}$ as the \emph{base} category.
+\end{definition}
+
+\begin{definition}
+\index{fibration!cloven --}
+\index{ f@$\overline{f}(A)$ (chosen Cartesian morphism in a cloven fibration)}
+A fibration ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ is said to be \emph{cloven} if it comes with a choice of Cartesian morphisms.
+As standard, we write ${\overline{f}(A) : f^*(A) \longrightarrow A}$ for the \emph{chosen} Cartesian morphism (and $f^*(A)$ for its domain) over a morphism ${f : X \longrightarrow p(A)}$ in $\mathcal{B}$. 
+\end{definition}
+
+See Examples~\ref{ex:codomainfibration}--\ref{ex:simplefibration} below for common cloven fibrations. 
+
+\begin{definition}
+\label{def:uniquemediatingmorphismforCartesianmorphism}
+\index{ f@$f^\dagger$ (unique mediating morphism induced by the chosen Cartesian morphism $\overline{p(f)}(B)$)}
+Given a cloven fibration ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and a morphism $f : A \longrightarrow B$ in $\mathcal{V}$, then we write $f^\dagger : A \longrightarrow (p(f))^*(B)$ for the unique mediating morphism induced by the universal property of the Cartesian morphism $\overline{p(f)}(B) : (p(f))^*(B) \longrightarrow B$, as in
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+A \ar@/^2pc/[rr]^{f} \ar@{-->}[r]_-{f^\dagger} & (p(f))^*(B) \ar[r]_-{\overline{p(f)}(B)} & B
+}
+\]
+\end{definition}
+
+\begin{proposition}[{\cite[Section~1.4]{Jacobs:Book}}]
+\label{prop:clovenfibration}
+\index{functor!reindexing --}
+\index{ f@$f^*$ (reindexing functor)}
+Given a cloven fibration ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, then any morphism ${f : X \longrightarrow Y}$ in $\mathcal{B}$ induces a \emph{reindexing functor} ${f^* : \mathcal{V}_Y \longrightarrow \mathcal{V}_X}$, which maps an object $A$ to the domain $f^*(A)$ of the chosen Cartesian morphism $\overline{f}(A)$ over $f$; and a morphism $g : A \longrightarrow B$ to the unique mediating morphism induced by $\overline{f}(B)$, as in 
+\[
+\xymatrix@C=3.5em@R=3.5em@M=0.5em{
+f^*(A) \ar@{-->}[d]_{f^*(g)} \ar[r]^-{\overline{f}(A)} & A \ar[d]^{g}
+\\
+f^*(B) \ar[r]_-{\overline{f}(B)} & B
+}
+\]
+\end{proposition}
+
+\begin{proposition}[{\cite[Section~1.4]{Jacobs:Book}}]
+\label{prop:reindexingfunctornaturalisos}
+Given a cloven fibration ${p : \mathcal{V} \longrightarrow \mathcal{B}}$, the reindexing functors ${f^* : \mathcal{V}_Y \longrightarrow \mathcal{V}_X}$ satisfy the following two natural isomorphisms:
+\[
+{(\id_X)^* \cong \id_{\mathcal{V}_X}}
+\qquad
+{(h \comp g)^* \cong g^* \comp h^*}
+\]
+where $g : X \longrightarrow Y$ and $h : Y \longrightarrow Z$.
+\end{proposition}
+
+
+\begin{definition}
+\index{fibration!split --}
+A cloven fibration is said to be \emph{split} if the isomorphisms given in Proposition~\ref{prop:reindexingfunctornaturalisos} are identities, i.e., when ${(\id_X)^* = \id_{\mathcal{V}_X}}$ and ${(h \comp g)^* = g^* \comp h^*}$.
+\end{definition}
+
+\begin{definition}
+For any category-theoretic structure $\circledast$, such as products, coproducts, etc., a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$ is said to have \emph{split fibred $\circledast$} if every fibre $\mathcal{V}_X$ has $\circledast$ and this structure is preserved on-the-nose by reindexing functors.
+\end{definition}
+
+\begin{example}
+\label{ex:codomainfibration}
+\index{fibration!codomain --}
+\index{functor!codomain --}
+\index{ cod@$\mathsf{cod}_\mathcal{B}$ (codomain fibration)}
+\index{ B@$\mathcal{B}^\to$ (total category of a codomain fibration)}
+A prototypical example of a cloven fibration is given by the \emph{codomain} functor $\mathsf{cod}_\mathcal{B} : \mathcal{B}^\to \longrightarrow \mathcal{B}$, 
+for any category $\mathcal{B}$ with pullbacks. 
+In this case, given an object $f : X \to Y$ in $\mathcal{B}^\to$ and a morphism  $g : Z \longrightarrow Y$ in $\mathcal{B}$, the chosen Cartesian morphism over $g$ is given by the following pullback square:
+\[
+\xymatrix@C=3.5em@R=3.5em@M=0.5em{
+g^*(X) \ar[r] \ar[d]_{g^*(f)}^<{\,\big\lrcorner} & X \ar[d]^{f}
+\\
+Z \ar[r]_{g} & Y
+}
+\]
+\index{category!arrow --}
+\index{ B@$\mathcal{B}^\to$ (arrow category)}
+\!Here, $\mathcal{B}^\to$ is the \emph{arrow category} of $\mathcal{B}$. Its objects are given by morphisms $f : X \longrightarrow Y$ of $\mathcal{B}$; and its morphisms from $f : X_1 \longrightarrow Y_1$ to $g : X_2 \longrightarrow Y_2$ are given by pairs $(h_1,h_2)$ of morphisms $h_1 : X_1 \longrightarrow X_2$ and $h_2 : Y_1 \longrightarrow Y_2$ in $\mathcal{B}$ such that $g \comp h_1 = h_2 \comp f$.
+\end{example}
+
+While $\mathsf{cod}_\mathcal{B}$ is cloven, it is well-known that it fails to be split because pullback squares are closed under composition only up-to-isomorphism, and not up-to-equality. 
+
+\begin{example}
+\label{ex:familiesfibration}
+\index{fibration!families --}
+\index{functor!families --}
+Another common example of a cloven fibration is given by the \emph{$\mathcal{V}$-valued families} functor $\mathsf{fam}_{\mathcal{V}}: \Fam(\!\mathcal{V}\,) \longrightarrow \mathcal{\Set}$, for any category $\mathcal{V}$. 
+\index{ fam@$\mathsf{fam}_{\mathcal{V}}$ ($\mathcal{V}$-valued families fibration)}
+Here, the objects of $\Fam(\!\mathcal{V}\,)$ 
+\index{ Fam@$\Fam(\hspace{-0.05cm}\mathcal{V})$ (total category of a $\mathcal{V}$-valued families fibration)}
+are pairs $(X,A)$ of a set $X$ and a functor $A : X \longrightarrow \mathcal{V}$, i.e., an $X$-indexed family of objects of $\mathcal{V}$. Similarly, a morphism from $(X,A)$ to $(Y,B)$ is given by a pair $(f,g)$ of a function $f : X \longrightarrow Y$ and a natural transformation $g : A \longrightarrow B \comp f$, i.e., an $X$-indexed family of morphisms $\{g_x : A(x) \longrightarrow B(f(x))\}_{x \in X}$ in $\mathcal{V}$.
+For an object $(Y,A)$ in $\Fam(\!\mathcal{V}\,)$ and a function $f : X \longrightarrow Y$, the chosen Cartesian morphism over $f$ is
+\[
+\overline{f}(Y,A) \defeq (f , \{\id_{A(f(x))}\}_{x \in X}) : (X , A \comp f) \longrightarrow (Y,A)
+\]
+A typical example of families fibrations is the \emph{families of sets fibration} with $\mathcal{V} \defeq \Set$.
+\end{example}
+
+Compared to the codomain fibrations, the families fibrations are split because composition of morphisms  is strictly associative, see~\cite[Section~1.4]{Jacobs:Book} for more details.
+
+\begin{example}
+\label{ex:simplefibration}
+\index{fibration!simple --}
+The third and final class of examples of cloven fibrations we consider in this section is given by the \emph{simple fibration} construction on any category $\mathcal{V}$ that has Cartesian products, see~\cite[Definition~1.3.1]{Jacobs:Book}. In particular, we can construct a category $\mathsf{s}(\!\mathcal{V}\,)$ 
+\index{ s@$\mathsf{s}(\hspace{-0.05cm}\mathcal{V})$ (total category of a simple fibration)}
+whose objects are given by pairs $(X,A)$ of objects of $\mathcal{V}$, and whose morphisms $(X,A) \longrightarrow (Y,B)$ are given by pairs $(f,g)$ of  morphisms $f : X \!\longrightarrow\! Y$ and $g : X \times A \!\longrightarrow\! B$ in $\mathcal{V}$. The \emph{simple fibration $\mathsf{s}_{\mathcal{V}} \!:\! \mathsf{s}(\!\mathcal{V}\,) \!\longrightarrow\! \mathcal{V}$} is then given by the functor
+\[
+\mathsf{s}_{\mathcal{V}}(X,A) \defeq X
+\qquad
+\mathsf{s}_{\mathcal{V}}(f,g) \defeq f
+\]
+Given a morphism $f : X \longrightarrow Y$ in $\mathcal{V}$ and an object $(Y,A)$ in $\mathsf{s}(\mathcal{V})$, the Cartesian morphism over $f$ can be shown to be given by $\overline{f}(Y,A) \defeq (f,\mathsf{snd}) : (X,A) \longrightarrow (Y,A)$.
+\index{ s@$\mathsf{s}_{\mathcal{V}}$ (simple fibration built from a Cartesian category $\mathcal{V}$)}
+\end{example}
+
+Analogously to the families fibrations, the simple fibrations are also split. 
+In fact, one can view the simple fibrations as a non-indexed version of the families fibrations. 
+
+As the main use of fibred category theory in this thesis is to give a denotational semantics to eMLTT and its extensions, we only focus on split fibrations and constructions on them that preserve Cartesian morphisms on-the-nose. Informally, the on-the-nose preservation of Cartesian morphisms corresponds to the up-to-equality preservation of type- and term-formers by substitution in dependently typed languages. Therefore, we only consider split versions of fibred functors, fibred natural transformations, fibred adjunctions, etc. The non-split variants of these constructions can be easily recovered by relaxing the preservation conditions for reindexing so that they hold up-to-isomorphism rather than equality.
+In addition, it is well-known that one can transform every (possibly non-split) fibration into an equivalent split fibration---see~\cite[Lemma~5.2.4, Corollary~5.2.5]{Jacobs:Book} for details of this construction.
+
+
+Next, we equip split fibrations over some base category $\mathcal{B}$ with the structure of a 2-category, given by split fibred functors and split fibred natural transformations.
+
+
+\begin{definition}
+\index{functor!split fibred --}
+Given two split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, a \emph{split fibred functor} ${F : p \longrightarrow q}$ is given by a functor ${F : \mathcal{V} \longrightarrow \mathcal{C}}$ such that the diagram
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+\mathcal{V} \ar[dr]_{p} \ar[rr]^{F} & & \mathcal{C} \ar[dl]^{q}
+\\
+& \mathcal{B} 
+}
+\]
+commutes and $F$ preserves the chosen Cartesian morphisms on-the-nose.
+\end{definition}
+
+
+\begin{proposition}
+Given split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, a split fibred functor ${F : p \longrightarrow q}$, an object $B$ in $\mathcal{V}$, and a morphism $f : X \longrightarrow p(A)$ in $\mathcal{B}$, then 
+\[
+f^*(F(A)) = F(f^*(A))
+\]
+\end{proposition}
+
+\begin{proof}
+This equality follows directly from the on-the-nose preservation of the chosen Cartesian morphisms by $F$, i.e., from $\overline{f}(F(A))$ and $F(\overline{f}(A))$ being equal.
+\end{proof}
+
+In the diagrammatic proofs we present in the rest of this thesis, we represent such equalities on objects using morphisms which we write as $f^*(F(A)) \overset{=}{\longrightarrow} F(f^*(A))$. 
+\begin{definition}
+\index{natural transformation!split fibred --}
+Given two split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, and two split fibred functors ${F : p \longrightarrow q}$ and ${G : p \longrightarrow q}$, a \emph{split fibred natural transformation} ${\alpha : F \longrightarrow G}$ is given by a natural transformation ${\alpha : F \longrightarrow G}$, whose every component $\alpha_A : F(A) \longrightarrow G(A)$ is vertical over $\id_{p(A)}$.
+\end{definition}
+
+\begin{proposition}
+\label{prop:fibrednaturaltransformationspreserved}
+Given two split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, two split fibred functors ${F : p \longrightarrow q}$ and ${G : p \longrightarrow q}$, and a split fibred natural transformation $\alpha : F \longrightarrow G$, then the components of $\alpha$ are preserved by reindexing, i.e., we have
+\[
+f^*(\alpha_A) = \alpha_{f^*(A)}
+\]
+in $\mathcal{C}_{X}$, for any object $A$ of $\mathcal{V}$ and any morphism $f : X \longrightarrow p(A)$ in $\mathcal{B}$.
+\end{proposition}
+
+\begin{proof}
+First, we observe that the following two diagrams commute in $\mathcal{C}$:
+\[
+\xymatrix@C=5.25em@R=3.5em@M=0.5em{
+\ar@{}[d]^{\qquad\qquad\qquad\quad \dcomment{\text{def. of } f^*(\alpha_A)}} & F(A) \ar@/^2pc/[drr]^{\alpha_A} & & \ar@{}[d]_>>>{\dcomment{G \text{ is split fibred}} \qquad\qquad\qquad\,\,\,\,\,\,}
+\\
+f^*(F(A)) \ar[r]_-{f^*(\alpha_A)} \ar[ur]^{\overline{f}(F(A))} & f^*(G(A)) \ar[r]_-{=} \ar@/^2.7pc/[rr]^{\overline{f}(G(A))} & G(f^*(A)) \ar[r]_-{G(\overline{f}(A))} & G(A)
+}
+\]
+%
+\[
+\xymatrix@C=5.25em@R=3.5em@M=0.5em{
+\ar@{}[d]^>>>{\qquad\qquad\,\,\, \dcomment{F \text{ is split fibred}}} & F(A) \ar@/^2pc/[drr]^{\alpha_A} & & \ar@{}[d]_{\dcomment{\text{nat. of } \alpha} \qquad\qquad\qquad\qquad\quad}
+\\
+f^*(F(A)) \ar[r]_-{=} \ar[ur]^{\overline{f}(F(A))} & F(f^*(A)) \ar[u]_-{F(\overline{f}(A))} \ar[r]_-{\alpha_{f^*(A)}} & G(f^*(A)) \ar[r]_-{G(\overline{f}(A))} & G(A)
+}
+\vspace{0.25cm}
+\]
+As we also know that $q(f^*(\alpha_A)) = q(\alpha_{f^*(A)}) = \id_{X}$, the universal property of the Cartesian morphism $G(\overline{f}(A))$ tells us that the vertical morphisms $f^*(\alpha_A)$ and $\alpha_{f^*(A)}$ are both equal to the unique mediating morphism over $\id_{X}$ induced by  $\alpha_A \comp \overline{f}(F(A))$. 
+\end{proof}
+
+\begin{proposition}[{\cite[Section~1.7]{Jacobs:Book}}]
+\index{ Fib@$\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$ (2-category of split fibrations with a base category $\mathcal{B}$, split fibred functors, and split fibred natural transformations)}
+Split fibrations with a base category $\mathcal{B}$, split fibred functors, and split fibred natural transformations form the 2-category $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$.
+\end{proposition}
+
+The denotational semantics of eMLTT and its extensions is based on split fibred adjunctions.
+These are defined in $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$ analogously to how ordinary adjunctions are defined in the 2-category $\mathsf{Cat}$ of categories, functors, and natural transformations. 
+\index{ Cat@$\mathsf{Cat}$ (2-category of categories, functors, and natural transformations)}
+
+\begin{definition}
+\index{adjunction!split fibred --}
+\index{ F@$F \dashv\, U$ (split fibred adjunction)}
+\index{ e@$\eta$ (unit of a split fibred adjunction)}
+\index{ e@$\varepsilon$ (counit of a split fibred adjunction)}
+Given two split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, a \emph{split fibred adjunction} ${F \dashv\, U : q \longrightarrow p}$ 
+is given by two split fibred functors ${F : p \longrightarrow q}$ and ${U : q \longrightarrow p}$, and two split fibred natural transformations  ${\eta : \id_\mathcal{V} \longrightarrow U \comp F}$ and ${\varepsilon : F \comp U \longrightarrow \id_\mathcal{C}}$, subject to the standard two unit-counit laws (see Definition~\ref{def:adjunction}).
+\end{definition}
+
+\begin{proposition}
+Given two split fibrations ${p : \mathcal{V} \longrightarrow \mathcal{B}}$ and ${q : \mathcal{C} \longrightarrow \mathcal{B}}$, and a \emph{split fibred adjunction} ${F \dashv\, U : q \longrightarrow p}$, then, for every object $X$ in $\mathcal{B}$, the restriction of $F$ and $U$ to the fibres over $X$ determines an adjunction ${F_X \dashv\, U_X : \mathcal{C}_X \longrightarrow \mathcal{V}_X}$.
+\end{proposition}
+
+\begin{proof}
+The adjunction ${F_X \dashv\, U_X : \mathcal{C}_X \longrightarrow \mathcal{V}_X}$ follows directly from $F$ and $U$ being split fibred functors, and the components of $\eta$ and $\varepsilon$ being vertical morphisms.
+\end{proof}
+
+As we know by definition that $F_X(A) = F(A)$ and $F_X(f) = F(f)$, and similarly for $U_X$, we often omit the subscripts in $F_X$ and $U_X$ when $X$ is clear from the context.
+
+
+Next, we define split fibred monads. Similarly to split fibred adjunctions, these are defined in  $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$ analogously to how ordinary monads are defined in $\mathsf{Cat}$.
+
+\begin{definition}
+\label{def:fibredmonad}
+\index{monad!split fibred --}
+\index{ T@$\mathbf{T}$ (split fibred monad)}
+\index{ T@$(T,\eta,\mu)$ (split fibred monad)}
+\index{ e@$\eta$ (unit of a split fibred monad)}
+\index{ m@$\mu$ (multiplication of a split fibred monad)}
+A \emph{split fibred monad} $\mathbf{T} = (T,\eta,\mu)$ on a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$ is given by a split fibred functor $T : p \longrightarrow p$, and split fibred natural transformations $\eta : \id_p \longrightarrow T$ and $\mu : T \comp T \longrightarrow T$, subject to standard monad laws (see Definition~\ref{def:monad}).
+\end{definition}
+
+Analogously, we can also define a split fibred variant of resolutions of monads.
+
+\begin{definition}
+\label{def:fibredresolution}
+\index{resolution!-- of a monad!split fibred --}
+Given a split fibred monad $(T,\eta,\mu)$ on a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$,  its \emph{split fibred resolution} is given by a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ and a split fibred adjunction $F \dashv\, U : q \longrightarrow p$ such that $(T,\eta,\mu)$ coincides with the split fibred monad canonically derived from this split fibred adjunction (this monad is derived analogously to the ordinary, non-fibred case discussed in Proposition~\ref{prop:monadfromadjunction}).
+\end{definition}
+
+Analogously to monads in $\mathsf{Cat}$, there are again two canonical split fibred resolutions of a split fibred monad, the Kleisli and Eilenberg-Moore resolutions. As before, these are the initial and terminal objects in the category of split fibred resolutions. As we only use the split fibred Eilenberg-Moore resolution in this thesis, we omit the definition of the Kleisli resolution---it can be found in~\cite[Exercise~1.7.9 (i)]{Jacobs:Book}.
+
+\begin{proposition}[{\cite[Exercise~1.7.9 (ii)]{Jacobs:Book}}]
+\label{prop:definingthesplitEMfibration}
+\index{Eilenberg-Moore!split fibred -- resolution}
+Given a split fibred monad $\mathbf{T} = (T,\eta,\mu)$ on a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$, its \emph{split fibred Eilenberg-Moore resolution} is given by a split fibration $p^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{B}$ and a split fibred adjunction $F^{\mathbf{T}} \dashv\, U^{\mathbf{T}} : p^{\mathbf{T}} \longrightarrow p$, where the category $\mathcal{V}^{\mathbf{T}}$ and the adjunction $F^{\mathbf{T}} \dashv\,  U^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{V}$ are defined as if we were constructing the EM-resolution of the monad $(T,\eta,\mu)$ on $\mathcal{V}$ (see Definition~\ref{def:EMresolution}).
+\end{proposition}
+
+\index{fibration!Eilenberg-Moore --}\index{Eilenberg-Moore!-- fibration}
+\index{ p@$p^{\mathbf{T}}$ (split Eilenberg-Moore fibration of a split fibred monad $\mathbf{T}$ on $p$)}
+In Proposition~\ref{prop:definingthesplitEMfibration}, the functor $p^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{B}$ is given by $p^{\mathbf{T}}(A,\alpha) \defeq p(A)$ and $p^{\mathbf{T}}(h) \defeq p(h)$. We call $p^{\mathbf{T}}$ the \emph{split Eilenberg-Moore (EM-) fibration}
+of $\mathbf{T}$. The chosen Cartesian morphism in $p^{\mathbf{T}}$ over a morphism $f : X \longrightarrow p^{\mathbf{T}}(B,\beta)$ in $\mathcal{B}$ is given by
+\[
+\overline{f}(B,\beta) \defeq \overline{f}(B) : (f^*(B), f^*(\beta)) \longrightarrow (B,\beta)
+\]
+
+We conclude our overview of fibred category theory by discussing structures that are commonly used to model the core features of dependently typed languages. 
+
+
+The general idea behind modelling a dependent type $\lj \Gamma A$ in a split fibration \linebreak $p : \mathcal{V} \longrightarrow \mathcal{B}$ is to interpret the context $\Gamma$ as an object $\sem{\Gamma}$ in the base category $\mathcal{B}$ and the dependent type $A$ as an object $\sem{A}$ in the total category $\mathcal{V}$, such that $p(\sem{A}) = \sem{\Gamma}$. 
+
+Regardless of the particular grammar of types, a crucial step in the definition of the interpretation of contexts $\Gamma$ (lists of distinct variables $x$ annotated with types $A$) involves defining the interpretation of extended contexts $\Gamma, x \!:\! A$. In fibrational models of dependently typed languages, $\Gamma, x \!:\! A$ is most naturally interpreted using the notion of comprehension, which we define below, in terms of a terminal object functor for $p$.
+
+
+\begin{definition}
+\label{def:terminalobjectfunctor}
+\index{functor!split terminal object --}
+\index{ 1@$1$ (split terminal object functor)}
+A \emph{split terminal object functor} for a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$ is given by a functor $1 : \mathcal{B} \longrightarrow \mathcal{V}$ that is a split fibred right adjoint to $p$ in $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$, i.e., 
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+\mathcal{V} \ar[dr]_{p} \ar@/^1pc/[rr]^{p} & \bot & \mathcal{B} \ar[dl]^{\id_{\mathcal{B}}} \ar@/^1pc/[ll]^{1}
+\\
+& \mathcal{B}
+}
+\]
+\end{definition}
+
+Below we note that the existence of a such terminal object functor equips every fibre $\mathcal{V}_X$ with a terminal object $1_X$, and these are preserved on-the-nose by reindexing.
+\index{ 1@$1_X$ (terminal object in $\mathcal{V}_X$)}
+
+
+\begin{proposition}
+\label{prop:fibredterminalobjects}
+If $p : \mathcal{V} \longrightarrow \mathcal{B}$ is a split fibration, then $p$ comes equipped with a split terminal object functor $1 : \mathcal{B} \longrightarrow \mathcal{V}$ if and only if every fibre of $p$ has a terminal object and these terminal objects are preserved on-the-nose by reindexing.
+\end{proposition}
+
+\begin{proof}
+For a detailed proof, we refer the reader to~\cite[Lemma~1.8.8]{Jacobs:Book}, where a non-split version of this proposition is proved. The proof of this split version is proved analogously, but using the additional information that for any morphism $f : X \longrightarrow Y$ in $\mathcal{B}$, we have $f^*(1_Y) = 1_X$. Here, we simply sketch the definitions one uses to prove both directions of this proposition.
+First, in the \emph{if}-direction, we define the terminal object functor $1 : \mathcal{B} \longrightarrow \mathcal{V}$ by mapping an object $X$ in $\mathcal{B}$ to the terminal object $1_X$ in $\mathcal{V}_X$; and by mapping a morphism $f : X \longrightarrow Y$ in $\mathcal{B}$ to the composite morphism $1_X \overset{=}{\longrightarrow} f^*(1_Y) \overset{\overline{f}(1_Y)}{\longrightarrow} 1_Y$. In the opposite direction, we define the terminal object $1_X$ in $\mathcal{V}_X$ to be $1(X)$. The on-the-nose preservation of terminal objects by reindexing follows from the on-the-nose preservation of Cartesian morphisms by $1 : \mathcal{B} \longrightarrow \mathcal{V}$.
+\end{proof}
+
+\index{ 1@$\mathbf{1}$ (trivial one object category)}
+As noted by Jacobs~\cite[Section~1.8]{Jacobs:Book}, this characterisation is a fibred analogue of a category $\mathcal{V}$ having a terminal object if and only if the unique functor $!_{\mathcal{V}} : \mathcal{V} \longrightarrow \mathbf{1}$ has a right adjoint. In $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$, the terminal object is given by $\id_{\mathcal{B}} : \mathcal{B} \longrightarrow \mathcal{B}$.
+
+Based on this correspondence, we use the convention of writing $1_X$ for $1(X)$.  
+
+
+\begin{definition}
+\index{category!split comprehension -- with unit}
+\index{functor!comprehension --}
+\index{ @$\ia -$ (comprehension functor)}
+A split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$ is called a \emph{split comprehension \linebreak category with unit} if i) $p$ comes equipped with a split terminal object functor \linebreak $1 : \mathcal{B} \longrightarrow \mathcal{V}$; and ii) this terminal object functor has a (not necessarily fibred) right adjoint $\ia - : \mathcal{V} \longrightarrow \mathcal{B}$ in $\mathsf{Cat}$, called the \emph{comprehension} functor, as illustrated below:
+\[
+\xymatrix@C=0.001em@R=2em@M=0.5em{
+&\mathcal{V} \ar@/_3pc/[dd]_{p} \ar@/^3pc/[dd]^{\ia{-}}
+\\
+\dashv & & \!\!\!\!\dashv
+\\
+&\mathcal{B} \ar[uu]^{1}
+}
+\]
+\end{definition}
+
+\begin{proposition}[{\cite[Section~10.4]{Jacobs:Book}}]
+\label{prop:comprehensioncategorywithunit}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, then there exists a functor $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^\to$ such that $p = \mathsf{cod}_{\mathcal{B}} \comp \mathcal{P}$ and $\mathcal{P}$ sends the chosen Cartesian morphisms in $\mathcal{V}$ to pullback squares in $\mathcal{B}^\to$. A functor with these properties is called a \emph{comprehension category}.
+\index{category!comprehension --}
+\index{ P@$\mathcal{P}$ (comprehension category)}
+\end{proposition}
+
+We recall from~\cite[Section~10.4]{Jacobs:Book} that the functor $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^\to$ is given on objects by mapping an object $A$ in $\mathcal{V}$ to the morphism $\ia A \overset{=}{\longrightarrow} p(1_{\ia A}) \overset{p(\varepsilon_A^{1 \dashv \ia -})}{\longrightarrow} p(A)$, and by mapping a morphism $f : A \longrightarrow B$ in $\mathcal{V}$ to the following commuting diagram:
+\[
+\xymatrix@C=5em@R=4em@M=0.5em{
+\ia{A} \ar[r]^{\ia f} \ar[d]_{=}^{\qquad\,\,\,\, \dcomment{p \comp 1 = \id_{\mathcal{B}}}} & \ia{B} \ar[d]^{=} 
+\\
+p(1_{\ia A}) \ar[d]_{p(\varepsilon_A^{1 \dashv \ia -})}^{\qquad \dcomment{\text{nat. of } \varepsilon^{1 \dashv \ia -}}} \ar[r]^{p(1(\ia f))} & p(1_{\ia A}) \ar[d]^{p(\varepsilon_B^{1 \dashv \ia -})}
+\\
+p(A) \ar[r]_{p(f)} & p(B)
+}
+\]
+
+
+\begin{definition}
+\index{morphism!projection --}
+\index{functor!weakening --}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and an object $A$ in $\mathcal{V}$, the morphism $\mathcal{P}(A) : \ia A \longrightarrow p(A)$ is called a \emph{projection morphism} and commonly written as $\pi_A$. 
+\index{ product@$\pi_A$ (projection morphism)}
+The reindexing functor $\pi_A^*$ is called a \emph{weakening functor}. 
+\index{ product@$\pi_A^*$ (weakening functor)}
+\end{definition}
+
+\begin{definition}
+\index{category!split comprehension -- with unit!full --}
+A  split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ is said to be \emph{full} if the corresponding comprehension category $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^\to$ is full and faithful.
+\end{definition}
+
+Returning to the interpretation of dependently typed languages (such as MLTT), we now briefly describe how to interpret well typed terms in a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$. In the literature, a well typed term $\vj \Gamma V A$ is usually interpreted either i) as a \emph{global element} $1_{\sem{\Gamma}} \longrightarrow \sem{A}$ 
+\index{global element}
+of $\sem{A}$ in $\mathcal{V}_{\sem{\Gamma}}$, or ii) as a \emph{section} 
+of the projection morphism $\pi_{\sem{A}} : \ia{\sem{A}} \longrightarrow \sem{\Gamma}$ in $\mathcal{B}$.
+However, as is well known, these two ways of interpreting terms are interchangeable, see Proposition~\ref{prop:globalelementssections} below. Therefore, one  often switches between i) and ii) when working with the denotations of terms. In particular, ii) corresponds to the fact that the fully-faithfulness of $\mathcal{P}$ allows us to consider $\pi_{\sem{A}} : \ia{\sem{A}} \longrightarrow \sem{\Gamma}$ in $\mathcal{B}$ as an equivalent denotation of a type $\lj \Gamma A$. 
+
+\begin{proposition}
+\label{prop:globalelementssections}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and an object $A$ in $\mathcal{V}$, then there exists an isomorphism
+\[
+\mathcal{V}_{p(A)}(1_{p(A)} , A) \cong \{f : p(A) \longrightarrow \ia A \vertbar \pi_A \comp f = \id_{p(A)}\}
+\]
+\end{proposition}
+
+\begin{proof}
+This proposition is a special case of~\cite[Lemma~10.4.9 (i)]{Jacobs:Book}, whose proof is omitted in op. cit. Here we give the proof of the above isomorphism explicitly.
+
+First, given a global element $f : 1_{p(A)} \longrightarrow A$ of $A$ in $\mathcal{V}_{p(A)}$, 
+\index{global element}
+we define the corresponding section 
+$\funsection(f) : p(A) \longrightarrow \ia A$ in $\mathcal{B}$ as the following composite morphism: 
+\index{ s@$\funsection(f)$ (section corresponding to a vertical global element $f$)}
+\[
+\xymatrix@C=5em@R=3em@M=0.5em{
+p(A) \ar[r]^-{\eta^{1 \dashv \ia -}_{p(A)}} & \ia {1_{p(A)}} \ar[r]^-{\ia {f}} & \ia A
+}
+\]
+The required equation $\pi_A \comp \funsection(f) = \id_{p(A)}$ then follows from the commutativity of the following diagram:
+\[
+\xymatrix@C=8em@R=4em@M=0.5em{
+p(A) \ar@/^3pc/[rr]^-{\mathsf{s}(f)}_*+<0.75em>{\dcomment{\text{def. of } \mathsf{s}(f)}} \ar[d]_{=}^<<<<<<<<{\qquad\qquad\,\, \dcomment{p \comp 1 = \id_{\mathcal{B}}}} \ar[r]^-{\eta^{1 \dashv \ia -}_{p(A)}} & \ia {1_{p(A)}} \ar[d]_{=} \ar[r]^-{\ia {f}} \ar@{}[dd]^{\qquad\qquad\quad\,\,\, \dcomment{\mathcal{P}(f)}} & \ia A \ar[d]^{=} \ar@/^3pc/[dd]^-{\pi_{A}}_>>>>>>>>{\dcomment{\text{def. of } \pi_A}\,\,\,\,\,}
+\\
+p(1_{p(A)}) \ar[dr]_{\id_{p(1_{p(A)})}} \ar[r]^-{p(1(\eta^{1 \dashv \ia -}_{p(A)}))} \ar@{}[d]^<<<<<<{\qquad\qquad\qquad\qquad\!\!\! \dcomment{1 \dashv \ia -}} & p(1_{\ia {1_{p(A)}}}) \ar[d]^{p(\varepsilon^{1 \dashv \ia -}_{1_{p(A)}})} & p(1_{\ia A}) \ar@/_2.5pc/[d]_-{p(\varepsilon^{1 \dashv \ia -}_A)}
+\\
+& p(1_{p(A)}) \ar[r]_{=} & p(A)
+}
+\]
+
+Next, given a morphism $f : p(A) \longrightarrow \ia A$ in $\mathcal{V}$ such that $\pi_A \comp f = \id_{p(A)}$, we define the corresponding global element $\mathsf{s}^{-1}(f) : 1_{p(A)} \longrightarrow A$ in $\mathcal{V}$ as the composite 
+\index{ s@$\mathsf{s}^{-1}(f)$ (vertical global element corresponding to a section $f$)}
+\[
+\xymatrix@C=5em@R=2em@M=0.5em{
+1_{p(A)} \ar[r]^-{1(f)} & 1_{\ia A} \ar[r]^-{\varepsilon^{1 \dashv \ia -}_A} & A
+}
+\]
+and show that $\mathsf{s}^{-1}(f)$ is in $\mathcal{V}_{p(A)}$ by proving that the following diagram commutes:
+\[
+\xymatrix@C=5em@R=4em@M=0.5em{
+p(1_{p(A)}) \ar@/^3.25pc/[rr]^-{p(\mathsf{s}^{-1}(f))}_*+<1em>{\dcomment{\text{def. of } \mathsf{s}^{-1}(f)}} \ar[d]_{=}^{\qquad\,\,\,\,\,\, \dcomment{p \comp 1 = \id_{\mathcal{B}}}} \ar[r]^-{p(1(f))} & p(1_{\ia A}) \ar[d]_{=}^{\qquad\,\,\,\,\, \dcomment{\text{def. of } \pi_A}} \ar[r]^-{p(\varepsilon^{1 \dashv \ia -}_A)} & p(A) \ar[d]^{\id_{p(A)}}
+\\
+p(A) \ar@/_3.25pc/[rr]_-{\id_{p(A)}}^*+<1.25em>{\dcomment{f \text{ is a section of } \pi_A}} \ar[r]_{f} & \ia {A} \ar[r]_-{\pi_A} & p(A)
+}
+\]
+
+Next, we show that the equation $\mathsf{s}^{-1}(\mathsf{s}(f)) = f$ holds for all $f : 1_{p(A)} \longrightarrow A$ in $\mathcal{V}_{p(A)}$, by proving that the following diagram commutes:
+\[
+\xymatrix@C=5em@R=4em@M=0.5em{
+1_{p(A)} \ar[dr]_-{1(\eta^{1 \dashv \ia -}_{p(A)})} \ar@/^4pc/[rrr]^-{\mathsf{s}^{-1}(\mathsf{s}(f))}_*+<1.75em>{\dcomment{\text{def. of } \mathsf{s}^{-1}(\mathsf{s}(f))}} \ar@/_2.5pc/[ddr]_{\id_{1_{p(A)}}} \ar[rr]_-{1(\mathsf{s}(f))} \ar@{}[d]^{\qquad\qquad\qquad\,\,\, \dcomment{\text{def. of } \mathsf{s}(f)}} & & 1_{\ia A} \ar[r]_-{\varepsilon^{1 \dashv \ia -}_A} & A 
+\\
+& 1_{\ia {1_{p(A)}}} \ar[ur]_-{1 (\ia f)} \ar[d]^-{\varepsilon^{1 \dashv \ia -}_{1_{p(A)}}}_<<<{\dcomment{1 \dashv \ia -} \quad\!\!\!} & 
+\\
+& 1_{p(A)} \ar@/_2.5pc/[uurr]_-{f}^>>>>>>>>>>>>>>>>>>>>>>>>>{\dcomment{\text{nat. of } \varepsilon^{1 \dashv \ia -}}\qquad\quad} & &
+}
+\]
+
+
+
+Finally, we show that the equation $\mathsf{s}(\mathsf{s}^{-1}(f)) = f$ holds for all $f : p(A) \longrightarrow \ia A$ in $\mathcal{V}$ with $\pi_A \comp f = \id_{p(A)}$, by proving that the following diagram commutes:
+\[
+\xymatrix@C=5em@R=3em@M=0.5em{
+p(A) \ar@/_2.5pc/[ddrr]_-{f}^>>>>>>>>>>>>>>>>>>>>>>>>>{\qquad\quad\dcomment{\text{nat. of } \eta^{1 \dashv \ia -}}} \ar@/^4pc/[rrr]^-{\mathsf{s}(\mathsf{s}^{-1}(f))}_*+<1.75em>{\dcomment{\text{def. of } \mathsf{s}(\mathsf{s}^{-1}(f))}}  \ar[r]_-{\eta^{1 \dashv \ia -}_{p(A)}} & \ia {1_{p(A)}} \ar[dr]_{\ia {1(f)}} \ar@{}[d]^{\qquad\qquad\qquad \dcomment{\text{def. of } \mathsf{s}^{-1}(f)}} \ar[rr]_-{\ia {\mathsf{s}^{-1}(f)}} & & \ia A 
+\\
+& & \ia {1_{\ia A}} \ar[ur]_-{\ia {\varepsilon^{1 \dashv \ia -}_A}} & 
+\\
+& & \ia {A} \ar@/_3.5pc/[uur]_{\id_{\ia A}} \ar[u]^-{\eta^{1 \dashv \ia -}_{\ia A}}_>>>{\quad\!\!\!\!\! \dcomment{1 \dashv \ia -}}
+}
+\]
+\end{proof}
+
+To make better use of this interchangeability of the global elements $f :  1_{p(A)} \longrightarrow A$ in the fibres and the sections $\mathsf{s}(f) : p(A) \longrightarrow \ia A$ in the base category, we now describe a construction for $\mathsf{s}(f)$ that corresponds to applying a reindexing functor to $f$.
+
+\begin{proposition}
+\label{prop:reindexinginthebasecategory}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, a global element $f : 1_{p(A)} \longrightarrow A$ of $A$ in $\mathcal{V}_{p(A)}$ and a morphism $g : X \longrightarrow p(A)$ in $\mathcal{B}$, then
+\[
+\mathsf{s}^{-1}(h) = g^*(f)
+\]
+where $h : X \longrightarrow \ia {g^*(A)}$ is the unique mediating morphism in the following pullback situation:
+\[
+\xymatrix@C=5em@R=4em@M=0.5em{
+& p(A) \ar@/^1.5pc/[dr]^-{\mathsf{s}(f)} &
+\\
+X \ar@/_1.5pc/[dr]_{\id_X} \ar@/^1.5pc/[ur]^-{g} \ar@{-->}[r]^-{h} & \ia {g^*(A)} \ar[d]_{\pi_{g^*(A)}}^<{\,\big\lrcorner} \ar[r]^-{\ia {\overline{g}(A)}} & \ia A \ar[d]^{\pi_A}_{\dcomment{\mathcal{P}(\overline{g}(A))}\qquad\,\,\,\,\,\,\,}
+\\
+& X \ar[r]_-{g} & p(A)
+}
+\]
+The composite morphisms that make up the outer perimeter from $X$ to $p(A)$ are equal because of Proposition~\ref{prop:globalelementssections}, namely, because we know that $\pi_A \comp \mathsf{s}(f) = \id_{p(A)}$.
+\end{proposition}
+
+\begin{proof}
+In order to prove the required equation
+\[
+\mathsf{s}^{-1}(h) = g^*(f)
+\]
+we instead prove an auxiliary equation 
+\[
+h = \mathsf{s}(g^*(f))
+\]
+from which the required equation follows because $\mathsf{s}$ and $\mathsf{s}^{-1}$ form an isomorphism. 
+
+We show that this auxiliary equation holds by observing that the morphism $\mathsf{s}(g^*(f))$ satisfies the same universal property as the unique mediating morphism $h$ given above in the proposition. In particular, we first show that the following diagram commutes:
+\vspace{0.6cm}
+\[
+\xymatrix@C=6em@R=4em@M=0.5em{
+p(A) \ar@/^8pc/[ddrrr]^-{\mathsf{s}(f)}_<<<<<<<<<{\quad\qquad\qquad\qquad\qquad\qquad\qquad\dcomment{\text{def. of } \mathsf{s}(f)}} \ar[r]_-{\eta^{1 \,\dashv\, \ia -}_{p(A)}} & \ia {1_{p(A)}} \ar@/^3.5pc/[ddrr]_-{\ia f}
+\\
+&& \ia {g^*(1_{p(A)})} \ar[ul]_-{\ia {\overline{g}(1_{p(A)})}} &
+\\
+X \ar@/_3.25pc/[rr]_-{\mathsf{s}(g^*(f))}^*+<1em>{\dcomment{\text{def. of } \mathsf{s}(g^*(f))}} \ar[uu]^-{g}_-{\qquad\dcomment{\text{nat. of } \eta^{1 \,\dashv\, \ia -}}} \ar[r]^-{\eta^{1 \,\dashv\, \ia -}_{X}} & \ia {1_X} \ar[uu]_-{\ia {1(g)}}_-{\qquad\quad\!\!\!\!\dcomment{1 \text{ is split fibred}}} \ar[ur]_-{=}_>>>>>>>>>{\qquad\qquad\dcomment{\text{def. of } g^*(f)}}\ar[r]^-{\ia {g^*(f)}} & \ia {g^*(A)} \ar[r]_-{\ia {\overline{g}(A)}} & \ia A
+}
+\vspace{0.5cm}
+\]
+Next, we note that $\pi_{g^*(A)} \comp \mathsf{s}(g^*(f)) = \id_X$ by Proposition~\ref{prop:globalelementssections}.
+As a result, we get that $\mathsf{s}(g^*(f))$ is equal to the unique mediating morphism $h : X \longrightarrow \ia {g^*(A)}$.
+\end{proof}
+
+In addition to allowing us to translate between the global elements $f :  1_{p(A)} \longrightarrow A$ in the fibres and the sections $\mathsf{s}(f) : p(A) \longrightarrow \ia A$ in the base category, the unit $\eta^{1 \,\dashv\, \ia -}$ of the adjunction $1 \dashv \ia -$ has a further useful property, namely, it is in fact a natural isomorphism, as noted in~\cite[Section~10.4]{Jacobs:Book} and proved in detail below.
+
+\begin{proposition}[{\cite[Exercise~10.4.7 (i)]{Jacobs:Book}}] 
+\label{prop:compcatunitiso}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and 
+an object $X$ in $\mathcal{B}$, then the component $\eta^{1 \,\dashv\, \ia -}_X : X \longrightarrow \ia {1_X}$ of the unit $\eta^{1 \,\dashv\, \ia -}$ is an isomorphism, with its inverse given by $\pi_{1_X} : \ia {1_X} \longrightarrow X$.
+\end{proposition}
+
+\begin{proof}
+A neat way to prove this proposition is to note that $\eta^{1 \,\dashv\, \ia -}$ must be a natural isomorphism to start with because the left adjoint $1$ in $1 \dashv \ia -$ is fully-faithful. In more detail, as highlighted in~\cite[Section~10.4]{Jacobs:Book}, the fact that $p \dashv 1$ is a fibred adjunction, means that $p \comp 1 = \id_{\mathcal{B}}$, resulting in the counit $\varepsilon^{\,p \,\,\dashv\, 1}$ being  identity and therefore also a natural isomorphism. However, it is well-known that the counit of an adjunction is a natural isomorphism if and only if the right adjoint is fully-faithful, e.g., see~\cite[Section~IV.4]{MacLane:CatWM}. In the context of this proposition, this means that $1$ must be fully-faithful. The dual of this fact states that the unit of an adjunction is a natural isomorphism if and only if the left adjoint is fully-faithful. Therefore, as we know that $1$ is fully-faithful, and it is the left adjoint in $1 \dashv \ia -$, the unit $\eta^{1 \,\dashv\, \ia -}$ must be a natural isomorphism.
+
+Now, as we know that for each object $X$ in $\mathcal{B}$, $\eta^{1 \,\dashv\, \ia -}_X$ must have an inverse $(\eta^{1 \,\dashv\, \ia -}_X)^{-1}$, we are left with showing that $(\eta^{1 \,\dashv\, \ia -}_X)^{-1} = \pi_{1_X}$. To this end, we first show that $\pi_{1_X}$ is the left inverse of $\eta^{1 \,\dashv\, \ia -}_X$, i.e., that $\pi_{1_X} \comp \eta^{1 \,\dashv\, \ia -}_X = \id_X$. This equation follows straightforwardly  from the commutativity of the following diagram:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+X \ar[d]_{=}^{\qquad\,\,\dcomment{p \comp 1 = \id_{\mathcal{B}}}} \ar[r]^-{\eta^{1 \,\dashv\, \ia -}_X} & \ia {1_X} \ar[d]_{=}^{\qquad\,\,\,\dcomment{\text{def. of } \pi_{1_X}}} \ar[r]^-{\pi_{1_X}} & X \ar[d]_{=}
+\\
+p(1_X) \ar[r]^-{p(1(\eta^{1 \,\dashv\, \ia -}_X))} \ar@/_3.25pc/[rr]_{\id_{p(1_X)}}^*+<1em>{\dcomment{1 \,\dashv\, \ia -}} & p(1_{\ia {1_X}}) \ar[r]^-{p(\varepsilon^{1 \,\dashv\, \ia -}_{1_X})} & p(1_X)
+}
+\]
+Finally, we show that the equation $(\eta^{1 \,\dashv\, \ia -}_X)^{-1} = \pi_{1_X}$ holds by observing that
+\[
+(\eta^{1 \,\dashv\, \ia -}_X)^{-1} = \id_X \comp (\eta^{1 \,\dashv\, \ia -}_X)^{-1} = \pi_{1_X} \comp \eta^{1 \,\dashv\, \ia -}_X \comp (\eta^{1 \,\dashv\, \ia -}_X)^{-1} = \pi_{1_X} \comp \id_{\ia {1_X}} = \pi_{1_X}
+\]
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

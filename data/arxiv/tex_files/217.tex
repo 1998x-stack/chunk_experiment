@@ -1,0 +1,52 @@
+% !TEX root = main.tex
+
+\section{Background}
+\label{sec:bg}
+
+Our formulation is partly inspired by
+\emph{Noise Contrastive Estimation (NCE)}~\cite{gutmann2012noise}.
+NCE is originally introduced for estimating probability distributions,
+where the partition functions can be difficult or even infeasible to compute.
+To estimate a parametric distribution $p_m(.;\vtheta)$,
+which we refer to as the \emph{target} distribution,
+NCE employs not only the observed samples $X = (\vx_1, \vx_2, ..., \vx_{T_m})$,
+but also the samples drawn from a \emph{reference} distribution $p_n$,
+denoted as $Y = (\vy_1, \vy_2, ..., \vy_{T_n})$.
+Instead of estimating $p_m(.;\vtheta)$ directly,
+NCE estimates the density ratio $p_m / p_n$
+by training a classifier based on logistic regression.
+
+Specifically, let $U = (\vu_1, ..., \vu_{T_m + T_n})$ be the union of $X$ and $Y$.
+A binary class label $C_t$ is assigned to each $u_t$,
+where $C_t = 1$ if $u_t \in X$ and $C_t = 0$ if $u_t \in Y$.
+The posterior probabilities for the class labels are therefore
+\begin{align}
+	P(C = 1|\vu,\vtheta) = \frac{p_m(\vu;\vtheta)}{p_m(\vu;\vtheta) + \nu p_n(\vu)},  \qquad P(C = 0|\vu,\vtheta) = \frac{\nu p_n(\vu)}{p_m(\vu;\vtheta) + \nu p_n(\vu)},
+\end{align}
+where $\nu = T_n / T_m$.
+Let $G(\vu;\vtheta) = \ln p_m(\vu;\vtheta) - \ln p_n(\vu)$ and
+$h(\vu,\vtheta) = P(C = 1|\vu,\vtheta)$, then we can write
+\begin{equation}
+	h(\vu;\vtheta) = r_\nu(G(\vu;\vtheta)), \quad
+	\text{ with } \quad
+	r_\nu(z) = \frac{1}{1 + \nu\exp(-z)}. \label{eq:logistic}
+\end{equation}
+%
+The objective function of NCE is the joint conditional log-probabilities
+of $C_t$ given the samples $U$, which can be written as
+\begin{equation}
+	\cL(\vtheta;X,Y)
+	=
+	\sum^{T_m}_{t = 1} \ln[h(\vx_t;\vtheta)] + \sum^{T_n}_{t = 1} \ln[1 - h(\vy_t;\vtheta)].
+\end{equation}
+%
+Maximizing this objective with respect to $\vtheta$ leads to an estimation
+of $G(\cdot;\vtheta)$, the logarithm of the density ratio $p_m / p_n$.
+As $p_n$ is a known distribution, $p_m(:|\vtheta)$ can be readily derived.
+
+% The class labels $C_t$ are assumed Bernoulli distributed and independent in NCE,
+% and the conditional log-likelihood is thus given by
+% \begin{align}
+% 	\cL(\vtheta;X,Y) & = \sum^{T_m + T_n}_{t = 1} C_t \ln P(C_t = 1|\vu,\vtheta) + (1 - C_t) \ln P(C_t = 0 | \vu,\vtheta) \notag \\
+% 			& = \sum^{T_m}_{t = 1} \ln[h(\vx_t;\vtheta)] + \sum^{T_n}_{t = 1} \ln[1 - h(\vy_t;\vtheta)] .
+% \end{align}

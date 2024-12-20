@@ -1,0 +1,631 @@
+\section{Introduction}
+%Understanding human mobility is essential to many applications including transportation management \cite{144,63,64,53}, wireless automated teller machine (ATM) networks management \cite{69}, urban sensing and forecasting urban dynamics \cite{111,109,110}, and predicting and understanding the spread of diseases \cite{32}. Other work in the application of mobility has focused on predicting depressive moods of individuals via their movement \cite{107}, identifying the life span of point of interest locations for individuals in a city \cite{108}, detecting regional events and unknown point of interest \cite{110} and identifying mode of transportation and predicting a user's step count \cite{117,116}. Specifically, experience in developing local models of disease spread as well as traffic congestion has highlighted the need not only to be able to predict the next location of an individual, but also infer an entire path of travel \cite{138,126,32}.  Further, new data sources which offer multiple linked features (e.g. location alongside linked text or image about what a person may be doing), such as social media, can provide more context about mobility. This can augment models derived with location-only information (such as from Call Data Records (CDRs) or Global Positioning System (GPS) trackers) and improve work in health and social sciences. For example, mobility coupled with Tweets parsed to identify acute respiratory infections could potentially be used to answer individual-level questions such as “how will the movement of an individual be affected if the individual is infected with influenza or a cold” which cannot be answered solely using other single-feature data sources described above \cite{119}. While existing efforts perform prediction under certain assumptions and circumstances, applying those methods present challenges for real-world use cases, which we summarize here in four categories.
+
+%With the recent adoption of Location Based Social Networks (LBSNs) like Twitter, there has been an increased amount of public data available to study characteristics and behaviors of millions of users. Unlike traditional data sources like This publicly available data can help develop mobility models which cannot be achieved using previous data sources such as present Call Data Records (CDRs) or Global Positioning System (GPS) trackers. Moreover, unlike the traditional data sources, social media data provide a wide array of information linked with location. Given the precise geo-location tags and temporal resolution of social media data, the context available from linked text or images, connectivity via the friends and followers network associated with social media data, and in some cases availability via Application Programming Interfaces (APIs), it clearly offers an opportunity to fill several of these gaps and generate accessible measures of mobility relevant for many applications. Further, using social media data for mobility measures presents a potentially scalable approach in pervasive and ubiquitous computing: assessing mobility alongside context without requiring individual annotation or multiple sensors \cite{117,116,121} This allows researchers to understand the impact of characteristics of individuals on their mobility patterns and vice-versa, something which cannot be achieved using location-only datasets (such as from Call Data Records (CDRs) or Global Positioning System (GPS) trackers).
+
+
+Using full location timelines (all locations an individual has been to) is essential to many societal applications including transportation management \cite{li2017urban,53}, urban sensing \cite{109}, event detection \cite{aoki2017early} and infectious disease dynamics \cite{32}. Combined with additional information about individuals, location timelines have been used to predict depressive moods \cite{107}, point-of-interest and location recommendation \cite{zhang2014lore,bao2012location}, the spread of diseases \cite{liu2015multi}, and contact tracing for hot spots of infectious diseases \cite{126}. 
+
+Data sparsity can become a major challenge when predicting full timelines using publically available data, and can take two forms.
+%Full timelines may need to be predicted due to missing (sparse) data of two kinds.
+First, the number of users with enough data (full-timelines) to train the model can be low. 
+%Second, more user data could be available, but with more data missing in each timeline. 
+Second, increasing the number of users results in inclusion of users with extremely sparse location timelines. Therefore, this problem of inference of complete location timelines is inherently different from mobility prediction, which must prioritize accuracy of the prediction for the next location. Accordingly, mobility prediction models are often built on data sources such as travel surveys, Call Data Records (CDRs) and Global Positioning System (GPS) trackers which are high-resolution (provide location every few seconds or minutes). However, it is not realistic to have such data in a broad array of contexts; the cost of collecting such datasets, limited attributes associated with individual records, and lack of public availability makes them unsuitable for carrying out large-scale studies for a target population where the impact of location over time is to be studied in relation to various secondary issues. Further, in several emerging real-world modeling applications such as infectious disease transmission models, knowing a person's location at such a high temporal frequency is unnecessary. Instead, locations of where they travel to over the course of a day at a lower resolution (such as every few hours), provide the relevant insight \cite{31}. Therefore, we focus on the challenging problem of constructing the entire mobility timeline of an individual at equal intervals of time from the geo-location associated with social media data, which is generated at-will and therefore can be very sparse.
+
+The main challenge here is that the data used is truly sparse in relation to entire timelines; for example, in six months of social media sourced from the Twitter Application Programming Interface, only 5.4\% (which is what we use in this study) have a Tweet with linked-location at each of the daytime hours in a day (independent of day of the week, over all weeks in the six months). Further, we do not assume any specific information such as from the text/content of posts, or network of users is available. 
+To overcome these challenges, we use several known heuristics about location visitation patterns of individuals. We also combine patterns both from an individuals' history, as well as leverage the patterns of similar community members \cite{jurgens2015geolocation,104,139}. Further, we relax criteria about day and week-specificity of location patterns which enables us to use and predict timelines from thousands of social media users with such sparse data -- our method does not require rich training data to learn complex patterns of mobility, and works for a realistic number of users. Finally, our work does not assume any additional information about the demographics, social networks or content of tweets of users, allowing for the adoption in situations where such additional data sources are not available. In accordance with the sparse nature of the data, these combined approaches enable us to infer multiple consecutive missing locations from a user's timeline, and construct a continuous location timeline for individuals using only sparse geo-tags from their Tweets. 
+
+%We demonstrate the approach using publicly available geo located data from the Twitter API, which due to its inherent nature provides only limited and sparse data regarding any individual user's location \cite{tasse2017state}. 
+We compare the performance of our model with several models which, although optimized for next-location prediction, are state-of-the-art, and show that intermediate location computing (ILC) has increased accuracy for inferring entire timelines from sparse data. In particular, while deep learning models have good predictive accuracy, we investigate the tradeoff in performance based on amount of sparsity, both in terms of number of users or amount of data per user. By using readily available data to estimate a full mobility timeline at relevant resolutions, this work opens many new opportunities to understand and predict human movement for many domain areas. To the best of our knowledge, this work is the first to use sparse social media data to infer full individual-level location timelines. The specific contributions of this work are:
+\begin{itemize}
+    \item Developing a framework for filling in entire location timelines at reasonable time steps, with personalized forward and backward timeline prediction.
+    \item Prediction of the timeline from truly sparse, but freely available and easily accessible data; with smart use of community data to improve timeline prediction when applicable.
+    \item First use of deep learning for inferring timelines from sparse data and assessment of amount of data needed for a deep learning approach to surpass other models.
+\end{itemize}
+
+
+\section{Related Work}
+%To the best of our knowledge, sparse social media data has not been used in the context of filling-in entire location timelines. Therefore h
+Here we summarize related work in two main categories to clarify differences in data and methodological approaches in other work.
+\paragraph{Geo-location data types and sparsity.} As the goal of predicting next location is different than the goal here, the types of data used in such studies include smartphone data including GPS tracking, Wi-Fi, Bluetooth and phone usage \cite{68}, partial GPS tracks from automobiles \cite{122}, and Foursquare check-in data \cite{67}. These models are generally designed for temporally rich data-sets and thus assume that the training data is abundant and collected at frequent time intervals. Even in the case of Foursquare data, though it can be sparse, only dense sequences of data (minimum sequence length of 5 locations) have been used in predictive efforts \cite{feng2018deepmove}. Hence, studies have been concerned with data collected at such densities, or small time intervals (e.g. every 1, 15 or 30 minutes), and individual records below a threshold number of data points are discarded from the study entirely \cite{56,67,70,74,feng2018deepmove}. While this restriction increases confidence in the stay duration of individuals at a location, this typically (appropriately) limits the problem of prediction to only a single missing location in the future. Given the inconsistency of intervals between location tags in an individual's social media timeline and lack of stay duration information, such models can not directly be applied in the context of sparse social media data \cite{tasse2017state}. A method to capture daily habits of individuals using sparse data has been proposed in \cite{137} (varying the amount of phone GPS data ``seen'' by the algorithm). However, the method initially requires training on users with abundant data histories and hence cannot be replicated with data sources such as from Twitter, where both the training and testing datasets are sparse.
+
+Broadly, related social media efforts have been focused on predicting the location of a given social media post, and not missing locations from a timeline \cite{jurgens2015geolocation}. Such studies have also included users with sufficient data and with certain assumptions (e.g. only on those Twitter users who both themselves and their friends are extremely active on Twitter, with at least 100 geo-tagged Tweets in 1 month and assumes that once a user Tweets from a location, they remain at that location until they Tweet again) \cite{104}. Other research which use social media in the domain of mobility focus on Point-of-Interest (POI) and location recommendation, and provide the insight that similar user behavior can be useful \cite{139}. This method uses behavior of similar individuals and distances between pairs of locations to predict the next POI location for an individual. Thus we incorporate this feature of user similarity into the ILC approach to address sparsity issues, and also compare our method to the proposed method for full timeline inference.
+%to one that is more similar and focuses on collaborative behavior for predicting point-of-interest locations \cite{139}. 
+
+\paragraph{Mobility sequence prediction methods.}
+There are many model and pattern based methods that have been used to infer movement of individuals. While the focus of these methods has mainly been to predict the next sequence of locations, and cannot be directly compared to our goal of filling in an entire timeline, they have still provided important knowledge about human mobility that can be used in the timeline problem.
+
+Several variations of Markov models, LZ predictors and prediction by partial matching (PPM), as well as a non-linear spatio-temporal prediction framework, have been investigated \cite{118,74,134,asahara2012mixed,136}. These methods focus on modeling the probability of visitation to a future location by probability or frequency of past visits and popular sequences in existing trajectories, each evaluating it's performance on prediction of a next location. Although that is not our goal, we can still make use of such probabilities in our data by incorporating components of the basic Markov model into the ILC model, though in a manner that promotes filling in all missing data, not just next location prediction. Besides, we also explicitly assess performance of each of these these methods on sparse social media data in comparison to our proposed approach where possible, including NextPlace non-linear predictor \cite{136}, Markov Order-0 and Markov Order-1 models \cite{134}. 
+
+More recently, recursive neural networks (RNNs) have been used to predict individual level mobility timelines \cite{feng2018deepmove,yang2017neural,liu2016predicting}. RNN architectures have been used to predict where a user will check-in next \cite{liu2016predicting} and for next location recommendation \cite{yang2017neural}. Another RNN architecture to predict next location in the timeline of an individual has been proposed in \cite{feng2018deepmove}. The model is again focused on predicting next location more accurately, and incorporates modules in the architecture in order to capture more complex multi-scale patterns. As well, despite the fact that this work aims to predict location value in a user's timeline when data is sparse, the work only focuses on predicting the locations in the subset of timelines of users where richer data is available (described in the previous section), and does not address the challenge of inferring the complete timeline of a user. While these new methods provide a fresh approach to addressing the problem of mobility prediction by allowing the model to learn different behaviors on its own as opposed to previous methods where the behaviors of individuals were manually specified, they are not specifically tailored for predicting complete timelines.
+%require extensive amount of training dataset and hence their performance on sparse dataset has been untested
+However, given the potential for high performance of deep learning models, we do assess what the tradeoff would be, for performance on our task, in terms of data availability (e.g. with what amount of data would a standard deep model perform better than a model incorporating known movement heuristics a priori). 
+
+%Hence, to utilize the strengths of RNNs in constructing individual mobility timelines, we propose an architecture comprising of long-short term memory (LSTM) in this paper and compare the performance with baseline methods.
+
+%Predicting individual level mobility patterns has largely been achieved by either i) using next place predictors by pattern matching, or ii) spatio-temporal methods based on collective behavior. While both strategies have been used on a wide range of data sources, next place predictors via pattern matching are largely based on temporally rich data sources such as GPS trackers and Wi-Fi connectivity data, while the effectiveness of harnessing collective behavior has mostly been shown on relatively temporally sparse datasets such as those from Location based Social Networks (LBSNs). In terms of next place predictors, Do et. al have presented a model to predict an individual's next location using a combination of smartphone data including GPS tracking, Wi-Fi, Bluetooth and phone usage. The model is estimated on data from 307 people and 396 vehicles \cite{68}. Krumm et. al have predicted the destination of a trip using partial GPS driving data observations from 169 users \cite{122}. These studies provide insight into predicting an individual's next location and destination respectively, but require a special application to be installed on the individual's device or in the vehicle. Noulas et. al have presented a framework for next location prediction based on Foursquare check-in data of close to 1 million users \cite{67}. This work provides insight into the use of social media data for individual level mobility prediction, but only predicts one location in the future. Ashbrook et. al have presented a predictive model which automatically clusters data and uses a Markov model to predict mobility. A total of 7 users (1 during training and 6 for testing) are used in the study \cite{123}. Sadelik et. al have also presented a model which analyzes repetitive mobility patterns of individuals to predict, on an hourly basis, the far out future locations, at a scale of months and years. The model is based on GPS traces from 153 users \cite{70}. Sadilek's study is the closest to ours, in terms of predicting more than just the next location, however both the Ashbrook and Sadilek studies use data from consumer-grade GPS trackers which record movement continuously. Such a strategy is not feasible for data collection from large set of population due to the costly nature of GPS trackers. Moreover, specific to Sadilek's study, to perform long-term predictions, only those datasets can be considered which span extensive time periods. As mentioned by the authors of the study, such datasets are rare and hence would not be possible to replicate using many types of data. Some next place predictor methods are more adaptable to sparse social media data. For example, Gambs et. al have presented an extension to Mobility Markov models \cite{118}, which incorporate n previous locations to predict a user's next location. This work also uses GPS traces collected from 6 individuals at an interval of 1 to 5 minutes \cite{74}. Baratchi et. al propose a hierarchical hidden semi-Markov model to model human mobility. The work uses GPS traces of 165 users collected at intervals as frequent as 5 seconds \cite{112}. A series of methods which can be used to predict individual level mobility patterns are included in Song et. al \cite{134}. The work assesses Markov models, LZ predictors and prediction by partial matching (PPM) predictors. From comparison of next place predictors to performance of our model, we use two versions of the Markov models. The choice was made in line with the fact that, as described in the work, more complex models only showed marginal improvement in prediction capabilities over low-order Markov predictors \cite{134}. We limit the comparison of our model to only Order-0 and Order-1 Markov models given the fact that higher order Markov models require longer matching patterns in the history on an individual's mobility and by nature of sparse social media data, such patterns are infeasible to find and thus a comparison would be inherently disadvantaged. Scellato et. al have proposed a non-linear spatio-temporal prediction framework called “NextPlace” which uses location data and stay durations of individuals to predict their next visit to a significant location in their timeline \cite{136}. The application of the framework is shown on GPS traces and Wi-Fi connectivity data both temporally rich data sources. We also assess the performance of our approach with this method. To perform the comparison, we have to first adapt the method to Twitter data, given that no stay duration information is present in digital traces from Twitter.
+
+%Broadly, social media data has been used to study mobility in certain ways and under certain assumptions. For instance, \cite{104} proposes a method which uses features extracted from an individual's social media network such as location of friends and people with similar Tweet text, to predict an individual's current location. The study focuses only on those Twitter users who both themselves and their friends are extremely active on Twitter, with at least 100 geo-tagged Tweets in 1 month and assumes that once a user Tweets from a location, they remain at that location until they Tweet again. These assumptions and initial conditions restrict the use of this method for situations wherein continuous mobility time-lines are to be inferred. Another study \cite{fiorio2017using}, uses Twitter data of a large set of users to understand short and long term migration patterns at coarse spatial and temporal resolution. While this work provides insight in movement patterns of users at coarse grained resolution, it doesn't approach the problem of predicting individual mobility timelines. Other works which use social media in domain of mobility focus on POI and location recommendation, and are directly applicable to the problem of constructing entire mobility timelines of individuals \cite{}
+
+%Perhaps most relevant to this work, a review of nine social network-based geo-inference methods is in \cite{jurgens2015geolocation}. This work provides insight about the comparative performance of state of the art methods; however these methods, and the evaluation are focused on prediction of the location of a given social media post -- and not filling in an entire timeline. A common thread in each of the cited methods is an assumption that at each point in time, the location data of some community member is available. Thus this goal and their assumptions are not directly in line with the requirement of filling in sparse data timelines, though the approach of using community behavior is still helpful. Thus we also compare our method to one that is more similar and focuses on collaborative behavior for predicting point-of-interest (POI) locations \cite{139}. The method uses behavior of similar individuals and distances between pairs of locations to predict the next POI location of an individual. 
+%The method is specifically designed for location-based social networks such as Foursquare and Whrrl. 
+%A time-dependent version of this approach has been proposed in \cite{139}.  
+%We also use this POI method as a baseline by which to compare the performance of our algorithm.
+%Method to predict individual's location using collective behavior from sparse CDRs has been proposed in \cite{106}. The method predicts a missing location given the next and previous location, limiting the applicability with datasets where multiple consecutive missing locations need to be predicted. Another method, proposed in \cite{alhasoun2016city}, uses sparse CDRs, and utilizes community behavior to predict only one location in future.
+%Other work using collective behavior include Calabrese et. al which proposed a stochastic model to predict an individual's next location based on their own and collective behavior of individuals. The model is then tested on CDRs from 2000 users \cite{56}. The work shows the utility of CDR data for individual-level prediction, but only works for individuals who make frequent calls. Moreover, the model also requires external knowledge about social and geographical types of locations. 
+%A method to capture daily habits of individuals using sparse data has been proposed in \cite{137}. However, the method initially requires training on users with abundant data histories and hence cannot be replicated with data sources such as from Twitter, where both the training and testing datasets are sparse.
+
+
+%In terms of using collective behaviors, Sadilek et. al have used features extracted from an individual's social media network such as location of friends and people with similar Tweet text, to predict an individual's current location. The study focuses on 11,380 users who both themselves and their friends are extremely active on Twitter, with at least 100 geo-tagged tweets in 1 month. \cite{104}. Our work in contrast is based on sparse geo-located data from Twitter where no additional information related to text of a tweet or the social network of a user is available. Moreover, this Sadilek study assumes that once a user tweets from a location, he or she remains at that location until they Tweet again, which cannot be assumed from general social media data sets such as ours. Blumenstock et. al presented a method to predict individual's location using collective behavior when data is scarce \cite{106}. While the work by Blumenstock is close to our aim of using collective behavior to improve prediction, the method only predicts a single missing location given the next and previous location. Moreover, we use data from Twitter in our study which has sparser movement data as compared to CDRs. Other work using collective behavior include Calabrese et. al which proposed a stochastic model to predict an individual's next location based on their own and collective behavior of individuals. The model is then tested on CDRs from 2000 users \cite{56}. The work shows the utility of CDR data for individual-level prediction, but only works for individuals who make frequent calls. Moreover, the model also requires external knowledge about social and geographical types of locations. McInerney et. al have presented a method to capture daily habits of individuals using sparse data. The method uses the assumption that while the spatial patterns of movement between individual's is different, they do share some common temporal patterns \cite{137}. While the strategy performs well in identifying habits of individuals with sparse data sets, the method requires training on users with abundant data histories. Hence such strategy cannot be replicated with data sources such as from Twitter, given that both training and testing datasets are necessarily sparse in our problem. Finally, Ye et. al have presented a method for predicting point-of-interest (POI) locations using collaborative behavior \cite{135}. The method uses behavior of similar individuals as well as distances between a pair of locations to predict the next point-of-interest location of an individual. The method is specifically designed for location-based social networks such as Foursquare and Whrrl. A time-dependent version of this approach has been proposed by Yuan et. al \cite{139}. We also use this POI method as a baseline by which to compare the performance of our algorithm.   
+
+%Our work builds on and incorporates aspects of previous work in order to address, for the first time, the problem of full individual timeline prediction using sparse social media data from Twitter. This work is timely given the increasing prevalence of data sources which are not available at a second or minute resolution, yet are more prevalent than higher resolution ones of which availability can be restricted due to time, labor, cost or other means. Simultaneously, there are increasing applications that require local, sub-city real-world modeling (such as to assess disease spread, traffic patterns or land use) for which data at this resolution and availability is thus useful. Accordingly, we present a method by which to predict the mobility of individuals at 1 and 2 hour intervals. Second, unlike previous work that only predicts an individual's next location, our approach can be used to predict every single missing location from an individual's timeline. To do so, we propose a methodology which computes intermediate locations and assigns weights to probabilities based on the difference in time when the actual location data was sampled and the time the prediction is being made. In essence, to address data sparsity and multiple predictions per user, we combine relevant aspects of existing mobility prediction methods; our approach uses time-dependent forward and backward Order-1 and Order-0 Markov models and incorporates community data into individual location prediction. We also go further and assess the number of similar users needed to improve prediction. This can be pertinent to know when working with sparse data. Third, we also show how the effect of community behavior influences prediction of an individual's mobility during at different times (weekdays versus weekends). Since our method combines elements of existing methods, we expect it would outperform each of these; lastly we compare to each method including a baseline home and work model to assess performance.
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure1_2-embed.pdf}
+\caption{A: Number of included Tweets by day of the week (pink: weekdays, blue: weekends). B: Number of Tweets by hour of day (pink: daytime, blue: nighttime). C: Frequency distribution of total data points per user before filling in the timeline. All graphs include all data from all 3 cities.}
+\label{data_breakdown}
+\end{figure}
+
+\begin{figure}[]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure2-embed.pdf}
+\caption{A\&B: Frequency distribution of number of assigned locations over all values of $k$ (closest hour of week) for all posts per user (A: resolution $r_i$ = 1 hour, B: $r_i$ = 2). C\&D: Frequency distribution of number of assigned locations per user over all values of $h$ (closest hour of day) (C: $r_i$ = 1, D: $r_i$ = 2). All graphs include data from all 3 cities (excluding users who had no tweet in daytime hours). Users fulfilling inclusion criteria are highlighted in pink.}
+\label{data_distrib_k}
+\end{figure}
+
+\section{Methods}
+\subsection{Datasets}
+In order to obtain enough data for training and testing, we used 6 months of publicly available geo-located data from the Twitter API (1st January -- 30th June 2014) for the cities of New York, Washington, DC and San Francisco. We collected all the Tweets containing a `point' geo-location within defined bounding boxes for all three cities. %The Twitter API provides between 1-10\% of the total number of Tweets being made. 
+The resulting data set consisted of 18,164,503 Tweets by 443,945 users from New York City, 3,385,308 Tweets by 125,873 users from Washington, DC and 1,817,411 Tweets by 111,441 users from San Francisco.
+\subsection{Filtering and Preprocessing}
+\subsubsection{Spoofed locations}
+We identified and excluded any Twitter accounts that represented impossible movements based on Tweet locations and times. A threshold speed of 0.5 miles/minute was used to filter out such Tweets, based on previous work outlining realistic movement patterns \cite{79}, and all accounts with more than 5\% of their Tweets violating the above criteria were excluded. 
+%The entire account was excluded because the high number of inconsistent locations indicates that the account holder might be using a location spoofing service.
+A total of 16,582, 3,342 and 2,750 accounts (from each city, respectively) who were removed due to having more than 5\% of their Tweets marked as coming from a spoofed location.
+%, and Tweet locations that did not violate the criteria might still not reflect the correct location from where they were made.
+\subsubsection{Grids}
+We assessed three grid sizes; 1 $\times$ 1, 0.5 $\times$ 0.5 and 0.1 $\times$ 0.1 miles. For each, we assigned every geo-located Tweet in the dataset to a grid. These grid sizes are based on previous research which has identified perception of how large a neighborhood boundary is for temporary movements such as walking (1 mile) \cite{85,127}. %Thus 1 mile is used as the distance required to differentiate “locations”, as would be relevant to an individual. 
+Multiple grid sizes were added to assess the impact of grid size on the performance of the method.
+A total of 841, 143 and 736 grids(grid size= 1 $\times$ 1 miles), 3,364, 572 and 2,944 grids (grid size= 0.5 $\times$ 0.5 miles) and,  84,100, 14,300 and 73,600 grids (grid size= 0.1 $\times$ 0.1 miles) were created for NYC, DC and SF respectively.
+%All Tweets were assigned a grid based on their linked geolocation.
+%by replicating the study with grid sizes of 0.5$\times$0.5 and 0.1 by 0.1 miles.
+\subsubsection{Temporal Sampling}
+Tweet timestamps were adjusted for time zone and daylight savings. 
+%given that daylight saving started during the selected time period, on March 9th 2014. Time zones for the data from all cities were assumed to be the time zones of the assigned cities rather than the individual time zone values present in the profile of each Twitter account. 
+Included Tweets were distributed across all days of the week evenly (Fig. \ref{data_breakdown}A). For each individual present in the dataset we created separate timelines at resolutions of $r_i$ = 1 and 2 hours. Given the time stamp $t$ of a Tweet, and value $r_i$, $k_w := (h,d)_w$, is computed where $k$ is the closest sampled hour at an interval of $i$ hours from the start of the week, $h$ is the closest sampled hour at an interval of $r_i$ from the start of the day, $d$ is the day of the week and $w$ is the week number since the start of the data. For example, for $r_i=1$, the time of a Tweet made at $t=19:05$ on Tuesday would be assigned $k=43$ i.e 24+19 and $(h,d)=(19,2)$ (assuming week starts on Monday). For $r_i=2$, for the same Tweet, $k=22$ i.e. $12+10$ and $(h,d)=(10,2)$. 
+%to the value of $k$ corresponding to 7pm for 1-hour sampling and 8pm for 2-hour sampling on Monday. Assuming the week starts on Sunday, for 1-hour sampling, the 24 hours of Sunday will be assigned values of $k$ from 1 to 24, while for Monday the values of $k$ assigned to the 24 hours will be 25 to 48. Similarly, for 2-hour sampling the values of $k$ assigned to hours on Sunday will be 1 to 12. In cases where Tweets from multiple grids are assigned to a single value of $k_w$, the location linked to time $k_w$ is the location grid which had most number of Tweets from that user at $k_w$.
+\subsubsection{Stay Duration}
+%Unlike GPS tracker data which is collected at small intervals, 
+%Geo-located Twitter data is only collected when an individual generates a Tweet with a linked geo-location. This means that a person can be present in the same location for hours, but only Tweets once or twice from said location. To cater for this, 
+To estimate the stay duration, we interpolated data points from users who made consecutive tweets from the same location within a 6-hour or shorter time period. The maximum value of 6 hours for the interpolation was a conservative estimate chosen based on research showing how long people generally remain in their most visited locations, and that an individual generally spends most of their time in most visited locations \cite{141,125,142}.   
+%Fig. 1C shows the frequency distribution of the number of users versus their available hourly sampled data points for the entire period of the dataset after interpolating stay location.
+\subsubsection{Home Location}
+%As described in other work on human mobility, especially in cities, identifying an individual's home location is an integral part of modeling their mobility \cite{75}. This is because
+%%%%keep below but add ref right after sentence..
+Individuals are more likely to stay at their home location for longer periods and individuals generally don't change locations at night time \cite{hossain2016precise}.
+%\cite{75,hossain2016precise}
+Consistent with previous studies and Fig. \ref{data_breakdown}B, we consider a location $x$ as the home location of an individual on a day of week $d$, if the individual most frequently tweets from location $x$ between 10 pm of the day of the week $d$ and 8 am of the day of the week $d$+1. Given the sparse nature of the data, for days of the week wherein an individual had no Tweets between 10 pm and 8 am, the home location was assigned where they most frequently Tweeted from between 10 pm and 8 am, irrespective of day of the week. We refer to points in an individual's timeline with location information, either originally from a user or interpolated from a home or stay duration, as \emph{assigned locations}.
+\subsubsection{Personal vs Non-personal accounts}
+A Twitter account, e.g. @SearchAmerican, that belongs to an organization, as opposed to an individual, is likely to be used by multiple individuals in the organization and hence does not represent the movement patterns of a single individual. To examine the distribution of personal vs. non-personal accounts in our dataset, we used Amazon Mechanical Turk (AMT) labelling on 7,000 randomly selected accounts. Each account label was manually annotated twice by AMT workers as either personal or non-personal accounts. Accounts with conflicting labels were annotated a third time through AMT and the maximum vote used. 98\% of the 7000 randomly selected accounts were identified as personal accounts. Cohen's kappa score of the annotators was 93.0\% \cite{78}. Given the overwhelming majority of accounts were identified as personal, it was assumed that most non-personal accounts must have been removed during the `spoofed location' filtering stage. The 2\% non-personal accounts from the 7,000 set were removed from the study but it was deemed unnecessary to label the remaining accounts. After this stage, no information (e.g. the Twitter handle) which could link back to an individual Twitter account holder was retained. 
+
+\subsubsection{Description of Included Users}
+%After exclusion of accounts with infeasible location movements, we further excluded users who didn't pass a threshold number of Tweets. 
+%%%%%Should the below instead emphasize that the relaxed inclusion criteria were to include as many users as possible given the sparse nature of the data?
+We define a relaxed inclusion criteria to ensure that the performance of all methods is being tested on users with sparse timelines. From here onward we define two notations: $x_{k_{w}}(u)$ is the assigned location for a user $u$, at time $k_w$, with $k_w$ as above.  $k_w$ can also be interchangeably written as $(h,d)_w$, with $h$, $d$ and $w$ as above, or as $q$, which represents the index of $k_w$ in the sampled timeline. Inclusion criteria were defined as follows: given the timeline of a user, the user must have at least 1 assigned location for each $h$ during daytime hours (8am-10pm;non-nighttime hours as defined in the section "Home Location"), irrespective of $d$ and $w$. This means that at a resolution of $r_i$ = 1 hour, all users were included in our analysis who, after interpolation of stay duration had at least 15 assigned location data points (8am-10pm) in the entire duration of the dataset over all distinct $h$. For $r_i$ = 2, the number was 8 assigned location data points.
+This resulted in 29,491, 4,947 and 1,119 users ($r_i$ = 1) and 45,710, 8,083 and 2,395 users ($r_i$ =2) from New York, Washington, DC and San Francisco respectively.
+Defining a relaxed inclusion criteria based on distinct $h$ instead of distinct $k$ enabled us to include orders of magnitude more users (Fig. \ref{data_distrib_k}) and allowed us to include up to 45\% user (in NYC) who made a tweet during daytime hours. The above selected users had on average 82.8\% ($r_i$ = 1) and 72.0\% ($r_i$ = 2) of their daytime timelines with no assigned location.
+%Figs. 2(A and B) show the frequency distribution of users (with at least 1 location value) by number of assigned locations over all $k$. Figs. 2(C and D) similarly show the frequency distribution of users (with at least 1 location value) for varying numbers of assigned locations over all $h$. Despite the potential opportunity of using social media to understand mobility and context, the amount of Twitter data with linked location is low (as evident from Fig. 2 and the amount of users excluded from the study). This is a major challenge approached by this work. One component of our strategy towards this, is by considering times independent of day of the week, via users who have location values present at each $h$. In contrast, if we had only considered the users who had a location value present at each $k$, the resulting number of users would have been an order of magnitude lower (Fig. 2). 
+%In sum, for users who fulfill the inclusion criteria, and after interpolating home and stay locations, our approach then allows us to include data in the algorithm from users who have as sparse as 4 Tweets (that fulfill all of the above criteria) in the entire 6 month dataset
+
+
+\subsection{Individual Timelines}
+In this section, we first discuss prediction of a missing location in a user's timeline at time $k$, if location information of the user is available at both $k+1$ and $k-1$.
+As described in earlier work, the movement of individuals is not entirely random and certain features can be extracted to predict an individual's location based on his past behavior \cite{57}. Moreover, people often move in groups, and individuals with similar interests follow similar movement patterns \cite{81}. Accordingly, here we model the behavior of individuals as a combination of: i) personal behavior represented as (subscript $I$), and ii) community behavior (subscript $C$). Personal behavior is further modeled using three behaviors: i) Next Location subscript $(I,a)$, ii) Previous Location subscript $(I,b)$, and iii) Independent Location subscript $(I,c)$. Each of these three behaviors are further treated as either i) day of the week and hour of the day specific (superscript $WS$), ii) workday (weekday) or non-workday (weekend) and hour of the day specific (superscript $RS$), and iii) only hour of the day specific (superscript $HS$). These three stratifications were created because of the extremely sparse nature of the dataset in which we rarely observe users who have at least 1 location value present for all days of the week and hours of the day. 
+%Next Location and Independent Location prediction, which are day of the week and hour of the day specific, have been previously described \cite{56}. Let us again define the location of a user $u$ at sampling time $k_w$ $:=$ ${(h,d)}_w$   as $x_{k_w}(u)$ $:=$ $x_{(h,d)_w}(u)$. Let us also define the time period (for day of the week and hour of the day specific behavior) T after which an individual repeats his behavior, W as the total number of weeks in the dataset and K as the total number of sampled intervals k during 1 time period T. W is defined at a weekly resolution as a higher (daily) resolution may lead to over-generalization of behavior, and there is not enough data to consider a monthly resolution. This periodicity is also intuitive as mobility patterns of individuals generally are dependent on and vary based on the day of the week. The following sub sections show the equations used to compute Next Location, Previous Location and Independent Location probabilities. We define
+For the following section we define: any $P$ represents a list of locations and their corresponding probabilities for a given user at a given time. $P(x_{k_w}==j)$ thus represents the probability corresponding to location $j$ at time $k_w$, and $P(x_{k_w})$ represents the list of all possible locations and their corresponding probabilities at time $k_{w}$. 
+
+\subsubsection{Next Location} 
+%Given that the location $x_{{(k+1)}_w}(u)$ is missing from an individual's timeline, and given the location $x_{k_w}(u)=i$, we calculate the conditional probabilities of all the possible locations of a user $u$ at time $(k+1)_w$. This probability is calculated by taking into account that people often follow specific patterns of mobility. For example, in the evening at 7 pm, given that an individual is at a grocery store, the next location of an individual will likely be his home. Given that the same individual is at home at 7 pm, the individual could either choose to stay home or to go out (e.g. to a restaurant or bar). Given that the time period T is assumed to be 1 week, as contended in previous work, these conditional probabilities are specific for each sampling time on a given day and day of the week, irrespective of the date \cite{56}. Next we extrapolate the previous example wherein on a weekday, given an individual's 8 am location is at home, the next location is more likely to be at work, while in contrast on a weekend, the next location after being at home at 8 am is likely to still be at home. Thus, the day of the week and hour of the day specific probability of a location j being the next location, $P_{(I,a)}^{WS}$ $x_{(k+1)_{w'}}=j$ , given the location at $x_{k_{w'}}=i$, is given as:
+%
+%The work-day or non-workday and hour specific probability of a location $j$ being the next location, $P_{(I,a)}^{RS} (x_{(h+1,d')_w}=j)$ , given the location at $x_{(h,d')_w}=i$, is given as:
+%
+Given the location $x_{{(k+1)}_w}(u)$ is missing, and given the location $x_{k_w}(u)=i$, we calculate the conditional probabilities of all the possible locations of a user $u$ at time $(k+1)_w$. This probability is calculated by taking into account that people often follow specific patterns of mobility. For example, in the evening at 7pm, given that an individual is at a grocery store, the next location of an individual will likely be his home. Given that the same individual is at home at 7pm, the individual could either choose to stay home or to go out (e.g. to a restaurant or bar). Given that the time period is assumed to be 1 week, as contended in previous work, these conditional probabilities are specific for each sampling time on a given day and day of the week, irrespective of the date \cite{56}. 
+%Next we extrapolate the previous example wherein on a weekday, given an individual's 8 am location is at home, the next location is more likely to be at work, while in contrast on a weekend, the next location after being at home at 8 am is likely to still be at home.
+Then, for all possible locations $j$, $P_{(I,a)}^{WS} (x_{(k+1)_{w'}}=j)$ of a user, given $x_{k_{w'}}=i$, is defined as: 
+\begin{small}
+\[
+\frac{\sum\limits_{w} (x_{(k+1)_w}==j | x_{k_w}==i)} {\sum\limits_{w} (x_{k_w}==i)}
+\]
+\end{small}
+For ${RS}$ we calculate similar proportions, but relax the conditions by additionally accounting for days which are of the same type, i.e workday or non-workday, when calculating the proportions. $P_{(I,a)}^{RS} (x_{(h+1,d')_{w'}}=j)$ is thus defined as:
+\begin{small}
+\[
+ \frac{\sum\limits_{w} \sum\limits_{d=DT(d')} (x_{(h+1,d)_w}==j | x_{(h,d)_w}==i) } {\sum\limits_{w} \sum\limits_{d=DT(d')} (x_{(h,d)_w}==i)}
+\]
+\end{small}
+where $DT(d')$ returns the list of type of days i.e weekdays or weekends, as $d'$. $P_{(I,a)}^{HS}$ completely removes the condition of the proportion being specific to the day of the week (instead of $d=DT(d')$, we consider all $d$).
+
+\subsubsection{Previous Location} 
+As a reciprocal of Next Location prediction wherein we used $x_{k_w}$ to predict $x_{(k+1)_w}$, here we predict $x_{k_w}$ conditioning over the location value at $x_{(k+1)_w}$. 
+%$P_{(I,b)}^{WS}$ of a user being in any location $j$ at time $k := (h,d)$, given the user is at location $i$ at time $k+1 := (h+1,d)$, is defined as the proportion of times the user was at location $j$ at time $k$, if the user was at location $i$ at time $k+1$, in the same week. 
+$P_{(I,b)}^{RS}$ and $P_{(I,b)}^{HS}$ are calculated similarly using relaxed conditions of day of the week, as defined for $P_{(I,a)}^{RS}$ and $P_{(I,a)}^{HS}$.
+
+\subsubsection{Independent Location}
+Several locations which an individual visit are specific to the day and time regardless of where the individual is coming from or where they plan to go next. For example, for a weekly meeting or a class at 11am on Tuesday, an individual will be in the location of the meeting or the class irrespective of his previous or next location. To incorporate these patterns, we calculate probabilities for ``Independent Location'': the probability of a user being in any location $j$ at time $k := (h,d)$, $P_{(I,c)}^{WS}$. This is defined as the proportion of times the user was at location $j$ at time $k$, in the dataset. $P_{(I,c)}^{RS}$ of a user being in any location $j$ at time $k := (h,d)$ is defined as the proportion of times the user was at location $j$ during hour $h$ and days of the week similar to $d$ i.e (weekday or weekend). And, $P_{(I,c)}^{HS}$ is defined as the proportion of times the user was at location $j$ during hour $h$ in the dataset.
+%%%%The above wording is confusing "week of similar type?"
+
+Combining lists of all probabilities in the individual's ($WS$) behavior gives: 
+\begin{small}
+\[
+P_I^{WS}=(\lambda_a*P_{(I,a)}^{WS}+\lambda_b*P_{(I,b)}^{WS}+P_{(I,c)}^{WS})/3
+\]
+\end{small}
+where $\lambda_a$ and $\lambda_b$ are information loss factors defined later in the Intermediate Location Computing section. 
+%Resulting probabilities are summed for each location to create an overall probability list for an individual's possible location (for a specific time):
+Probabilities of visit to each location, from all behaviors, are summed to generate a single list of locations and their corresponding probabilities:
+\begin{small}
+\[
+P_I= (P_I^{WS}+P_I^{RS}+P_I^{HS}) / 3
+\]
+\end{small}
+
+\subsection{Community Behavior}
+Individuals with similar interests, or those working or living in the same demographic have a higher chance of visiting similar locations \cite{56}. Hence, we maximize the use of the data by also including information about individuals who have shown to follow similar mobility patterns. For each individual, we identify individuals who have similar mobility patterns, via a similarity factor. This factor, $s(u1,u2)$, is defined as the probability that another individual $u2$ will be in the same location as the individual under consideration $u1$ at any given time: 
+\begin{small}
+\[ 
+\frac{\sum_w \sum_k (x_{k_w} (u1)==x_{k_w} (u2))} { \sum_w \sum_k (!NULL(x_{k_w} (u1)) \& !NULL(x_{k_w} (u2)))}
+\]
+\end{small}
+Using the similarity factor defined above, we calculated community behavior (probability list for locations at a time $k$) using the top $m$ users in the dataset with the highest similarity factor for a given individual via:
+\begin{small}
+\[
+P_C(x_{k_w}=j)= \sum_{u=1}^m s(u)*(x_{k_w}(u)==j)
+\]
+\end{small}
+Combining individual and community behavior then gives: 
+\begin{small}
+\[
+P(x_{k_w}=j)= (1-\beta_k)*P_I(x_{k_w}=j) + \beta_k*P_C(x_{k_w}=j) 
+\]
+\end{small}
+where $\beta_k$ defines the hour and day of week specific effect of community behavior on an individual. To account for varying behavior of an individual during a week, we generated separate lists of similar users for weekdays and weekends. We also examined a range of values for $m$ (0, 1, 2, 5, 10, 20, 50), to identify the minimum number of similar users for maximizing prediction accuracy. 
+
+\subsection{Intermediate Location Computing}
+Given the sparse nature of social media, in most instances there are multiple consecutive missing location data points in an individual's timeline. Thus the issue of predicting location at $k_w$ if either or both $(k+1)_w$ and $(k-1)_w$ are missing will arise. Hence we introduce the concept of Intermediate Location Computing. For simplicity, we will only define the procedure to identify the intermediate location at sampled time $(k-1)_w$ (which is used to calculate of $P_{(I,a)}^{WS}$). A similar approach can be used to identify the location at time $(k+1)_w$ (which is used to calculate $P_{(I,b)}^{WS}$).
+
+
+%Our goal is to fill in the missing values in the timeline of a user by predicting the location at time $k_w$ using the location at time $(k+1)_w$ and $(k-1)_w$, the historically visited locations and the community's behavior. 
+%in most cases, for a given date, location data present is only the home location of the individual, which we identified earlier. Indeed, the problem of predicting locations at where there are consecutive missing values is a difficult challenge. This is because to predict the location at time k_w we require the location of the user at time 〖(k-1)〗_w and 〖(k+1)〗_w. And to predict the location at time 〖(k+1)〗_w or 〖(k-1)〗_w we require the location of the user at k_w. Thus, to predict the location at time k_w which has either 〖(k+1)〗_w or 〖(k-1)〗_w location data missing, we introduce the concept of Intermediate Location Computing.
+
+Broadly, our problem is that a location exists at time $(k-n)_w$ such that no location data for an individual is present between $k_w$ and $(k-n)_w$. To address this, we use location data at $(k-n)_w$ to iteratively predict intermediate locations of the individual at times $(k-n+1)_w$ until we reach $(k-1)_w$. We define the function $Inter(L1,L2)$, which for a specific time point, takes in two lists $L1$ and $L2$, and returns the location which has the maximum probability in list $L1$, and if no location exists, returns the location with maximum probability in list $L2$. Here $L1$ is $P_{(I,a)}$ and $L2$ is $P_{(I,c)}$. In simple terms, at each step, we first identify the most probable location using Next Location. If no location data exists, we resort to identifying the most probable location using Independent Location.  
+%We use the function $Inter(P_{(I,a)}^{WS} (x_{(k-n+1)}_w =j),P_{(I,c)}^{WS} (x_{(k-n+1)}_w )=j))$. 
+
+%We define the function Inter(L1,L2), which takes in two functions L1 and L2, and returns the location which has the maximum probability in function L1. If no such location exists, then it returns the location which has the maximum probability in function L2.   
+
+%Inter(L1,L2)={█( max_loc(L1)  if max_loc(L1)  !=NULL   @max_loc(L2)   otherwise)┤
+
+%where max_loc(L1), returns the location corresponding to the highest probability computed from the function L1. 
+%Fig. 3 shows a visualization of how intermediate locations are calculated. Fig. 3A shows the timeline of an individual, during a given week, showing available location data. Using this timeline, we plan to calculate the location at time k_w (shaded box). Using 〖(k-3)〗_w we predict the intermediate location at 〖(k-2)〗_w by using Inter(P_(I,a)^WS (x_((k-2)_w )=j ┤|  x_((k-3)_w )=73),P_(I,c)^WS (x_((k-2)_w )=j)). Similarly, using 〖(k+2)〗_w we predict the intermediate location at 〖(k+1)〗_w by using Inter(P_(I,b)^WS (x_((k+1)_w )=j ┤|  x_((k+2)_w )=25),P_(I,h) (x_((k+1)_w )=j)). Note the use of P_(I,a)^WS in calculation of intermediate location at 〖(k-2)〗_w while the use of $P_{(I,b)}^{WS}$ for calculation of the intermediate location at 〖(k+1)〗_w. The calculated intermediate locations are shown in red in Fig. 3B. We then calculate the intermediate location at  〖(k-1)〗_w using Inter(P_(I,a)^WS (x_((k-1)_w )=j ┤|  x_((k-2)_w )=71),P_(I,c)^WS (x_((k-1)_w )=j)). Fig. 3C shows the updated timeline after the second iteration.
+
+Given that locations at $(k+1)_w$ and $(k-1)_w$ predicted using this method are only probable locations and successive predictions will decrease certainty, we multiply by an information loss factor $\lambda$ to account for loss in information in calculating intermediate locations. This factor $\lambda$ is defined as: $\lambda=(1-\alpha)^{(n-1)}$, where $n$ is the number of steps required to reach the nearest available point with an available location, and $\alpha$ is a constant information loss on each step. 
+
+This approach to identify loss in information in sequential predictors has been used in the past, particularly in dynamic belief models \cite{140}. The basic idea is that at each sequential prediction there is a probability of $\alpha$ that the prediction will be incorrect. Iterating this for a data point present $n$ steps away makes the overall probability of correct prediction $(1-\alpha)^{(n-1)}$. In the example given in Fig. \ref{ILC_fig}, when finally calculating the location at $k_w$, given that the value of $n$ for the left side is 3, $P_{(I,a)}^{WS}$ is multiplied by $(1-\alpha)^{(3-1)}$. Similarly given that $n$ for the right side is 2, $P_{(I,b)}^{WS}$ is multiplied by $(1-\alpha)^{(2-1)}$. The example in Fig. \ref{ILC_fig} demonstrates the steps performed to compute the intermediate locations for ($WS$). We use the same method to calculate intermediate locations for ($RS$) and ($HS$) probabilities.
+
+The complete method to construct complete mobility timeline of a given user is summarized algorithm \ref{algo}. In the algorithm, as defined above, we replace $k_w$ with $q$, to represent the index of each time step in the timeline. Further given a timeline $T$ of an individual, the location $x_q$ is the $q$ element in $T$, i.e $T[q]$. 
+%In short, for all missing locations $x_q$, we first perform a forward predicting temporary values at $x_q$ using $x_{q-1}$. Then we perform a backward pass, again predicting temporary values of missing location $x_q$, but this time using $x_{q+1}$. Then for predicting a missing value at $x_q$, if either $x_{q-1}$ or $x_{q+1}$ is also missing, we use the temporary calculated values to predict $x_q$, but multiply the prediction with a loss factor to account for the temporary nature of value. 
+
+\begin{algorithm}
+\caption{Constructing complete mobility timeline using ILC}
+\label{algo}
+\begin{flushleft}
+\textbf{Input}: Timeline $T$ of user $u$, community behavior, $P_C$, of similar users at each time step, effect of community behavior $\beta$ and $\lambda_a$ and $\lambda_b$ for each $q$\\
+\textbf{Output}: Complete timeline $T_{complete}$
+\end{flushleft}
+\begin{algorithmic}[1]
+
+\State $T_{complete} \leftarrow T$
+\\
+\For {each behaviour $S$ in $[WS,RS,HS]$}
+    \State $T_a^S \leftarrow T_b^S \leftarrow T$
+    %\State $i^a \leftarrow 1$, $i^b \leftarrow length(T^b)$
+    \For{ $q$ in $1:length(T_a^S)$ }
+        \If {$NULL(T_a^S[q])$}
+        \State $T_a^S[q] \leftarrow inter(P_{I,a}^S{(x_{q}|x_{q-1}=T_a^S[q-1])},P_{I,a}^S(x_{q}))$
+        
+        
+        \EndIf
+    
+    \EndFor
+    
+    \For{ $q$ in $length(T_b^S):1$ }
+        \If {$NULL(T_b^S[q])$}
+        \State $T_b^S[q] \leftarrow inter(P_{I,b}^S{(x_{q}|x_{q+1}=T_b^S[q+1])},P_{I,a}^S(x_{q}))$
+        
+        
+        \EndIf
+    
+    \EndFor
+    
+    
+\EndFor
+\\
+\For {each $x_q$ in $T$}
+    \If {$NULL(x_q)$}
+        \For {each behaviour $S$ in $[WS,RS,HS]$}
+            \If{$NULL(x_{q-1})$}
+                \State $P_{I,a}^S(x_q) \leftarrow P_{I,a}^S{(x_{q}|x_{q-1}=T_a^S[q-1])}$
+            \Else
+                \State $P_{I,a}^S(x_q) \leftarrow P_{I,a}^S{(x_{q}|x_{q-1}=T[q-1])}$
+            \EndIf
+            
+            \If{$NULL(x_{q+1})$}
+                \State $P_{I,b}^S(x_q) \leftarrow P_{I,b}^S{(x_{q}|x_{q+1}=T_b^S[q+1])}$
+            \Else
+                \State $P_{I,b}^S(x_q) \leftarrow P_{I,b}^S{(x_{q}|x_{q+1}=T[q+1])}$
+            \EndIf
+            
+            \State $P_I^{S}(x_q)=(\lambda_a*P_{(I,a)}^{S}(x_q)+\lambda_b*P_{(I,b)}^{S}(x_q)+P_{(I,c)}^{S}(x_q))/3$
+        \EndFor
+        \State $P_I= (P_I^{WS}(x_q)+P_I^{RS}(x_q)+P_I^{HS}(x_q)) / 3$
+        \State $T_{complete}[q] \leftarrow arg.max((1-\beta_q)*P_I(x_q) + \beta_q*P_C(x_q)) $
+    %Return $sum$
+    \EndIf
+\EndFor
+
+Return $T_{complete}$
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure3_2.jpg}
+\caption{Intermediate Location Computing algorithm illustration. A: Timeline of an individual for a week $w$, between $k-3$ and $k+2$. Location data for the individual is missing for $k-2$ to $k+1$. Shaded area shows the location to be predicted. B: Intermediate locations (red) calculated after first iteration. C: Intermediate locations after second iteration. D: Effect of information loss on $P_{(I,a)}^{WS}$ and $P_{(I,b)}^{WS}$.}
+\label{ILC_fig}
+\end{figure}
+
+
+
+
+
+
+%\subsection{Impact of Community Behavior}
+%As has been discussed in other mobility prediction efforts, individuals tend to move in groups that follow similar patterns, and thus including movement patterns of the community can improve prediction efforts for an individual's timeline \cite{56,120,80,104}. 
+%As we are working with a sparse data set, it is important to identify the impact of community data as the amount of data varies. 
+%We assess the minimum number of individuals, m, such that further increasing m does not significantly improve accuracy of the model. We test this relationship in two separate models. The first model takes advantage of both individual and community behavior. The second model uses only the behavior of community to construct an individual's entire timeline. For both of these models, we test the accuracy of predicting the correct location on the test set (described in 4.6) using a range of values of m = (0, 1, 2, 5, 10, 20, 50).
+
+\subsection{Training and Testing Data and Optimization}
+To select the training data for the entire prediction we, randomly and uniformly across all distinct values of $k$, sampled 70\% of the data from each user. It should be noted that the test set contains the 30\% location data of each user which was not used in calculating the conditional probabilities or training the model. Further, the data spans only the daytime hours wherein an individual is changing location most frequently. The performance of the model was calculated only on this test data as not to bias the performance of the method towards sampled times where an individual is static (nighttime hours). 
+
+Using the training data, we calculated $P_I$ and $P_C$ lists for every individual, at each time resolution. These probabilities are then used to optimize the value of $\beta_k$ and $\alpha$. For simplicity, we optimize a fixed value independent of a user or a sampling time for $\alpha$, but $\beta_k$ is user, day of the week and hour of the day specific as we would expect the contributions of community behavior to vary at different times and for different people. To select the optimal values of $\beta_k$, 
+%for a given day and hour for an individual, with the value of $\alpha$ fixed,
+we vary $\beta_k$ from 0 and 1 ( intervals of 0.05) and select the $\beta_k$, for a given $k$, that maximizes prediction accuracy on the training data.
+%find the optimal influence of community behavior on an individual's mobility pattern during that hour and day of the week. We predict every location in the training set by selecting the location with maximum probability, while iteratively varying the values of $\beta_k$ and recording the performance using the evaluation metrics described in the next section. At the end, we select the values of $\beta_k$ that maximize prediction accuracy on the training set for an individual and use them to predict the test set. 
+$\alpha$ was optimized in a similar way, but only using $P_I$ (inclusion of $P_C$ would have resulted in concurrent optimization of both $\alpha$ and $\beta_k$). The value of $\alpha$ as 0.1 performed well on the training set, and was used in study.
+%A similar procedure is repeated on a subset of randomly selected 1,000 users from all cities and both $r_i$ for values of $\alpha$, and the best value of $\alpha$ is identified for the entire analysis.
+
+%\subsection{Weekday and Weekend Behavior}
+%Mobility patterns of an individual can be affected differently by community behavior on weekdays and on weekends \cite{81}.  This could be since on weekdays individuals are more likely to follow a more fixed routine as compared to weekends. This has implications for our algorithm because the closest matching individuals for a given individual could differ between weekdays and weekends. To identify if the effect of community behavior varies across weekdays and weekends, we generate separate lists of closest matching individuals for weekdays and weekends, and estimate the values of $\beta_k$ separately for weekdays and weekends.
+
+%\subsection{Optimization}
+%There are two unknown parameters in the algorithm, $\alpha$ and $\beta_k$. While the information loss variable $\alpha$ takes a fixed value independent of a user or a sampling time, $\beta_k$ is user, day of the week and hour of the day specific. To select the optimal values of $\beta_k$, for a given day and hour for an individual, with the value of $\alpha$ fixed, we vary $\beta_k$ from 0 and 1 at intervals of 0.05 to find the optimal influence of community behavior on an individual's mobility pattern during that hour and day of the week. We predict every location in the training set by selecting the location with maximum probability, while iteratively varying the values of $\beta_k$ and recording the performance using the evaluation metrics described in the next section. At the end, we select the values of $\beta_k$ that maximize prediction accuracy on the training set for an individual and use them to predict the test set. A similar procedure is repeated on subset of all timelines, for different values of $\alpha$ and the best value of $\alpha$ is identified for the entire analysis.
+
+%\subsection{Outcome}
+%Given the scope of our study, and the applications described in the introduction, we are concerned not only with a single predicted location, but also a list (vector) of probable locations. In applications such as models that predict disease transmission and incorporate individual-level mobility, disease risk at any given location does not take a fixed value for a predicted location, but rather is described by a set of probabilities assigned to each location. This probabilistic approach thus returns a list of location ordered based on the highest to least probability. We then calculate prediction accuracy of the intermediate location algorithm via a) the actual location is the most probable location returned by the model (Top 1) and b) the actual location is amongst the top 3 most probable locations returned by the model (Top 3).
+
+\subsection{Evaluation Versus Baseline Models}
+For fair comparison and to ensure that the variation in performance is only due to the inference power of the models and not due to variation in training data, all baseline models were trained using the same training data for each user (post processed form of data) as used for ILC, and the performance of the models was tested on the same test set. %Users' data was preprocessed and filtered, and training and test data sets were as described above, and the results was consistently used for training and testing all models.
+
+\subsubsection{Home-Work location Model}
+%Human mobility behaviors largely consists of a combination of periodic behavior and deviations from the periodic behavior for shorter periods of time. 
+It has been shown that periodic behavior accounts for up to 70\% of an individual's movement \cite{133}. Given that the periodic behavior 
+%is much easier to predict and 
+%encompasses a large part of an individual's movement, 
+Hence, the first baseline model 
+%for evaluating the performance of the proposed algorithm 
+assumes users follow a simple periodic behavior, switching between two locations: their inferred home and work locations. Using the training dataset, we computed and assigned a single home (nighttime) and a work (daytime) location for each individual by identifying the most frequent location a user is present in
+%. The work location for an individual is calculated by identifying the location an individual is most frequently present in 
+between 10pm and 8am, and between 8am and 10pm.
+%while the home location is calculated by identifying the most frequent location between 10 pm and 8 am during the entire period of the dataset. Having computed the home and work location, the model assumes that the individual will be at the work location every day between 8 am and 10 pm and at home location between 10 pm and 8 am.
+
+\subsubsection{Markov Models}
+Markov models have been widely used to predict individual level mobility patterns \cite{112,134}. An Order-0 Markov model
+%work similar to the Independent Location computation used in our proposed algorithm; it 
+identifies the most frequent location a user is in during a given hour of the day, regardless of where the user came from or is going\cite{134}.
+%Given a set of location data for a user for a given day of the week and hour of the day, the model identifies the most probable location during that time and day of the week . 
+The Order-1 Markov model, 
+%is similar to Next Location computation used in our proposed method. G
+given the location $x$ of an individual at time $k$, 
+%the model 
+%identifies all instances in the history of the individual when the individual was in the same location $x$ during the same time and day. The model then 
+identifies the most frequent location the individual visits at time $k+1$ if they were at $x$ during time $k$. Due to sparsity of data, multiple missing locations are predicted iteratively.
+i.e. each subsequent location at $k+n$ is predicted using the previously predicted location at $k+n-1$.
+%Location at time t+1 is predicted using location at time t, and location at time t+2 is predicted using the predicted location at time t+1 and so on.
+For fair comparison, we use a fall-back version for both Markov models which first computes the ($WS$) likelihoods. If no location data exists, the model falls back to ($RS$) likelihood, and then to ($HS$) likelihood. 
+
+%\subsubsection{Order-1 Markov Model}
+%The Order-1 Markov model is similar to Next Location computation used in our proposed method (section 4.2.1). Given the location of an individual x at time t on a given day of the week, the model identifies all instances in the history of the individual when the individual was in the same location x during the same time and day. The model identifies the most probable location the individual was at time t+1 given the previous location at time t was x. A mathematical description of the model is in section 4.2.1. Like the Order-0 Markov model, for fair comparison we use the fall-back version of the Order-1 Markov model. Multiple missing location, due to the sparsity of the data are predicted iteratively. Location at time t+1 is predicted using location at time t, and location at time t+2 is predicted using the predicted location at time t+1 and so on.
+
+\subsubsection{Collaborative Point-of-Interest Recommendation Model}
+The Point of Interest (POI) recommendation model was initially presented in \cite{139}, to recommend locations of interests of individuals using data from Location Based Social Networks (LBSNs). 
+%A time dependent version of the model was later proposed by Yuan et. al \cite{139}. 
+The model, in addition to using geographical distance between locations, first identifies close users both based on the social network (friends/followers) of an individual as well as those who follow similar movement patterns, and uses their location to predict the individuals location. 
+%The work concludes that locations of users with similar movement patterns and geographical distances between locations are good predictors, while locations of users in an individual's social network do not have strong predictive power. 
+In line with the conclusion of the original work, that social ties are not strong predictors, and given that we are not assuming that the location data for the social network of individuals is available, we model the movement of an individual using the geographical distances between locations and location data of users who follow similar movement patterns.  
+%baseduses user-based collaborative filtering, friends-based collaborative filtering and geographical influence to predict point of interest recommendations for a user. For our analysis, we use user-based collaborative filtering and geographical influence only given the fact that we did not have record of entire timelines of every friends in the social network of users in our study. This relaxation in the implementation was deemed appropriate given that Ye et. al concluded that the strength of social ties do not reflect the similarity of check-in behaviors amongst users in LBSNs. Moreover, unlike in the original study, wherein the goal is to recommend a list of POIs irrespective of time, the context of our study is to predict the location of an individual at each hourly time intervals. Hence we extend the user-based collaborative filtering to incorporate time as proposed by Yuan et. al. The time dependent version of user-based collaborative filtering is similar to "Community Behavior" used in our model (section 4.3). 
+Geographical influence is modelled based on a power-law distribution between successive data points, while location of similar users is calculated similar to the community behavior part of our method. 
+%For our study, we calculate distances between successive data points in the sampled time intervals in the training set and fit a power-law distribution. Denoting the user based collaborative filtering as $S_t^u$, geographical influences as $S_t^j$ and weight of the geographical influence as γ (the original paper refers to it as β), the final model optimizes the value of $\gamma$ on the training set and uses $S_t^u$, $S_t^j$ and $\gamma$ to make the prediction. Given that our goal is to predict every missing data point in the timeline, we iteratively predict location at time t+1 using the location data at t and then use the predicted location at t+1 to predict location at t+2 and predict t+n+1 using t+n.
+
+\subsubsection{NextPlace: Spatio-Temporal Non-linear Model}
+This spatio-temporal non-linear ``NextPlace'' prediction model uses a non-linear framework for predictions and unlike Markov models, which predict the next location at time $k+1$ using historical movement patterns, or the community based methods, which use location data of similar users, 
+%using location information from time [t-n, t-n+1 . . . t] 
+uses the history of trips to the same location to predict when an individual will be in the same location the next time. \cite{136} 
+%More formally, given a timeline containing tuples of [(startt-n, stayt-n),. . . ,(startt-1, stayt-1) ,(startt, stayt)], for a given location, where start represents the starting time of the trip and stay represents the stay duration, the closest matching patterns in a user's history are identified. 
+The method first identifies the start time and stay duration of each trip, then embeds the timeseries in a multidimensional space by adding multiple instances of the timeseries with delays to account for non-linearity. Then, the start times and stay durations of the user's next visit are averaged to predict when and for how long the next visit to the location will happen. In our implementation, we used the delay as the smallest temporal unit in our study (i.e 1 and 2 hours for $r_i$=1 and 2). Given the sparsity of data, we define the start time when an individual makes a tweet from a location, and stay duration is either inferred as described in the preprocessing section of paper, or assumed to be either 1 or 2 hours based the value of $r_i$.
+
+%Then, the start times and stay durations of the user's next visit to the location i.e (startt+1, stayt+1) are averaged to predict when and for how long the next visit to the location will happen. The model also incorporates delayed embedding to model non-linearity. The timeseries data is first embedded in an q-dimensional space by defining an appropriate delay v and then creating a delay vector reconstruction for the timeseries value. We choose the value of parameter q (larger q corresponds to longer history of visits to same location being considered) in the model as 1, given that due to sparsity of data, multiple instances of long histories for each location do not exist. Based on the choice made in Scelleto et al., we set the value of the delay factor parameter v to 1 (i.e 1 hour for $r_i$=1 and 2 hour for $r_i$=2). Details on parameter q and v can be found in the original paper \cite{136}. Unlike GPS tracker and Wi-Fi connectivity data, there is no inherent stay duration in Twitter GPS traces. Given the preprocessing of data (described in section 4.1) was performed before application of all models, the stay duration for users who made multiple Tweets from a single location with less than a 6 hour interval between those Tweets, was assumed to be the difference in the time between the Tweets. For remaining data points, the stay durations were assumed to be 1 and 2 hours for $r_i$=1 and 2 respectively.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.7\columnwidth]{figures/rnn_architecture.jpg}
+\caption{Architecture of Recursive Neural Network.}
+\label{RNN_fig}
+\end{figure}
+
+\subsection{Recursive Neural Network}
+RNNs and specifically LSTMs (Long Short-Term Memory blocks) have been gaining popularity due to their strength in identifying and utilizing complex sequences of information to make future predictions. For the domain of mobility prediction, this provides a contrast to other work in which the heuristics for mobility modelling are self specified. Hence, here we also study the utility of an RNN architecture in constructing entire mobility timelines of individuals in the context of sparse location data. Fig. \ref{RNN_fig} shows the architecture of the network. We use a basic architecture, similar to those used in previous mobility and sequence prediction work \cite{feng2018deepmove}, but adapted for full timeline location inference. Specifically, instead of using separate inputs for current and historical trajectories of location, due to the sparse nature of data we input a single trajectory of all locations. Secondly and more importantly, here instead of only using a historical sequence of locations (left padded input), [$x_{(k-n)_w}$,... $x_{(k-2)_w}$, $x_{(k-1)_w}$] to predict $x_{k_w}$, we also use the future sequence of location (right padded input), [$x_{(k+1)_w}$, $x_{(k+2)_w}$,... $x_{(k+n)_w}$], to maximize the utility of sparsely available data and predict a location value for ever missing time step (not just next step). Thus, the architecture comprises of left and right padded input layers which are fed to embedding layers to convert sparse inputs into dense representations. The outputs from the embedding layers are then input to recurrent units comprising of an array of LSTM units. The LSTM outputs are then passed through a fully connected layer and concatenated before being passed through a fully connected layer to interpret the output and make prediction. 
+All fully connected layers use rectified linear unit activation except for output layer which uses softmax activation. The model uses categorical cross entropy loss function and uses Adam optimizer to update weights in the network. The model is trained using the training dataset. 10\% of the training set is set aside for validation. After each epoch, the performance of the model is tested on the validation dataset. 
+The training is stopped when no improvement in prediction accuracy of validation data is observed. Though architectures can be further augmented with other types of modules to model further complexities, the comparison here is meant to evaluate the pure heuristic versus deep learning approaches.
+%, and we leave discussion of incorporation of complexities in the deep learning approach for the conclusion section. 
+
+
+\begin{table*}[t]
+%\small
+\centering
+%\caption{My caption}
+\caption{Overall prediction accuracy (\%) and average percentage of filled timelines(written in \{\}) for baseline models and Top 1 and Top 3 locations predicted by the intermediate location computing model.}
+%\label{my-label}
+\begin{tabular}{llllllllll}
+\toprule
+City           & $r_i$   & Top 1 & Top 3 & RNN &  Home-Work & Markov O(0) & Markov O(1) & POI   & NextPlace \\
+\midrule
+NYC  & $r_i$=1 & 72.69\{100\} & 82.35\{100\} &  73.09\{100\} &   65.54\{100\}     & 64.65\{100\}       & 26.39\{32.70\}       & 15.59\{56.04\} & 0.17\{18.07\}      \\
+               & $r_i$=2 & 64.78\{100\} & 77.38\{100\} & 59.33\{100\} & 59.28\{100\}     & 57.98\{100\}       & 32.56\{48.69\}       & 19.11\{76.75\} & 0.21\{28.93\}      \\
+DC & $r_i$=1 & 75.08\{100\} & 83.61\{100\} & 74.58\{100\} & 66.91\{100\}     & 65.76\{100\}       & 27.75\{32.29\}       & 31.27\{70.60\} & 0.11\{17.23\}      \\
+               & $r_i$=2 & 68.85\{100\} & 79.57\{100\} &63.27\{100\}& 62.35\{100\}     & 60.64\{100\}       & 34.13\{48.79\}       & 34.56\{82.56\} & 0.19\{28.36\}      \\
+SF  & $r_i$=1 & 77.20\{100\} & 86.28\{100\} &76.26\{100\}& 67.74\{100\}     & 67.21\{100\}       & 16.78\{30.12\}       & 35.49\{60.24\} & 0.15\{17.57\}      \\
+               & $r_i$=2 & 70.78\{100\} & 82.06\{100\} &64.78\{100\}& 63.66\{100\}     & 62.91\{100\}       & 19.52\{43.72\}       & 32.69\{67.69\} & 0.22\{28.50\}\\ 
+\bottomrule               
+\end{tabular}
+
+\end{table*}
+
+
+%\begin{table*}[t]
+%\centering
+%\begin{tabular}{lllllllll}
+%City           & $r_i$   & Training & ILC & Home-Work & Markov O(0) & Markov O(1) & POI   & NextPlace \\
+%\hline
+%New York City  & $r_i$=1 & 17.57    & 100 & 100       & 100         & 32.70       & 56.04 & 18.07     \\
+%               & $r_i$=2 & 28.38    & 100 & 100       & 100         & 48.59       & 76.75 & 28.93     \\
+%Washington, DC & $r_i$=1 & 16.79    & 100 & 100       & 100         & 32.29       & 70.60 & 17.23     \\
+%               & $r_i$=2 & 27.86    & 100 & 100       & 100         & 48.79       & 82.56 & 28.36     \\
+%San Francisco  & $r_i$=1 & 17.09    & 100 & 100       & 100         & 30.12       & 60.24 & 17.57     \\
+%               & $r_i$=2 & 27.95    & 100 & 100       & 100         & 43.72       & 67.69 & 28.50    
+%\end{tabular}
+%\caption{Average percentage of non-empty timeline in training data and after implementation of ILC and baseline models.}
+%\end{table*}
+
+
+
+%\begin{table*}[t]
+%\centering
+%\begin{tabular}{llllllll}
+%City           & $r_i$   & Top 1 (1) & Top 3 (1) & Top 1 (0.5) & Top 3 (0.5) & Top 1 (0.1) & Top 3 (0.1) \\
+%\hline
+%New York City  & $r_i$=1 & 72.69     & 82.35     & 65.64       & 75.71       & 54.23       & 64.07       \\
+%               & $r_i$=2 & 64.78     & 77.38     & 59.29       & 71.65       & 46.06       & 57.96       \\
+%Washington, DC & $r_i$=1 & 75.08     & 83.61     & 67.32       & 77.65       & 54.27       & 64.10       \\
+%               & $r_i$=2 & 68.85     & 79.57     & 60.19       & 72.59       & 46.85       & 58.23       \\
+%San Francisco  & $r_i$=1 & 77.20     & 86.28     & 70.86       & 80.97       & 57.37       & 67.26       \\
+%               & $r_i$=2 & 70.78     & 82.06     & 63.37       & 75.47       & 48.07       & 59.81      
+%\end{tabular}
+%\caption{Overall prediction accuracy (\%) for Top 1 and Top 3 locations predicted by the intermediate location computing model by grid size. ($g$) represents a grid size of $g$ x $g$ miles.}
+%\end{table*}
+
+
+\begin{table}[]
+%\small
+\centering
+\caption{Prediction accuracy (\%) for Top 1 (T1) and Top 3 (T3) locations predicted by the ILC model by grid size. ($g$) represents a grid size of $g \times g$ miles.}
+\begin{tabular}{llllll}
+\toprule
+City & $r_i$   & T1(0.5) & T3(0.5) & T1(0.1) & T3(0.1) \\
+\midrule
+NYC  & $r_i$=1 & 65.64       & 75.71       & 54.23       & 64.07       \\
+     & $r_i$=2 & 59.29       & 71.65       & 46.06       & 57.96       \\
+DC   & $r_i$=1 & 67.32       & 77.65       & 54.27       & 64.10       \\
+     & $r_i$=2 & 60.19       & 72.59       & 46.85       & 58.23       \\
+SF   & $r_i$=1 & 70.86       & 80.97       & 57.37       & 67.26       \\
+     & $r_i$=2 & 63.37       & 75.47       & 48.07       & 59.81      \\
+\bottomrule
+\end{tabular}
+
+\end{table}
+
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure4_2-embed.pdf}
+\caption{Cumulative fraction of users vs. prediction accuracy for ILC and baseline models, $r_i=1$, (A) and 2 (B).}
+\label{cdf_accuracy}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.5\columnwidth]{figures/rnn_num_user-embed.pdf}
+\caption{Prediction accuracy of ILC (no community data) and RNN with number of users used to train the model for NYC $r_i=1$. Values calculated at \# of users=5,10,50,100,200 using mean of 10 replications. At \char`\~50 users RNN performance comes close to ILC, and by 200 users the RNN model surpasses ILC. Accuracy values for training with all available users are in Table 1.}
+\label{rnn_num_user}
+\end{figure}
+
+
+
+
+
+\section{Results}
+%Approximately 5\% (29,491, 4947 and 1,119 for $r_i$ = 1) and 10\% (45,710, 8,083 and 2,395 for $r_i$ = 1) in each of NYC, Washington DC and San Francisco from 6 months of data were included in the analyses. 
+%This was after removing users who did not fulfill the inclusion criteria and 16,582, 3,342 and 2,750 users (from each city, respectively) who were removed due to having more than 5\% of their Tweets marked as coming from a spoofed location. 
+%Despite the small percentage, 46.8\% users ($r_i$=2), who had a location value during daytime hours were included (Fig. \ref{data_distrib_k}). 
+%By dividing the cities in 1$\times$1 mile grids, 841, 143 and 736 grids were created for NYC, Washington, DC and San Francisco of which 713, 143 and 140 grids were visited by at least one user respectively. Dividing cities in 0.5$\times$0.5 mile grids resulted in a total of 3,364, 572 and 2,944 grids for NYC, Washington, DC and San Francisco of which 2698, 572 and 400 grids were visited. Dividing cities in 0.1$\times$0.1 mile grids resulted in a total of 84,100, 14,300 and 73,600 grids for NYC, Washington, DC and San Francisco of which 46,904, 10,831 and 4,080 grids were visited. All Tweets were assigned a grid based on their linked geolocation.
+
+%every single account in the remaining set, as it was assumed this extremely small number of accounts would not impact algorithm performance.
+
+%Timelines for each user were generated at each $r_i$ by performing temporal sampling, assigning stay duration and inferring home location. Home location was inferred with an average accuracy of 78.0\% ( percentage of total number of location data points between 10pm and 8am which agreed with the assigned home location value). Though we calculated the Home location, the prediction accuracy of all methods was only calculated on data from daytime hours, when a user is most mobile, as described in Methods section.  
+%Separate timelines for individual users were calculated by sampling locations at 1 and 2 hour intervals. Stay locations were interpolated as described in section 4.1.4 and home locations as in 4.1.5. Using the timelines generated, the inclusion criteria described in section 4.1.7 were applied to identify relevant users for the analysis. We were able to assign the home location for each user, in all cities, with an average accuracy of 78.0\%. This accuracy value was determined by identifying the percentage of total number of location data points between 10 pm and 8 am which agreed with the assigned home location value.
+
+%Data was divided into training and test sets, and our algorithm was used to fill in all missing locations from users' timelines. Before using the algorithm, 82.8\% and 72.0\% of the daytime (8am-10pm) timelines for 1 and 2-hour resolution were missing location data and were predicted using the methods. 
+%As part of the algorithm, ordered lists using the probability of all possible locations for a given $k_w$ of an individual were calculated. 
+
+%Values of the information loss factor ($\alpha$) ranging from 0.01 to 0.5 were tested on the training set to identify the optimal value. 
+%For ILC, the value of $\alpha$ as 0.1 performed well on the training set, and was used in prediction. The weights of community behavior ($\beta_k$) were estimated using the training set. 
+
+\subsection{Comparative Performance of Methods}
+%Table 1 and Fig. 4 show the performance of our model compared to the baseline models. Table 1 also shows the average percentage of each timeline with a location value after application of each method. 
+The ILC, RNN, Home-Work and Markov-0 models predicted a location value for every missing data point in the dataset (Table 1). %In contrast using Markov-1, POI recommendation and NextPlace models every missing location could not be predicted. 
+Amongst the remaining methods, the NextPlace algorithm `filled-in' the least number of missing data points. ILC and RNN outperformed all baseline models across all cities (Table 1). 
+
+For $r_i=1$, RNN slightly outperformed ILC in only NYC when considering the overall performance of methods on test data points (Table 1). When analyzing prediction accuracy per user in the test set, RNN slightly outperformed ILC (Fig. \ref{cdf_accuracy}). For $r_i=2$ ILC outperformed RNN across all cities both when considering overall accuracy on test data and accuracy per user. Additionally, for $r_i=2$, despite RNN outperforming Home-Work location model when considering overall prediction accuracy on test data (Table 1), it performed slightly worse than Home-Work location method when considering accuracy per user (Fig. \ref{cdf_accuracy}B). 
+
+Amongst the heuristic-based baseline models, simpler models outperformed more complex models. This was mainly because they were able to predict a location value for larger number of missing data points. The Order-0 Markov and Home-Work location model resulted in similar prediction accuracy and outperformed the remaining baseline models. 
+%This is largely due to the fact that, as shown in Table 1, both of these methods were able to predict a location value for every missing data point in the dataset.
+In contrast to previous work, the Order-1 Markov model had a lower prediction accuracy as compared to Order-0 Markov, largely because it was only able to predict a location value for one-third of the data points in timelines at $r_i$=1 and one-half of the data points in timelines at $r_i$=2. The time-dependent POI recommendation model outperformed Order-1 Markov model in SF and DC and underperformed in NYC. This is consistent with the fact that as shown in Fig. \ref{smilar_user}B, SF and DC had higher similarity between locations of individuals as compared to NYC. Additionally, the POI model was able to predict a much larger portion of users' timelines as compared to the Markov-1 model, yet accuracy values for both methods were close. The NextPlace method based on a non-linear spatio-temporal framework had the least predictive power given the fact that it relies largely on stay duration information. Given the lack of this information in social media, the model was scarcely able to predict missing location values.
+%There are several interpretations about performance of the different models with sparse social media data, and we discuss these further in the Discussion section.
+
+%Finally we observe that when using data from small number of users, when training the model for NYC $r_i=1$, a heuristic based method like ILC out performs RNN, which infers patterns in location sequence on its own (Fig. \ref{rnn_num_user}). But as the number of users used to train RNN become more than 50, RNN starts outperforming ILC.  
+
+While the baseline heuristic based methods have been optimized for different data types, in general, ILC specifically addresses the challenge of sparse data by incorporating a wide range of components. The simpler components help predict a location value for each missing point, while the more complex components help identify complex movement behaviours. 
+
+%Amongst the heuristic baseline models, simpler models outperformed more complex models. This was mainly because they were able to predict a location value for larger number of missing data points. The NextPlace non-linear model relies largely on stay duration information. Given the lack of this information in social media, the model was scarcely able to predict missing location values.
+
+Comparing ILC with RNN shows that RNNs are powerful methods that can out perform traditional heuristic based methods. However, we see that in low data settings, heuristics can be used to outperform the deep learning approach (e.g. when predicting at less frequent time intervals, or when a lower number of users are available to train the model). This is evident in Fig. \ref{rnn_num_user}, where despite RNN outperforming ILC in NYC at $r_i=1$, if trained on a fewer number of users, it under performs. Also in Fig. \ref{cdf_accuracy} we see that the RNN requires data from more users to achieve the same accuracy as ILC, when considering $r_i$=2. However with increases in the amount of training data, the RNN outperforms ILC. This is due to the fact that this implementation of ILC only uses a maximum sequence length of two time steps, RNNs can learn larger and more complex sequences of locations. Additionally RNNs can also learn longer sequences of location data of similar users and help improve prediction. Decision between selecting one over the other is based on the goal of the study and the availability of data. If sparse data for a large number of users is available, then an RNN approach should be preferred. But if the goal of the study is to maximize the number of users for which complete timelines can be constructed by sampling their locations at less frequent time intervals, or if the number of available users is low, then a heuristic based method like ILC should be preferred given that it does not need data to learn patterns. 
+
+\subsection{Effect of Community Behavior}
+We found that the effect of community behavior is consistently higher on an individual's mobility patterns during weekends as compared to weekdays ($\beta_k$ higher on weekends across all cities and $r_i$). The average value for $\beta_k$ during weekdays ranged from 0.449 (NYC, $r_i$ =1) to 0.466 (DC, $r_i$=2), while during weekends ranged from 0.456 (NYC, $r_i$ =1) to 0.492 (DC, $r_i$=2).
+
+We observe that inclusion of community data helps the performance of the method and the main improvement is seen when the first similar user is accounted for (Fig. \ref{smilar_user}A). Moreover, after $m$ = 20, 
+accuracy improvements begin to plateau with more $m$ (the inclusion of $m$ closest individuals to compute community behavior will work best for individuals who have high similarity values with other individuals and are not outliers in terms of their mobility) justifying the use of $m$ = 50 in our method. 
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure6_2-embed.pdf}
+\caption{A: Prediction accuracy (\%) vs. number of similar users ($m$). Model based on individual and community behavior (black), and community behavior only i.e $\beta=1$ (red). All values were computed for $r_i=2$ and using Washington, DC data. B: Aggregated similarity factors of closest users ($\sum_{u=1}^m{s(u)}$) vs. fraction of users by city. X-axis normalized by dividing by the maximum aggregated similarity factor for a user in the dataset.}
+\label{smilar_user}
+\end{figure}
+
+
+\subsection{Performance of ILC in Different Settings}
+We observe that for ILC performance decreases as the interval ($r_i$) increases from 1 to 2 hours (Table 1), and as the grid size decreases (Table 2), which is inline with the findings of \cite{cuttone2018understanding} that at larger time intervals and smaller grid sizes there is a higher associated uncertainty . Similar trend is observed for RNN as increase in $r_i$ from 1 to 2 hours decreases the overall training data for the model.
+%Also, the actual location has a higher chance of being present in the top 3 most probable locations as compared to the top 1 location, which is intuitive and gives credence to retaining not just the top predicted location. 
+%Overall the proposed method provides 7.15\%, 8.17\% and 9.46\% better accuracy over the highest performing baseline model for NYC, DC and SF respectively for $r_i$=1 (Top 1 location prediction) and 16.81\%, 16.7\% and 18.54\% (Top 3). For $r_i$ = 2, the performance is 5.5\%, 6.5\% and 7.12\% improved (Top 1) and 18.1\%, 17.22\% and 18.4\% (Top 3) over the highest performing baseline model for NYC, DC and SF respectively. 
+
+Fig. \ref{distinct_loc_accuracy} shows prediction accuracy versus the number of distinct locations grids by individuals, for 1, and 2-hour resolutions; accuracy decreases with an increase in the number of distinct location grids visited by an individual. The fitted line is generated using a generalized additive model (GAM).
+%, with the number of distinct locations as a smoothed variable \cite{33}. 
+%Table 2 shows the prediction accuracy for ILC when grid sizes are reduced to 0.5 x 0.5 and 0.1 x 0.1 miles. Prediction accuracy decreases as size of grids decreases, which is inline with findings of \cite{cuttone2018understanding}, given there is less amount of mobility data corresponding to each grid, which is to be used to make predictions. 
+
+%We observe that inclusion of community data helps the performance of the method and the main improvement is seen when the first similar user is accounted for (Fig. \ref{smilar_user}A).
+%Fig. 6A shows how accuracy changes with the number of individuals included, m, for i) a model combining both individual and community behavior, and ii) a model only based on community behavior only i.e. ($\beta_k$=1). Varying the value of m has a small effect on the accuracy of the model which combines both individual and community behavior. The largest improvement is noted when the first similar user is incorporated; with the addition of subsequent users the amount of improvement in accuracy decreases. 
+%The model using only community behavior shows a similar pattern, but the magnitude of improvement in the accuracy is much larger. 
+%Moreover, after $m$ = 20, 
+%accuracy improvements begin to plateau with more $m$, justifying the use of $m$ = 50 in our method. 
+%Fig. 6B shows how the aggregated similarity factors of closest users varies across the cities. As evident from the figure, users in San Francisco have the highest aggregated similarity factors of closest users followed by DC and then NYC. This affects the performance of prediction models based entirely on community enforced behavior which can be seen in the performance of POI recommendation model as shown in Table 1.
+
+
+
+
+
+%While the baseline heuristic based methods have been optimized for different data types, in general, ILC specifically addresses the challenge of sparse data and thus was able to outperform all of them on social media data. We discuss these reasons further here. First, because it contains simpler components based on a Markov-0 model, it allows prediction of a location value for every missing data point in a user's timeline, which is important for the case of sparse data. Second, due to additional forward and backward Markov-1 components and an approach to prioritizes data points which are closer in time versus those that are further, enables ILC to incorporate more complex and larger pattern matching options to improve the accuracy of the predicted locations. Finally, as ILC incorporates community behavior and separately estimates the impact of community behavior for each hour and day of the week, the method is able to predict locations that a user visits either rarely or are not present in their location history entirely.
+
+
+
+
+%Amongst the heuristic baseline models, simpler models outperformed more complex models, mainly because they were able to predict a location value for larger number of missing data points. 
+%%Home-Work and Markov-0 were able to predict a location value for each missing data point in the timelines.
+%The Home-Work location prediction model resulted in slightly higher accuracy over the time-dependent Order-0 Markov model. This could be due to the underlying data source. Unlike with GPS tagged and Wi-Fi connectivity data where the probability of every location being collected is the same, in social media data, people tend to share new locations (locations they visit out of their usual movement patterns), and locations they have attachment with, more than their usual locations \cite{oz2015inference}. Combining this feature with the sparse nature of social media data, may have shifted the ranking of most probable locations at a given time of the day and adversely impacted accuracy of the time-dependent model. 
+%%Moreover, as described in previous work, individuals spend on average 83\% of their time in two most frequently visited locations (usually home and work). Hence if those locations are successfully identified, an individual's location can be predicted with good accuracy \cite{141}. 
+%In contrast to these methods, the Markov-1 model uses longer pattern matching
+%%; to predict the location at hour h of any given day dpr, there should be at least one day dhist in the history of that individual such that the location at h-1 on dhist, is the same as the location at h-1 on dpr, and there is a location value for h on dhist. Given that this condition is unlikely to be fulfilled for every data point in sparse datasets, the Markov-1 model 
+%and hence failed to predict a value for every missing data point. This limitation was also noted in a previous study \cite{134}. The NextPlace non-linear model relies largely on stay duration information. Given the lack of this information in social media, the model was scarcely able to predict missing location values.
+%because it largely relies upon the stay duration. 
+%Only a small fraction of Tweets were made from a single location with less than a 6 hour interval between them, allowing the location between those Tweets to be interpolated and stay duration estimated with high accuracy. For other time points not within a 6 hour interval of two Tweets from the same location, the stay duration was assumed to be 1 and 2 hours for $r_i$=1 and 2 respectively, which increases potential error in the predictions. 
+%Moreover, as explained in \cite{cuttone2018understanding}, predicting the next place is a harder problem compared to predicting the next time step.
+%The POI recommendation model was able to predict a much larger portion of users' timelines as compared to the Markov-1 model, yet accuracy values for both methods were similar. This leads us to conclude that an individual's own movement patterns are more informative when predicting their location as compared to the movement patterns of community individuals who have similar movement behaviors. Performance of the POI model was largely dependent on the amount of similarity in the mobility of an individual with the rest of the community. As seen in Fig. \ref{smilar_user}B, users in NYC have the least similar behavior with their top $m$ closest users in the community as compared to the other two cities. Accordingly, the POI recommendation model provided the lowest accuracy values in NYC. This leads us to conclude that instead of using top $m$ users to identify community behavior, future studies should focus on the aggregate similarity factors of closest users for improved performance across all users. 
+
+
+%For ILC, the decrease in accuracy with an increase in $r_i$ aligns with the fact that at an increased time interval, predicted locations have higher associated uncertainty. This observation is inline with findings in \cite{cuttone2018understanding}. 
+%This effect is also evident in the Order-0 Markov model. 
+%Moreover, specific to our method, larger gaps in sampling also affect the conditional probabilities $P_{(I,a)}$ and $P_{(I,b)}$. This is because, the resolution $r_i$ assumes that an individual only changes location after at least $i$ hours. If an individual changes location more frequently, then the assumption that the destination of an individual at time $k_w$ is directly from the location at time $(k-1)_w$ is violated.
+
+
+\begin{figure}[]
+\centering
+\includegraphics[width=\columnwidth]{figures/figure5_2-embed.pdf}
+\caption{A: Prediction accuracy (\%) for Top 1 vs. number of distinct locations visited for $r_i =1$ (A) and 2 (B).}
+\label{distinct_loc_accuracy}
+\end{figure}
+
+
+
+\section{Conclusion}
+In this paper, we present a method for predicting missing locations from an individual's mobility timeline with good accuracy, using only sparse location tags from social media data. %We apply the method, Intermediate Location Computing, to data from three major cities in the United States: New York City, Washington, DC and San Francisco. 
+In order to address the challenge of sparse data, the model uses several heuristics of human movement and incorporates similar user data.
+%and relaxes date-specific requirements for movement patterns. 
+The proposed approach consistently outperforms baseline heuristic based methods across data from three major cities, showing stability of the approach. We also show how ILC fulfills timeline prediction better than an RNN in sparse data settings, though use of heuristics should be incorporated into the RNN architecture design in future work to further advance the approach.
+
+We recognize limitations of this work. Predictions for an individual can be biased based on their Tweeting patterns (which can be specific to the types of people who use Twitter), although the incorporation of community behavior helps minimize this bias. Second, even though our work advances previous work by predicting full timelines for a large number of users, there are still many users for whom the location cannot be predicted by our model. Hence, despite the generalizability of the method and the dataset, the methodology will not be accurate for every single user. Third, here ILC only uses one location point in the past i.e $k-1$ to predict the location at $k$ due to the sparse nature of the data and prioritization of filling in the timeline, but we can expand the approach to use the sequence of $n$ locations in the past to predict the next location, with more complex considerations. Overall, this research demonstrates a new approach for the specific problem of filling in location timelines from sparse social media data, without assuming any information besides location data is available. The result can be used in many real-world applications that require location timelines.
+
+
+%even as we base this work on sparse social media data and demonstrate it in three separate locations, the availability of social media data is further limited in less urban areas. This is an inherent limitation based on the nature of the data, however the approaches are still very relevant for many social modeling efforts. 
+
+
+
+
+
+%Best performance of the model is for Top 3 location prediction, at time intervals of 1 hour (82.35\%, 86.28\%).
+
+ 
+
+
+
+
+
+
+
+%Accuracy results are consistent across cities, showing stability of the approach. Our method performs up to 18.54\% better than a simple baseline home and work-only model, in each of the three cities.
+
+%While this is the case for Order-1 Markov model as well, the effect is less noticeable for $r_i$ = 2 as compared to $r_i$ = 1 as there are a higher number of predicted data points. The effect would have been apparent if both the $r_i$ = 1 and $r_i$ = 2 had a similar percentage of predicted locations (as in ILC and Markov-0 model). If such is not the case, then a higher accuracy will result for the timelines with a higher number of predicted locations.
+
+%In sum, we see that given ILC aggregates approaches from Order-1 Markov, Order-0 Markov, backwards Order-1 Markov, time-dependent collaborative POI recommendation (without distance, only similarity) and home-work (home portion only) models, it advantageously combines multiple information sources. This is ideal for the case of filling in an entire timeline from sparse social media data, and results in improved performance over any of the individual baseline methods.
+
+%While proprietary data such as CDRs, or other mediums requiring specific app deployments have been shown useful to predict next location of individuals at this spatial resolution, these data are to-date unavailable at scale and broadly for investigators in other domains such as epidemiology and urban planning; imploring the need to look to other measures of mobility. Further, for many of these application areas, understanding an individual's entire mobility timeline is necessary (for example to understand all the locations which may influence the individual's disease transmission risk, or assess all places a person visits over the course of a day). 
+
+%Prediction with sparse data is the major challenge to using this data for mobility measurements, and ILC overcomes this, demonstrating good prediction accuracy. To do so, we observe that using distinct locations across unique values of hours versus requiring data unique to hour and day combinations increases the number of included users by an order of magnitude. We also use the known approach of combining data from an individual's own location timeline alongside data from similar community members. We identify that community behavior improves prediction of an individual's location history, and go further to show how these relations vary over time and that reasonable accuracies can be achieved by modeling the mobility of an individual using community data only. Findings related to the contribution (weight, $\beta_k$) of community behavior for prediction on weekdays versus weekends show that community behavior is more likely to affect an individual's behavior during weekends as compared to weekdays. This can be attributed to the fact that in general people tend to perform more common activities during weekends as compared to the weekdays. Our model can also be used to assess the number of similar users needed in order to achieve a target prediction accuracy. We predict all missing locations at temporal resolutions that are relevant for many real-world applications such as assessing human mobility related to disease spread or land use assessment (1 or 2 hours). With this approach, tens of thousands of users are included in the 6 months of data, and this can be even further enhanced by using a longer period of data (e.g. one year or longer). Overall, we envision that this approach will open up many opportunities in social and behavioral science modeling efforts, and is thus an important pervasive and ubiquitous computing effort.  
+
+ 
+%Further to this, our analysis is based on data actively posted by individuals on their Twitter accounts. Though we find that included data is evenly distributed over time (Figure 1), and our approach works similarly in three different cities, there may be latent features about Twitter users that may limit generalizability to the entire population. This is an important statistical issue in any study, and further work to assess how mobility patterns vary by different groups is important. However even despite the sparse nature of the data, we include tens of thousands of users in the study which compares well to other mobility studies which have varied in the included sample size, some developed based on a few hundred or less users \cite{112,68,118,70}. 
+
+%Given that this initial work shows utility for the ILC approach, the approach can be augmented as such, although as per \cite{34}, longer patterns after a limit, don't translate to higher performance. 
+%Similarly, the idea of Intermediate Location Computing is presented here in a straightforward Bayesian approach to convey the idea; and the same type of ILC model which combines multiple prediction approaches can be extended by incorporating other prediction methods such as variants of Markov modeling.
+
+%Results show that community behavior can be useful for improving prediction of an individual's mobility, and challenge us to relax our inclusion criteria even more by including users who have no location values for hour of the day in their entire history. Incorporation of community behavior can potentially help fill timelines for users who have even sparser digital traces than those considered here. Further, even though community behavior is useful in predicting an individual's behavior, the fact that the most probable locations in both individual behavior and the community behavior can often be the same at several times, the overall effect of community behavior is underestimated in the combined model.  
+
+%A key aspect of this research is that it is applicable for many real-world scenarios that require a richer understanding of mobility than is currently available, given that the approach uses publicly available data and develops full timeline predictions at hourly resolution. For example, given the wide availability of social media data, this approach can be used in the future to predict individual level mobility in contexts where other movement data is not available, to parameterize agent based models or generate very focused and targeted prevention messaging to individuals based on their location history or other data linked to the social media posts (e.g. the text or images). Or, given that social media data can be linked to precise geo-locations, this method can be used to better parameterize disease transmission modeling efforts at local levels, which have been a challenge \cite{126}. Finally, our approach to integrating community behavior and identification that during weekends individuals are more likely to travel in similar ways, can also have implications for other applications such as transportation routing efforts \cite{144}. Overall, this research demonstrates a new approach for the specific problem of filling in location timelines in social media data, without assuming any more information besides location data is available. The result can be useful for future work in many real-world applications that require local measures of mobility.
+
+
+
+\begin{acks}
+Support for this project was provided in part by a grant from the National Science Foundation (1737987). We acknowledge Prof. Juliana Freire of New York University and her group for assistance with data.
+\end{acks}

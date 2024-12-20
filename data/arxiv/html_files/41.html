@@ -1,0 +1,1948 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02925] Natural Language Inference from Multiple Premises</title><meta property="og:description" content="We define a novel textual entailment task that requires inference over multiple premise sentences. We present a new dataset for this task that minimizes trivial lexical inferences, emphasizes knowledge of everyday even…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Natural Language Inference from Multiple Premises">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="Natural Language Inference from Multiple Premises">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02925">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02925">
+
+<!--Generated on Sat Mar 16 09:40:14 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line">
+<h1 class="ltx_title ltx_title_document">Natural Language Inference from Multiple Premises</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">
+Alice Lai<sup id="id6.6.id1" class="ltx_sup">1</sup>          Yonatan Bisk<sup id="id7.7.id2" class="ltx_sup">2</sup>          Julia Hockenmaier<sup id="id8.8.id3" class="ltx_sup">1</sup>
+<br class="ltx_break"><sup id="id9.9.id4" class="ltx_sup">1</sup>Department of Computer Science, University of Illinois at Urbana-Champaign
+<br class="ltx_break"><sup id="id10.10.id5" class="ltx_sup">2</sup>Paul G. Allen School of Computer Science &amp; Engineering, Univ. of Washington
+<br class="ltx_break"><a href="mailto:aylai2@illinois.edu" title="" class="ltx_ref ltx_href"><span class="ltx_ref ltx_nolink">aylai2@illinois.edu</span></a>,
+<a href="mailto:ybisk@cs.washington.edu" title="" class="ltx_ref ltx_href"><span class="ltx_ref ltx_nolink">ybisk@cs.washington.edu</span></a>,
+<a href="mailto:juliahmr@illinois.edu" title="" class="ltx_ref ltx_href"><span class="ltx_ref ltx_nolink">juliahmr@illinois.edu</span></a>
+</span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id11.id1" class="ltx_p">We define a novel textual entailment task that requires inference over multiple premise sentences. We present a new dataset for this task that minimizes trivial lexical inferences, emphasizes knowledge of everyday events, and presents a more challenging setting for textual entailment. We evaluate several strong neural baselines and analyze how the multiple premise task differs from standard textual entailment.</p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">Standard textual entailment recognition is concerned with deciding whether one statement (the hypothesis) follows from another statement (the premise).
+However, in some situations, multiple independent descriptions of the same event are available, e.g. multiple news articles describing the same story, social media posts by different people about a single event, or multiple witness reports for a crime. In these cases, we want to use multiple independent reports to infer what really happened.
+</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">We therefore introduce a variant of the standard textual entailment task in which the premise text consists of multiple independently written sentences, all describing the same scene (see examples in Figure <a href="#S1.F1" title="Figure 1 ‣ 1 Introduction ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>). The task is to decide whether the hypothesis sentence 1) can be used to describe the same scene (entailment), 2) cannot be used to describe the same scene (contradiction), or 3) may or may not describe the same scene (neutral). The main challenge is to infer what happened in the scene from the multiple premise statements, in some cases aggregating information across multiple sentences into a coherent whole.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">Similar to the SICK and SNLI datasets <cite class="ltx_cite ltx_citemacro_cite">Marelli et al. (<a href="#bib.bib9" title="" class="ltx_ref">2014</a>); Bowman et al. (<a href="#bib.bib2" title="" class="ltx_ref">2015</a>)</cite>, each premise sentence in our data is a single sentence describing everyday events, rather than news paragraphs as in the RTE datasets <cite class="ltx_cite ltx_citemacro_cite">Dagan et al. (<a href="#bib.bib3" title="" class="ltx_ref">2006</a>)</cite>, which require named entity recognition and coreference resolution. Instead of soliciting humans to write new hypotheses, as SNLI did, we use simplified versions of existing image captions, and use a word overlap filter and the structure of the denotation graph of <cite class="ltx_cite ltx_citemacro_citet">Young et al. (<a href="#bib.bib14" title="" class="ltx_ref">2014</a>)</cite> to minimize the presence of trivial lexical relationships.</p>
+</div>
+<figure id="S1.F1" class="ltx_figure">
+<table id="S1.F1.3" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S1.F1.3.4.1" class="ltx_tr">
+<td id="S1.F1.3.4.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.4.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.4.1.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.4.1.1.1.1.1" class="ltx_text ltx_font_bold">Premises:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.5.2" class="ltx_tr">
+<td id="S1.F1.3.5.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.5.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.5.2.1.1.1" class="ltx_p" style="width:213.4pt;">1. Two girls sitting down and looking at a book.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.6.3" class="ltx_tr">
+<td id="S1.F1.3.6.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.6.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.6.3.1.1.1" class="ltx_p" style="width:213.4pt;">2. A couple laughs together as they read a book on a train.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.7.4" class="ltx_tr">
+<td id="S1.F1.3.7.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.7.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.7.4.1.1.1" class="ltx_p" style="width:213.4pt;">3. Two travelers on a train or bus reading a book together.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.8.5" class="ltx_tr">
+<td id="S1.F1.3.8.5.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.8.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.8.5.1.1.1" class="ltx_p" style="width:213.4pt;">4. A woman wearing glasses and a brown beanie next to</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.9.6" class="ltx_tr">
+<td id="S1.F1.3.9.6.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.9.6.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.9.6.1.1.1" class="ltx_p" style="width:213.4pt;">    a girl with long brown hair holding a book.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.10.7" class="ltx_tr">
+<td id="S1.F1.3.10.7.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.10.7.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.10.7.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.10.7.1.1.1.1" class="ltx_text ltx_font_bold">Hypothesis:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.1.1" class="ltx_tr">
+<td id="S1.F1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:5.0pt;">
+<span id="S1.F1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.1.1.1.1.1" class="ltx_p" style="width:213.4pt;">   Women smiling.  <math id="S1.F1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S1.F1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S1.F1.1.1.1.1.1.m1.1.1" xref="S1.F1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S1.F1.1.1.1.1.1.m1.1b"><ci id="S1.F1.1.1.1.1.1.m1.1.1.cmml" xref="S1.F1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S1.F1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S1.F1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Entailment</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.11.8" class="ltx_tr">
+<td id="S1.F1.3.11.8.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.11.8.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.11.8.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.11.8.1.1.1.1" class="ltx_text ltx_font_bold">Premises:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.12.9" class="ltx_tr">
+<td id="S1.F1.3.12.9.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.12.9.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.12.9.1.1.1" class="ltx_p" style="width:213.4pt;">1. Three men are working construction on top of a building.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.13.10" class="ltx_tr">
+<td id="S1.F1.3.13.10.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.13.10.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.13.10.1.1.1" class="ltx_p" style="width:213.4pt;">2. Three male construction workers on a roof working</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.14.11" class="ltx_tr">
+<td id="S1.F1.3.14.11.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.14.11.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.14.11.1.1.1" class="ltx_p" style="width:213.4pt;">    in the sun.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.15.12" class="ltx_tr">
+<td id="S1.F1.3.15.12.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.15.12.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.15.12.1.1.1" class="ltx_p" style="width:213.4pt;">3. One man is shirtless while the other two men work</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.16.13" class="ltx_tr">
+<td id="S1.F1.3.16.13.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.16.13.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.16.13.1.1.1" class="ltx_p" style="width:213.4pt;">    on construction.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.17.14" class="ltx_tr">
+<td id="S1.F1.3.17.14.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.17.14.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.17.14.1.1.1" class="ltx_p" style="width:213.4pt;">4. Two construction workers working on infrastructure,</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.18.15" class="ltx_tr">
+<td id="S1.F1.3.18.15.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.18.15.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.18.15.1.1.1" class="ltx_p" style="width:213.4pt;">    while one worker takes a break.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.19.16" class="ltx_tr">
+<td id="S1.F1.3.19.16.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.19.16.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.19.16.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.19.16.1.1.1.1" class="ltx_text ltx_font_bold">Hypothesis:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.2.2" class="ltx_tr">
+<td id="S1.F1.2.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:5.0pt;">
+<span id="S1.F1.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.2.2.1.1.1" class="ltx_p" style="width:213.4pt;">   A man smoking a cigarette.  <math id="S1.F1.2.2.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S1.F1.2.2.1.1.1.m1.1a"><mo stretchy="false" id="S1.F1.2.2.1.1.1.m1.1.1" xref="S1.F1.2.2.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S1.F1.2.2.1.1.1.m1.1b"><ci id="S1.F1.2.2.1.1.1.m1.1.1.cmml" xref="S1.F1.2.2.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S1.F1.2.2.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S1.F1.2.2.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Neutral</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.20.17" class="ltx_tr">
+<td id="S1.F1.3.20.17.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.20.17.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.20.17.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.20.17.1.1.1.1" class="ltx_text ltx_font_bold">Premises:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.21.18" class="ltx_tr">
+<td id="S1.F1.3.21.18.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.21.18.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.21.18.1.1.1" class="ltx_p" style="width:213.4pt;">1. A group of individuals performed in front of a seated</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.22.19" class="ltx_tr">
+<td id="S1.F1.3.22.19.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.22.19.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.22.19.1.1.1" class="ltx_p" style="width:213.4pt;">    crowd.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.23.20" class="ltx_tr">
+<td id="S1.F1.3.23.20.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.23.20.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.23.20.1.1.1" class="ltx_p" style="width:213.4pt;">2. Woman standing in front of group with black folders in</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.24.21" class="ltx_tr">
+<td id="S1.F1.3.24.21.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.24.21.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.24.21.1.1.1" class="ltx_p" style="width:213.4pt;">    hand.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.25.22" class="ltx_tr">
+<td id="S1.F1.3.25.22.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.25.22.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.25.22.1.1.1" class="ltx_p" style="width:213.4pt;">3. A group of women with black binders stand in front of a</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.26.23" class="ltx_tr">
+<td id="S1.F1.3.26.23.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.26.23.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.26.23.1.1.1" class="ltx_p" style="width:213.4pt;">    group of people.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.27.24" class="ltx_tr">
+<td id="S1.F1.3.27.24.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.27.24.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.27.24.1.1.1" class="ltx_p" style="width:213.4pt;">4. A group of people are standing at the front of the room,</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.28.25" class="ltx_tr">
+<td id="S1.F1.3.28.25.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.28.25.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.28.25.1.1.1" class="ltx_p" style="width:213.4pt;">    preparing to sing.</span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.29.26" class="ltx_tr">
+<td id="S1.F1.3.29.26.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.29.26.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.29.26.1.1.1" class="ltx_p" style="width:213.4pt;"><span id="S1.F1.3.29.26.1.1.1.1" class="ltx_text ltx_font_bold">Hypothesis:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.3.3" class="ltx_tr">
+<td id="S1.F1.3.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.3.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.3.3.1.1.1" class="ltx_p" style="width:213.4pt;">    A group having a meeting.  <math id="S1.F1.3.3.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S1.F1.3.3.1.1.1.m1.1a"><mo stretchy="false" id="S1.F1.3.3.1.1.1.m1.1.1" xref="S1.F1.3.3.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S1.F1.3.3.1.1.1.m1.1b"><ci id="S1.F1.3.3.1.1.1.m1.1.1.cmml" xref="S1.F1.3.3.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S1.F1.3.3.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S1.F1.3.3.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Contradiction</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>The Multiple Premise Entailment Task</figcaption>
+</figure>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>Related Standard Entailment Tasks</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">In the following datasets, premises are single sentences drawn from image or video caption data that describe concrete, everyday activities.</p>
+</div>
+<div id="S2.p2" class="ltx_para">
+<p id="S2.p2.1" class="ltx_p">The <span id="S2.p2.1.1" class="ltx_text ltx_font_bold">SICK</span> dataset <cite class="ltx_cite ltx_citemacro_cite">Marelli et al. (<a href="#bib.bib9" title="" class="ltx_ref">2014</a>)</cite> consists of 10K sentence pairs. The premise sentences come from the <span id="S2.p2.1.2" class="ltx_text ltx_font_smallcaps">Flickr8K</span> image caption corpus <cite class="ltx_cite ltx_citemacro_cite">Rashtchian et al. (<a href="#bib.bib12" title="" class="ltx_ref">2010</a>)</cite> and the MSR Video Paraphrase Corpus <cite class="ltx_cite ltx_citemacro_cite">Agirre et al. (<a href="#bib.bib1" title="" class="ltx_ref">2012</a>)</cite>, while the hypotheses were automatically generated. This process introduced some errors (e.g. “A motorcycle is riding standing up on the seat of the vehicle”) and an uneven distribution of phenomena across entailment classes that is easy to exploit (e.g. negation <cite class="ltx_cite ltx_citemacro_cite">Lai and Hockenmaier (<a href="#bib.bib8" title="" class="ltx_ref">2014</a>)</cite>).</p>
+</div>
+<div id="S2.p3" class="ltx_para">
+<p id="S2.p3.1" class="ltx_p">The <span id="S2.p3.1.1" class="ltx_text ltx_font_bold">SNLI</span> dataset <cite class="ltx_cite ltx_citemacro_cite">Bowman et al. (<a href="#bib.bib2" title="" class="ltx_ref">2015</a>)</cite> contains over 570K sentence pairs. The premises come from the <span id="S2.p3.1.2" class="ltx_text ltx_font_smallcaps">Flickr30K</span> image caption corpus <cite class="ltx_cite ltx_citemacro_cite">Young et al. (<a href="#bib.bib14" title="" class="ltx_ref">2014</a>)</cite> and VisualGenome <cite class="ltx_cite ltx_citemacro_cite">Krishna et al. (<a href="#bib.bib7" title="" class="ltx_ref">2016</a>)</cite>. The hypotheses were written by Mechanical Turk workers who were given the premise and asked to write one definitely true sentence, one possibly true sentence, and one definitely false sentence. The task design prompted workers to write hypotheses that frequently parallel the premise in structure and vocabulary, and therefore the semantic relationships between premise and hypothesis are often limited to synonym/hyponym lexical substitution, replacement of short phrases, or exact word matching.</p>
+</div>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>The Multiple Premise Entailment Task</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">In this paper, we propose a variant of entailment where each hypothesis sentence is paired with an unordered set of independently written premise sentences that describe the same event. The premises may contain overlapping information, but are typically not paraphrases. The majority of our dataset requires consideration of multiple premises, including aggregation of information from multiple sentences.</p>
+</div>
+<div id="S3.p2" class="ltx_para">
+<p id="S3.p2.1" class="ltx_p">This Multiple Premise Entailment (MPE) task is inspired by the Approximate Textual Entailment (ATE) task of <cite class="ltx_cite ltx_citemacro_citet">Young et al. (<a href="#bib.bib14" title="" class="ltx_ref">2014</a>)</cite>. Each item in the ATE dataset consists of a premise set of four captions from <span id="S3.p2.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span>, and a short phrase as the hypothesis. The ATE data was created automatically, under the assumption that items are positive (approximately entailing) if the hypothesis comes from the same image as the four premises, and negative otherwise. However, Young et al. found that this assumption was only true for just over half of the positive items. For MPE, we also start with four <span id="S3.p2.1.2" class="ltx_text ltx_font_smallcaps">Flickr30K</span> captions as the premises and a related/unrelated sentence as the hypothesis, but we restrict the hypothesis to have low word overlap with the premises, and we collect human judgments to label the items as entailing, contradictory, or neutral.</p>
+</div>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>The MPE Dataset</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.1" class="ltx_p">The MPE dataset (Figure <a href="#S1.F1" title="Figure 1 ‣ 1 Introduction ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>) contains 10,000 items (8,000 training, 1,000 development and 1,000 test), each consisting of four premise sentences (captions from the same <span id="S4.p1.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span> image), one hypothesis sentence (a simplified <span id="S4.p1.1.2" class="ltx_text ltx_font_smallcaps">Flickr30K</span> caption), and one label (entailment, neutral, or contradiction) that indicates the relationship between the set of four premises and the hypothesis. This label is based on a consensus of five crowdsourced judgments. To analyze the difference between multiple premise and single premise entailment (Section <a href="#S5.SS2" title="5.2 MPE vs. Standard Entailment ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5.2</span></a>), we also collected pair label annotations for each individual premise-hypothesis pair in the development data. This section describes how we selected the premise and hypothesis sentences, and how we labeled the items via crowdsourcing.</p>
+</div>
+<section id="S4.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.1 </span>Generating the Items</h3>
+
+<section id="S4.SS1.SSS0.Px1" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Hypothesis simplification</h4>
+
+<div id="S4.SS1.SSS0.Px1.p1" class="ltx_para">
+<p id="S4.SS1.SSS0.Px1.p1.1" class="ltx_p">The four premise sentences of each MPE item consist of four original <span id="S4.SS1.SSS0.Px1.p1.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span> captions from the same image. Since complete captions are too specific and are likely to introduce new details that are not entailed by the premises, the hypotheses sentences are simplified versions of <span id="S4.SS1.SSS0.Px1.p1.1.2" class="ltx_text ltx_font_smallcaps">Flickr30K</span> captions. Each hypothesis sentence is either a simplified variant of the fifth caption of the same image as the premises, or a simplified variant of one of the captions of a random, unrelated image.</p>
+</div>
+<div id="S4.SS1.SSS0.Px1.p2" class="ltx_para">
+<p id="S4.SS1.SSS0.Px1.p2.1" class="ltx_p">Our simplification process relies on the denotation graph of <cite class="ltx_cite ltx_citemacro_citet">Young et al. (<a href="#bib.bib14" title="" class="ltx_ref">2014</a>)</cite>, a subsumption hierarchy over phrases, constructed from the captions in <span id="S4.SS1.SSS0.Px1.p2.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span>. They define a set of normalization and reduction rules (e.g. lemmatization, dropping modifiers and prepositional phrases, replacing nouns with their hypernyms, extracting noun phrases) to transform the original captions into shorter, more generic phrases that are still true descriptions of the original image.</p>
+</div>
+<div id="S4.SS1.SSS0.Px1.p3" class="ltx_para">
+<p id="S4.SS1.SSS0.Px1.p3.1" class="ltx_p">To simplify a hypothesis caption, we consider all sentence nodes in the denotation graph that are ancestors (more generic versions) of this caption, but exclude nodes that are also ancestors of any of the premises.
+This ensures that the simplified hypothesis cannot be trivially obtained from a premise via the same automatic simplification procedure. Therefore, we avoid some obvious semantic relationships between premises and hypothesis, such as hypernym replacement, dropping modifiers or PPs, etc.</p>
+</div>
+</section>
+<section id="S4.SS1.SSS0.Px2" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Limiting lexical overlap</h4>
+
+<div id="S4.SS1.SSS0.Px2.p1" class="ltx_para">
+<p id="S4.SS1.SSS0.Px2.p1.1" class="ltx_p">Given the set of simplified, restricted hypotheses, we further restrict the pool of potential items to contain only pairings where the hypothesis has a word overlap <math id="S4.SS1.SSS0.Px2.p1.1.m1.1" class="ltx_Math" alttext="\leq" display="inline"><semantics id="S4.SS1.SSS0.Px2.p1.1.m1.1a"><mo id="S4.SS1.SSS0.Px2.p1.1.m1.1.1" xref="S4.SS1.SSS0.Px2.p1.1.m1.1.1.cmml">≤</mo><annotation-xml encoding="MathML-Content" id="S4.SS1.SSS0.Px2.p1.1.m1.1b"><leq id="S4.SS1.SSS0.Px2.p1.1.m1.1.1.cmml" xref="S4.SS1.SSS0.Px2.p1.1.m1.1.1"></leq></annotation-xml><annotation encoding="application/x-tex" id="S4.SS1.SSS0.Px2.p1.1.m1.1c">\leq</annotation></semantics></math> 0.5 with the premise set. We compute word overlap as the fraction of hypothesis tokens that appear in at least one premise (after stopword removal). This eliminates trivial cases of entailment where the hypothesis is simply a subset of the premise text.
+Table <a href="#S4.T1" title="Table 1 ‣ Limiting lexical overlap ‣ 4.1 Generating the Items ‣ 4 The MPE Dataset ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> shows that the mean word overlap for our training data is much lower than SNLI.</p>
+</div>
+<figure id="S4.T1" class="ltx_table">
+<table id="S4.T1.16.16" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S4.T1.16.16.17.1" class="ltx_tr">
+<td id="S4.T1.16.16.17.1.1" class="ltx_td ltx_border_tt"></td>
+<th id="S4.T1.16.16.17.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="4">SNLI</th>
+<th id="S4.T1.16.16.17.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="4">MPE</th>
+</tr>
+<tr id="S4.T1.16.16.18.2" class="ltx_tr">
+<th id="S4.T1.16.16.18.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_column">Data</th>
+<th id="S4.T1.16.16.18.2.2" class="ltx_td ltx_align_center ltx_th ltx_th_column" colspan="2">full</th>
+<th id="S4.T1.16.16.18.2.3" class="ltx_td ltx_align_center ltx_th ltx_th_column" colspan="2">lemma</th>
+<th id="S4.T1.16.16.18.2.4" class="ltx_td ltx_align_center ltx_th ltx_th_column" colspan="2">full</th>
+<th id="S4.T1.16.16.18.2.5" class="ltx_td ltx_align_center ltx_th ltx_th_column" colspan="2">lemma</th>
+</tr>
+<tr id="S4.T1.4.4.4" class="ltx_tr">
+<td id="S4.T1.4.4.4.5" class="ltx_td ltx_align_left ltx_border_t">All</td>
+<td id="S4.T1.4.4.4.6" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t">0.44</td>
+<td id="S4.T1.1.1.1.1" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_t">
+<math id="S4.T1.1.1.1.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.1.1.1.1.m1.1a"><mo id="S4.T1.1.1.1.1.m1.1.1" xref="S4.T1.1.1.1.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.1.1.1.1.m1.1b"><csymbol cd="latexml" id="S4.T1.1.1.1.1.m1.1.1.cmml" xref="S4.T1.1.1.1.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.1.1.1.1.m1.1c">\pm</annotation></semantics></math> 0.29</td>
+<td id="S4.T1.4.4.4.7" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t">0.48</td>
+<td id="S4.T1.2.2.2.2" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_t">
+<math id="S4.T1.2.2.2.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.2.2.2.2.m1.1a"><mo id="S4.T1.2.2.2.2.m1.1.1" xref="S4.T1.2.2.2.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.2.2.2.2.m1.1b"><csymbol cd="latexml" id="S4.T1.2.2.2.2.m1.1.1.cmml" xref="S4.T1.2.2.2.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.2.2.2.2.m1.1c">\pm</annotation></semantics></math> 0.29</td>
+<td id="S4.T1.4.4.4.8" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t">0.28</td>
+<td id="S4.T1.3.3.3.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_t">
+<math id="S4.T1.3.3.3.3.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.3.3.3.3.m1.1a"><mo id="S4.T1.3.3.3.3.m1.1.1" xref="S4.T1.3.3.3.3.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.3.3.3.3.m1.1b"><csymbol cd="latexml" id="S4.T1.3.3.3.3.m1.1.1.cmml" xref="S4.T1.3.3.3.3.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.3.3.3.3.m1.1c">\pm</annotation></semantics></math> 0.22</td>
+<td id="S4.T1.4.4.4.9" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t">0.33</td>
+<td id="S4.T1.4.4.4.4" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_left ltx_border_t">
+<math id="S4.T1.4.4.4.4.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.4.4.4.4.m1.1a"><mo id="S4.T1.4.4.4.4.m1.1.1" xref="S4.T1.4.4.4.4.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.4.4.4.4.m1.1b"><csymbol cd="latexml" id="S4.T1.4.4.4.4.m1.1.1.cmml" xref="S4.T1.4.4.4.4.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.4.4.4.4.m1.1c">\pm</annotation></semantics></math> 0.20</td>
+</tr>
+<tr id="S4.T1.8.8.8" class="ltx_tr">
+<td id="S4.T1.8.8.8.5" class="ltx_td ltx_align_left">E</td>
+<td id="S4.T1.8.8.8.6" class="ltx_td ltx_nopad_l ltx_align_right">0.59</td>
+<td id="S4.T1.5.5.5.1" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.5.5.5.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.5.5.5.1.m1.1a"><mo id="S4.T1.5.5.5.1.m1.1.1" xref="S4.T1.5.5.5.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.5.5.5.1.m1.1b"><csymbol cd="latexml" id="S4.T1.5.5.5.1.m1.1.1.cmml" xref="S4.T1.5.5.5.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.5.5.5.1.m1.1c">\pm</annotation></semantics></math> 0.31</td>
+<td id="S4.T1.8.8.8.7" class="ltx_td ltx_nopad_l ltx_align_right">0.64</td>
+<td id="S4.T1.6.6.6.2" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.6.6.6.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.6.6.6.2.m1.1a"><mo id="S4.T1.6.6.6.2.m1.1.1" xref="S4.T1.6.6.6.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.6.6.6.2.m1.1b"><csymbol cd="latexml" id="S4.T1.6.6.6.2.m1.1.1.cmml" xref="S4.T1.6.6.6.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.6.6.6.2.m1.1c">\pm</annotation></semantics></math> 0.30</td>
+<td id="S4.T1.8.8.8.8" class="ltx_td ltx_nopad_l ltx_align_right">0.34</td>
+<td id="S4.T1.7.7.7.3" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.7.7.7.3.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.7.7.7.3.m1.1a"><mo id="S4.T1.7.7.7.3.m1.1.1" xref="S4.T1.7.7.7.3.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.7.7.7.3.m1.1b"><csymbol cd="latexml" id="S4.T1.7.7.7.3.m1.1.1.cmml" xref="S4.T1.7.7.7.3.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.7.7.7.3.m1.1c">\pm</annotation></semantics></math> 0.21</td>
+<td id="S4.T1.8.8.8.9" class="ltx_td ltx_nopad_l ltx_align_right">0.38</td>
+<td id="S4.T1.8.8.8.4" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_left">
+<math id="S4.T1.8.8.8.4.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.8.8.8.4.m1.1a"><mo id="S4.T1.8.8.8.4.m1.1.1" xref="S4.T1.8.8.8.4.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.8.8.8.4.m1.1b"><csymbol cd="latexml" id="S4.T1.8.8.8.4.m1.1.1.cmml" xref="S4.T1.8.8.8.4.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.8.8.8.4.m1.1c">\pm</annotation></semantics></math> 0.19</td>
+</tr>
+<tr id="S4.T1.12.12.12" class="ltx_tr">
+<td id="S4.T1.12.12.12.5" class="ltx_td ltx_align_left">N</td>
+<td id="S4.T1.12.12.12.6" class="ltx_td ltx_nopad_l ltx_align_right">0.41</td>
+<td id="S4.T1.9.9.9.1" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.9.9.9.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.9.9.9.1.m1.1a"><mo id="S4.T1.9.9.9.1.m1.1.1" xref="S4.T1.9.9.9.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.9.9.9.1.m1.1b"><csymbol cd="latexml" id="S4.T1.9.9.9.1.m1.1.1.cmml" xref="S4.T1.9.9.9.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.9.9.9.1.m1.1c">\pm</annotation></semantics></math> 0.24</td>
+<td id="S4.T1.12.12.12.7" class="ltx_td ltx_nopad_l ltx_align_right">0.45</td>
+<td id="S4.T1.10.10.10.2" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.10.10.10.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.10.10.10.2.m1.1a"><mo id="S4.T1.10.10.10.2.m1.1.1" xref="S4.T1.10.10.10.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.10.10.10.2.m1.1b"><csymbol cd="latexml" id="S4.T1.10.10.10.2.m1.1.1.cmml" xref="S4.T1.10.10.10.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.10.10.10.2.m1.1c">\pm</annotation></semantics></math> 0.24</td>
+<td id="S4.T1.12.12.12.8" class="ltx_td ltx_nopad_l ltx_align_right">0.28</td>
+<td id="S4.T1.11.11.11.3" class="ltx_td ltx_nopad_l ltx_align_left">
+<math id="S4.T1.11.11.11.3.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.11.11.11.3.m1.1a"><mo id="S4.T1.11.11.11.3.m1.1.1" xref="S4.T1.11.11.11.3.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.11.11.11.3.m1.1b"><csymbol cd="latexml" id="S4.T1.11.11.11.3.m1.1.1.cmml" xref="S4.T1.11.11.11.3.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.11.11.11.3.m1.1c">\pm</annotation></semantics></math> 0.21</td>
+<td id="S4.T1.12.12.12.9" class="ltx_td ltx_nopad_l ltx_align_right">0.33</td>
+<td id="S4.T1.12.12.12.4" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_left">
+<math id="S4.T1.12.12.12.4.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.12.12.12.4.m1.1a"><mo id="S4.T1.12.12.12.4.m1.1.1" xref="S4.T1.12.12.12.4.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.12.12.12.4.m1.1b"><csymbol cd="latexml" id="S4.T1.12.12.12.4.m1.1.1.cmml" xref="S4.T1.12.12.12.4.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.12.12.12.4.m1.1c">\pm</annotation></semantics></math> 0.19</td>
+</tr>
+<tr id="S4.T1.16.16.16" class="ltx_tr">
+<td id="S4.T1.16.16.16.5" class="ltx_td ltx_align_left ltx_border_bb">C</td>
+<td id="S4.T1.16.16.16.6" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">0.33</td>
+<td id="S4.T1.13.13.13.1" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_bb">
+<math id="S4.T1.13.13.13.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.13.13.13.1.m1.1a"><mo id="S4.T1.13.13.13.1.m1.1.1" xref="S4.T1.13.13.13.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.13.13.13.1.m1.1b"><csymbol cd="latexml" id="S4.T1.13.13.13.1.m1.1.1.cmml" xref="S4.T1.13.13.13.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.13.13.13.1.m1.1c">\pm</annotation></semantics></math> 0.25</td>
+<td id="S4.T1.16.16.16.7" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">0.36</td>
+<td id="S4.T1.14.14.14.2" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_bb">
+<math id="S4.T1.14.14.14.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.14.14.14.2.m1.1a"><mo id="S4.T1.14.14.14.2.m1.1.1" xref="S4.T1.14.14.14.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.14.14.14.2.m1.1b"><csymbol cd="latexml" id="S4.T1.14.14.14.2.m1.1.1.cmml" xref="S4.T1.14.14.14.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.14.14.14.2.m1.1c">\pm</annotation></semantics></math> 0.25</td>
+<td id="S4.T1.16.16.16.8" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">0.23</td>
+<td id="S4.T1.15.15.15.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_border_bb">
+<math id="S4.T1.15.15.15.3.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.15.15.15.3.m1.1a"><mo id="S4.T1.15.15.15.3.m1.1.1" xref="S4.T1.15.15.15.3.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.15.15.15.3.m1.1b"><csymbol cd="latexml" id="S4.T1.15.15.15.3.m1.1.1.cmml" xref="S4.T1.15.15.15.3.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.15.15.15.3.m1.1c">\pm</annotation></semantics></math> 0.22</td>
+<td id="S4.T1.16.16.16.9" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">0.30</td>
+<td id="S4.T1.16.16.16.4" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_left ltx_border_bb">
+<math id="S4.T1.16.16.16.4.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S4.T1.16.16.16.4.m1.1a"><mo id="S4.T1.16.16.16.4.m1.1.1" xref="S4.T1.16.16.16.4.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S4.T1.16.16.16.4.m1.1b"><csymbol cd="latexml" id="S4.T1.16.16.16.4.m1.1.1.cmml" xref="S4.T1.16.16.16.4.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.16.16.16.4.m1.1c">\pm</annotation></semantics></math> 0.21</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 1: </span>Mean word overlap for full training data and each label, original and lemmatized sentences. MPE has much lower word overlap than SNLI.</figcaption>
+</figure>
+</section>
+<section id="S4.SS1.SSS0.Px3" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Data selection</h4>
+
+<div id="S4.SS1.SSS0.Px3.p1" class="ltx_para">
+<p id="S4.SS1.SSS0.Px3.p1.1" class="ltx_p">From this constrained pool of premises-hypothesis pairings, we randomly sampled 8000 items from the <span id="S4.SS1.SSS0.Px3.p1.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span> training split for our training data. For test and development data, we sample 1000 items from <span id="S4.SS1.SSS0.Px3.p1.1.2" class="ltx_text ltx_font_smallcaps">Flickr30K</span> test and 1000 from dev. The hypotheses in the training data must be associated with at least two captions in the <span id="S4.SS1.SSS0.Px3.p1.1.3" class="ltx_text ltx_font_smallcaps">Flickr30K</span> train split, while the hypotheses in dev/test must be associated with at least two captions in the union of the training and dev/test, and with at least one caption in dev/test alone. Since the test and dev splits of <span id="S4.SS1.SSS0.Px3.p1.1.4" class="ltx_text ltx_font_smallcaps">Flickr30K</span> are smaller than the training split, this threshold selects hypotheses that are rare enough to be interesting and frequent enough to be reasonable sentences.</p>
+</div>
+<figure id="S4.T2" class="ltx_table">
+<table id="S4.T2.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S4.T2.1.1.1" class="ltx_tr">
+<td id="S4.T2.1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.1.1.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold">Instructions:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.2.2" class="ltx_tr">
+<td id="S4.T2.1.2.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.2.2.1.1.1" class="ltx_p" style="width:455.2pt;">We will show you four caption sentences that describe the same scene, and one proposed sentence. Your task is to decide whether or not the scene described by the four captions can also be described by the proposed sentence.</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.3.3" class="ltx_tr">
+<td id="S4.T2.1.3.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S4.T2.1.3.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.3.3.1.1.1" class="ltx_p" style="width:455.2pt;">The four captions were written by four different people. All four people were shown the same image, and then wrote a sentence describing the scene in this image. Therefore, there may be slight disagreements among the captions. The images are photographs from Flickr that show everyday scenes, activities, and events. You will not be given the image that the caption writers saw.</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.4.4" class="ltx_tr">
+<td id="S4.T2.1.4.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.4.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.4.4.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.4.4.1.1.1.1" class="ltx_text ltx_font_bold">Process:</span></span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.5.5" class="ltx_tr">
+<td id="S4.T2.1.5.5.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.5.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.5.5.1.1.1" class="ltx_p" style="width:455.2pt;">Read the four caption sentences and then read the proposed sentence.</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.6.6" class="ltx_tr">
+<td id="S4.T2.1.6.6.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.6.6.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.6.6.1.1.1" class="ltx_p" style="width:455.2pt;">Choose 1 of 3 possible responses to the question</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.7.7" class="ltx_tr">
+<td id="S4.T2.1.7.7.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S4.T2.1.7.7.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.7.7.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.7.7.1.1.1.1" class="ltx_text ltx_font_bold">Can the scene described by the four captions also be described by the proposed sentence?</span></span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.8.8" class="ltx_tr">
+<td id="S4.T2.1.8.8.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.8.8.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.8.8.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.8.8.1.1.1.1" class="ltx_text ltx_font_typewriter ltx_font_bold">Yes</span>:   
+The scene described by the captions can definitely (or very probably) be described by the proposed sentence.
+The proposed sentence may leave out details that are mentioned in the captions. If the proposed sentence describes something that is not mentioned in the captions, it is probably safe to assume the extra information is true, given what you know from the captions. If there are disagreements among the captions about the details of the scene, the proposed sentence is consistent with at least one caption.</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.9.9" class="ltx_tr">
+<td id="S4.T2.1.9.9.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.9.9.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.9.9.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.9.9.1.1.1.1" class="ltx_text ltx_font_typewriter ltx_font_bold">Unknown</span>:   There is not enough information to decide whether or not the scene described by the captions can be described by the proposed sentence.
+There may be scenes that can be described by the proposed sentence and the captions, but you don’t know whether this is the case here.</span>
+</span>
+</td>
+</tr>
+<tr id="S4.T2.1.10.10" class="ltx_tr">
+<td id="S4.T2.1.10.10.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S4.T2.1.10.10.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S4.T2.1.10.10.1.1.1" class="ltx_p" style="width:455.2pt;"><span id="S4.T2.1.10.10.1.1.1.1" class="ltx_text ltx_font_typewriter ltx_font_bold">No</span>:   The scene described by the captions can probably not be described by the proposed sentence.
+The proposed sentence and the captions either contradict each other or describe what appear to be two completely separate events.</span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 2: </span>The annotation instructions we provided to Crowdflower and Mechanical Turk annotators.</figcaption>
+</figure>
+</section>
+</section>
+<section id="S4.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.2 </span>Assigning Entailment Labels</h3>
+
+<section id="S4.SS2.SSS0.Px1" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Crowdsourcing procedure</h4>
+
+<div id="S4.SS2.SSS0.Px1.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px1.p1.1" class="ltx_p">For each item, we solicited five responses from Crowdflower and Amazon Mechanical Turk as to whether the hypothesis was <span id="S4.SS2.SSS0.Px1.p1.1.1" class="ltx_text ltx_font_italic">entailed</span>, <span id="S4.SS2.SSS0.Px1.p1.1.2" class="ltx_text ltx_font_italic">contradictory</span>, or <span id="S4.SS2.SSS0.Px1.p1.1.3" class="ltx_text ltx_font_italic">neither</span> given a set of four premises. Instructions are shown in Table <a href="#S4.T2" title="Table 2 ‣ Data selection ‣ 4.1 Generating the Items ‣ 4 The MPE Dataset ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>. We provided labeled examples to illustrate the kinds of assumptions we expected.</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px2" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Entailment labels</h4>
+
+<div id="S4.SS2.SSS0.Px2.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px2.p1.1" class="ltx_p">We assume three labels (entailment, neutral, contradiction). For entailment, we deliberately asked annotators to judge whether the hypothesis could <span id="S4.SS2.SSS0.Px2.p1.1.1" class="ltx_text ltx_font_italic">very probably</span> describe the same scene as the premises, rather than specifying that the hypothesis must <span id="S4.SS2.SSS0.Px2.p1.1.2" class="ltx_text ltx_font_italic">definitely</span> be true, as <cite class="ltx_cite ltx_citemacro_citet">Bowman et al. (<a href="#bib.bib2" title="" class="ltx_ref">2015</a>)</cite> did for SNLI. Our instructions align with the standard definition of textual entailment: “T entails H if humans reading T would typically infer that H is most likely true” <cite class="ltx_cite ltx_citemacro_cite">Dagan et al. (<a href="#bib.bib4" title="" class="ltx_ref">2013</a>)</cite>. We are not only interested in what is logically required for a hypothesis to be true, but also in what human readers assume is true, given their own world knowledge.</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px3" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Final label assignment</h4>
+
+<div id="S4.SS2.SSS0.Px3.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px3.p1.1" class="ltx_p">Of the 10,000 items for which we collected full label annotations, 90% had a majority label based on the five judgments, including 16% with a 3-2 split between entailment and contradiction. The remaining 10% had a 2-2-1 split across the three classes. We manually adjudicated the latter two cases. As a result, 82% of the final labels in the dataset correspond to a majority vote over the judgments (the remaining 18% differ due to our manual correction). The released dataset contains both our final labels and the crowdsourced judgments for all items.</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px4" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Image IDs</h4>
+
+<div id="S4.SS2.SSS0.Px4.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px4.p1.1" class="ltx_p">Premises in the our dataset have corresponding image IDs from <span id="S4.SS2.SSS0.Px4.p1.1.1" class="ltx_text ltx_font_smallcaps">Flickr30K</span>.
+We are interested in the information present in linguistic descriptions of a scene, so our labels reflect the textual entailment relationship between the premise text and the hypothesis. Future work could apply multi-modal representations to this task, with the caveat that the image would likely resolve many neutral items to either entailment or contradiction.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">5 </span>Data Analysis</h2>
+
+<section id="S5.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.1 </span>Statistics</h3>
+
+<div id="S5.SS1.p1" class="ltx_para">
+<p id="S5.SS1.p1.1" class="ltx_p">The dataset contains 8000 training items, 1000 development items, and 1000 test items. Table <a href="#S5.T3" title="Table 3 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a> shows overall type and token counts and sentence lengths as well as the label distribution.</p>
+</div>
+<figure id="S5.T3" class="ltx_table">
+<table id="S5.T3.4.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.T3.4.4.5.1" class="ltx_tr">
+<th id="S5.T3.4.4.5.1.1" class="ltx_td ltx_th ltx_th_row ltx_border_tt"></th>
+<td id="S5.T3.4.4.5.1.2" class="ltx_td ltx_align_right ltx_border_tt"><span id="S5.T3.4.4.5.1.2.1" class="ltx_text ltx_font_bold">SNLI</span></td>
+<td id="S5.T3.4.4.5.1.3" class="ltx_td ltx_align_right ltx_border_tt"><span id="S5.T3.4.4.5.1.3.1" class="ltx_text ltx_font_bold">MPE</span></td>
+</tr>
+<tr id="S5.T3.4.4.6.2" class="ltx_tr">
+<th id="S5.T3.4.4.6.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">#Lexical types</th>
+<td id="S5.T3.4.4.6.2.2" class="ltx_td ltx_align_right">36,616</td>
+<td id="S5.T3.4.4.6.2.3" class="ltx_td ltx_align_right">9,254</td>
+</tr>
+<tr id="S5.T3.4.4.7.3" class="ltx_tr">
+<th id="S5.T3.4.4.7.3.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">#Lexical tokens</th>
+<td id="S5.T3.4.4.7.3.2" class="ltx_td ltx_align_right">12 million</td>
+<td id="S5.T3.4.4.7.3.3" class="ltx_td ltx_align_right">468,524</td>
+</tr>
+<tr id="S5.T3.2.2.2" class="ltx_tr">
+<th id="S5.T3.2.2.2.3" class="ltx_td ltx_align_left ltx_th ltx_th_row">Mean premise length</th>
+<td id="S5.T3.1.1.1.1" class="ltx_td ltx_align_right">14.0 <math id="S5.T3.1.1.1.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S5.T3.1.1.1.1.m1.1a"><mo id="S5.T3.1.1.1.1.m1.1.1" xref="S5.T3.1.1.1.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S5.T3.1.1.1.1.m1.1b"><csymbol cd="latexml" id="S5.T3.1.1.1.1.m1.1.1.cmml" xref="S5.T3.1.1.1.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.T3.1.1.1.1.m1.1c">\pm</annotation></semantics></math> 6.0</td>
+<td id="S5.T3.2.2.2.2" class="ltx_td ltx_align_right">53.2 <math id="S5.T3.2.2.2.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S5.T3.2.2.2.2.m1.1a"><mo id="S5.T3.2.2.2.2.m1.1.1" xref="S5.T3.2.2.2.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S5.T3.2.2.2.2.m1.1b"><csymbol cd="latexml" id="S5.T3.2.2.2.2.m1.1.1.cmml" xref="S5.T3.2.2.2.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.T3.2.2.2.2.m1.1c">\pm</annotation></semantics></math> 12.8</td>
+</tr>
+<tr id="S5.T3.4.4.4" class="ltx_tr">
+<th id="S5.T3.4.4.4.3" class="ltx_td ltx_align_left ltx_th ltx_th_row">Mean hypothesis length</th>
+<td id="S5.T3.3.3.3.1" class="ltx_td ltx_align_right">8.3 <math id="S5.T3.3.3.3.1.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S5.T3.3.3.3.1.m1.1a"><mo id="S5.T3.3.3.3.1.m1.1.1" xref="S5.T3.3.3.3.1.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S5.T3.3.3.3.1.m1.1b"><csymbol cd="latexml" id="S5.T3.3.3.3.1.m1.1.1.cmml" xref="S5.T3.3.3.3.1.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.T3.3.3.3.1.m1.1c">\pm</annotation></semantics></math> 3.2</td>
+<td id="S5.T3.4.4.4.2" class="ltx_td ltx_align_right">5.3 <math id="S5.T3.4.4.4.2.m1.1" class="ltx_Math" alttext="\pm" display="inline"><semantics id="S5.T3.4.4.4.2.m1.1a"><mo id="S5.T3.4.4.4.2.m1.1.1" xref="S5.T3.4.4.4.2.m1.1.1.cmml">±</mo><annotation-xml encoding="MathML-Content" id="S5.T3.4.4.4.2.m1.1b"><csymbol cd="latexml" id="S5.T3.4.4.4.2.m1.1.1.cmml" xref="S5.T3.4.4.4.2.m1.1.1">plus-or-minus</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.T3.4.4.4.2.m1.1c">\pm</annotation></semantics></math> 1.8</td>
+</tr>
+<tr id="S5.T3.4.4.8.4" class="ltx_tr">
+<th id="S5.T3.4.4.8.4.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t"><span id="S5.T3.4.4.8.4.1.1" class="ltx_text ltx_font_bold">Label distribution</span></th>
+<td id="S5.T3.4.4.8.4.2" class="ltx_td ltx_border_t"></td>
+<td id="S5.T3.4.4.8.4.3" class="ltx_td ltx_border_t"></td>
+</tr>
+<tr id="S5.T3.4.4.9.5" class="ltx_tr">
+<th id="S5.T3.4.4.9.5.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Entailment</th>
+<td id="S5.T3.4.4.9.5.2" class="ltx_td ltx_align_right">33.3%</td>
+<td id="S5.T3.4.4.9.5.3" class="ltx_td ltx_align_right">32.3%</td>
+</tr>
+<tr id="S5.T3.4.4.10.6" class="ltx_tr">
+<th id="S5.T3.4.4.10.6.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Neutral</th>
+<td id="S5.T3.4.4.10.6.2" class="ltx_td ltx_align_right">33.3%</td>
+<td id="S5.T3.4.4.10.6.3" class="ltx_td ltx_align_right">26.3%</td>
+</tr>
+<tr id="S5.T3.4.4.11.7" class="ltx_tr">
+<th id="S5.T3.4.4.11.7.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Contradiction</th>
+<td id="S5.T3.4.4.11.7.2" class="ltx_td ltx_align_right ltx_border_bb">33.3%</td>
+<td id="S5.T3.4.4.11.7.3" class="ltx_td ltx_align_right ltx_border_bb">41.6%</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 3: </span>Type and token counts, sentence lengths, and label distributions for training data.</figcaption>
+</figure>
+<div id="S5.SS1.p2" class="ltx_para">
+<p id="S5.SS1.p2.1" class="ltx_p">The mean annotator agreement, i.e. the fraction of annotators who agreed with the final label, is 0.70 for the full dataset, or 0.82 for the entailment class, 0.42 for neutral, and 0.78 for contradiction. That is, on average, four of the five crowdsourced judgments agree with the final label for the entailment and contradiction items, whereas for the neutral items, only an average of two of the five original annotators assigned the neutral label, and the other three were split between contradiction and entailment.</p>
+</div>
+<figure id="S5.T4" class="ltx_table">
+<table id="S5.T4.5.5" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S5.T4.5.5.6.1" class="ltx_tr">
+<th id="S5.T4.5.5.6.1.1" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_th_row ltx_border_tt">
+<span id="S5.T4.5.5.6.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.6.1.1.1.1" class="ltx_p" style="width:25.6pt;"># pairs agree</span>
+</span>
+</th>
+<th id="S5.T4.5.5.6.1.2" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt">% of data</th>
+<th id="S5.T4.5.5.6.1.3" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_tt">
+<span id="S5.T4.5.5.6.1.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.6.1.3.1.1" class="ltx_p" style="width:28.5pt;">Pair Label</span>
+</span>
+</th>
+<th id="S5.T4.5.5.6.1.4" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_tt">
+<span id="S5.T4.5.5.6.1.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.6.1.4.1.1" class="ltx_p" style="width:327.2pt;">Example <span id="S5.T4.5.5.6.1.4.1.1.1" class="ltx_text ltx_font_bold">Hypothesis</span> and Four Premises</span>
+</span>
+</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S5.T4.1.1.1" class="ltx_tr">
+<th id="S5.T4.1.1.1.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_row ltx_border_t" style="padding-bottom:4.0pt;">
+<span id="S5.T4.1.1.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.1.1.1.2.1.1" class="ltx_p" style="width:25.6pt;">0</span>
+</span>
+</th>
+<th id="S5.T4.1.1.1.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_row ltx_border_t" style="padding-bottom:4.0pt;">21.8</th>
+<td id="S5.T4.1.1.1.4" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top ltx_border_t" style="padding-bottom:4.0pt;">
+<span id="S5.T4.1.1.1.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.1.1.1.4.1.1" class="ltx_p" style="width:28.5pt;">N 
+<br class="ltx_break">N 
+<br class="ltx_break">N 
+<br class="ltx_break">N</span>
+</span>
+</td>
+<td id="S5.T4.1.1.1.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t" style="padding-bottom:4.0pt;">
+<span id="S5.T4.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.1.1.1.1.1.1" class="ltx_p" style="width:327.2pt;">A football player in a red uniform is standing in front of other football players in a stadium. 
+<br class="ltx_break">A football player facing off against two others.
+<br class="ltx_break">A football player wearing a red shirt. 
+<br class="ltx_break">Defensive player waiting for the snap. 
+<br class="ltx_break"><math id="S5.T4.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T4.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.T4.1.1.1.1.1.1.m1.1.1" xref="S5.T4.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T4.1.1.1.1.1.1.m1.1b"><ci id="S5.T4.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.T4.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T4.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T4.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span>    <span id="S5.T4.1.1.1.1.1.1.2" class="ltx_text ltx_font_bold">The team waiting.</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T4.2.2.2" class="ltx_tr">
+<th id="S5.T4.2.2.2.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_row" style="padding-bottom:4.0pt;">
+<span id="S5.T4.2.2.2.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.2.2.2.2.1.1" class="ltx_p" style="width:25.6pt;">1</span>
+</span>
+</th>
+<th id="S5.T4.2.2.2.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_row" style="padding-bottom:4.0pt;">26.9</th>
+<td id="S5.T4.2.2.2.4" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.2.2.2.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.2.2.2.4.1.1" class="ltx_p" style="width:28.5pt;">N 
+<br class="ltx_break">C 
+<br class="ltx_break">N 
+<br class="ltx_break">N 
+<br class="ltx_break"></span>
+</span>
+</td>
+<td id="S5.T4.2.2.2.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.2.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.2.2.2.1.1.1" class="ltx_p" style="width:327.2pt;">A person is half submerged in water in their yellow kayak.
+<br class="ltx_break">A woman has positioned her kayak nose down in the water.
+<br class="ltx_break">A person in a canoe is rafting in wild waters. 
+<br class="ltx_break">A kayaker plunges into the river. 
+<br class="ltx_break"><math id="S5.T4.2.2.2.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T4.2.2.2.1.1.1.m1.1a"><mo stretchy="false" id="S5.T4.2.2.2.1.1.1.m1.1.1" xref="S5.T4.2.2.2.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T4.2.2.2.1.1.1.m1.1b"><ci id="S5.T4.2.2.2.1.1.1.m1.1.1.cmml" xref="S5.T4.2.2.2.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T4.2.2.2.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T4.2.2.2.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">C</span>    <span id="S5.T4.2.2.2.1.1.1.2" class="ltx_text ltx_font_bold">A man in a boat paddling through waters.</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T4.3.3.3" class="ltx_tr">
+<th id="S5.T4.3.3.3.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_row" style="padding-bottom:4.0pt;">
+<span id="S5.T4.3.3.3.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.3.3.3.2.1.1" class="ltx_p" style="width:25.6pt;">2</span>
+</span>
+</th>
+<th id="S5.T4.3.3.3.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_row" style="padding-bottom:4.0pt;">16.7</th>
+<td id="S5.T4.3.3.3.4" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.3.3.3.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.3.3.3.4.1.1" class="ltx_p" style="width:28.5pt;">E 
+<br class="ltx_break">E 
+<br class="ltx_break">N 
+<br class="ltx_break">N 
+<br class="ltx_break"></span>
+</span>
+</td>
+<td id="S5.T4.3.3.3.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.3.3.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.3.3.3.1.1.1" class="ltx_p" style="width:327.2pt;">A batter playing cricket missed the ball and the person behind him is catching it.
+<br class="ltx_break">A cricket player misses the pitch.
+<br class="ltx_break">The three men are playing cricket. 
+<br class="ltx_break">A man struck out playing cricket. 
+<br class="ltx_break"><math id="S5.T4.3.3.3.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T4.3.3.3.1.1.1.m1.1a"><mo stretchy="false" id="S5.T4.3.3.3.1.1.1.m1.1.1" xref="S5.T4.3.3.3.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T4.3.3.3.1.1.1.m1.1b"><ci id="S5.T4.3.3.3.1.1.1.m1.1.1.cmml" xref="S5.T4.3.3.3.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T4.3.3.3.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T4.3.3.3.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span>    <span id="S5.T4.3.3.3.1.1.1.2" class="ltx_text ltx_font_bold">A man swings a bat.</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T4.4.4.4" class="ltx_tr">
+<th id="S5.T4.4.4.4.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_row" style="padding-bottom:4.0pt;">
+<span id="S5.T4.4.4.4.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.4.4.4.2.1.1" class="ltx_p" style="width:25.6pt;">3</span>
+</span>
+</th>
+<th id="S5.T4.4.4.4.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_row" style="padding-bottom:4.0pt;">24.8</th>
+<td id="S5.T4.4.4.4.4" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.4.4.4.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.4.4.4.4.1.1" class="ltx_p" style="width:28.5pt;">N 
+<br class="ltx_break">N 
+<br class="ltx_break">E 
+<br class="ltx_break">N 
+<br class="ltx_break"></span>
+</span>
+</td>
+<td id="S5.T4.4.4.4.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T4.4.4.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.4.4.4.1.1.1" class="ltx_p" style="width:327.2pt;">A young gymnast, jumps high in the air, while performing on a balance beam. 
+<br class="ltx_break">A gymnast performing on the balance beam in front of an audience. 
+<br class="ltx_break">The young gymnast’s supple body soars above the balance beam. 
+<br class="ltx_break">A gymnast is performing on the balance beam. 
+<br class="ltx_break"><math id="S5.T4.4.4.4.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T4.4.4.4.1.1.1.m1.1a"><mo stretchy="false" id="S5.T4.4.4.4.1.1.1.m1.1.1" xref="S5.T4.4.4.4.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T4.4.4.4.1.1.1.m1.1b"><ci id="S5.T4.4.4.4.1.1.1.m1.1.1.cmml" xref="S5.T4.4.4.4.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T4.4.4.4.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T4.4.4.4.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">N</span>    <span id="S5.T4.4.4.4.1.1.1.2" class="ltx_text ltx_font_bold">A woman doing gymnastics.</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T4.5.5.5" class="ltx_tr">
+<th id="S5.T4.5.5.5.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_row ltx_border_bb">
+<span id="S5.T4.5.5.5.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.5.2.1.1" class="ltx_p" style="width:25.6pt;">4</span>
+</span>
+</th>
+<th id="S5.T4.5.5.5.3" class="ltx_td ltx_nopad_l ltx_align_left ltx_th ltx_th_row ltx_border_bb">9.8</th>
+<td id="S5.T4.5.5.5.4" class="ltx_td ltx_nopad_l ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S5.T4.5.5.5.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.5.4.1.1" class="ltx_p" style="width:28.5pt;">C 
+<br class="ltx_break">C 
+<br class="ltx_break">C 
+<br class="ltx_break">C 
+<br class="ltx_break"></span>
+</span>
+</td>
+<td id="S5.T4.5.5.5.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S5.T4.5.5.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T4.5.5.5.1.1.1" class="ltx_p" style="width:327.2pt;">A man with a cowboy hat is riding a horse that is jumping.
+<br class="ltx_break">A cowboy riding on his horse that is jumping in the air.
+<br class="ltx_break">A cowboy balances on his horse in a rodeo.
+<br class="ltx_break">Man wearing a cowboy hat riding a horse.
+<br class="ltx_break"><math id="S5.T4.5.5.5.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T4.5.5.5.1.1.1.m1.1a"><mo stretchy="false" id="S5.T4.5.5.5.1.1.1.m1.1.1" xref="S5.T4.5.5.5.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T4.5.5.5.1.1.1.m1.1b"><ci id="S5.T4.5.5.5.1.1.1.m1.1.1.cmml" xref="S5.T4.5.5.5.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T4.5.5.5.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T4.5.5.5.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">C</span>    <span id="S5.T4.5.5.5.1.1.1.2" class="ltx_text ltx_font_bold">Men pulled by animals.</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 4: </span>MPE examples that illustrate the difference between pair labels and the full label. We include one example for each category, based on the number of pair labels that agree with the full label, and indicate the size of each category as a percentage of the development data.</figcaption>
+</figure>
+<figure id="S5.T5" class="ltx_table">
+<table id="S5.T5.7.7" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.T5.7.7.8.1" class="ltx_tr">
+<td id="S5.T5.7.7.8.1.1" class="ltx_td ltx_align_top ltx_border_tt"></td>
+<th id="S5.T5.7.7.8.1.2" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_tt">#</th>
+<th id="S5.T5.7.7.8.1.3" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_tt">E</th>
+<th id="S5.T5.7.7.8.1.4" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_tt">N</th>
+<th id="S5.T5.7.7.8.1.5" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_tt">C</th>
+<th id="S5.T5.7.7.8.1.6" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_tt">
+<span id="S5.T5.7.7.8.1.6.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.7.7.8.1.6.1.1" class="ltx_p" style="width:313.0pt;">Example Premise and <span id="S5.T5.7.7.8.1.6.1.1.1" class="ltx_text ltx_font_bold">Hypothesis</span> Pair</span>
+</span>
+</th>
+</tr>
+<tr id="S5.T5.7.7.9.2" class="ltx_tr">
+<th id="S5.T5.7.7.9.2.1" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_t">
+<span id="S5.T5.7.7.9.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.7.7.9.2.1.1.1" class="ltx_p" style="width:48.4pt;">Total</span>
+</span>
+</th>
+<th id="S5.T5.7.7.9.2.2" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_t">100</th>
+<th id="S5.T5.7.7.9.2.3" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_t">31</th>
+<th id="S5.T5.7.7.9.2.4" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_t">29</th>
+<th id="S5.T5.7.7.9.2.5" class="ltx_td ltx_nopad_l ltx_align_right ltx_th ltx_th_column ltx_border_t">40</th>
+<td id="S5.T5.7.7.9.2.6" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_top ltx_border_t"></td>
+</tr>
+<tr id="S5.T5.1.1.1" class="ltx_tr">
+<td id="S5.T5.1.1.1.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_t" style="padding-bottom:4.0pt;">
+<span id="S5.T5.1.1.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.1.1.1.2.1.1" class="ltx_p" style="width:48.4pt;">Word equivalence</span>
+</span>
+</td>
+<td id="S5.T5.1.1.1.3" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t" style="padding-bottom:4.0pt;">16</td>
+<td id="S5.T5.1.1.1.4" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t" style="padding-bottom:4.0pt;">12</td>
+<td id="S5.T5.1.1.1.5" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t" style="padding-bottom:4.0pt;">4</td>
+<td id="S5.T5.1.1.1.6" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_t" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.1.1.1.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t" style="padding-bottom:4.0pt;">
+<span id="S5.T5.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.1.1.1.1.1.1" class="ltx_p" style="width:313.0pt;">A person <span id="S5.T5.1.1.1.1.1.1.1" class="ltx_text ltx_font_italic">climbing</span> a rock face.
+<br class="ltx_break"><span id="S5.T5.1.1.1.1.1.1.2" class="ltx_text ltx_font_bold">A rock climber <span id="S5.T5.1.1.1.1.1.1.2.1" class="ltx_text ltx_font_italic">scales</span> a cliff.</span> <math id="S5.T5.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.1.1.1.1.1.1.m1.1.1" xref="S5.T5.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.1.1.1.1.1.1.m1.1b"><ci id="S5.T5.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.T5.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.1.1.1.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.2.2.2" class="ltx_tr">
+<td id="S5.T5.2.2.2.2" class="ltx_td ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.2.2.2.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.2.2.2.2.1.1" class="ltx_p" style="width:48.4pt;">Word hypernymy</span>
+</span>
+</td>
+<td id="S5.T5.2.2.2.3" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">19</td>
+<td id="S5.T5.2.2.2.4" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">6</td>
+<td id="S5.T5.2.2.2.5" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">6</td>
+<td id="S5.T5.2.2.2.6" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">7</td>
+<td id="S5.T5.2.2.2.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.2.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.2.2.2.1.1.1" class="ltx_p" style="width:313.0pt;"><span id="S5.T5.2.2.2.1.1.1.1" class="ltx_text ltx_font_italic">Girl</span> in a blue sweater painting while looking at a bird in a book.
+<br class="ltx_break"><span id="S5.T5.2.2.2.1.1.1.2" class="ltx_text ltx_font_bold">A <span id="S5.T5.2.2.2.1.1.1.2.1" class="ltx_text ltx_font_italic">child</span> painting a picture.</span> <math id="S5.T5.2.2.2.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.2.2.2.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.2.2.2.1.1.1.m1.1.1" xref="S5.T5.2.2.2.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.2.2.2.1.1.1.m1.1b"><ci id="S5.T5.2.2.2.1.1.1.m1.1.1.cmml" xref="S5.T5.2.2.2.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.2.2.2.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.2.2.2.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.3.3.3" class="ltx_tr">
+<td id="S5.T5.3.3.3.2" class="ltx_td ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.3.3.3.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.3.3.3.2.1.1" class="ltx_p" style="width:48.4pt;">Phrase equivalence</span>
+</span>
+</td>
+<td id="S5.T5.3.3.3.3" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">7</td>
+<td id="S5.T5.3.3.3.4" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">6</td>
+<td id="S5.T5.3.3.3.5" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">1</td>
+<td id="S5.T5.3.3.3.6" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.3.3.3.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.3.3.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.3.3.3.1.1.1" class="ltx_p" style="width:313.0pt;"><span id="S5.T5.3.3.3.1.1.1.1" class="ltx_text ltx_font_italic">A couple in their wedding attire</span> stand behind a table with a wedding cake and flowers.
+<br class="ltx_break"><span id="S5.T5.3.3.3.1.1.1.2" class="ltx_text ltx_font_bold ltx_font_italic">Newlyweds<span id="S5.T5.3.3.3.1.1.1.2.1" class="ltx_text ltx_font_upright"> standing.</span></span> <math id="S5.T5.3.3.3.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.3.3.3.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.3.3.3.1.1.1.m1.1.1" xref="S5.T5.3.3.3.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.3.3.3.1.1.1.m1.1b"><ci id="S5.T5.3.3.3.1.1.1.m1.1.1.cmml" xref="S5.T5.3.3.3.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.3.3.3.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.3.3.3.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.4.4.4" class="ltx_tr">
+<td id="S5.T5.4.4.4.2" class="ltx_td ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.4.4.4.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.4.4.4.2.1.1" class="ltx_p" style="width:48.4pt;">Phrase hypernymy</span>
+</span>
+</td>
+<td id="S5.T5.4.4.4.3" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">8</td>
+<td id="S5.T5.4.4.4.4" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">6</td>
+<td id="S5.T5.4.4.4.5" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">2</td>
+<td id="S5.T5.4.4.4.6" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.4.4.4.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.4.4.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.4.4.4.1.1.1" class="ltx_p" style="width:313.0pt;">A group of young boys wearing track jackets <span id="S5.T5.4.4.4.1.1.1.1" class="ltx_text ltx_font_italic">stretch their legs</span> on a gym floor as they sit in a circle.
+<br class="ltx_break"><span id="S5.T5.4.4.4.1.1.1.2" class="ltx_text ltx_font_bold">A group <span id="S5.T5.4.4.4.1.1.1.2.1" class="ltx_text ltx_font_italic">doing exercises</span>.</span> <math id="S5.T5.4.4.4.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.4.4.4.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.4.4.4.1.1.1.m1.1.1" xref="S5.T5.4.4.4.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.4.4.4.1.1.1.m1.1b"><ci id="S5.T5.4.4.4.1.1.1.m1.1.1.cmml" xref="S5.T5.4.4.4.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.4.4.4.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.4.4.4.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.5.5.5" class="ltx_tr">
+<td id="S5.T5.5.5.5.2" class="ltx_td ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.5.5.5.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.5.5.5.2.1.1" class="ltx_p" style="width:48.4pt;">Mutual exclusion</span>
+</span>
+</td>
+<td id="S5.T5.5.5.5.3" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">25</td>
+<td id="S5.T5.5.5.5.4" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.5.5.5.5" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.5.5.5.6" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">25</td>
+<td id="S5.T5.5.5.5.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.5.5.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.5.5.5.1.1.1" class="ltx_p" style="width:313.0pt;">A woman in a red vest <span id="S5.T5.5.5.5.1.1.1.1" class="ltx_text ltx_font_italic">working at a computer</span>.
+<br class="ltx_break"><span id="S5.T5.5.5.5.1.1.1.2" class="ltx_text ltx_font_bold">Lady <span id="S5.T5.5.5.5.1.1.1.2.1" class="ltx_text ltx_font_italic">doing yoga</span>.</span> <math id="S5.T5.5.5.5.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.5.5.5.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.5.5.5.1.1.1.m1.1.1" xref="S5.T5.5.5.5.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.5.5.5.1.1.1.m1.1b"><ci id="S5.T5.5.5.5.1.1.1.m1.1.1.cmml" xref="S5.T5.5.5.5.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.5.5.5.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.5.5.5.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">C</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.6.6.6" class="ltx_tr">
+<td id="S5.T5.6.6.6.2" class="ltx_td ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.6.6.6.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.6.6.6.2.1.1" class="ltx_p" style="width:48.4pt;">Compatibility</span>
+</span>
+</td>
+<td id="S5.T5.6.6.6.3" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">18</td>
+<td id="S5.T5.6.6.6.4" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.6.6.6.5" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">18</td>
+<td id="S5.T5.6.6.6.6" class="ltx_td ltx_nopad_l ltx_align_right" style="padding-bottom:4.0pt;">0</td>
+<td id="S5.T5.6.6.6.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:4.0pt;">
+<span id="S5.T5.6.6.6.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.6.6.6.1.1.1" class="ltx_p" style="width:313.0pt;"><span id="S5.T5.6.6.6.1.1.1.1" class="ltx_text ltx_font_italic">Onlookers watch</span>.
+<br class="ltx_break"><span id="S5.T5.6.6.6.1.1.1.2" class="ltx_text ltx_font_bold">A girl at bat in a <span id="S5.T5.6.6.6.1.1.1.2.1" class="ltx_text ltx_font_italic">softball game</span>.</span> <math id="S5.T5.6.6.6.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.6.6.6.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.6.6.6.1.1.1.m1.1.1" xref="S5.T5.6.6.6.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.6.6.6.1.1.1.m1.1b"><ci id="S5.T5.6.6.6.1.1.1.m1.1.1.cmml" xref="S5.T5.6.6.6.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.6.6.6.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.6.6.6.1.1.1.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">N</span></span>
+</span>
+</td>
+</tr>
+<tr id="S5.T5.7.7.7" class="ltx_tr">
+<td id="S5.T5.7.7.7.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S5.T5.7.7.7.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.7.7.7.2.1.1" class="ltx_p" style="width:48.4pt;">World knowledge</span>
+</span>
+</td>
+<td id="S5.T5.7.7.7.3" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">35</td>
+<td id="S5.T5.7.7.7.4" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">14</td>
+<td id="S5.T5.7.7.7.5" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">9</td>
+<td id="S5.T5.7.7.7.6" class="ltx_td ltx_nopad_l ltx_align_right ltx_border_bb">12</td>
+<td id="S5.T5.7.7.7.1" class="ltx_td ltx_nopad_l ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S5.T5.7.7.7.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.T5.7.7.7.1.1.1" class="ltx_p" style="width:313.0pt;">A young woman gives directions to an older woman outside a subway station.
+<br class="ltx_break"><span id="S5.T5.7.7.7.1.1.1.1" class="ltx_text ltx_font_bold">Women standing.</span> <math id="S5.T5.7.7.7.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.T5.7.7.7.1.1.1.m1.1a"><mo stretchy="false" id="S5.T5.7.7.7.1.1.1.m1.1.1" xref="S5.T5.7.7.7.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.T5.7.7.7.1.1.1.m1.1b"><ci id="S5.T5.7.7.7.1.1.1.m1.1.1.cmml" xref="S5.T5.7.7.7.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.T5.7.7.7.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.T5.7.7.7.1.1.1.2" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 5: </span>Analysis of 100 random dev items. For each phenomenon, we show the distribution over labels and an example. The label is indicated with E, N, C. We use color and underlining to indicate the relevant comparisons. The indicated span of text is part of the necessary information to predict the correct label, but may not be sufficient on its own.</figcaption>
+</figure>
+</section>
+<section id="S5.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.2 </span>MPE vs. Standard Entailment</h3>
+
+<div id="S5.SS2.p1" class="ltx_para">
+<p id="S5.SS2.p1.1" class="ltx_p">Multiple premise entailment (MPE) differs from standard single premise entailment (SPE) in that each premise consists of four independently written sentences about the same scene. To understand how MPE differs from SPE, we used crowdsourcing to collect pairwise single-premise entailment labels for each individual premise-hypothesis pair in the development data. Each consensus label is based on three judgments.</p>
+</div>
+<div id="S5.SS2.p2" class="ltx_para">
+<p id="S5.SS2.p2.3" class="ltx_p">In Table <a href="#S5.T4" title="Table 4 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>, we compare the full MPE entailment labels (bold <math id="S5.SS2.p2.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS2.p2.1.m1.1a"><mo stretchy="false" id="S5.SS2.p2.1.m1.1.1" xref="S5.SS2.p2.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS2.p2.1.m1.1b"><ci id="S5.SS2.p2.1.m1.1.1.cmml" xref="S5.SS2.p2.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p2.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS2.p2.3.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">E</span>, <math id="S5.SS2.p2.2.m2.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS2.p2.2.m2.1a"><mo stretchy="false" id="S5.SS2.p2.2.m2.1.1" xref="S5.SS2.p2.2.m2.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS2.p2.2.m2.1b"><ci id="S5.SS2.p2.2.m2.1.1.cmml" xref="S5.SS2.p2.2.m2.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p2.2.m2.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS2.p2.3.2" class="ltx_text ltx_font_bold ltx_font_smallcaps">N</span>, <math id="S5.SS2.p2.3.m3.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS2.p2.3.m3.1a"><mo stretchy="false" id="S5.SS2.p2.3.m3.1.1" xref="S5.SS2.p2.3.m3.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS2.p2.3.m3.1b"><ci id="S5.SS2.p2.3.m3.1.1.cmml" xref="S5.SS2.p2.3.m3.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p2.3.m3.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS2.p2.3.3" class="ltx_text ltx_font_bold ltx_font_smallcaps">C</span>), to the four pair SPE labels (E, N, C). The number of SPE labels that agree with the MPE label yields the five categories in Table <a href="#S5.T4" title="Table 4 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>, ranging from the most difficult case where none of the SPE labels agree with the MPE label (21.8% of the data) to the simplest case where all four SPE labels agree with the MPE label (9.8% of the data).</p>
+</div>
+<div id="S5.SS2.p3" class="ltx_para">
+<p id="S5.SS2.p3.3" class="ltx_p">We observe that a simple majority voting scheme over the gold standard SPE labels would not be sufficient, since it assigns the correct MPE label to only 34.6% of the development items (i.e. those cases where three or four SPE pairs agree with the MPE label).
+We also evaluate a slightly more sophisticated voting scheme that applies the following heuristic (here, <math id="S5.SS2.p3.1.m1.1" class="ltx_Math" alttext="E" display="inline"><semantics id="S5.SS2.p3.1.m1.1a"><mi id="S5.SS2.p3.1.m1.1.1" xref="S5.SS2.p3.1.m1.1.1.cmml">E</mi><annotation-xml encoding="MathML-Content" id="S5.SS2.p3.1.m1.1b"><ci id="S5.SS2.p3.1.m1.1.1.cmml" xref="S5.SS2.p3.1.m1.1.1">𝐸</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p3.1.m1.1c">E</annotation></semantics></math>, <math id="S5.SS2.p3.2.m2.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S5.SS2.p3.2.m2.1a"><mi id="S5.SS2.p3.2.m2.1.1" xref="S5.SS2.p3.2.m2.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S5.SS2.p3.2.m2.1b"><ci id="S5.SS2.p3.2.m2.1.1.cmml" xref="S5.SS2.p3.2.m2.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p3.2.m2.1c">N</annotation></semantics></math>, <math id="S5.SS2.p3.3.m3.1" class="ltx_Math" alttext="C" display="inline"><semantics id="S5.SS2.p3.3.m3.1a"><mi id="S5.SS2.p3.3.m3.1.1" xref="S5.SS2.p3.3.m3.1.1.cmml">C</mi><annotation-xml encoding="MathML-Content" id="S5.SS2.p3.3.m3.1b"><ci id="S5.SS2.p3.3.m3.1.1.cmml" xref="S5.SS2.p3.3.m3.1.1">𝐶</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p3.3.m3.1c">C</annotation></semantics></math> are the number of SPE labels of each class):</p>
+<table id="S5.SS2.p3.5.2" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS2.p3.4.1.1" class="ltx_tr">
+<td id="S5.SS2.p3.4.1.1.1" class="ltx_td ltx_align_left">If <math id="S5.SS2.p3.4.1.1.1.m1.1" class="ltx_Math" alttext="E&gt;C" display="inline"><semantics id="S5.SS2.p3.4.1.1.1.m1.1a"><mrow id="S5.SS2.p3.4.1.1.1.m1.1.1" xref="S5.SS2.p3.4.1.1.1.m1.1.1.cmml"><mi id="S5.SS2.p3.4.1.1.1.m1.1.1.2" xref="S5.SS2.p3.4.1.1.1.m1.1.1.2.cmml">E</mi><mo id="S5.SS2.p3.4.1.1.1.m1.1.1.1" xref="S5.SS2.p3.4.1.1.1.m1.1.1.1.cmml">&gt;</mo><mi id="S5.SS2.p3.4.1.1.1.m1.1.1.3" xref="S5.SS2.p3.4.1.1.1.m1.1.1.3.cmml">C</mi></mrow><annotation-xml encoding="MathML-Content" id="S5.SS2.p3.4.1.1.1.m1.1b"><apply id="S5.SS2.p3.4.1.1.1.m1.1.1.cmml" xref="S5.SS2.p3.4.1.1.1.m1.1.1"><gt id="S5.SS2.p3.4.1.1.1.m1.1.1.1.cmml" xref="S5.SS2.p3.4.1.1.1.m1.1.1.1"></gt><ci id="S5.SS2.p3.4.1.1.1.m1.1.1.2.cmml" xref="S5.SS2.p3.4.1.1.1.m1.1.1.2">𝐸</ci><ci id="S5.SS2.p3.4.1.1.1.m1.1.1.3.cmml" xref="S5.SS2.p3.4.1.1.1.m1.1.1.3">𝐶</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p3.4.1.1.1.m1.1c">E&gt;C</annotation></semantics></math>, predict entailment.</td>
+</tr>
+<tr id="S5.SS2.p3.5.2.2" class="ltx_tr">
+<td id="S5.SS2.p3.5.2.2.1" class="ltx_td ltx_align_left">Else if <math id="S5.SS2.p3.5.2.2.1.m1.1" class="ltx_Math" alttext="C&gt;E" display="inline"><semantics id="S5.SS2.p3.5.2.2.1.m1.1a"><mrow id="S5.SS2.p3.5.2.2.1.m1.1.1" xref="S5.SS2.p3.5.2.2.1.m1.1.1.cmml"><mi id="S5.SS2.p3.5.2.2.1.m1.1.1.2" xref="S5.SS2.p3.5.2.2.1.m1.1.1.2.cmml">C</mi><mo id="S5.SS2.p3.5.2.2.1.m1.1.1.1" xref="S5.SS2.p3.5.2.2.1.m1.1.1.1.cmml">&gt;</mo><mi id="S5.SS2.p3.5.2.2.1.m1.1.1.3" xref="S5.SS2.p3.5.2.2.1.m1.1.1.3.cmml">E</mi></mrow><annotation-xml encoding="MathML-Content" id="S5.SS2.p3.5.2.2.1.m1.1b"><apply id="S5.SS2.p3.5.2.2.1.m1.1.1.cmml" xref="S5.SS2.p3.5.2.2.1.m1.1.1"><gt id="S5.SS2.p3.5.2.2.1.m1.1.1.1.cmml" xref="S5.SS2.p3.5.2.2.1.m1.1.1.1"></gt><ci id="S5.SS2.p3.5.2.2.1.m1.1.1.2.cmml" xref="S5.SS2.p3.5.2.2.1.m1.1.1.2">𝐶</ci><ci id="S5.SS2.p3.5.2.2.1.m1.1.1.3.cmml" xref="S5.SS2.p3.5.2.2.1.m1.1.1.3">𝐸</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p3.5.2.2.1.m1.1c">C&gt;E</annotation></semantics></math>, predict contradiction.</td>
+</tr>
+<tr id="S5.SS2.p3.5.2.3.1" class="ltx_tr">
+<td id="S5.SS2.p3.5.2.3.1.1" class="ltx_td ltx_align_left">Otherwise, predict neutral.</td>
+</tr>
+</tbody>
+</table>
+<p id="S5.SS2.p3.6" class="ltx_p">This baseline achieves an accuracy of 41.7%.
+These results indicate that MPE cannot be trivially reduced to SPE. That is, even if a model had access to the correct SPE label for each individual premise (an unrealistic assumption), it would require more than simple voting heuristics to obtain the correct MPE label from these pairwise labels. Table <a href="#S5.T4" title="Table 4 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> illustrates that the majority of MPE items require aggregation of information about the described entities and events across multiple premises. In the first example, the first premise is consistent with a scene that involves a team of football players, while only the last premise indicates that the team may be waiting.
+Moreover, the simple majority voting would work on the fourth example but fail on the second example, while the more sophisticated voting scheme would work on the second example and fail on the fourth.</p>
+</div>
+</section>
+<section id="S5.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.3 </span>Semantic Phenomena</h3>
+
+<div id="S5.SS3.p1" class="ltx_para">
+<p id="S5.SS3.p1.1" class="ltx_p">We used a random sample of 100 development items to examine the types of semantic phenomena that are useful for inference in this dataset. We categorized each item by type of knowledge or reasoning necessary to predict the correct label for the hypothesis given the premises. An item belongs to a category if at least one premise in that item exhibits that semantic phenomenon in relation to the hypothesis, and an item may belong to multiple categories. For each category, Table <a href="#S5.T5" title="Table 5 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> contains its frequency, an illustrative example containing the relevant premise, and the distribution over entailment labels. We did our analysis on full items (four premises and the corresponding hypothesis), but the examples in Table <a href="#S5.T5" title="Table 5 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> have been simplified to a single premise for simplicity.</p>
+</div>
+<section id="S5.SS3.SSS0.Px1" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Word equivalence</h4>
+
+<div id="S5.SS3.SSS0.Px1.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px1.p1.1" class="ltx_p">Items in this category contain a pair of equivalent words (synonyms or paraphrases). The word in the hypothesis can be exchanged for the word in the premise without significantly changing the meaning of the hypothesis.</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px2" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Word hypernymy</h4>
+
+<div id="S5.SS3.SSS0.Px2.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px2.p1.1" class="ltx_p">These items involve lexical hypernyms: someone who is a man is also a person (entailment), but a person may or may not be a man (neutral), and somebody who is a man is not a child (contradiction).</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px3" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Phrase equivalence</h4>
+
+<div id="S5.SS3.SSS0.Px3.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px3.p1.1" class="ltx_p">These items involve equivalent phrases, i.e. synonyms or paraphrases. The phrase in the hypothesis can be replaced by the phrase in the premise without significantly changing the meaning of the hypothesis.</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px4" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Phrase hypernymy</h4>
+
+<div id="S5.SS3.SSS0.Px4.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px4.p1.1" class="ltx_p">Items in this category involve a specific phrase and a general phrase: the more general phrase “doing exercises” can refer to multiple types of exercises in addition to “stretching their legs.”</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px5" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Mutual exclusion</h4>
+
+<div id="S5.SS3.SSS0.Px5.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px5.p1.1" class="ltx_p">Distinguishing between contradiction and neutral items involves identifying actions that are mutually exclusive, i.e. cannot be performed simultaneously by the same agent (“Two doctors perform surgery” vs. “Two surgeons are having lunch”).</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px6" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Compatibility</h4>
+
+<div id="S5.SS3.SSS0.Px6.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px6.p1.1" class="ltx_p">The opposite of mutual exclusion is compatibility: two actions that can be performed simultaneously by the same agent (e.g. “A boy flying a red and white kite” vs. “A boy is smiling”).</p>
+</div>
+</section>
+<section id="S5.SS3.SSS0.Px7" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">World knowledge</h4>
+
+<div id="S5.SS3.SSS0.Px7.p1" class="ltx_para">
+<p id="S5.SS3.SSS0.Px7.p1.1" class="ltx_p">These items require extra-linguistic knowledge about the relative frequency and co-occurrence of events in the world (not overlapping with the mutual exclusion or compatibility phenomena). A human reader can infer that children in a potato sack race are having fun (while a marathon runner competing in a race might not be described as having fun).</p>
+</div>
+</section>
+</section>
+<section id="S5.SS4" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.4 </span>Combining Information Across Premises</h3>
+
+<div id="S5.SS4.p1" class="ltx_para">
+<p id="S5.SS4.p1.1" class="ltx_p">In addition to the semantic phenomena we have just discussed, the data presents the challenge of how to combine information across multiple premises. We examined examples from the development data to analyze the different types of information aggregation present in our dataset.</p>
+</div>
+<section id="S5.SS4.SSS0.Px1" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Coreference resolution</h4>
+
+<div id="S5.SS4.SSS0.Px1.p1" class="ltx_para">
+<p id="S5.SS4.SSS0.Px1.p1.1" class="ltx_p">This case requires cross-caption coreference resolution of entity mentions from multiple premises and the hypothesis. In this example, a human reader can recognize that “two men” and “two senior citizens” refer to the same entities, i.e. the “two older men” in the hypothesis. Given that information, the reader can additionally infer that the two older men on the street are likely to be standing.</p>
+</div>
+<div id="S5.SS4.SSS0.Px1.1" class="ltx_para">
+<table id="S5.SS4.SSS0.Px1.1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px1.1.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px1.1.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. Two men in tan coats exchange looks on the city sidewalk.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px1.1.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px1.1.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2. Two senior citizens talking on a public street.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px1.1.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px1.1.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. Two men in brown coats on the street.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px1.1.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px1.1.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. Two men in beige coats, talking.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px1.1.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px1.1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px1.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px1.1.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">Two older men stand.  <math id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Entailment</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="S5.SS4.SSS0.Px2" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Event resolution</h4>
+
+<div id="S5.SS4.SSS0.Px2.p1" class="ltx_para">
+<p id="S5.SS4.SSS0.Px2.p1.1" class="ltx_p">This case requires resolving various event descriptions from multiple premises and the hypothesis. In the following example, a human reader recognizes that the man is sitting on scaffolding so that he can repair the building, and therefore he is doing construction work.</p>
+</div>
+<div id="S5.SS4.SSS0.Px2.1" class="ltx_para">
+<table id="S5.SS4.SSS0.Px2.1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px2.1.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px2.1.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. A man is sitting on a scaffolding in front a white building.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px2.1.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px2.1.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2. A man is sitting on a platform next to a building ledge.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px2.1.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px2.1.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. A man looks down from his balcony from a stone building.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px2.1.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px2.1.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. Repairing the front of an old building.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px2.1.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px2.1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px2.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px2.1.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">A man doing construction work.  <math id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px2.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Entailment</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="S5.SS4.SSS0.Px3" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Visual ambiguity resolution</h4>
+
+<div id="S5.SS4.SSS0.Px3.p1" class="ltx_para">
+<p id="S5.SS4.SSS0.Px3.p1.1" class="ltx_p">This case involves reconciling apparently contradictory information across premises. These discrepancies are largely due to the fact that the premise captions were written to describe an image. Sometimes the image contained visually ambiguous entities or events that are then described by different caption writers. In this example, in order to resolve the discrepancy, the reader must recognize from context that “woman” and “young child” (also “person”) refer to the same entity.</p>
+</div>
+<div id="S5.SS4.SSS0.Px3.1" class="ltx_para">
+<table id="S5.SS4.SSS0.Px3.1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px3.1.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px3.1.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. A person in a green jacket and pants appears to be digging in a wooded field with several cars in the background.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px3.1.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px3.1.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2.A young child in a green jacket rakes leaves.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px3.1.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px3.1.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. A young child rakes leaves in a wooded area.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px3.1.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px3.1.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. A woman cleaning up a park.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px3.1.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px3.1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px3.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px3.1.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">A woman standing in the forest.  <math id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px3.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Entailment</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="S5.SS4.SSS0.Px4" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Scene resolution</h4>
+
+<div id="S5.SS4.SSS0.Px4.p1" class="ltx_para">
+<p id="S5.SS4.SSS0.Px4.p1.1" class="ltx_p">These examples require the reader to build a mental representation of the scene from the premises in order to assess the probability that the hypothesis is true. In the first example, specific descriptions – a jumping horse, a cowboy balancing, a rodeo – combine to assign a high probability that the specific event described by the hypothesis is true.</p>
+</div>
+<div id="S5.SS4.SSS0.Px4.2" class="ltx_logical-block">
+<div id="S5.SS4.SSS0.Px4.2.p1" class="ltx_para">
+<table id="S5.SS4.SSS0.Px4.1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px4.1.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.1.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. A man with a cowboy hat is riding a horse that is jumping.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.1.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.1.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2. A cowboy riding on his horse that is jumping in the air.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.1.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.1.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. A cowboy balances on his horse in a rodeo.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.1.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.1.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. Man wearing a cowboy hat riding a horse.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.1.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.1.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px4.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.1.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">An animal bucking a man. <math id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px4.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Entailment</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="S5.SS4.SSS0.Px4.p2" class="ltx_para">
+<p id="S5.SS4.SSS0.Px4.p2.1" class="ltx_p">In the next example, the hypothesis does not contradict any individual premise sentence. However, a reader who understands the generic scene described knows that the very specific hypothesis description is unlikely to go unmentioned. Shirtlessness would be a salient detail in the this scene, so the fact that none of the premises mention it means that the hypothesis is likely to be false.</p>
+</div>
+<div id="S5.SS4.SSS0.Px4.4" class="ltx_logical-block">
+<div id="S5.SS4.SSS0.Px4.4.p1" class="ltx_para">
+<table id="S5.SS4.SSS0.Px4.3.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px4.3.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.3.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. A young couple sits in a park eating ice cream as children play and other people enjoy themselves around them.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.3.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.3.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2. Couple in park eating ice cream cones with three other adults and two children in background.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.3.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.3.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. A couple enjoying ice cream outside on a nice day.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.3.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.3.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. A couple eats ice cream in the park.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.3.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.3.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px4.3.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.3.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">A shirtless man sitting.  <math id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px4.3.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Contradiction</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="S5.SS4.SSS0.Px4.p3" class="ltx_para">
+<p id="S5.SS4.SSS0.Px4.p3.1" class="ltx_p">In the final example, the premises present a somewhat generic description of the scene. While some premises lean towards entailment (a woman and a man in <span id="S5.SS4.SSS0.Px4.p3.1.1" class="ltx_text ltx_font_italic">discussion</span> could be having a work meeting) and others lean towards contradiction (two people conversing outdoors at a restaurant are probably not working), none of them contain overwhelming evidence that the scene entails or contradicts the hypothesis. Therefore, the hypothesis is neutral given the premises.</p>
+</div>
+<div id="S5.SS4.SSS0.Px4.5" class="ltx_para">
+<table id="S5.SS4.SSS0.Px4.5.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S5.SS4.SSS0.Px4.5.1.2.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.5.1.2.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.2.1.1.1.1" class="ltx_p" style="width:433.6pt;">1. A blond woman wearing a gray jacket converses with an older man in a green shirt and glasses while sitting on a restaurant patio.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.5.1.3.2" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.5.1.3.2.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.3.2.1.1.1" class="ltx_p" style="width:433.6pt;">2. A blond pony-tailed woman and a gray-haired man converse while seated at a restaurant’s outdoor area.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.5.1.4.3" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.5.1.4.3.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.4.3.1.1.1" class="ltx_p" style="width:433.6pt;">3. A woman with blond hair is sitting at a table and talking to a man with glasses.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.5.1.5.4" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.5.1.5.4.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.5.4.1.1.1" class="ltx_p" style="width:433.6pt;">4. A woman discusses something with an older man at a table outside a restaurant.</span>
+</span>
+</td>
+</tr>
+<tr id="S5.SS4.SSS0.Px4.5.1.1" class="ltx_tr">
+<td id="S5.SS4.SSS0.Px4.5.1.1.1" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S5.SS4.SSS0.Px4.5.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S5.SS4.SSS0.Px4.5.1.1.1.1.1" class="ltx_p" style="width:433.6pt;">A woman doing work.  <math id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1" class="ltx_Math" alttext="\Rightarrow" display="inline"><semantics id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1a"><mo stretchy="false" id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1.1" xref="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1.1.cmml">⇒</mo><annotation-xml encoding="MathML-Content" id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1b"><ci id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1.1.cmml" xref="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1.1">⇒</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.m1.1c">\Rightarrow</annotation></semantics></math><span id="S5.SS4.SSS0.Px4.5.1.1.1.1.1.1" class="ltx_text ltx_font_bold ltx_font_smallcaps">Neutral</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+</section>
+<section id="S6" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">6 </span>Models</h2>
+
+<div id="S6.p1" class="ltx_para">
+<p id="S6.p1.1" class="ltx_p">We apply several neural models from the entailment literature to our data. We also present a model designed to handle multiple premises, as this is unique to our dataset.</p>
+</div>
+<section id="S6.SS0.SSS0.Px1" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">LSTM</h4>
+
+<div id="S6.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="S6.SS0.SSS0.Px1.p1.1" class="ltx_p">In our experiments, we found that the conditional LSTM <cite class="ltx_cite ltx_citemacro_cite">Hochreiter and Schmidhuber (<a href="#bib.bib5" title="" class="ltx_ref">1997</a>)</cite> model of <cite class="ltx_cite ltx_citemacro_citet">Rocktäschel et al. (<a href="#bib.bib13" title="" class="ltx_ref">2016</a>)</cite> outperformed a Siamese LSTM network (e.g. <cite class="ltx_cite ltx_citemacro_citet">Bowman et al. (<a href="#bib.bib2" title="" class="ltx_ref">2015</a>)</cite>), so we report results using the conditional LSTM. This model consists of two LSTMs that process the hypothesis conditioned on the premise. The first LSTM reads the premise. Its final cell state is used to initialize the cell state of the second LSTM, which reads the hypothesis. The resulting premise vector and hypothesis vector are concatenated and passed through a hidden layer and a softmax prediction layer. When handling four MPE premise sentences, we concatenate them into a single sequence (in the order of the caption IDs) that we pass to the first LSTM. When we only have a single premise sentence, we simply pass it to the first LSTM.</p>
+</div>
+</section>
+<section id="S6.SS0.SSS0.Px2" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Word-to-word attention</h4>
+
+<div id="S6.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="S6.SS0.SSS0.Px2.p1.2" class="ltx_p">Neural attention models have shown a lot of success on SNLI. We evaluate the word-to-word attention model of <cite class="ltx_cite ltx_citemacro_citet">Rocktäschel et al. (<a href="#bib.bib13" title="" class="ltx_ref">2016</a>)</cite>.<span id="footnote1" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_tag ltx_tag_note">1</span>Our experiments use a reimplementation of their model <a target="_blank" href="https://github.com/junfenglx/reasoning_attention" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://github.com/junfenglx/reasoning_attention</a></span></span></span>
+This model learns a soft alignment of words in the premise and hypothesis. One LSTM reads the premise and produces an output vector after each word. A second LSTM, initialized by the final cell state of the first, reads the hypothesis one word at a time. For each word <math id="S6.SS0.SSS0.Px2.p1.1.m1.1" class="ltx_Math" alttext="w_{t}" display="inline"><semantics id="S6.SS0.SSS0.Px2.p1.1.m1.1a"><msub id="S6.SS0.SSS0.Px2.p1.1.m1.1.1" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1.cmml"><mi id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.2" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1.2.cmml">w</mi><mi id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.3" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1.3.cmml">t</mi></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px2.p1.1.m1.1b"><apply id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.cmml" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.1.cmml" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.2.cmml" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1.2">𝑤</ci><ci id="S6.SS0.SSS0.Px2.p1.1.m1.1.1.3.cmml" xref="S6.SS0.SSS0.Px2.p1.1.m1.1.1.3">𝑡</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px2.p1.1.m1.1c">w_{t}</annotation></semantics></math> in the hypothesis, the model produces attention weights <math id="S6.SS0.SSS0.Px2.p1.2.m2.1" class="ltx_Math" alttext="\alpha_{t}" display="inline"><semantics id="S6.SS0.SSS0.Px2.p1.2.m2.1a"><msub id="S6.SS0.SSS0.Px2.p1.2.m2.1.1" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1.cmml"><mi id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.2" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1.2.cmml">α</mi><mi id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.3" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1.3.cmml">t</mi></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px2.p1.2.m2.1b"><apply id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.cmml" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.1.cmml" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.2.cmml" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1.2">𝛼</ci><ci id="S6.SS0.SSS0.Px2.p1.2.m2.1.1.3.cmml" xref="S6.SS0.SSS0.Px2.p1.2.m2.1.1.3">𝑡</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px2.p1.2.m2.1c">\alpha_{t}</annotation></semantics></math> over the premise output vectors. The final sentence pair representation is a nonlinear combination of the attention-weighted representation of the premise and the final output vector from the hypothesis LSTM. This final sentence pair representation is passed through a softmax layer to compute the cross-entropy loss. Again, when training on MPE, we concatenate the premise sentences into a single sequence as input to the premise LSTM.</p>
+</div>
+</section>
+<section id="S6.SS0.SSS0.Px3" class="ltx_paragraph">
+<h4 class="ltx_title ltx_title_paragraph">Premise-wise sum of experts (SE)</h4>
+
+<div id="S6.SS0.SSS0.Px3.p1" class="ltx_para">
+<p id="S6.SS0.SSS0.Px3.p1.1" class="ltx_p">The previous models all assume that the premise is a single sentence, so in order to apply them naively to our dataset, we have to concatenate the four premises.
+To capture what distinguishes our task from standard entailment, we also consider a premise-wise sum of experts (SE) model that makes four independent decisions for each premise paired with the hypothesis. This model can adjust how it processes each premise based on the relative predictions of the other premises.</p>
+</div>
+<div id="S6.SS0.SSS0.Px3.p2" class="ltx_para">
+<p id="S6.SS0.SSS0.Px3.p2.9" class="ltx_p">We apply the conditional LSTM repeatedly to read each premise and the hypothesis, producing four premise vectors <math id="S6.SS0.SSS0.Px3.p2.1.m1.1" class="ltx_Math" alttext="p_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.1.m1.1a"><msub id="S6.SS0.SSS0.Px3.p2.1.m1.1.1" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.2" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1.2.cmml">p</mi><mn id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.3" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.1.m1.1b"><apply id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1.2">𝑝</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.1.m1.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.1.m1.1c">p_{1}</annotation></semantics></math> … <math id="S6.SS0.SSS0.Px3.p2.2.m2.1" class="ltx_Math" alttext="p_{4}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.2.m2.1a"><msub id="S6.SS0.SSS0.Px3.p2.2.m2.1.1" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.2" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1.2.cmml">p</mi><mn id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.3" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1.3.cmml">4</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.2.m2.1b"><apply id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1.2">𝑝</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.2.m2.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.2.m2.1.1.3">4</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.2.m2.1c">p_{4}</annotation></semantics></math> and four hypothesis vectors <math id="S6.SS0.SSS0.Px3.p2.3.m3.1" class="ltx_Math" alttext="h_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.3.m3.1a"><msub id="S6.SS0.SSS0.Px3.p2.3.m3.1.1" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.2" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1.2.cmml">h</mi><mn id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.3" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.3.m3.1b"><apply id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1.2">ℎ</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.3.m3.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.3.m3.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.3.m3.1c">h_{1}</annotation></semantics></math> … <math id="S6.SS0.SSS0.Px3.p2.4.m4.1" class="ltx_Math" alttext="h_{4}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.4.m4.1a"><msub id="S6.SS0.SSS0.Px3.p2.4.m4.1.1" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.2" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1.2.cmml">h</mi><mn id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.3" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1.3.cmml">4</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.4.m4.1b"><apply id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1.2">ℎ</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.4.m4.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.4.m4.1.1.3">4</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.4.m4.1c">h_{4}</annotation></semantics></math> (conditioned on each premise). Each premise vector <math id="S6.SS0.SSS0.Px3.p2.5.m5.1" class="ltx_Math" alttext="p_{i}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.5.m5.1a"><msub id="S6.SS0.SSS0.Px3.p2.5.m5.1.1" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.2" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1.2.cmml">p</mi><mi id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.3" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1.3.cmml">i</mi></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.5.m5.1b"><apply id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1.2">𝑝</ci><ci id="S6.SS0.SSS0.Px3.p2.5.m5.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.5.m5.1.1.3">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.5.m5.1c">p_{i}</annotation></semantics></math> is concatenated with its hypothesis vector <math id="S6.SS0.SSS0.Px3.p2.6.m6.1" class="ltx_Math" alttext="h_{i}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.6.m6.1a"><msub id="S6.SS0.SSS0.Px3.p2.6.m6.1.1" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.2" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1.2.cmml">h</mi><mi id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.3" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1.3.cmml">i</mi></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.6.m6.1b"><apply id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1.2">ℎ</ci><ci id="S6.SS0.SSS0.Px3.p2.6.m6.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.6.m6.1.1.3">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.6.m6.1c">h_{i}</annotation></semantics></math> and passed through a feedforward layer to produce logit prediction <math id="S6.SS0.SSS0.Px3.p2.7.m7.1" class="ltx_Math" alttext="l_{i}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.7.m7.1a"><msub id="S6.SS0.SSS0.Px3.p2.7.m7.1.1" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.2" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1.2.cmml">l</mi><mi id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.3" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1.3.cmml">i</mi></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.7.m7.1b"><apply id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1.2">𝑙</ci><ci id="S6.SS0.SSS0.Px3.p2.7.m7.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.7.m7.1.1.3">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.7.m7.1c">l_{i}</annotation></semantics></math>. We sum <math id="S6.SS0.SSS0.Px3.p2.8.m8.1" class="ltx_Math" alttext="l_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.8.m8.1a"><msub id="S6.SS0.SSS0.Px3.p2.8.m8.1.1" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.2" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1.2.cmml">l</mi><mn id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.3" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.8.m8.1b"><apply id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1.2">𝑙</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.8.m8.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.8.m8.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.8.m8.1c">l_{1}</annotation></semantics></math> … <math id="S6.SS0.SSS0.Px3.p2.9.m9.1" class="ltx_Math" alttext="l_{4}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p2.9.m9.1a"><msub id="S6.SS0.SSS0.Px3.p2.9.m9.1.1" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.2" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1.2.cmml">l</mi><mn id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.3" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1.3.cmml">4</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p2.9.m9.1b"><apply id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1.2">𝑙</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p2.9.m9.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p2.9.m9.1.1.3">4</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p2.9.m9.1c">l_{4}</annotation></semantics></math> to obtain the final prediction, which we use to compute the cross-entropy loss.</p>
+</div>
+<div id="S6.SS0.SSS0.Px3.p3" class="ltx_para">
+<p id="S6.SS0.SSS0.Px3.p3.5" class="ltx_p">When training on SNLI, we apply the conditional LSTM only once to read the premise and hypothesis and produce <math id="S6.SS0.SSS0.Px3.p3.1.m1.1" class="ltx_Math" alttext="p_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p3.1.m1.1a"><msub id="S6.SS0.SSS0.Px3.p3.1.m1.1.1" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.2" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1.2.cmml">p</mi><mn id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.3" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p3.1.m1.1b"><apply id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1.2">𝑝</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p3.1.m1.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p3.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p3.1.m1.1c">p_{1}</annotation></semantics></math> and <math id="S6.SS0.SSS0.Px3.p3.2.m2.1" class="ltx_Math" alttext="h_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p3.2.m2.1a"><msub id="S6.SS0.SSS0.Px3.p3.2.m2.1.1" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.2" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1.2.cmml">h</mi><mn id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.3" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p3.2.m2.1b"><apply id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1.2">ℎ</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p3.2.m2.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p3.2.m2.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p3.2.m2.1c">h_{1}</annotation></semantics></math>. We pass the concatenation of <math id="S6.SS0.SSS0.Px3.p3.3.m3.1" class="ltx_Math" alttext="p_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p3.3.m3.1a"><msub id="S6.SS0.SSS0.Px3.p3.3.m3.1.1" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.2" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1.2.cmml">p</mi><mn id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.3" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p3.3.m3.1b"><apply id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1.2">𝑝</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p3.3.m3.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p3.3.m3.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p3.3.m3.1c">p_{1}</annotation></semantics></math> and <math id="S6.SS0.SSS0.Px3.p3.4.m4.1" class="ltx_Math" alttext="h_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p3.4.m4.1a"><msub id="S6.SS0.SSS0.Px3.p3.4.m4.1.1" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.2" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1.2.cmml">h</mi><mn id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.3" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p3.4.m4.1b"><apply id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1.2">ℎ</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p3.4.m4.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p3.4.m4.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p3.4.m4.1c">h_{1}</annotation></semantics></math> through the feedforward layer to produce <math id="S6.SS0.SSS0.Px3.p3.5.m5.1" class="ltx_Math" alttext="l_{1}" display="inline"><semantics id="S6.SS0.SSS0.Px3.p3.5.m5.1a"><msub id="S6.SS0.SSS0.Px3.p3.5.m5.1.1" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1.cmml"><mi id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.2" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1.2.cmml">l</mi><mn id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.3" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S6.SS0.SSS0.Px3.p3.5.m5.1b"><apply id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1"><csymbol cd="ambiguous" id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.1.cmml" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1">subscript</csymbol><ci id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.2.cmml" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1.2">𝑙</ci><cn type="integer" id="S6.SS0.SSS0.Px3.p3.5.m5.1.1.3.cmml" xref="S6.SS0.SSS0.Px3.p3.5.m5.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S6.SS0.SSS0.Px3.p3.5.m5.1c">l_{1}</annotation></semantics></math>, which we use to compute the cross-entropy loss.</p>
+</div>
+<figure id="S6.T6" class="ltx_table">
+<table id="S6.T6.1" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S6.T6.1.1.1" class="ltx_tr">
+<th id="S6.T6.1.1.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt">Training</th>
+<th id="S6.T6.1.1.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt">Class</th>
+<th id="S6.T6.1.1.1.3" class="ltx_td ltx_align_right ltx_th ltx_th_column ltx_border_tt">LSTM</th>
+<th id="S6.T6.1.1.1.4" class="ltx_td ltx_align_right ltx_th ltx_th_column ltx_border_tt">SE</th>
+<th id="S6.T6.1.1.1.5" class="ltx_td ltx_align_right ltx_th ltx_th_column ltx_border_tt">Attention</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S6.T6.1.2.1" class="ltx_tr">
+<th id="S6.T6.1.2.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">SNLI only</th>
+<th id="S6.T6.1.2.1.2" class="ltx_td ltx_th ltx_th_row ltx_border_t"></th>
+<td id="S6.T6.1.2.1.3" class="ltx_td ltx_align_right ltx_border_t">52.6</td>
+<td id="S6.T6.1.2.1.4" class="ltx_td ltx_align_right ltx_border_t"><span id="S6.T6.1.2.1.4.1" class="ltx_text ltx_font_bold">55.9</span></td>
+<td id="S6.T6.1.2.1.5" class="ltx_td ltx_align_right ltx_border_t">55.0</td>
+</tr>
+<tr id="S6.T6.1.3.2" class="ltx_tr">
+<th id="S6.T6.1.3.2.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.3.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">E</th>
+<td id="S6.T6.1.3.2.3" class="ltx_td ltx_align_right">85.8</td>
+<td id="S6.T6.1.3.2.4" class="ltx_td ltx_align_right">71.5</td>
+<td id="S6.T6.1.3.2.5" class="ltx_td ltx_align_right">81.7</td>
+</tr>
+<tr id="S6.T6.1.4.3" class="ltx_tr">
+<th id="S6.T6.1.4.3.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.4.3.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">N</th>
+<td id="S6.T6.1.4.3.3" class="ltx_td ltx_align_right">8.4</td>
+<td id="S6.T6.1.4.3.4" class="ltx_td ltx_align_right">21.6</td>
+<td id="S6.T6.1.4.3.5" class="ltx_td ltx_align_right">16.4</td>
+</tr>
+<tr id="S6.T6.1.5.4" class="ltx_tr">
+<th id="S6.T6.1.5.4.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.5.4.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">C</th>
+<td id="S6.T6.1.5.4.3" class="ltx_td ltx_align_right">55.7</td>
+<td id="S6.T6.1.5.4.4" class="ltx_td ltx_align_right">62.0</td>
+<td id="S6.T6.1.5.4.5" class="ltx_td ltx_align_right">54.5</td>
+</tr>
+<tr id="S6.T6.1.6.5" class="ltx_tr">
+<th id="S6.T6.1.6.5.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">MPE only</th>
+<th id="S6.T6.1.6.5.2" class="ltx_td ltx_th ltx_th_row ltx_border_t"></th>
+<td id="S6.T6.1.6.5.3" class="ltx_td ltx_align_right ltx_border_t">53.5</td>
+<td id="S6.T6.1.6.5.4" class="ltx_td ltx_align_right ltx_border_t"><span id="S6.T6.1.6.5.4.1" class="ltx_text ltx_font_bold">56.3</span></td>
+<td id="S6.T6.1.6.5.5" class="ltx_td ltx_align_right ltx_border_t">53.9</td>
+</tr>
+<tr id="S6.T6.1.7.6" class="ltx_tr">
+<th id="S6.T6.1.7.6.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.7.6.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">E</th>
+<td id="S6.T6.1.7.6.3" class="ltx_td ltx_align_right">63.1</td>
+<td id="S6.T6.1.7.6.4" class="ltx_td ltx_align_right">61.3</td>
+<td id="S6.T6.1.7.6.5" class="ltx_td ltx_align_right">48.3</td>
+</tr>
+<tr id="S6.T6.1.8.7" class="ltx_tr">
+<th id="S6.T6.1.8.7.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.8.7.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">N</th>
+<td id="S6.T6.1.8.7.3" class="ltx_td ltx_align_right">39.2</td>
+<td id="S6.T6.1.8.7.4" class="ltx_td ltx_align_right">30.2</td>
+<td id="S6.T6.1.8.7.5" class="ltx_td ltx_align_right">30.6</td>
+</tr>
+<tr id="S6.T6.1.9.8" class="ltx_tr">
+<th id="S6.T6.1.9.8.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.9.8.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">C</th>
+<td id="S6.T6.1.9.8.3" class="ltx_td ltx_align_right">53.5</td>
+<td id="S6.T6.1.9.8.4" class="ltx_td ltx_align_right">66.5</td>
+<td id="S6.T6.1.9.8.5" class="ltx_td ltx_align_right">71.2</td>
+</tr>
+<tr id="S6.T6.1.10.9" class="ltx_tr">
+<th id="S6.T6.1.10.9.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">SNLI+MPE</th>
+<th id="S6.T6.1.10.9.2" class="ltx_td ltx_th ltx_th_row ltx_border_t"></th>
+<td id="S6.T6.1.10.9.3" class="ltx_td ltx_align_right ltx_border_t">60.4</td>
+<td id="S6.T6.1.10.9.4" class="ltx_td ltx_align_right ltx_border_t">60.0</td>
+<td id="S6.T6.1.10.9.5" class="ltx_td ltx_align_right ltx_border_t"><span id="S6.T6.1.10.9.5.1" class="ltx_text ltx_font_bold">64.0</span></td>
+</tr>
+<tr id="S6.T6.1.11.10" class="ltx_tr">
+<th id="S6.T6.1.11.10.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.11.10.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">E</th>
+<td id="S6.T6.1.11.10.3" class="ltx_td ltx_align_right">65.1</td>
+<td id="S6.T6.1.11.10.4" class="ltx_td ltx_align_right">65.4</td>
+<td id="S6.T6.1.11.10.5" class="ltx_td ltx_align_right">75.9</td>
+</tr>
+<tr id="S6.T6.1.12.11" class="ltx_tr">
+<th id="S6.T6.1.12.11.1" class="ltx_td ltx_th ltx_th_row"></th>
+<th id="S6.T6.1.12.11.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">N</th>
+<td id="S6.T6.1.12.11.3" class="ltx_td ltx_align_right">40.9</td>
+<td id="S6.T6.1.12.11.4" class="ltx_td ltx_align_right">42.7</td>
+<td id="S6.T6.1.12.11.5" class="ltx_td ltx_align_right">32.8</td>
+</tr>
+<tr id="S6.T6.1.13.12" class="ltx_tr">
+<th id="S6.T6.1.13.12.1" class="ltx_td ltx_th ltx_th_row ltx_border_bb"></th>
+<th id="S6.T6.1.13.12.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">C</th>
+<td id="S6.T6.1.13.12.3" class="ltx_td ltx_align_right ltx_border_bb">67.2</td>
+<td id="S6.T6.1.13.12.4" class="ltx_td ltx_align_right ltx_border_bb">65.1</td>
+<td id="S6.T6.1.13.12.5" class="ltx_td ltx_align_right ltx_border_bb">71.5</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 6: </span>Entailment accuracy on MPE (test). SE is best when training only on SNLI or MPE. Attention is best when training on SNLI+MPE.</figcaption>
+</figure>
+</section>
+</section>
+<section id="S7" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">7 </span>Training Details</h2>
+
+<div id="S7.p1" class="ltx_para">
+<p id="S7.p1.1" class="ltx_p">For the LSTM and SE models, we use 300d GloVe vectors <cite class="ltx_cite ltx_citemacro_cite">Pennington et al. (<a href="#bib.bib11" title="" class="ltx_ref">2014</a>)</cite> trained on 840B tokens as the input. The attention model uses word2vec vectors <cite class="ltx_cite ltx_citemacro_cite">Mikolov et al. (<a href="#bib.bib10" title="" class="ltx_ref">2013</a>)</cite> (replacing with GloVe had almost no effect on performance). We use the Adam optimizer <cite class="ltx_cite ltx_citemacro_cite">Kingma and Ba (<a href="#bib.bib6" title="" class="ltx_ref">2014</a>)</cite> with the default configuration. We train each model for 10 epochs based on convergence on dev. For joint SNLI+MPE training, we use the same parameters and pretrain for 10 epochs on SNLI, then train for 10 epochs on MPE. This was the best joint training approach we found.</p>
+</div>
+<div id="S7.p2" class="ltx_para">
+<p id="S7.p2.1" class="ltx_p">When training on SNLI, we use the best parameters reported for the word-to-word attention model.<span id="footnote2" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">2</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">2</sup><span class="ltx_tag ltx_tag_note">2</span>Dropout: 0.8, learning rate: 0.001, vector dim: 100, batch size: 32</span></span></span> When training on MPE only, we set dropout, learning rate, and LSTM dimensionality as the result of a grid search on dev.<span id="footnote3" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">3</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">3</sup><span class="ltx_tag ltx_tag_note">3</span>LSTM: dropout: 0.8, vector dim: 75. SE: dropout: 0.8, vector dim: 100. Attention: dropout: 0.6, vector dim: 100. Learning rate: 0.001 for all models</span></span></span></p>
+</div>
+</section>
+<section id="S8" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">8 </span>Experimental Results</h2>
+
+<section id="S8.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">8.1 </span>Overall Performance</h3>
+
+<div id="S8.SS1.p1" class="ltx_para">
+<p id="S8.SS1.p1.1" class="ltx_p">Table <a href="#S6.T6" title="Table 6 ‣ Premise-wise sum of experts (SE) ‣ 6 Models ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6</span></a> contains the test accuracies of the models from Section <a href="#S6" title="6 Models ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6</span></a>: LSTM, sum of experts (SE), and word-to-word attention under three training regimes: SNLI only, MPE only, and SNLI+MPE.</p>
+</div>
+<div id="S8.SS1.p2" class="ltx_para">
+<p id="S8.SS1.p2.1" class="ltx_p">We train only on SNLI to see whether models can generalize from one entailment task to the other. Interestingly, the attention model’s accuracy on MPE is higher after training only on SNLI than training on MPE, perhaps because it requires much more data to learn reasonable attention weighting parameters.</p>
+</div>
+<div id="S8.SS1.p3" class="ltx_para">
+<p id="S8.SS1.p3.1" class="ltx_p">When training on SNLI or MPE alone, the best model is SE, the only model that handles the four premises. It is not surprising that the LSTM model performs poorly, as it is forced to reduce a very long sequence of words to a single vector. The LSTM performs on par with SE when training on SNLI+MPE, but our analysis (Section <a href="#S5.SS3" title="5.3 Semantic Phenomena ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5.3</span></a>) shows that their errors are quite different.</p>
+</div>
+<div id="S8.SS1.p4" class="ltx_para">
+<p id="S8.SS1.p4.1" class="ltx_p">The attention model trained on SNLI+MPE has the highest accuracy overall. We reason that pretraining on SNLI is necessary to learn reasonable parameters for the attention weights before training on MPE, a smaller dataset where word-to-word inferences may be less obvious. When trained only on MPE, the attention model performs much worse than SE, with particularly low accuracy on entailing items.</p>
+</div>
+<div id="S8.SS1.p5" class="ltx_para">
+<p id="S8.SS1.p5.1" class="ltx_p">We implemented a model that adds attention to the SE model, but it overfit on SNLI and could not match other models’ accuracy, reaching only about 58% on dev compared to 59-63%. Future work will investigate other approaches to combining the benefits of the SE and attention models.</p>
+</div>
+<figure id="S8.T7" class="ltx_table">
+<table id="S8.T7.1" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S8.T7.1.1.1" class="ltx_tr">
+<th id="S8.T7.1.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_tt" colspan="6"><span id="S8.T7.1.1.1.1.1" class="ltx_text ltx_font_bold">Accuracy on SPE-MPE agreement subsets</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S8.T7.1.2.1" class="ltx_tr">
+<th id="S8.T7.1.2.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row"># pairs agree</th>
+<td id="S8.T7.1.2.1.2" class="ltx_td ltx_align_right">0</td>
+<td id="S8.T7.1.2.1.3" class="ltx_td ltx_align_right">1</td>
+<td id="S8.T7.1.2.1.4" class="ltx_td ltx_align_right">2</td>
+<td id="S8.T7.1.2.1.5" class="ltx_td ltx_align_right">3</td>
+<td id="S8.T7.1.2.1.6" class="ltx_td ltx_align_right">4</td>
+</tr>
+<tr id="S8.T7.1.3.2" class="ltx_tr">
+<th id="S8.T7.1.3.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">% of data</th>
+<td id="S8.T7.1.3.2.2" class="ltx_td ltx_align_right">21.8</td>
+<td id="S8.T7.1.3.2.3" class="ltx_td ltx_align_right">26.9</td>
+<td id="S8.T7.1.3.2.4" class="ltx_td ltx_align_right">16.7</td>
+<td id="S8.T7.1.3.2.5" class="ltx_td ltx_align_right">24.8</td>
+<td id="S8.T7.1.3.2.6" class="ltx_td ltx_align_right">9.8</td>
+</tr>
+<tr id="S8.T7.1.4.3" class="ltx_tr">
+<th id="S8.T7.1.4.3.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">LSTM</th>
+<td id="S8.T7.1.4.3.2" class="ltx_td ltx_align_right ltx_border_t">57.3</td>
+<td id="S8.T7.1.4.3.3" class="ltx_td ltx_align_right ltx_border_t">57.6</td>
+<td id="S8.T7.1.4.3.4" class="ltx_td ltx_align_right ltx_border_t">60.5</td>
+<td id="S8.T7.1.4.3.5" class="ltx_td ltx_align_right ltx_border_t">67.1</td>
+<td id="S8.T7.1.4.3.6" class="ltx_td ltx_align_right ltx_border_t">63.3</td>
+</tr>
+<tr id="S8.T7.1.5.4" class="ltx_tr">
+<th id="S8.T7.1.5.4.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">SE</th>
+<td id="S8.T7.1.5.4.2" class="ltx_td ltx_align_right">59.6</td>
+<td id="S8.T7.1.5.4.3" class="ltx_td ltx_align_right"><span id="S8.T7.1.5.4.3.1" class="ltx_text ltx_font_bold">58.0</span></td>
+<td id="S8.T7.1.5.4.4" class="ltx_td ltx_align_right"><span id="S8.T7.1.5.4.4.1" class="ltx_text ltx_font_bold">63.3</span></td>
+<td id="S8.T7.1.5.4.5" class="ltx_td ltx_align_right">62.9</td>
+<td id="S8.T7.1.5.4.6" class="ltx_td ltx_align_right">66.3</td>
+</tr>
+<tr id="S8.T7.1.6.5" class="ltx_tr">
+<th id="S8.T7.1.6.5.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Attention</th>
+<td id="S8.T7.1.6.5.2" class="ltx_td ltx_align_right ltx_border_bb"><span id="S8.T7.1.6.5.2.1" class="ltx_text ltx_font_bold">65.6</span></td>
+<td id="S8.T7.1.6.5.3" class="ltx_td ltx_align_right ltx_border_bb">57.6</td>
+<td id="S8.T7.1.6.5.4" class="ltx_td ltx_align_right ltx_border_bb">62.9</td>
+<td id="S8.T7.1.6.5.5" class="ltx_td ltx_align_right ltx_border_bb"><span id="S8.T7.1.6.5.5.1" class="ltx_text ltx_font_bold">68.3</span></td>
+<td id="S8.T7.1.6.5.6" class="ltx_td ltx_align_right ltx_border_bb"><span id="S8.T7.1.6.5.6.1" class="ltx_text ltx_font_bold">70.4</span></td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 7: </span>Accuracy for each model (trained on SNLI+MPE) on the dev data subsets that have 0–4 SPE labels that match the MPE label (Table <a href="#S5.T4" title="Table 4 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>).</figcaption>
+</figure>
+</section>
+<section id="S8.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">8.2 </span>Performance by Pair Agreement</h3>
+
+<div id="S8.SS2.p1" class="ltx_para">
+<p id="S8.SS2.p1.1" class="ltx_p">To get a better understanding of how our task differs from standard entailment, we analyze how performance is affected by the number of premises whose SPE label agrees with the MPE label. Table <a href="#S8.T7" title="Table 7 ‣ 8.1 Overall Performance ‣ 8 Experimental Results ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">7</span></a> shows the accuracy of each SNLI+MPE-trained model on the dev data grouped by SPE-MPE label agreement (as in Table <a href="#S5.T4" title="Table 4 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>).</p>
+</div>
+<div id="S8.SS2.p2" class="ltx_para">
+<p id="S8.SS2.p2.1" class="ltx_p">The attention model has the highest accuracy on three of five categories, including the most difficult category where none of the SPE labels match the MPE label. SE has the highest accuracy in the remaining two categories. The attention model demonstrates large gains in the easiest categories, perhaps because there is less advantage to aggregating individual premise predictions (as SE does) and more cases where attention weighting of individual words is useful. On the other hand, the attention model also does well on the most difficult category, indicating that it may be able to partially aggregate premises by increasing attention weights on phrases from multiple sentences. Attention and SE exhibit complementary strengths that we hope to combine in future work.</p>
+</div>
+</section>
+<section id="S8.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">8.3 </span>Performance by Semantic Phenomenon</h3>
+
+<div id="S8.SS3.p1" class="ltx_para">
+<p id="S8.SS3.p1.1" class="ltx_p">Table <a href="#S8.T8" title="Table 8 ‣ 8.3 Performance by Semantic Phenomenon ‣ 8 Experimental Results ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">8</span></a> shows the performance of the three SNLI+MPE-trained models over semantic phenomena, based on the 100 annotated dev items (see Section <a href="#S5.SS3" title="5.3 Semantic Phenomena ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5.3</span></a> and Table <a href="#S5.T5" title="Table 5 ‣ 5.1 Statistics ‣ 5 Data Analysis ‣ Natural Language Inference from Multiple Premises" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a>). It may not be informative to analyze performance on smaller classes (e.g. phrase equivalence and phrase hypernymy), but we can still look at other noticeable differences between models.</p>
+</div>
+<div id="S8.SS3.p2" class="ltx_para">
+<p id="S8.SS3.p2.1" class="ltx_p">Although the attention model outperformed both LSTM and SE models in overall accuracy, it is not the best in every category. Both SE and attention have access to the same information, but the attention model does better on items that contain relationships like hypernyms and synonyms for both words and short phrases. The SE model is best at mutual exclusion, compatibility, and world knowledge categories, e.g. knowing that a man who is <span id="S8.SS3.p2.1.1" class="ltx_text ltx_font_italic">resting</span> is not <span id="S8.SS3.p2.1.2" class="ltx_text ltx_font_italic">kayaking</span>, and a <span id="S8.SS3.p2.1.3" class="ltx_text ltx_font_italic">bride</span> is not also a <span id="S8.SS3.p2.1.4" class="ltx_text ltx_font_italic">cheerleader</span>. In cases that require analysis of mutually exclusive or compatible events, a model like SE has an advantage since it can reinforce its weighted combination prediction by examining each premise separately.</p>
+</div>
+<figure id="S8.T8" class="ltx_table">
+<table id="S8.T8.1" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S8.T8.1.1.1" class="ltx_tr">
+<td id="S8.T8.1.1.1.1" class="ltx_td ltx_border_tt"></td>
+<th id="S8.T8.1.1.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="3">Accuracy</th>
+<td id="S8.T8.1.1.1.3" class="ltx_td ltx_border_tt"></td>
+</tr>
+<tr id="S8.T8.1.2.2" class="ltx_tr">
+<th id="S8.T8.1.2.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_column">Phenomenon</th>
+<th id="S8.T8.1.2.2.2" class="ltx_td ltx_align_right ltx_th ltx_th_column">LSTM</th>
+<th id="S8.T8.1.2.2.3" class="ltx_td ltx_align_right ltx_th ltx_th_column">SE</th>
+<th id="S8.T8.1.2.2.4" class="ltx_td ltx_align_right ltx_th ltx_th_column">Att</th>
+<th id="S8.T8.1.2.2.5" class="ltx_td ltx_align_right ltx_th ltx_th_column">#</th>
+</tr>
+<tr id="S8.T8.1.3.3" class="ltx_tr">
+<td id="S8.T8.1.3.3.1" class="ltx_td ltx_align_left ltx_border_t">Word equivalence</td>
+<td id="S8.T8.1.3.3.2" class="ltx_td ltx_align_right ltx_border_t">50.0</td>
+<td id="S8.T8.1.3.3.3" class="ltx_td ltx_align_right ltx_border_t">56.2</td>
+<td id="S8.T8.1.3.3.4" class="ltx_td ltx_align_right ltx_border_t"><span id="S8.T8.1.3.3.4.1" class="ltx_text ltx_font_bold">68.8</span></td>
+<td id="S8.T8.1.3.3.5" class="ltx_td ltx_align_right ltx_border_t">16</td>
+</tr>
+<tr id="S8.T8.1.4.4" class="ltx_tr">
+<td id="S8.T8.1.4.4.1" class="ltx_td ltx_align_left">Word hypernymy</td>
+<td id="S8.T8.1.4.4.2" class="ltx_td ltx_align_right"><span id="S8.T8.1.4.4.2.1" class="ltx_text ltx_font_bold">52.6</span></td>
+<td id="S8.T8.1.4.4.3" class="ltx_td ltx_align_right">47.4</td>
+<td id="S8.T8.1.4.4.4" class="ltx_td ltx_align_right"><span id="S8.T8.1.4.4.4.1" class="ltx_text ltx_font_bold">52.6</span></td>
+<td id="S8.T8.1.4.4.5" class="ltx_td ltx_align_right">19</td>
+</tr>
+<tr id="S8.T8.1.5.5" class="ltx_tr">
+<td id="S8.T8.1.5.5.1" class="ltx_td ltx_align_left">Phrase equivalence</td>
+<td id="S8.T8.1.5.5.2" class="ltx_td ltx_align_right">57.1</td>
+<td id="S8.T8.1.5.5.3" class="ltx_td ltx_align_right">57.1</td>
+<td id="S8.T8.1.5.5.4" class="ltx_td ltx_align_right"><span id="S8.T8.1.5.5.4.1" class="ltx_text ltx_font_bold">85.7</span></td>
+<td id="S8.T8.1.5.5.5" class="ltx_td ltx_align_right">7</td>
+</tr>
+<tr id="S8.T8.1.6.6" class="ltx_tr">
+<td id="S8.T8.1.6.6.1" class="ltx_td ltx_align_left">Phrase hypernymy</td>
+<td id="S8.T8.1.6.6.2" class="ltx_td ltx_align_right">50.0</td>
+<td id="S8.T8.1.6.6.3" class="ltx_td ltx_align_right">50.0</td>
+<td id="S8.T8.1.6.6.4" class="ltx_td ltx_align_right"><span id="S8.T8.1.6.6.4.1" class="ltx_text ltx_font_bold">62.5</span></td>
+<td id="S8.T8.1.6.6.5" class="ltx_td ltx_align_right">8</td>
+</tr>
+<tr id="S8.T8.1.7.7" class="ltx_tr">
+<td id="S8.T8.1.7.7.1" class="ltx_td ltx_align_left">Mutual exclusion</td>
+<td id="S8.T8.1.7.7.2" class="ltx_td ltx_align_right">68.0</td>
+<td id="S8.T8.1.7.7.3" class="ltx_td ltx_align_right"><span id="S8.T8.1.7.7.3.1" class="ltx_text ltx_font_bold">72.0</span></td>
+<td id="S8.T8.1.7.7.4" class="ltx_td ltx_align_right">60.0</td>
+<td id="S8.T8.1.7.7.5" class="ltx_td ltx_align_right">25</td>
+</tr>
+<tr id="S8.T8.1.8.8" class="ltx_tr">
+<td id="S8.T8.1.8.8.1" class="ltx_td ltx_align_left">Compatibility</td>
+<td id="S8.T8.1.8.8.2" class="ltx_td ltx_align_right">50.0</td>
+<td id="S8.T8.1.8.8.3" class="ltx_td ltx_align_right"><span id="S8.T8.1.8.8.3.1" class="ltx_text ltx_font_bold">61.1</span></td>
+<td id="S8.T8.1.8.8.4" class="ltx_td ltx_align_right">50.0</td>
+<td id="S8.T8.1.8.8.5" class="ltx_td ltx_align_right">18</td>
+</tr>
+<tr id="S8.T8.1.9.9" class="ltx_tr">
+<td id="S8.T8.1.9.9.1" class="ltx_td ltx_align_left ltx_border_bb">World knowledge</td>
+<td id="S8.T8.1.9.9.2" class="ltx_td ltx_align_right ltx_border_bb">57.1</td>
+<td id="S8.T8.1.9.9.3" class="ltx_td ltx_align_right ltx_border_bb"><span id="S8.T8.1.9.9.3.1" class="ltx_text ltx_font_bold">62.9</span></td>
+<td id="S8.T8.1.9.9.4" class="ltx_td ltx_align_right ltx_border_bb">45.7</td>
+<td id="S8.T8.1.9.9.5" class="ltx_td ltx_align_right ltx_border_bb">35</td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table">Table 8: </span>Accuracy for each semantic phenomenon on 100 dev items. While attention was the best model overall, it does not have the highest accuracy for all phenomena.</figcaption>
+</figure>
+</section>
+</section>
+<section id="S9" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">9 </span>Conclusion</h2>
+
+<div id="S9.p1" class="ltx_para">
+<p id="S9.p1.1" class="ltx_p">We presented a novel textual entailment task that involves inference over longer premise texts and aggregation of information from multiple independent premise sentences. This task is an important step towards a system that can create a coherent scene representation from longer texts, such as multiple independent reports. We introduced a dataset for this task (<a target="_blank" href="http://nlp.cs.illinois.edu/HockenmaierGroup/data.html" title="" class="ltx_ref ltx_href"><span class="ltx_ref ltx_nolink">http://nlp.cs.illinois.edu/HockenmaierGroup/data.html</span></a>) which presents a more challenging, realistic entailment problem and cannot be solved by majority voting or related heuristics. We presented the results of several strong neural entailment baselines on this dataset, including one model that aggregates information from the predictions of separate premise sentences. Future work will investigate aggregating information at earlier stages to address the cases that require explicit reasoning about the interaction of multiple premises.</p>
+</div>
+</section>
+<section id="Sx1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">Acknowledgments</h2>
+
+<div id="Sx1.p1" class="ltx_para">
+<p id="Sx1.p1.1" class="ltx_p">This project is supported by NSF grants 1053856, 1205627, 1405883 and 1563727, a Google Research Award, and Contract W911NF-15-1-0461 with the US Defense Advanced Research Projects Agency (DARPA) and the Army Research Office (ARO). Approved for Public Release, Distribution Unlimited. The views expressed are those of the authors and do not reflect the official policy or position of the Department of Defense or the U.S. Government.</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Agirre et al. (2012)</span>
+<span class="ltx_bibblock">
+Eneko Agirre, Mona Diab, Daniel Cer, and Aitor Gonzalez-Agirre. 2012.
+
+</span>
+<span class="ltx_bibblock">Semeval-2012 task 6: A pilot on semantic textual similarity.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib1.1.1" class="ltx_emph ltx_font_italic">Proceedings of the First Joint Conference on Lexical and
+Computational Semantics-Volume 1: Proceedings of the main conference and the
+shared task, and Volume 2: Proceedings of the Sixth International Workshop on
+Semantic Evaluation</em>, pages 385–393. Association for Computational
+Linguistics.
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Bowman et al. (2015)</span>
+<span class="ltx_bibblock">
+Samuel R. Bowman, Gabor Angeli, Christopher Potts, and Christopher D. Manning.
+2015.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="https://doi.org/10.18653/v1/D15-1075" title="" class="ltx_ref ltx_href">A large annotated
+corpus for learning natural language inference</a>.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib2.1.1" class="ltx_emph ltx_font_italic">Proceedings of the 2015 Conference on Empirical Methods in
+Natural Language Processing</em>, pages 632–642.
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Dagan et al. (2006)</span>
+<span class="ltx_bibblock">
+Ido Dagan, Oren Glickman, and Bernardo Magnini. 2006.
+
+</span>
+<span class="ltx_bibblock">The PASCAL recognising textual entailment challenge.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib3.1.1" class="ltx_emph ltx_font_italic">Proceedings of the First International Conference on Machine
+Learning Challenges: Evaluating Predictive Uncertainty Visual Object
+Classification, and Recognizing Textual Entailment</em>, MLCW’05, pages 177–190,
+Berlin, Heidelberg. Springer-Verlag.
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Dagan et al. (2013)</span>
+<span class="ltx_bibblock">
+Ido Dagan, Dan Roth, Mark Sammons, and Fabio Massimo Zanzotto. 2013.
+
+</span>
+<span class="ltx_bibblock">Recognizing textual entailment: Models and applications.
+
+</span>
+<span class="ltx_bibblock"><em id="bib.bib4.1.1" class="ltx_emph ltx_font_italic">Synthesis Lectures on Human Language Technologies</em>,
+6(4):1–220.
+
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Hochreiter and Schmidhuber (1997)</span>
+<span class="ltx_bibblock">
+Sepp Hochreiter and Jürgen Schmidhuber. 1997.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="https://doi.org/10.1162/neco.1997.9.8.1735" title="" class="ltx_ref ltx_href">Long short-term
+memory</a>.
+
+</span>
+<span class="ltx_bibblock"><em id="bib.bib5.1.1" class="ltx_emph ltx_font_italic">Neural Comput.</em>, 9(8):1735–1780.
+
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Kingma and Ba (2014)</span>
+<span class="ltx_bibblock">
+Diederik P. Kingma and Jimmy Ba. 2014.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="http://arxiv.org/abs/1412.6980" title="" class="ltx_ref ltx_href">Adam: A method for
+stochastic optimization</a>.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib6.1.1" class="ltx_emph ltx_font_italic">International Conference on Learning Representations
+(ICLR)</em>.
+
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Krishna et al. (2016)</span>
+<span class="ltx_bibblock">
+Ranjay Krishna, Yuke Zhu, Oliver Groth, Justin Johnson, Kenji Hata, Joshua
+Kravitz, Stephanie Chen, Yannis Kalantidis, Li-Jia Li, David A Shamma,
+Michael Bernstein, and Li Fei-Fei. 2016.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="https://arxiv.org/abs/1602.07332" title="" class="ltx_ref ltx_href">Visual genome: Connecting
+language and vision using crowdsourced dense image annotations</a>.
+
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Lai and Hockenmaier (2014)</span>
+<span class="ltx_bibblock">
+Alice Lai and Julia Hockenmaier. 2014.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="https://doi.org/10.3115/v1/S14-2055" title="" class="ltx_ref ltx_href">Illinois-LH: A
+denotational and distributional approach to semantics</a>.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib8.1.1" class="ltx_emph ltx_font_italic">Proceedings of the 8th International Workshop on Semantic
+Evaluation (SemEval 2014)</em>, pages 329–334.
+
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Marelli et al. (2014)</span>
+<span class="ltx_bibblock">
+Marco Marelli, Stefano Menini, Marco Baroni, Luisa Bentivogli, Raffaella
+Bernardi, and Roberto Zamparelli. 2014.
+
+</span>
+<span class="ltx_bibblock">A SICK cure for the evaluation of compositional distributional
+semantic models.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib9.1.1" class="ltx_emph ltx_font_italic">Proceedings of the Ninth International Conference on
+Language Resources and Evaluation (LREC-2014)</em>.
+
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Mikolov et al. (2013)</span>
+<span class="ltx_bibblock">
+Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg S Corrado, and Jeff Dean. 2013.
+
+</span>
+<span class="ltx_bibblock">Distributed representations of words and phrases and their
+compositionality.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib10.1.1" class="ltx_emph ltx_font_italic">Advances in neural information processing systems</em>, pages
+3111–3119.
+
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Pennington et al. (2014)</span>
+<span class="ltx_bibblock">
+Jeffrey Pennington, Richard Socher, and Christopher D. Manning. 2014.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="http://www.aclweb.org/anthology/D14-1162" title="" class="ltx_ref ltx_href">GloVe: Global
+vectors for word representation</a>.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib11.1.1" class="ltx_emph ltx_font_italic">Empirical Methods in Natural Language Processing (EMNLP)</em>,
+pages 1532–1543.
+
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Rashtchian et al. (2010)</span>
+<span class="ltx_bibblock">
+Cyrus Rashtchian, Peter Young, Micah Hodosh, and Julia Hockenmaier. 2010.
+
+</span>
+<span class="ltx_bibblock">Collecting image annotations using Amazon’s Mechanical Turk.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib12.1.1" class="ltx_emph ltx_font_italic">Proceedings of the NAACL HLT 2010 Workshop on Creating
+Speech and Language Data with Amazon’s Mechanical Turk</em>, pages 139–147.
+Association for Computational Linguistics.
+
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Rocktäschel et al. (2016)</span>
+<span class="ltx_bibblock">
+Tim Rocktäschel, Edward Grefenstette, Karl Moritz Hermann, Tomas Kocisky,
+and Phil Blunsom. 2016.
+
+</span>
+<span class="ltx_bibblock">Reasoning about entailment with neural attention.
+
+</span>
+<span class="ltx_bibblock">In <em id="bib.bib13.1.1" class="ltx_emph ltx_font_italic">International Conference on Learning Representations
+(ICLR)</em>.
+
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">Young et al. (2014)</span>
+<span class="ltx_bibblock">
+Peter Young, Alice Lai, Micah Hodosh, and Julia Hockenmaier. 2014.
+
+</span>
+<span class="ltx_bibblock"><a target="_blank" href="http://aclweb.org/anthology/Q14-1006" title="" class="ltx_ref ltx_href">From image descriptions
+to visual denotations</a>.
+
+</span>
+<span class="ltx_bibblock"><em id="bib.bib14.1.1" class="ltx_emph ltx_font_italic">Transactions of the Association of Computational Linguistics –
+Volume 2, Issue 1</em>, pages 67–78.
+
+</span>
+</li>
+</ul>
+</section>
+<div class="ltx_pagination ltx_role_newpage"></div>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02924" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02925" class="ar5iv-text-button ar5iv-severity-warning">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02925">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02925" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02926" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Sat Mar 16 09:40:14 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

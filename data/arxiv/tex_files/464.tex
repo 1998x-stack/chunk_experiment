@@ -1,0 +1,23 @@
+
+\section{Low Diameter Decomposition with Sublinear Writes}
+
+\newcommand{\clustcenter}{head}
+\newcommand{\cluster}{component}
+\newcommand{\tentative}[1]{{\color{red} #1}}
+
+In order to design graph algorithms that require a sublinear number of writes, we require a decomposition of the graph such that each \cluster\ of the decomposition is small enough to operate on in the small memory while still having a small enough number of \cluster s. In this section, we present an algorithm for finding such a decomposition. 
+
+The high level idea of the algorithm is to sample points to use as the \clustcenter\ of \cluster s. Points are grouped into \cluster s using a deterministic breadth-first search algorithm. Each \clustcenter\ checks to see if its \cluster\ is too large, and the large \cluster s are partitioned into secondary \cluster s of appropriate size. Upon completion of this step, a graph of the \cluster s is created. The \cluster\ graph can be used to perform computation. Queries can then be answered by having the queried vertex search to its \clustcenter\ to find the appropriate information. 
+
+Our problem is as follows: given a graph $G = \{V, E\}$ where $|V| = n$, $|E| = m$ and some value $k$, find a partitioning of $G$ such that the size of each partition is at most $k$. We have the added complication that the partitioning must take a sublinear number of writes. Our algorithm relies on the assumption that there is a total ordering of the vertices on the graph. We also assume that we have $O(k^2\log{n})$ small memory and that the graph has constant degree. 
+
+The algorithm begins by sampling each vertex with probability $\frac{1}{k}$. Each sampled vertex is treated as the \clustcenter\ of one \cluster. Rather than explicitly assigning each vertex to a \cluster, we have vertices find their \clustcenter\ each time they are queried using a deterministic breadth-first search (BFS). Vertices discovered in the same level of the BFS are searched using the ordering on vertices discussed above. \tentative{Using this search algorithm, a vertex can find its \clustcenter\ in $O(k\log{n})$ time with high probability. }
+
+This sampling methods creates \cluster s with low diameter, but does not preclude the possibility that a large number of vertices end up in the same \cluster. To ensure that no \cluster\ is too large, each \clustcenter\ performs a BFS to find the vertices that are in its \cluster. For every vertex it finds, the \clustcenter\ performs a search from that vertex to see if it points to the \clustcenter. Once the \clustcenter\ finds a vertex that resides in a different \cluster, it can stop searching along that branch of the tree due to the directed ordering of the search. \tentative{Since the degree of the graph is constant and the expected distance from a vertex to its \clustcenter\ is $O(k)$, the number of vertices in a \cluster\ is $O(2^k)$ with high probability. }
+
+As a \clustcenter\ is finding the vertices in its \cluster, it builds a tree representing the \cluster. The root of the tree is the \clustcenter\ of the \cluster, and each vertex is added to the tree such that the path from the vertex to the root consists of the vertices on the path the vertex uses to find its \clustcenter. If this tree is of size at most $k$, then we are done. If the tree is larger than $k$, we can partition it into subtrees of size at most $k$ by counting subtree size and taking a secondary sample at the root of every subtree with size $\geq \frac{k}{2}$. Since every new secondary sample removes at least $\frac{k}{2}$ vertices, the number of secondary samples for a \cluster\ of size $j$ is $O(j/k)$. 
+
+The addition of secondary samples requires a small adjustment to the algorithm a vertex uses to find its center. The search proceeds as described above, except rather than stopping the search upon reaching a secondary sample, that sample is recorded. When a primary sample is found, the path to that vertex on the BFS is checked. If a secondary sample exists on the path, the secondary sample closest to the original vertex is its \clustcenter. 
+
+The result of this algorithm is an implicit construction of a low-diameter decomposition of the input graph $G$. The algorithm requires a sublinear number of writes with only a modest increase in the number of reads. 
+

@@ -1,0 +1,34 @@
+\begin{algorithm}[!t]
+\footnotesize{
+ \KwData{$\x^{(0)}$, $\z^{(0)}$, $\gamma_0 \in (0,1]$, $\mu \in (0,1)$, $\niter$, $K$.}
+Broadcast $\z^{(0)}$ to the $\ntime$ workers \;
+$k \leftarrow 0$ \;
+$\mathcal{T}_k \leftarrow \emptyset$ \;
+\While{$k < \niter$}{
+	\nlset{Step 1}\label{alg:wait_step}Wait for $\xhtk^k$ from any worker \;
+	$\mathcal{T}_k = \mathcal{T}_k \cup \{ \iworker^k \}$ \;
+   	$d_\iworker^{k+1} = \left\{
+   	\begin{array}{l}
+		0 \text{ if } \iworker \in \mathcal{T}_k \\
+		d_\iworker^k + 1 \text{ otherwise}
+   	\end{array} \right.$\medskip\;
+   	$\x_\iworker^{k+1} = \left\{ \begin{array}{l}
+   	\x_\iworker^k + \gamma_k (\hat{\x}_\iworker - \x_\iworker^k) \text{ if } \iworker \in \mathcal{T}_k \\
+   	\x_\iworker^k \text{ otherwise}
+   	\end{array} \right.$\medskip\;
+   	\If{$(\sharp \mathcal{T}_k < K)$}{
+   		Go to step \ref{alg:wait_step} \tcp*{wait until $\sharp \mathcal{T}_k \geq K$}
+   	}
+   	\Else{
+   		$ \displaystyle \hat{\z}^k \in \prox_{c_{\z}^k r} \Bigl( \z^k + \frac{1}{c_{\z}^k} \nabla_{\z} F(\x^{k+1},\z^k) \Bigr)$\;
+   		$\z^{k+1} = \hat{\z}^k + \gamma_k (\hat{\z}^k - \z^k)$\;
+   		$\gamma_{k+1} = \gamma_k (1 - \mu\gamma_k)$\;
+   		$\mathcal{T}_{k+1} \leftarrow \emptyset$ \;
+   		$k \leftarrow k+1$\;
+   	}
+}
+\KwResult{$\x^{\niter}$, $\z^{\niter}$.}
+}
+\caption{Master node update.} % Algorithm of the master node.
+\label{alg:master}
+\end{algorithm}

@@ -1,0 +1,209 @@
+% !TEX root = main.tex
+
+\section{Contrastive Learning for Image Captioning}
+\label{sec:frmwork}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{imgs/selfretrieval.pdf}
+	\caption{\small This figure illustrates respectively a nondistinctive and distinctive captions of an image,
+                 where the nondistinctive one fails to retrieve back the original image in \emph{self retrieval} task.}
+	\label{fig:selfretrieval}
+	\vspace{-1mm}
+\end{figure}
+
+\input{tab_selfretrieval.tex}
+
+Learning a model by characterizing desired properties relative to a strong baseline
+is a convenient and often quite effective way in situations
+where it is hard to describe these properties directly.
+Specifically, in image captioning,
+it is difficult to characterize
+the distinctiveness of natural image descriptions
+via a set of rules,
+without running into the risk that some subtle but significant points are missed.
+Our idea in this work is to introduce a baseline model as a reference,
+and try to enhance the distinctiveness on top, while maintaining the
+overall quality of the generated captions.
+
+In the following we will first present an empirical study
+on the correlation between \emph{distinctiveness} of its generated captions and the
+\emph{overall performance} of a captioning model.
+Subsequently, we introduce the main framework of \emph{Contrastive Learning}
+in detail.
+
+\subsection{Empirical Study: Self Retrieval}
+\label{sec:selfretrieval}
+
+In most of the existing learning methods of image captioning,
+models are asked to generate a caption that best describes the semantics of a given image.
+In the meantime, \textbf{distinctiveness} of the caption,
+which, on the other hand, requires the image to be the best matching \emph{among all images}
+for the caption, has not been explored.
+However, distinctiveness is crucial for high-quality captions.
+A study by Jas \cite{jas2015image} showed that \emph{specificity} is common in human descriptions, 
+which implies that image descriptions often involve distinctive aspects.
+Intuitively, a caption satisfying this property is very likely to contain key and unique content of the image,
+so that the original image could easily be retrieved when the caption is presented.
+
+To verify this intuition, we conducted an empirical study which we refer to as \emph{self retrieval}.
+In this experiment, we try to retrieve the original image given its model-generated caption
+and investigate top-$k$ recalls, as illustrated in Figure \ref{fig:selfretrieval}.
+Specifically, we randomly sampled $5,000$ images $(I_1, I_2, ..., I_{5000})$ from standard MSCOCO \cite{lin2014microsoft}~test set
+as the experiment benchmark.
+For an image captioning model $p_m(:,\vtheta)$,
+we first ran it on the benchmark to get corresponding captions $(c_1, c_2, ..., c_{5000})$ for the images.
+After that,
+using each caption $c_t$ as a query,
+we computed the conditional probabilities $(p_m(c_t|I_1), p_m(c_t|I_2), ..., p_m(c_t|I_{5000}))$,
+which were used to get a ranked list of images, denoted by $\vr_t$.
+Based on all ranked lists, we can compute top-$k$ recalls,
+which is the fraction of images within top-$k$ positions of their corresponding ranked lists.
+The top-$k$ recalls are good indicators of how well a model captures
+the distinctiveness of descriptions.
+
+
+In this experiment, we compared three different models, including 
+\emph{Neuraltalk2} \cite{karpathy2015deep} and \emph{AdaptiveAttention} \cite{lu2016knowing} that are learned by MLE,
+as well as \emph{AdaptiveAttention} learned by our method.
+The top-$k$ recalls are listed in Table~\ref{tab:selfretrieval},
+along with overall performances of these models in terms of
+\emph{Rouge}~\cite{lin2004rouge}~and \emph{Cider}~\cite{vedantam2015cider}.
+These results clearly show that
+the recalls of self retrieval are positively correlated to the performances of image captioning models
+in classical captioning metrics.
+Although most of the models are not explicitly learned to promote distinctiveness,
+the one with better recalls of self retrieval,
+which means the generated-captions are more distinctive,
+performs better in the image captioning evaluation.
+Such positive correlation clearly demonstrates the significance of
+\emph{distinctiveness} to captioning performance.
+
+\subsection{Contrastive Learning}
+
+In Contrastive Learning (CL),
+we learn a target image captioning model $p_m(:;\vtheta)$ with parameter $\vtheta$
+by constraining its behaviors relative to a reference model $p_n(:;\vphi)$ with parameter $\vphi$.
+%
+The learning procedure requires two sets of data:
+(1) the observed data $X$,
+which is a set of ground-truth image-caption pairs $((c_1, I_1), (c_2, I_2), ..., (c_{T_m}, I_{T_m}))$,
+and is readily available in any image captioning dataset,
+(2) the noise set $Y$,
+which contains mismatched pairs $((c_{/1}, I_1), (c_{/2}, I_2), ..., (c_{/T_n}, I_{T_n}))$,
+and can be generated by randomly sampling $c_{/t} \in \cC_{/I_t}$ for each image $I_t$,
+where $\cC_{/I_t}$ is the set of all ground-truth captions except captions of image $I_t$.
+We refer to $X$ as \emph{positive pairs} while $Y$ as \emph{negative pairs}.
+
+For any pair $(c,I)$,
+the target model and the reference model will respectively give
+their estimated conditional probabilities $p_m(c|I,\vtheta)$ and $p_n(c|I,\vphi)$.
+We wish that $p_m(c_t|I_t, \vtheta)$ is greater than $p_n(c_t|I_t, \vphi)$ for any positive pair $(c_t, I_t)$,
+and vice versa for any negative pair $(c_{/t}, I_t)$.
+Following this intuition, our initial attempt was to
+define $D((c,I);\vtheta, \vphi)$, the difference between $p_m(c|I, \vtheta)$ and $p_n(c|I, \vphi)$, as
+\begin{align}
+	D((c,I);\vtheta, \vphi) = p_m(c|I, \vtheta) - p_n(c|I, \vphi),
+\end{align}
+and set the loss function to be:
+\begin{align}
+	\cL^\prime(\vtheta;X, Y, \vphi) =
+	\sum^{T_m}_{t = 1} D((c_t, I_t);\vtheta, \vphi)
+	- \sum^{T_n}_{t = 1} D((c_{/t}, I_t);\vtheta, \vphi)
+	\label{eq:dsum}.
+\end{align}
+In practice, this formulation would meet with several difficulties.
+First,
+$p_m(c|I, \vtheta)$ and $p_n(c|I, \vphi)$ are very small ($\sim 1e$-$8$),
+which may result in numerical problems.
+Second,
+Eq~\eqref{eq:dsum} treats easy samples,
+hard samples, and mistaken samples equally.
+This, however, is not the most effective way.
+For example, when $D((c_t, I_t);\vtheta, \vphi) \gg 0$ for some positive pair,
+further increasing $D((c_t, I_t);\vtheta, \vphi)$
+is probably not as effective as updating $D((c_{t^\prime}, I_{t^\prime});\vtheta,\vphi)$
+for another positive pair,
+for which $D((c_{t^\prime}, I_{t^\prime});\vtheta,\vphi)$ is much smaller.
+
+To resolve these issues, we adopted an alternative formulation
+inspired by NCE (sec \ref{sec:bg}), where
+we replace the difference function $D((c, I);\vtheta, \vphi)$
+with a log-ratio function $G((c,I);\vtheta, \vphi)$:
+\begin{align}
+	G((c,I);\vtheta, \vphi) = \ln p_m(c|I, \vtheta) - \ln p_n(c|I, \vphi),
+\end{align}
+
+and further use a logistic function $r_\nu$ (Eq(\ref{eq:logistic})) after $G((c,I);\vtheta, \vphi)$ to saturate the influence of easy samples.
+Following the notations in NCE, we let $\nu = T_n / T_m$,
+and turn $D((c, I);\vtheta, \vphi)$ into:
+\begin{align}
+	h((c,I);\vtheta, \vphi) = r_\nu(G((c,I);\vtheta, \vphi))).
+\end{align}
+
+Note that $h((c,I);\vtheta, \vphi) \in (0, 1)$. Then, we define our updated loss function as:
+\begin{align}
+	\cL(\vtheta;X,Y,\vphi) = \sum^{T_m}_{t = 1} \ln[h((c_t,I_t);\vtheta,\vphi)] + \sum^{T_n}_{t = 1}\ln[1 - h((c_{/t},I_t); \vtheta, \vphi)] \label{eq:hsum}.
+\end{align}
+
+For the setting of $\nu = T_n / T_m$,
+we choose $\nu = 1$, \ie~$T_n = T_m$, to ensure balanced influences
+from both positive and negative pairs.
+This setting consistently yields good performance in our experiments.
+Furthermore, we copy $X$ for $K$ times and sample $K$ different $Y$s,
+in order to involve more diverse negative pairs without overfitted to them.
+In practice we found $K = 5$ is sufficient to make the learning stable.
+Finally, our objective function is defined to be
+\begin{align}
+	J(\vtheta) = \frac{1}{K} \frac{1}{T_m} \sum^K_{k = 1} \cL(\vtheta;X,Y_k,\vphi).
+\end{align}
+%analysis of the terms
+Note that $J(\vtheta)$ attains its upper bound $0$ if positive and negative pairs can be
+perfectly distinguished, namely,
+for all $t$, $h((c_t,I_t); \vtheta, \vphi) = 1$ and $h((c_{/t}, I_t); \vtheta, \vphi) = 0$.
+In this case, $G((c_t, I_t);\vtheta, \vphi) \to \infty$ and $G((c_{/t},I_t); \vtheta, \vphi) \to -\infty$,
+which indicates the target model will give higher probability $p(c_t|I_t)$ and lower probability $p(c_{/t}|I_t)$,
+compared to the reference model.
+%
+Towards this goal, the learning process would encourage \emph{distinctiveness} by suppressing
+negative pairs, while maintaining the overall performance by maximizing the probability values
+on positive pairs.
+
+\subsection{Discussion}
+\label{sec:discuss}
+%MLE,NCE,GAN
+Maximum Likelihood Estimation (MLE) is a popular learning method in the area of image captioning \cite{vinyals2015show, xu2015show, lu2016knowing}.
+The objective of MLE is to maximize \emph{only} the probabilities of ground-truth image-caption pairs,
+which may lead to some issues \cite{dai2017towards},
+including high resemblance in generated captions.
+While in CL, the probabilities of ground-truth pairs are \emph{indirectly} ensured by the positive constraint
+(the first term in Eq(\ref{eq:hsum})),
+and the negative constraint (the second term in Eq(\ref{eq:hsum}))
+suppresses the probabilities of mismatched pairs,
+forcing the target model to also learn from distinctiveness.
+
+Generative Adversarial Network (GAN) \cite{dai2017towards}~is a similar learning method that involves an auxiliary model.
+However, in GAN the auxiliary model and the target model follow two \emph{opposite} goals,
+while in CL the auxiliary model and the target model are models in the same track.
+Moreover, in CL the auxiliary model is stable across the learning procedure,
+while itself needs careful learning in GAN.
+
+It's worth noting that
+although our CL method bears certain level of resemblance with Noise Contrastive Estimation (NCE) \cite{gutmann2012noise}.
+The motivation and the actual technical formulation of CL and NCE are essentially different.
+For example,
+in NCE the logistic function is a result of computing posterior probabilities,
+while in CL it is explicitly introduced to saturate the influence of easy samples.
+
+%benefit: suitable for all kinds of models
+As CL requires only $p_m(c|I)$ and $p_n(c|I)$,
+the choices of the target model and the reference model can
+range from models based on LSTMs \cite{hochreiter1997long}~to models in other formats,
+such as MRFs \cite{farhadi2010every}~and memory-networks \cite{park2017attend}.
+On the other hand, although in CL,
+ the reference model is usually fixed across the learning procedure,
+one can replace the reference model with the latest target model periodically.
+The reasons are
+(1) $\nabla J(\vtheta) \ne \vzero$ when the target model and the reference model are identical,
+(2) latest target model is usually stronger than the reference model,
+(3) and a stronger reference model can provide stronger bounds and lead to a stronger target model.

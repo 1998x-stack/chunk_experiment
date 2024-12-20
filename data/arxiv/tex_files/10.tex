@@ -1,0 +1,141 @@
+\section{Development of Paperclickers} \label{sec:proposal}
+
+Paperclickers aims at lowering the costs of CRSs, and thus fostering their adoption in Brazil and other developing countries. We follow the image-processing model, using fiducial markers on the students cards, and keeping the software in a mobile device (smartphone or tablet) that stays with the teacher. The students answer multiple-choice questions by rotating the cards into one of four orientations.
+
+Paperclickers has very modest requirements: a single mobile device per classroom (which can be the teacher's personal smartphone), and no Internet connection. Cards must be printed and distributed to the students, but the cost is low, a few cents per card. The solution is very easy to setup and use, reducing costs of installation and training.
+
+The main limitation, as we will see, is the number of students. There is a hard limit of 99 codes, but since there must be an unencumbered line-of-sight between the codes and the device, the practical limit may be lower. A lesser limitation is that only multiple-choice questions are possible, but that limitation is not a problem for active-learning techniques like PI.
+
+% Discutir isso depois: if the teacher wants to capture each individual answer. If the teacher is content with a rough aggregate estimate, larger classes become feasible.
+
+
+%Another aspect is educators' preparation for technology usage within pedagogical activities: once again in Brazil, only 30\% computers usage by teachers inside the school was inside the classroom~\cite{CGIbr2014ITCeducation}.
+
+
+\subsection{Initial Development}
+
+Paperclickers' first design was similar to Cross et al.'s~\cite{cross2012low}, but exchanging the PC+webcam setup by a mobile device with embedded camera. In both designs, the instructor uses the camera to film the class, as the students hold up cards with their answers --- using four different orientations to pick among four possible answer choices. The system tabulates the answers in detail, or summarizes them in a graph.
+
+Development started with brainstorming sessions to storyboard the application use cases, its interface, and its behavior. The storyboards were the main planning tool for the development --- they provided a good compromise between our desire for an informal, lean process, and the need to design the application, and document and communicate the decisions among team members. The implementation was guided by the decisions made during storyboarding (figure~\ref{fig:storyboard_2nd_cycle}).
+
+\begin{figure}[ht]
+    \centering
+    \begin{minipage}{.5\textwidth}
+        \centering
+        \setlength{\fboxsep}{0pt}\fbox{\includegraphics[width=.9\textwidth]{figures/paperClickersLight_storyboard_800x573}}
+        \captionof{figure}{Actual storyboard from the second development cycle. Practical, informal, and easy to implement, storyboards proved effective for planning and communicating all design decisions among team members.}
+        \label{fig:storyboard_2nd_cycle}
+    \end{minipage}
+\end{figure}
+
+The storyboards described the following workflow:
+
+\begin{enumerate}
+    \item \textit{Opening the class}: the instructor selects the class identifier to open a session;
+    \item \textit{Starting a question}: to start polling the students, the teacher select the question number, for later identification (those numbers autoincrement, but can also be changed manually);
+    \item \textit{Image capture}: the camera activates and the instructor scans the entire class, capturing the answers;
+    \item \textit{Results screen}: the application shows each student answer; if there remain unidentified answers, the instructor can go back to the image capture stage, or input the answers manually;
+    \item \textit{Chart screen}: the application summarizes the result in a pie chart.
+\end{enumerate}
+
+Initial design envisioned an offline module to manage classroom definitions: class IDs, and their enrolled students. During prototyping we managed that information manually, directly on the application internal data files.
+
+During initial tests, we added two new features: a separate flow for roll-call  --- letting the teacher to do an initial roll-coll in the classroom to later better identify absent students from unrecognized codes; and an augmented reality feedback on the answers capture screen, to let the user identifying recognized cards (Figure~\ref{fig:old_answersScan}).
+
+% When the Paperclickers application is installed on the device, it creates the "paperclickers" folder, where the instructor shall insert a file containing the list of classes she is lecturing. This file is loaded on class selection screen.
+
+% On question definition screen, the instructor can choose the question number, prior to start scanning the answers. Optionally the instructor can register the class attendance.
+
+% On camera screen, the instructor scans the entire class to capture the answers. The application provides a visual feedback for the identified codes. A simple screen touch finishes the scan.
+
+% On result screen, the instructor can visualize the students’ answers. If there is a student for which an answer has not being detected, the instructor can click on the corresponding icon and apply the response. Alternately, the instructor can go back to the previous screen to scan the class again.
+
+% Finally, on chart screen the instructor will see the result statistics. All those scan results are stored in an answer log file, saved in the application folder. The instructor has the option to try again or start a new question.
+
+% During the design phase it was clear an offline module would be required to store preliminary information --- as class definition and student IDs --- to be further used by the application in the defined interaction.
+
+% Paperclickers application was originally conceived to recognize two machine encoding signs, QR Codes and TopCodes, to assure the student privacy and unique identification. QR Codes --- the basis of~\cite{cross2012low} work --- can storage numeric and alphabetic characters, and also has error correction capability. Also, the three positional squared shape pattern located at the top-left, top-right and bottom left of the code allow us to identify the sign orientation which defines multiple-choice answers~\cite{belussi2013fast}. TopCodes sign was designed to recognize tangible objects on a camera-orthogonal surface~\cite{horn2012topcode}, providing very quick and robust detection on that original scenario. TopCodes also provides a unique ID and orientation, but it can recognize only 99 codes.
+
+% TopCodes and QR Codes have complementary advantages: while QR Codes allow to create a unique identifier per student for a very large number of students, TopCodes allow only 99 different codes, which allows, in the best case scenario, a unique code per classroom, not per student. However, TopCodes are extremely robust and very fast to detect, while QR Codes have issues for the geometric transformations and requires more computation to be detected.
+
+% Completing the development process we implement the mobile application prototype, which included open source visual elements. Some icons were obtained on the FlatIcon\footnote{FlatIcon - http://www.flaticon.com/} website. On the chart screen, we used the MPAndroidChart\footnote{MPAndroidChart - https://github.com/PhilJay/MPAndroidChart} library developed by Phillip Jahoda; MPAndroidChart allows the convenient creation of several chart types on Android.
+
+% For QR Codes detection/decoding we used the Zxing\footnote{Zxing - https://github.com/zxing/} open source decoder; for TopCodes detection/decoding, we used the core TopCodes library, which is free and open source, and defines Java classes for the main components~\cite{horn2012topcode}.
+
+% After the initial detection experiments, we decided to use only the TopCodes machine encoding signs, due to the poor performance detection of QR Codes in a classroom environment, using a handheld device. We then used a prototype including only TopCodes detection on the user experiments.
+
+
+\subsection{Recognizing Students' Answers}
+
+At first, for the students cards, we chose QR Codes (ISO/IEC 18004)~\cite{ISO18004}, which can store many characters, have error correction, and have location patterns that easily establish their orienation~\cite{belussi2013fast}. We developed a prototype mobile app in Android\footnote{http://www.android.com/}, using the ZXing\footnote{ https://github.com/zxing/} open source library to generate and decode the QR Codes.
+
+QR Codes would allow unique codes for each student across an institution, or even across an entire education system, since it can easily store dozens of digits. However, we found next to impossible to adapt them to our use case. QR Codes are optimized for recognition and decoding of a single code at close range, while we needed to find and decode dozens of codes across different distances from the camera, in a single photo. Although we obtained moderate success after several modifications in ZXing code, the decoding was still too slow to be used on a video stream, and had to employ still pictures. Worse yet: recognition accuracy --- even on ideal situations of illumination and occlusion --- was unacceptable.
+
+Giving up on storage capability, a natural solution presented itself from the literature of motion capture and augmented/virtual reality: fiducial marks, which are engineered to be recognized in real-time in a video stream. We selected TopCodes\cite{horn2012topcode}, originally designed to create virtual objects for the Tern tangible programming environment~\cite{horn2007designing}. We still had to modify the recognition/decoding code for our purposes (Section~\ref{sec:second_dev_cyvle}), but after such fine-tuning they proved extremely robust and very fast. On the other hand, TopCodes support only 99 unique identifiers, making possible to give unique ids for each student only in small to moderate-large classes. Using on large institutions is not impossible, but requires the additional burden of keeping tables to translate class IDs into institution IDs for each class.
+
+% At the end we considered TopCodes and QR Codes having complementary advantages: while QR Codes allow to create a unique identifier per student for a very large number of students, TopCodes allow only 99 different codes, which allows, in the best case scenario, a unique code per classroom, not per student. However, TopCodes are extremely robust and very fast to detect --- a strong requirement for our solution --- while QR Codes have issues for the geometric transformations and requires more computation to be detected.
+
+% During the development of the Paperclickers released version, we worked on improving the overall detection speed --- one of the user complains on the prototype --- and we have identified one decoding fragility of the TopCodes reference library implementation, regarding partial codes occlusion: partially occluded codes could be wrongly decoded, registering wrong answers, as shown in figure~\ref{fig:decodingError}.
+
+% Topcodes original usage scenario required the camera to be orthogonal to the codes in a controlled environment, much different from a classroom with several students showing their answers during a teacher's pool, a situation where code partial occlusions are a reasonably expected occurrence. The varying camera baseline and position --- caused by both the teacher scanning movement and the students holding their answer signs --- combined with the also varying partial occlusions, created the spurious decoding.
+
+% To overcome this error, we created an additional validation phase before registering a given answer: a given code should be detected across subsequent scan cycles for a certain number of times; only after this arbitrary threshold the code is declared valid and the corresponding answer registered. The rationale of this approach is the spurious decoding would be much less frequent than the correct readings.
+
+% Our initial focus was to validate the QR Codes recognition, since that code were our initial choice, due to its encoding power: it would allow having a unique code for each student in a given institution or even a city, considering its maximum encoding capacity of 7,089 characters. However we needed to verify if its detection complexity would fit our usage scenario.
+
+% We performed 2 QR Codes detection test scenarios. The initial one evaluated the performance on the following conditions:
+
+% \begin{enumerate}
+%     \item Camera Distance: short (2 meters) / long (4 meters)
+%     \item Camera baseline: direct / oblique
+%     \item Code orientation: align / rotate
+%     \item Code Occlusion: yes / no
+% \end{enumerate}
+
+% The conditions were combined among them in a total of 16 variations. In the second scenario, closer to a class environment, we distributed 20 then 25 QR Codes accross a class, fixing them in the seats' backrests.
+
+% The performed tests indicated QR Codes would not be easily applied in our solution, due to poor detection/decoding performance specially related to camera distance and baseline change, using the original version of Zxing library. We were able to change the Zxing library, loosen some of the QR Code code validation steps, to increase the overall detection performance; however this change increased the false positives for the detected codes.
+
+% These detection test results indicated QR Codes would not fit our usage scenario, leaving only TopCodes as the machine encoding solution for our image-processing CRS proposal.
+
+% For the development of the Paperclickers released solution, we worked on improving the overall detection speed --- one of the user complains on the prototype --- and we have identified one decoding fragility of the TopCodes reference library implementation, regarding partial codes occlusion: partially occluded codes could be wrongly decoded, registering wrong answers, as shown in figure~\ref{fig:decodingError}.
+
+% Topcodes reference detection/decoding library was originally created to be used in a tangible programming environment, the Tern\footnote{Tern - http://hci.cs.tufts.edu/tern}; such usage scenario required the camera to be orthogonal to the codes and was supposed to be used in an controlled environment, much different from a classroom with several students showing their answers during a teacher's pool, a situation where code partial occlusions are a reasonably expected occurrence. In such scenario, the varying camera baseline and position --- caused by both the teacher scanning camera movement and the students holding their answer signs --- combined with the also dynamic partial occlusions, created the spurious decoding.
+
+% To overcome this error, we decided to create an additional validation phase before registering a given answer: a given code should be detected across subsequent scan cycles for a certain number of times; only after this arbitrary threshold the code is declared valid and the corresponding answer registered. The rationale of this approach is the spurious decoding would be much less frequent than the correct readings.
+
+% Another particularity of the original TopCodes library also become apparent during this final development phase: the overall detection and decoding cycle time presented huge changes depending on the image background. An analysis of the implementation indicated the detection phase was identifying a huge amount of TopCode candidates if the background presented vertical lines pattern. This happens due to the horizontal scan used to search in the image --- after being processed by an adaptive thresholding~\cite{wellner1993adaptive} --- for black/white sequences which could be a valid TopCode bull's-eye horizontal section.
+
+% To reduce this sensitiveness to the background, we included an additional vertical scan step in the detection phase, looking for the same black/white sequences; now we considered candidates only the points found on both the horizontal and the vertical scans.
+
+% After both changes, the TopCodes detection and decoding functionality presented an overall good performance, allowing a scan cycles of 500 milliseconds on 2016 mid-high Android devices\footnote{1.5 GHz Cortex-A53 CPU, 1920x1080 pixels image}.
+
+% Considering these changes on the TopCodes library, additional detection tests indicated a reasonable performance: once again a classroom scenario were considered and this test indicated the following:
+
+% \begin{itemize}
+%     \item Up to 5m distance, codes printed in A4, A5 and A6 format could be properly detected/decoded;
+%     \item Up to 7m distance, only codes printed in A4 or A5 could be detected/decoded;
+%     \item At 10m distance (back of the classroom), only A4 codes could be detected/decoded.
+% \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

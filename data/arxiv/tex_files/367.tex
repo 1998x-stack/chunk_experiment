@@ -1,0 +1,66 @@
+\section{Other Biconnectivity Queries}\label{sec:morequires}
+
+We now discuss how some more complex queries can be made.  To start with, we show some definitions and results that are used in the algorithms for queries.
+
+\begin{definition}[root biconnectivity]
+We say a vertex $v$ in a cluster $C$'s \localgraph{} is root-biconnected if $v$ and the cluster root have the same vertex label in $C$'s \localgraph{}.
+\end{definition}
+
+A root-biconnected vertex $v$ indicate that $v$ can connect to the ancestor clusters without using the cluster root (i.e.\ the cluster root is not an articulation point to cut $v$).  Another interpretation is that, there is no articulation point in cluster $C$ that disconnects $v$ from the \outver{} of the cluster root.
+
+\begin{lemma}
+Computing and storing the root biconnectivity of all \outvers{} in all
+\localgraph{s} takes $O(nk)$ operations in expectation and $O(n/k)$ writes
+on the \seqmodel.
+\end{lemma}
+The proof is straight-forward.  The cost to construct the \localgraph{s} and compute root biconnectivity is $O(nk)$, and since there are $O(n/k)$ clusters tree edges, storing the results requires $O(n/k)$ writes.
+
+\myparagraph{Querying whether two vertices are biconnected}
+Checking whether two vertices $v_1$ and $v_2$ can be disconnected by removing any single vertex in the graph is one of the most commonly-used biconnectivity-style queries.
+To answer this query, our goal is to find the tree path between this pair of vertices and check whether there is an articulation point on this path that disconnects them.
+
+The simple case is when $v_1$ and $v_2$ are within the same cluster.
+We know that the two vertices are connected by a path via the vertices within the cluster. We can check whether any vertex on the path disconnects these two vertices using their vertex labels.
+
+Otherwise, $v_1$ and $v_2$ are in different clusters $C_1$ and $C_2$.  Assume $C_{\smb{LCA}}$ is the cluster that contains the LCA of $v_1$ and $v_2$ (which can be computed by the LCA of $C_1$ and $C_2$ with constant cost) and $v_{\smb{LCA}}\in C_{\smb{LCA}}$ is the LCA vertex.
+The tree path between $v_1$ and $v_2$ is from $v_1$ to $C_1$'s cluster root, and then to the cluster root of the \outver{} of $C_1$'s cluster root, and so on, until reaching $v_{\smb{LCA}}$, and the other half of the path can be constructed symmetrically.  It takes $O(k^2)$ expected cost to check whether any articulation point disconnects the paths in $C_1$, $C_2$ and $C_{\smb{LCA}}$.
+For the rest of the clusters, since we have already precomputed and stored the root biconnectivity of all outside vertices, then applying a leafix on the clusters spanning tree computes the cluster containing the articulation point of each cluster root.
+Therefore checking whether such an articulation point on the path between $C_1$ and $C_{\smb{LCA}}$ or between $C_2$ and $C_{\smb{LCA}}$ that disconnects $v_1$ and $v_2$ takes $O(1)$ cost.  Therefore checking whether two vertices are biconnected requires $O(k^2)$ cost in expectation and no writes.
+
+\hide{
+\begin{enumerate}
+  \item if one cluster is the ancestor of the other (WLOG assume $C_1$ is the ancestor and $(v_{C_1},v_{C_3})$ is the cluster tree edge on the path between $C_1$ and $C_2$, $v_{C_1}\in C_1$ and $v_{C_3}\in C_3$), then (1) in $C_1$'s \localgraph{} $v_1$ must be biconnected to $v'$, (2) $v_2$ shares the same vertex label with its cluster root, and (3) $C_2$ and $C_3$ have the same cluster label;
+  \item otherwise, both vertices share the same vertex labels with the cluster roots in the \localgraph{s} and the two clusters have the same cluster label.
+\end{enumerate}
+}
+
+\myparagraph{Querying whether two vertices are 1-edge connected}
+This is a similar query comparing to the previous one and the only difference is whether an edge, instead of a vertex, is able to disconnect two vertices.
+The query can be answered in a similar way by checking whether a bridge disconnects the two vertices on their spanning tree path, which is related to the two clusters containing the two query vertices and the LCA cluster, and the precomputed information for the clusters on the tree path among these three clusters.
+The cost for a query is also $O(k^2)$ operations in expectation and it requires no writes.
+
+\myparagraph{Queries on biconnected-component labels for edges}  We now answer the standard queries~\cite{CLRS,JaJa92} of biconnected components: given an edge, report a unique label that represents the biconnected component this edge belongs to.
+
+We have already described the algorithm to check whether any two vertices are biconnected, so the next step is to assign a unique label of each biconnected components, which requires the following lemma:
+\begin{lemma}
+A vertex in one cluster is either in a biconnected component that only contains vertices in this cluster, or biconnected with at least one \outver{} of this cluster.
+\end{lemma}
+\begin{proof}
+Assume a vertex $v_1$ in this cluster $C$ is biconnected to another vertex $v_2$ outside the cluster, then let $v_o$ be the \outver{} of $C$ on the spanning tree path between $v_1$ and $v_2$, and $v_1$ is biconnected with $v_o$, which proves the lemma.
+\end{proof}
+
+With this lemma, we first compute and store the labels of the biconnected components on the cluster roots, which can be finished with $O(nk)$ expected operations and $O(n/k)$ writes with the \imprep{} on the \clustergraph{} and the the root biconnectivity of \outvers{} on all clusters.
+Then for each cluster we count the number of biconnected components completely within this cluster.
+Finally we apply a prefix sum on the numbers for the clusters to provide a unique label of each biconnected component in every cluster.
+Although not explicitly stored, the vertex labels in each cluster can be regenerated with $O(k^2)$ operations in expectation and $O(k^2\log n)$ operations \whp{}, and a vertex label is either the same as that of an \outver{} which is precomputed, or a relative label within the cluster plus the offset of this cluster.
+
+Similar to the algorithm discussed in Section~\ref{sec:imprep}, when a query comes, the edge can either be a cluster tree edge, a cross edge, or within a cluster.
+For the first case the label biconnected component is the precomputed label for the (lower) cluster root.
+For the second case we just report the vertex label of an arbitrary endpoint, and similarly for the third case the output is the vertex label of the lower vertex in the cluster.
+The cost of a query is $O(k^2)$ in expectation and $O(k^2\log n)$ \whp{}.
+
+\hide{
+\bigskip
+The preprocess steps for the queries are shown in an overview of Algorithm~\ref{algo:biconn}.
+With the concepts and lemmas in this section, with a precomputation of $O(nk)$ cost and $O(n/k)$ writes, we can also do a normal query with $O(k^2)$ cost in expectation and $O(k^2\log n)$ \whp{} on \textbf{bridge-block tree}, \textbf{cut-block tree}, and \textbf{1-edge-connected components}.
+}

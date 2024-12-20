@@ -1,0 +1,551 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02932] Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle</title><meta property="og:description" content="This paper presents an algorithm and the implementation of a motor schema to aid the visual localization subsystem of the ongoing EMILY project at Texas A&amp;M University. The EMILY project aims to team an Unmanned Su…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02932">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02932">
+
+<!--Generated on Wed Mar  6 07:49:34 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line" lang="en">
+<h1 class="ltx_title ltx_font_bold ltx_title_document" style="font-size:173%;">Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle
+</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Aritra Biswas<sup id="id9.9.id1" class="ltx_sup"><span id="id9.9.id1.1" class="ltx_text ltx_font_italic">1</span></sup>, Haresh Karnan<sup id="id10.10.id2" class="ltx_sup"><span id="id10.10.id2.1" class="ltx_text ltx_font_italic">1</span></sup>, Pranav Vaidik Dhulipala<sup id="id11.11.id3" class="ltx_sup"><span id="id11.11.id3.1" class="ltx_text ltx_font_italic">2</span></sup>, Jan Dufek<sup id="id12.12.id4" class="ltx_sup"><span id="id12.12.id4.1" class="ltx_text ltx_font_italic">3</span></sup>, and Robin Murphy<sup id="id13.13.id5" class="ltx_sup"><span id="id13.13.id5.1" class="ltx_text ltx_font_italic">3</span></sup>
+</span><span class="ltx_author_notes"><sup id="id14.14.id1" class="ltx_sup"><span id="id14.14.id1.1" class="ltx_text ltx_font_italic">1</span></sup>A. Biswas and H. Karnan are with the Department of Aerospace Engineering, Texas A&amp;M University,
+College Station, TX 77840, USA
+<span id="id15.15.id2" class="ltx_text ltx_font_typewriter" style="font-size:90%;">aritra@tamu.edu, haresh.miriyala@tamu.edu</span><sup id="id16.16.id1" class="ltx_sup"><span id="id16.16.id1.1" class="ltx_text ltx_font_italic">2</span></sup>P. V. Dhulipala is with the Department of Electrical Engineering, Texas A&amp;M University,
+College Station, TX 77840, USA
+<span id="id17.17.id2" class="ltx_text ltx_font_typewriter" style="font-size:90%;">pranav.d1993@tamu.edu</span><sup id="id18.18.id1" class="ltx_sup"><span id="id18.18.id1.1" class="ltx_text ltx_font_italic">3</span></sup>J. Dufek and Dr.Robin Murphy are with the Department of Computer Science and Engineering, Texas A&amp;M University,
+College Station, TX 77840, USA
+<span id="id19.19.id2" class="ltx_text ltx_font_typewriter" style="font-size:90%;">robin.r.murphy@tamu.edu, dufek@tamu.edu</span></span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id20.id1" class="ltx_p"><span id="id20.id1.1" class="ltx_text">This paper presents an algorithm and the implementation of a motor schema to aid the visual localization subsystem of the ongoing EMILY project at Texas A&amp;M University. The EMILY project aims to team an Unmanned Surface Vehicle (USV) with an Unmanned Aerial Vehicle (UAV) to augment the search and rescue of marine casualties during an emergency response phase. The USV is designed to serve as a flotation device once it reaches the victims. A live video feed from the UAV is provided to the casuality responders, giving them a visual estimate of the USV’s orientation and position to help with its navigation. One of the challenges involved with casualty response using a USV-UAV team is to simultaneously control the USV and track it. In this paper, we present an implemented solution to automate the UAV camera movements to keep the USV in view at all times. The motor schema proposed, uses the USV’s coordinates from the visual localization subsystem to control the UAV’s camera movements and track the USV with minimal camera movements, such that the USV is always in the camera’s field of view. The motor schema is validated in two proof-of-concept laboratory trials and the results are discussed in the later sections.</span></p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">I </span><span id="S1.1.1" class="ltx_text ltx_font_smallcaps">Introduction</span>
+</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">Refugees from war torn countries like Syria and Libya are often found making their escape though Mediterranean sea in hopes of finding asylum in Europe. Many a times they find themselves in a refugee boat that is overcrowded with fellow refugees, in poor conditions, and sometimes even with a broken rudder <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>. As a result, there have been several cases of drowned victims either due to the boats meeting tragic fates at the sea, or due to the victims falling off from the boats.</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">Rescue boats that assist the refugees may find it challenging to reach all the victims due to their limited number and difficulty in accessing shallow waters or regions near the cliffs. Also, the individual responders cannot go too far from the shore due to lack of adequate technology.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">The use of USVs for disaster management robotics has become an interesting and a practical application during the recent years. There have been multiple instances since 2004 <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib2" title="" class="ltx_ref">2</a>]</cite> where USVs were used for disaster recovery operations. USVs were deployed for recovery operations in situations like hurricanes <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite> <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib4" title="" class="ltx_ref">4</a>]</cite> <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib5" title="" class="ltx_ref">5</a>]</cite> and tsunamis <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib6" title="" class="ltx_ref">6</a>]</cite> in the past, but the primary focus of their application has not been in the response phase of the disaster management.</p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p">In the cases of search and rescue operations of drowning victims, it is critical to have real-time responsiveness. USVs can be deployed in these scenarios, as they can reach the drowning victims faster than individual responders at sea. They are also much more maneuverable than the rescue boats due to their smaller size and their reachability in shallow waters.</p>
+</div>
+<div id="S1.p5" class="ltx_para">
+<p id="S1.p5.1" class="ltx_p">The Emergency Integrated Lifesaving Lanyard (EMILY) project by Hydronalix <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib11" title="" class="ltx_ref">11</a>]</cite>, proposes to use a USV to assist the rescuers to reach the drowning victims and rescue them. The USV is able to act as a flotation device that can support up to 6 people and was tested by Murphy et al., in teleoperation mode at Lesbos, Greece in 2016. The USV is designed not to sink when the victims are holding onto it, buying the rescuers enough time to reach them.</p>
+</div>
+<div id="S1.p6" class="ltx_para">
+<p id="S1.p6.1" class="ltx_p">The ongoing autonomous EMILY project aims to team an autonomous USV with a UAV. The idea is to have the UAV provide the operator with live video feed of EMILY’s location and orientation and also to help locate the victims. Thus the responders would be able to send EMILY to the victims on the water body while they could help the rescued with more urgent issues in person.</p>
+</div>
+<div id="S1.p7" class="ltx_para">
+<p id="S1.p7.1" class="ltx_p">The visual localization subsystem <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib8" title="" class="ltx_ref">8</a>]</cite> was proposed by Dufek et al., for the project in 2016, to help find EMILY’s location and orientation from the UAV’s video feed. This subsystem aids the operator in finding the USV’s orientation and location easily by letting the user manually select the USV and the target from the video feed, during which the pose is automatically estimated. A PID controller then uses the pose data of the USV and reduces the distance between the USV and target to zero, by steering the USV to reach the target. One disadvantage that still persists with the subsystem is that the operator will have to manually control the camera orientations in the UAV to locate EMILY whenever it leaves the field of view. This forces the user to operate the UAV and USV simultaneously, limiting the efficiency of the user in controlling the USV.</p>
+</div>
+<div id="S1.p8" class="ltx_para">
+<p id="S1.p8.1" class="ltx_p">This paper proposes to use a motor schema behavior in conjunction with the visual localization subsystem. The motor schema autonomously controls the yaw and pitch movements of the UAV camera so that the USV always stays in the camera’s field of view thereby eliminating the user’s work of controlling the camera orientation.</p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">II </span><span id="S2.1.1" class="ltx_text ltx_font_smallcaps">Related Work</span>
+</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">Previous work by Dufek et al. shows the evaluation of algorithms for the visual localization subsystem and establishes the histogram based approach to be the most effective in determining the location and orientation of the USV from the UAV’s video feed <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib8" title="" class="ltx_ref">8</a>]</cite>. This paper focuses on the extension of Dufek’s work by adding an autonomous system to control the camera’s pan/tilt to track the USV. In this section, we evaluate multiple techniques to use pan-tilt movements for visual servoing.</p>
+</div>
+<div id="S2.p2" class="ltx_para">
+<p id="S2.p2.1" class="ltx_p">A camera-control approach by UAV was proposed in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib10" title="" class="ltx_ref">10</a>]</cite>, where the UAV camera movements are based on a biomimetic eye based control, being able to simulate the human eye movements resulting in stable and smooth camera movements. The algorithm is computationally heavy, which is not suitable for our purposes.</p>
+</div>
+<div id="S2.p3" class="ltx_para">
+<p id="S2.p3.1" class="ltx_p">Kang et al., <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib12" title="" class="ltx_ref">12</a>]</cite> proposes to use a PTZ camera for tracking objects and humans in controlled lighting conditions. However, camera-control algorithm tries to center the object in the frame which would make camera happen little too often and consumes more power, which is one of the constraints of the project.</p>
+</div>
+<div id="S2.p4" class="ltx_para">
+<p id="S2.p4.1" class="ltx_p">YongChol et al., in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib13" title="" class="ltx_ref">13</a>]</cite> shows the usage of a camera and PIR sensor fusion to track a moving object (human). However, this method has a range limitation posed by the Passive Infrared sensor. For the UAV to track the USV, an algorithm that can track the USV irrespective of the distance of the UAV from the USV, as long as it is in sight of the camera is needed. This is because, the UAV is not stationary as it keeps moving due to the effects of wind and coastal currents in the sea. Also, the PIR sensor consumes additional power and is not reliable in sunlight.</p>
+</div>
+<div id="S2.p5" class="ltx_para">
+<p id="S2.p5.1" class="ltx_p">Use of encoders in the camera for feedback position control as in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib11" title="" class="ltx_ref">11</a>]</cite> is not advisable because encoders consume additional power from the UAV’s battery. Since battery time is limited for a UAV, it is best to use limited number of devices.</p>
+</div>
+<div id="S2.p6" class="ltx_para">
+<p id="S2.p6.1" class="ltx_p">As opposed to the aforementioned approaches, this paper focuses on a rather simple algorithm, with an asymptotic complexity of O(1) to facilitate the real-time tracking control. Also, the algorithm focuses on moving the USV’s position into the Elliptical Region of Interest (ROI) and only moves the camera when the USV’s location in the video feed moves out of the ellipse but stays put otherwise. An advantage of having a faster algorithm is that it can be run real-time on an onboard computer on the UAV. Studies and laboratory trials as discussed in the further sections show that the number of camera movements and hence the power consumption are minimum with the use of this algorithm.</p>
+</div>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">III </span><span id="S3.1.1" class="ltx_text ltx_font_smallcaps">Approach</span>
+</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">The multi-robot system discussed in this research consists of an USV (EMILY) and a Fotokite UAV. The UAV provides visual feedback either to the human responders for manually navigating EMILY or to the autonomous visual navigation subsystem, as developed by Xuesu et al., From the video stream, EMILY’s position is identified using a histogram based Camshift and Back-projection algorithm as discussed by Dufek et al., in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib8" title="" class="ltx_ref">8</a>]</cite>.</p>
+</div>
+<div id="S3.p2" class="ltx_para">
+<p id="S3.p2.1" class="ltx_p">An elliptical ROI is introduced onto the image frame as shown in Fig <a href="#S3.F1" title="Figure 1 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> inside of which EMILY will be placed by controlling either the pitch or yaw of the camera. The major and minor axis of the ellipse are chosen to be a preset percentage of the length and height of the image frame. The boundary of the ROI is chosen to be an ellipse, owing to the simplicity that this shape provides in computing relative position of a point to its center. The relative position of EMILY, <math id="S3.p2.1.m1.1" class="ltx_Math" alttext="P" display="inline"><semantics id="S3.p2.1.m1.1a"><mi id="S3.p2.1.m1.1.1" xref="S3.p2.1.m1.1.1.cmml">P</mi><annotation-xml encoding="MathML-Content" id="S3.p2.1.m1.1b"><ci id="S3.p2.1.m1.1.1.cmml" xref="S3.p2.1.m1.1.1">𝑃</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.p2.1.m1.1c">P</annotation></semantics></math>, is calculated using the simple equation :</p>
+<table id="S3.E1" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S3.E1.m1.1" class="ltx_Math" alttext="P=\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}" display="block"><semantics id="S3.E1.m1.1a"><mrow id="S3.E1.m1.1.1" xref="S3.E1.m1.1.1.cmml"><mi id="S3.E1.m1.1.1.2" xref="S3.E1.m1.1.1.2.cmml">P</mi><mo id="S3.E1.m1.1.1.1" xref="S3.E1.m1.1.1.1.cmml">=</mo><mrow id="S3.E1.m1.1.1.3" xref="S3.E1.m1.1.1.3.cmml"><mfrac id="S3.E1.m1.1.1.3.2" xref="S3.E1.m1.1.1.3.2.cmml"><msup id="S3.E1.m1.1.1.3.2.2" xref="S3.E1.m1.1.1.3.2.2.cmml"><mi id="S3.E1.m1.1.1.3.2.2.2" xref="S3.E1.m1.1.1.3.2.2.2.cmml">x</mi><mn id="S3.E1.m1.1.1.3.2.2.3" xref="S3.E1.m1.1.1.3.2.2.3.cmml">2</mn></msup><msup id="S3.E1.m1.1.1.3.2.3" xref="S3.E1.m1.1.1.3.2.3.cmml"><mi id="S3.E1.m1.1.1.3.2.3.2" xref="S3.E1.m1.1.1.3.2.3.2.cmml">a</mi><mn id="S3.E1.m1.1.1.3.2.3.3" xref="S3.E1.m1.1.1.3.2.3.3.cmml">2</mn></msup></mfrac><mo id="S3.E1.m1.1.1.3.1" xref="S3.E1.m1.1.1.3.1.cmml">+</mo><mfrac id="S3.E1.m1.1.1.3.3" xref="S3.E1.m1.1.1.3.3.cmml"><msup id="S3.E1.m1.1.1.3.3.2" xref="S3.E1.m1.1.1.3.3.2.cmml"><mi id="S3.E1.m1.1.1.3.3.2.2" xref="S3.E1.m1.1.1.3.3.2.2.cmml">y</mi><mn id="S3.E1.m1.1.1.3.3.2.3" xref="S3.E1.m1.1.1.3.3.2.3.cmml">2</mn></msup><msup id="S3.E1.m1.1.1.3.3.3" xref="S3.E1.m1.1.1.3.3.3.cmml"><mi id="S3.E1.m1.1.1.3.3.3.2" xref="S3.E1.m1.1.1.3.3.3.2.cmml">b</mi><mn id="S3.E1.m1.1.1.3.3.3.3" xref="S3.E1.m1.1.1.3.3.3.3.cmml">2</mn></msup></mfrac></mrow></mrow><annotation-xml encoding="MathML-Content" id="S3.E1.m1.1b"><apply id="S3.E1.m1.1.1.cmml" xref="S3.E1.m1.1.1"><eq id="S3.E1.m1.1.1.1.cmml" xref="S3.E1.m1.1.1.1"></eq><ci id="S3.E1.m1.1.1.2.cmml" xref="S3.E1.m1.1.1.2">𝑃</ci><apply id="S3.E1.m1.1.1.3.cmml" xref="S3.E1.m1.1.1.3"><plus id="S3.E1.m1.1.1.3.1.cmml" xref="S3.E1.m1.1.1.3.1"></plus><apply id="S3.E1.m1.1.1.3.2.cmml" xref="S3.E1.m1.1.1.3.2"><divide id="S3.E1.m1.1.1.3.2.1.cmml" xref="S3.E1.m1.1.1.3.2"></divide><apply id="S3.E1.m1.1.1.3.2.2.cmml" xref="S3.E1.m1.1.1.3.2.2"><csymbol cd="ambiguous" id="S3.E1.m1.1.1.3.2.2.1.cmml" xref="S3.E1.m1.1.1.3.2.2">superscript</csymbol><ci id="S3.E1.m1.1.1.3.2.2.2.cmml" xref="S3.E1.m1.1.1.3.2.2.2">𝑥</ci><cn type="integer" id="S3.E1.m1.1.1.3.2.2.3.cmml" xref="S3.E1.m1.1.1.3.2.2.3">2</cn></apply><apply id="S3.E1.m1.1.1.3.2.3.cmml" xref="S3.E1.m1.1.1.3.2.3"><csymbol cd="ambiguous" id="S3.E1.m1.1.1.3.2.3.1.cmml" xref="S3.E1.m1.1.1.3.2.3">superscript</csymbol><ci id="S3.E1.m1.1.1.3.2.3.2.cmml" xref="S3.E1.m1.1.1.3.2.3.2">𝑎</ci><cn type="integer" id="S3.E1.m1.1.1.3.2.3.3.cmml" xref="S3.E1.m1.1.1.3.2.3.3">2</cn></apply></apply><apply id="S3.E1.m1.1.1.3.3.cmml" xref="S3.E1.m1.1.1.3.3"><divide id="S3.E1.m1.1.1.3.3.1.cmml" xref="S3.E1.m1.1.1.3.3"></divide><apply id="S3.E1.m1.1.1.3.3.2.cmml" xref="S3.E1.m1.1.1.3.3.2"><csymbol cd="ambiguous" id="S3.E1.m1.1.1.3.3.2.1.cmml" xref="S3.E1.m1.1.1.3.3.2">superscript</csymbol><ci id="S3.E1.m1.1.1.3.3.2.2.cmml" xref="S3.E1.m1.1.1.3.3.2.2">𝑦</ci><cn type="integer" id="S3.E1.m1.1.1.3.3.2.3.cmml" xref="S3.E1.m1.1.1.3.3.2.3">2</cn></apply><apply id="S3.E1.m1.1.1.3.3.3.cmml" xref="S3.E1.m1.1.1.3.3.3"><csymbol cd="ambiguous" id="S3.E1.m1.1.1.3.3.3.1.cmml" xref="S3.E1.m1.1.1.3.3.3">superscript</csymbol><ci id="S3.E1.m1.1.1.3.3.3.2.cmml" xref="S3.E1.m1.1.1.3.3.3.2">𝑏</ci><cn type="integer" id="S3.E1.m1.1.1.3.3.3.3.cmml" xref="S3.E1.m1.1.1.3.3.3.3">2</cn></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.E1.m1.1c">P=\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(1)</span></td>
+</tr></tbody>
+</table>
+<p id="S3.p2.4" class="ltx_p">where <math id="S3.p2.2.m1.1" class="ltx_Math" alttext="x" display="inline"><semantics id="S3.p2.2.m1.1a"><mi id="S3.p2.2.m1.1.1" xref="S3.p2.2.m1.1.1.cmml">x</mi><annotation-xml encoding="MathML-Content" id="S3.p2.2.m1.1b"><ci id="S3.p2.2.m1.1.1.cmml" xref="S3.p2.2.m1.1.1">𝑥</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.p2.2.m1.1c">x</annotation></semantics></math> and <math id="S3.p2.3.m2.1" class="ltx_Math" alttext="y" display="inline"><semantics id="S3.p2.3.m2.1a"><mi id="S3.p2.3.m2.1.1" xref="S3.p2.3.m2.1.1.cmml">y</mi><annotation-xml encoding="MathML-Content" id="S3.p2.3.m2.1b"><ci id="S3.p2.3.m2.1.1.cmml" xref="S3.p2.3.m2.1.1">𝑦</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.p2.3.m2.1c">y</annotation></semantics></math> are the x,y pixel values of EMILY in the camera’s frame and <math id="S3.p2.4.m3.2" class="ltx_Math" alttext="a,b" display="inline"><semantics id="S3.p2.4.m3.2a"><mrow id="S3.p2.4.m3.2.3.2" xref="S3.p2.4.m3.2.3.1.cmml"><mi id="S3.p2.4.m3.1.1" xref="S3.p2.4.m3.1.1.cmml">a</mi><mo id="S3.p2.4.m3.2.3.2.1" xref="S3.p2.4.m3.2.3.1.cmml">,</mo><mi id="S3.p2.4.m3.2.2" xref="S3.p2.4.m3.2.2.cmml">b</mi></mrow><annotation-xml encoding="MathML-Content" id="S3.p2.4.m3.2b"><list id="S3.p2.4.m3.2.3.1.cmml" xref="S3.p2.4.m3.2.3.2"><ci id="S3.p2.4.m3.1.1.cmml" xref="S3.p2.4.m3.1.1">𝑎</ci><ci id="S3.p2.4.m3.2.2.cmml" xref="S3.p2.4.m3.2.2">𝑏</ci></list></annotation-xml><annotation encoding="application/x-tex" id="S3.p2.4.m3.2c">a,b</annotation></semantics></math> are the major and the minor axis of the elliptical ROI in the image axis where the origin is at the center of the image. If P is greater than 1, EMILY is outside the ROI. Otherwise, it is inside the ROI or on the surface of the ellipse. When P is greater than 1, the controller tries to move either the pitch of the Camera or yaw of the Fotokite. If P is equal to or lesser than 1, the camera is not moved.</p>
+</div>
+<figure id="S3.F1" class="ltx_figure"><img src="/html/1710.02932/assets/theta_r_representation.png" id="S3.F1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="159" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Elliptical ROI in blue, with <math id="S3.F1.2.m1.2" class="ltx_Math" alttext="\theta,r" display="inline"><semantics id="S3.F1.2.m1.2b"><mrow id="S3.F1.2.m1.2.3.2" xref="S3.F1.2.m1.2.3.1.cmml"><mi id="S3.F1.2.m1.1.1" xref="S3.F1.2.m1.1.1.cmml">θ</mi><mo id="S3.F1.2.m1.2.3.2.1" xref="S3.F1.2.m1.2.3.1.cmml">,</mo><mi id="S3.F1.2.m1.2.2" xref="S3.F1.2.m1.2.2.cmml">r</mi></mrow><annotation-xml encoding="MathML-Content" id="S3.F1.2.m1.2c"><list id="S3.F1.2.m1.2.3.1.cmml" xref="S3.F1.2.m1.2.3.2"><ci id="S3.F1.2.m1.1.1.cmml" xref="S3.F1.2.m1.1.1">𝜃</ci><ci id="S3.F1.2.m1.2.2.cmml" xref="S3.F1.2.m1.2.2">𝑟</ci></list></annotation-xml><annotation encoding="application/x-tex" id="S3.F1.2.m1.2d">\theta,r</annotation></semantics></math> denoted in white.</figcaption>
+</figure>
+<div id="S3.p3" class="ltx_para">
+<p id="S3.p3.4" class="ltx_p">First, the cartesian coordinates x,y are converted into polar coordinates r (distance) and <math id="S3.p3.1.m1.1" class="ltx_Math" alttext="\theta" display="inline"><semantics id="S3.p3.1.m1.1a"><mi id="S3.p3.1.m1.1.1" xref="S3.p3.1.m1.1.1.cmml">θ</mi><annotation-xml encoding="MathML-Content" id="S3.p3.1.m1.1b"><ci id="S3.p3.1.m1.1.1.cmml" xref="S3.p3.1.m1.1.1">𝜃</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.p3.1.m1.1c">\theta</annotation></semantics></math> (tangent angle) as shown in Fig <a href="#S3.F1" title="Figure 1 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> and the relative distance P is computed. When the relative distance becomes greater than 1, the control code acts to move the pitch or yaw to bring EMILY into the ROI. The ellipse is further divided into 4 sectors <math id="S3.p3.2.m2.3" class="ltx_Math" alttext="left,right,top" display="inline"><semantics id="S3.p3.2.m2.3a"><mrow id="S3.p3.2.m2.3.3.3" xref="S3.p3.2.m2.3.3.4.cmml"><mrow id="S3.p3.2.m2.1.1.1.1" xref="S3.p3.2.m2.1.1.1.1.cmml"><mi id="S3.p3.2.m2.1.1.1.1.2" xref="S3.p3.2.m2.1.1.1.1.2.cmml">l</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.1.1.1.1.1" xref="S3.p3.2.m2.1.1.1.1.1.cmml">​</mo><mi id="S3.p3.2.m2.1.1.1.1.3" xref="S3.p3.2.m2.1.1.1.1.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.1.1.1.1.1a" xref="S3.p3.2.m2.1.1.1.1.1.cmml">​</mo><mi id="S3.p3.2.m2.1.1.1.1.4" xref="S3.p3.2.m2.1.1.1.1.4.cmml">f</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.1.1.1.1.1b" xref="S3.p3.2.m2.1.1.1.1.1.cmml">​</mo><mi id="S3.p3.2.m2.1.1.1.1.5" xref="S3.p3.2.m2.1.1.1.1.5.cmml">t</mi></mrow><mo id="S3.p3.2.m2.3.3.3.4" xref="S3.p3.2.m2.3.3.4.cmml">,</mo><mrow id="S3.p3.2.m2.2.2.2.2" xref="S3.p3.2.m2.2.2.2.2.cmml"><mi id="S3.p3.2.m2.2.2.2.2.2" xref="S3.p3.2.m2.2.2.2.2.2.cmml">r</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.2.2.2.2.1" xref="S3.p3.2.m2.2.2.2.2.1.cmml">​</mo><mi id="S3.p3.2.m2.2.2.2.2.3" xref="S3.p3.2.m2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.2.2.2.2.1a" xref="S3.p3.2.m2.2.2.2.2.1.cmml">​</mo><mi id="S3.p3.2.m2.2.2.2.2.4" xref="S3.p3.2.m2.2.2.2.2.4.cmml">g</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.2.2.2.2.1b" xref="S3.p3.2.m2.2.2.2.2.1.cmml">​</mo><mi id="S3.p3.2.m2.2.2.2.2.5" xref="S3.p3.2.m2.2.2.2.2.5.cmml">h</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.2.2.2.2.1c" xref="S3.p3.2.m2.2.2.2.2.1.cmml">​</mo><mi id="S3.p3.2.m2.2.2.2.2.6" xref="S3.p3.2.m2.2.2.2.2.6.cmml">t</mi></mrow><mo id="S3.p3.2.m2.3.3.3.5" xref="S3.p3.2.m2.3.3.4.cmml">,</mo><mrow id="S3.p3.2.m2.3.3.3.3" xref="S3.p3.2.m2.3.3.3.3.cmml"><mi id="S3.p3.2.m2.3.3.3.3.2" xref="S3.p3.2.m2.3.3.3.3.2.cmml">t</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.3.3.3.3.1" xref="S3.p3.2.m2.3.3.3.3.1.cmml">​</mo><mi id="S3.p3.2.m2.3.3.3.3.3" xref="S3.p3.2.m2.3.3.3.3.3.cmml">o</mi><mo lspace="0em" rspace="0em" id="S3.p3.2.m2.3.3.3.3.1a" xref="S3.p3.2.m2.3.3.3.3.1.cmml">​</mo><mi id="S3.p3.2.m2.3.3.3.3.4" xref="S3.p3.2.m2.3.3.3.3.4.cmml">p</mi></mrow></mrow><annotation-xml encoding="MathML-Content" id="S3.p3.2.m2.3b"><list id="S3.p3.2.m2.3.3.4.cmml" xref="S3.p3.2.m2.3.3.3"><apply id="S3.p3.2.m2.1.1.1.1.cmml" xref="S3.p3.2.m2.1.1.1.1"><times id="S3.p3.2.m2.1.1.1.1.1.cmml" xref="S3.p3.2.m2.1.1.1.1.1"></times><ci id="S3.p3.2.m2.1.1.1.1.2.cmml" xref="S3.p3.2.m2.1.1.1.1.2">𝑙</ci><ci id="S3.p3.2.m2.1.1.1.1.3.cmml" xref="S3.p3.2.m2.1.1.1.1.3">𝑒</ci><ci id="S3.p3.2.m2.1.1.1.1.4.cmml" xref="S3.p3.2.m2.1.1.1.1.4">𝑓</ci><ci id="S3.p3.2.m2.1.1.1.1.5.cmml" xref="S3.p3.2.m2.1.1.1.1.5">𝑡</ci></apply><apply id="S3.p3.2.m2.2.2.2.2.cmml" xref="S3.p3.2.m2.2.2.2.2"><times id="S3.p3.2.m2.2.2.2.2.1.cmml" xref="S3.p3.2.m2.2.2.2.2.1"></times><ci id="S3.p3.2.m2.2.2.2.2.2.cmml" xref="S3.p3.2.m2.2.2.2.2.2">𝑟</ci><ci id="S3.p3.2.m2.2.2.2.2.3.cmml" xref="S3.p3.2.m2.2.2.2.2.3">𝑖</ci><ci id="S3.p3.2.m2.2.2.2.2.4.cmml" xref="S3.p3.2.m2.2.2.2.2.4">𝑔</ci><ci id="S3.p3.2.m2.2.2.2.2.5.cmml" xref="S3.p3.2.m2.2.2.2.2.5">ℎ</ci><ci id="S3.p3.2.m2.2.2.2.2.6.cmml" xref="S3.p3.2.m2.2.2.2.2.6">𝑡</ci></apply><apply id="S3.p3.2.m2.3.3.3.3.cmml" xref="S3.p3.2.m2.3.3.3.3"><times id="S3.p3.2.m2.3.3.3.3.1.cmml" xref="S3.p3.2.m2.3.3.3.3.1"></times><ci id="S3.p3.2.m2.3.3.3.3.2.cmml" xref="S3.p3.2.m2.3.3.3.3.2">𝑡</ci><ci id="S3.p3.2.m2.3.3.3.3.3.cmml" xref="S3.p3.2.m2.3.3.3.3.3">𝑜</ci><ci id="S3.p3.2.m2.3.3.3.3.4.cmml" xref="S3.p3.2.m2.3.3.3.3.4">𝑝</ci></apply></list></annotation-xml><annotation encoding="application/x-tex" id="S3.p3.2.m2.3c">left,right,top</annotation></semantics></math>, and <math id="S3.p3.3.m3.1" class="ltx_Math" alttext="bottom" display="inline"><semantics id="S3.p3.3.m3.1a"><mrow id="S3.p3.3.m3.1.1" xref="S3.p3.3.m3.1.1.cmml"><mi id="S3.p3.3.m3.1.1.2" xref="S3.p3.3.m3.1.1.2.cmml">b</mi><mo lspace="0em" rspace="0em" id="S3.p3.3.m3.1.1.1" xref="S3.p3.3.m3.1.1.1.cmml">​</mo><mi id="S3.p3.3.m3.1.1.3" xref="S3.p3.3.m3.1.1.3.cmml">o</mi><mo lspace="0em" rspace="0em" id="S3.p3.3.m3.1.1.1a" xref="S3.p3.3.m3.1.1.1.cmml">​</mo><mi id="S3.p3.3.m3.1.1.4" xref="S3.p3.3.m3.1.1.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="S3.p3.3.m3.1.1.1b" xref="S3.p3.3.m3.1.1.1.cmml">​</mo><mi id="S3.p3.3.m3.1.1.5" xref="S3.p3.3.m3.1.1.5.cmml">t</mi><mo lspace="0em" rspace="0em" id="S3.p3.3.m3.1.1.1c" xref="S3.p3.3.m3.1.1.1.cmml">​</mo><mi id="S3.p3.3.m3.1.1.6" xref="S3.p3.3.m3.1.1.6.cmml">o</mi><mo lspace="0em" rspace="0em" id="S3.p3.3.m3.1.1.1d" xref="S3.p3.3.m3.1.1.1.cmml">​</mo><mi id="S3.p3.3.m3.1.1.7" xref="S3.p3.3.m3.1.1.7.cmml">m</mi></mrow><annotation-xml encoding="MathML-Content" id="S3.p3.3.m3.1b"><apply id="S3.p3.3.m3.1.1.cmml" xref="S3.p3.3.m3.1.1"><times id="S3.p3.3.m3.1.1.1.cmml" xref="S3.p3.3.m3.1.1.1"></times><ci id="S3.p3.3.m3.1.1.2.cmml" xref="S3.p3.3.m3.1.1.2">𝑏</ci><ci id="S3.p3.3.m3.1.1.3.cmml" xref="S3.p3.3.m3.1.1.3">𝑜</ci><ci id="S3.p3.3.m3.1.1.4.cmml" xref="S3.p3.3.m3.1.1.4">𝑡</ci><ci id="S3.p3.3.m3.1.1.5.cmml" xref="S3.p3.3.m3.1.1.5">𝑡</ci><ci id="S3.p3.3.m3.1.1.6.cmml" xref="S3.p3.3.m3.1.1.6">𝑜</ci><ci id="S3.p3.3.m3.1.1.7.cmml" xref="S3.p3.3.m3.1.1.7">𝑚</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.p3.3.m3.1c">bottom</annotation></semantics></math> as shown in Fig <a href="#S3.F3" title="Figure 3 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>. The two sector division lines (represented blue in Fig <a href="#S3.F3" title="Figure 3 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>) make an angle of <math id="S3.p3.4.m4.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="S3.p3.4.m4.1a"><mi id="S3.p3.4.m4.1.1" xref="S3.p3.4.m4.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="S3.p3.4.m4.1b"><ci id="S3.p3.4.m4.1.1.cmml" xref="S3.p3.4.m4.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.p3.4.m4.1c">\pi</annotation></semantics></math>/4 with the major axis of the ellipse as shown in Fig <a href="#S3.F3" title="Figure 3 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a> .The control algorithm works such that a pitch magnitude command is sent when EMILY moves outside the ROI either in the top or bottom sectors. Similarly, a yaw magnitude command is sent only when EMILY is either in the left or the right sectors outside the ROI.</p>
+</div>
+<figure id="S3.F2" class="ltx_figure"><img src="/html/1710.02932/assets/algo_flow.png" id="S3.F2.g1" class="ltx_graphics ltx_centering ltx_img_square" width="299" height="263" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>Flowchart of the control algorithm</figcaption>
+</figure>
+<figure id="S3.F3" class="ltx_figure"><img src="/html/1710.02932/assets/CONTROL.png" id="S3.F3.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="217" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>Sector representation of the ellipse</figcaption>
+</figure>
+<div id="S3.p4" class="ltx_para">
+<p id="S3.p4.1" class="ltx_p">A pseudo code representation of the algorithm discussed is shown in Algorithm 1 and a flowchart representation of the same is shown in Fig <a href="#S3.F2" title="Figure 2 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>.</p>
+</div>
+<figure id="alg1" class="ltx_float ltx_float_algorithm ltx_framed ltx_framed_top">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_float"><span id="alg1.2.1.1" class="ltx_text ltx_font_bold">Algorithm 1</span> </span> Control algorithm</figcaption>
+<div id="alg1.3" class="ltx_listing ltx_listing">
+<div id="alg1.l1" class="ltx_listingline">
+<span id="alg1.l1.4" class="ltx_text ltx_font_bold">procedure</span> <span id="alg1.l1.5" class="ltx_text ltx_font_smallcaps">Control Code</span>(<math id="alg1.l1.m1.4" class="ltx_Math" alttext="x,y,a,b" display="inline"><semantics id="alg1.l1.m1.4a"><mrow id="alg1.l1.m1.4.5.2" xref="alg1.l1.m1.4.5.1.cmml"><mi id="alg1.l1.m1.1.1" xref="alg1.l1.m1.1.1.cmml">x</mi><mo id="alg1.l1.m1.4.5.2.1" xref="alg1.l1.m1.4.5.1.cmml">,</mo><mi id="alg1.l1.m1.2.2" xref="alg1.l1.m1.2.2.cmml">y</mi><mo id="alg1.l1.m1.4.5.2.2" xref="alg1.l1.m1.4.5.1.cmml">,</mo><mi id="alg1.l1.m1.3.3" xref="alg1.l1.m1.3.3.cmml">a</mi><mo id="alg1.l1.m1.4.5.2.3" xref="alg1.l1.m1.4.5.1.cmml">,</mo><mi id="alg1.l1.m1.4.4" xref="alg1.l1.m1.4.4.cmml">b</mi></mrow><annotation-xml encoding="MathML-Content" id="alg1.l1.m1.4b"><list id="alg1.l1.m1.4.5.1.cmml" xref="alg1.l1.m1.4.5.2"><ci id="alg1.l1.m1.1.1.cmml" xref="alg1.l1.m1.1.1">𝑥</ci><ci id="alg1.l1.m1.2.2.cmml" xref="alg1.l1.m1.2.2">𝑦</ci><ci id="alg1.l1.m1.3.3.cmml" xref="alg1.l1.m1.3.3">𝑎</ci><ci id="alg1.l1.m1.4.4.cmml" xref="alg1.l1.m1.4.4">𝑏</ci></list></annotation-xml><annotation encoding="application/x-tex" id="alg1.l1.m1.4c">x,y,a,b</annotation></semantics></math>)<span id="alg1.l1.3" class="ltx_text" style="float:right;"><math id="alg1.l1.1.m1.1" class="ltx_Math" alttext="\triangleright" display="inline"><semantics id="alg1.l1.1.m1.1a"><mo id="alg1.l1.1.m1.1.1" xref="alg1.l1.1.m1.1.1.cmml">▷</mo><annotation-xml encoding="MathML-Content" id="alg1.l1.1.m1.1b"><ci id="alg1.l1.1.m1.1.1.cmml" xref="alg1.l1.1.m1.1.1">▷</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l1.1.m1.1c">\triangleright</annotation></semantics></math> <math id="alg1.l1.2.m2.2" class="ltx_Math" alttext="x,y" display="inline"><semantics id="alg1.l1.2.m2.2a"><mrow id="alg1.l1.2.m2.2.3.2" xref="alg1.l1.2.m2.2.3.1.cmml"><mi id="alg1.l1.2.m2.1.1" xref="alg1.l1.2.m2.1.1.cmml">x</mi><mo id="alg1.l1.2.m2.2.3.2.1" xref="alg1.l1.2.m2.2.3.1.cmml">,</mo><mi id="alg1.l1.2.m2.2.2" xref="alg1.l1.2.m2.2.2.cmml">y</mi></mrow><annotation-xml encoding="MathML-Content" id="alg1.l1.2.m2.2b"><list id="alg1.l1.2.m2.2.3.1.cmml" xref="alg1.l1.2.m2.2.3.2"><ci id="alg1.l1.2.m2.1.1.cmml" xref="alg1.l1.2.m2.1.1">𝑥</ci><ci id="alg1.l1.2.m2.2.2.cmml" xref="alg1.l1.2.m2.2.2">𝑦</ci></list></annotation-xml><annotation encoding="application/x-tex" id="alg1.l1.2.m2.2c">x,y</annotation></semantics></math> coordinates of EMILY; <math id="alg1.l1.3.m3.2" class="ltx_Math" alttext="a,b" display="inline"><semantics id="alg1.l1.3.m3.2a"><mrow id="alg1.l1.3.m3.2.3.2" xref="alg1.l1.3.m3.2.3.1.cmml"><mi id="alg1.l1.3.m3.1.1" xref="alg1.l1.3.m3.1.1.cmml">a</mi><mo id="alg1.l1.3.m3.2.3.2.1" xref="alg1.l1.3.m3.2.3.1.cmml">,</mo><mi id="alg1.l1.3.m3.2.2" xref="alg1.l1.3.m3.2.2.cmml">b</mi></mrow><annotation-xml encoding="MathML-Content" id="alg1.l1.3.m3.2b"><list id="alg1.l1.3.m3.2.3.1.cmml" xref="alg1.l1.3.m3.2.3.2"><ci id="alg1.l1.3.m3.1.1.cmml" xref="alg1.l1.3.m3.1.1">𝑎</ci><ci id="alg1.l1.3.m3.2.2.cmml" xref="alg1.l1.3.m3.2.2">𝑏</ci></list></annotation-xml><annotation encoding="application/x-tex" id="alg1.l1.3.m3.2c">a,b</annotation></semantics></math> major and minor axis lengths of the ellipse
+</span>
+</div>
+<div id="alg1.l2" class="ltx_listingline">     <math id="alg1.l2.m1.1" class="ltx_Math" alttext="r\leftarrow\sqrt[2]{x^{2}+y^{2}}" display="inline"><semantics id="alg1.l2.m1.1a"><mrow id="alg1.l2.m1.1.1" xref="alg1.l2.m1.1.1.cmml"><mi id="alg1.l2.m1.1.1.2" xref="alg1.l2.m1.1.1.2.cmml">r</mi><mo stretchy="false" id="alg1.l2.m1.1.1.1" xref="alg1.l2.m1.1.1.1.cmml">←</mo><mroot id="alg1.l2.m1.1.1.3" xref="alg1.l2.m1.1.1.3.cmml"><mrow id="alg1.l2.m1.1.1.3.3" xref="alg1.l2.m1.1.1.3.3.cmml"><msup id="alg1.l2.m1.1.1.3.3.2" xref="alg1.l2.m1.1.1.3.3.2.cmml"><mi id="alg1.l2.m1.1.1.3.3.2.2" xref="alg1.l2.m1.1.1.3.3.2.2.cmml">x</mi><mn id="alg1.l2.m1.1.1.3.3.2.3" xref="alg1.l2.m1.1.1.3.3.2.3.cmml">2</mn></msup><mo id="alg1.l2.m1.1.1.3.3.1" xref="alg1.l2.m1.1.1.3.3.1.cmml">+</mo><msup id="alg1.l2.m1.1.1.3.3.3" xref="alg1.l2.m1.1.1.3.3.3.cmml"><mi id="alg1.l2.m1.1.1.3.3.3.2" xref="alg1.l2.m1.1.1.3.3.3.2.cmml">y</mi><mn id="alg1.l2.m1.1.1.3.3.3.3" xref="alg1.l2.m1.1.1.3.3.3.3.cmml">2</mn></msup></mrow><mn id="alg1.l2.m1.1.1.3.2" xref="alg1.l2.m1.1.1.3.2.cmml">2</mn></mroot></mrow><annotation-xml encoding="MathML-Content" id="alg1.l2.m1.1b"><apply id="alg1.l2.m1.1.1.cmml" xref="alg1.l2.m1.1.1"><ci id="alg1.l2.m1.1.1.1.cmml" xref="alg1.l2.m1.1.1.1">←</ci><ci id="alg1.l2.m1.1.1.2.cmml" xref="alg1.l2.m1.1.1.2">𝑟</ci><apply id="alg1.l2.m1.1.1.3.cmml" xref="alg1.l2.m1.1.1.3"><root id="alg1.l2.m1.1.1.3a.cmml" xref="alg1.l2.m1.1.1.3"></root><degree id="alg1.l2.m1.1.1.3b.cmml" xref="alg1.l2.m1.1.1.3"><cn type="integer" id="alg1.l2.m1.1.1.3.2.cmml" xref="alg1.l2.m1.1.1.3.2">2</cn></degree><apply id="alg1.l2.m1.1.1.3.3.cmml" xref="alg1.l2.m1.1.1.3.3"><plus id="alg1.l2.m1.1.1.3.3.1.cmml" xref="alg1.l2.m1.1.1.3.3.1"></plus><apply id="alg1.l2.m1.1.1.3.3.2.cmml" xref="alg1.l2.m1.1.1.3.3.2"><csymbol cd="ambiguous" id="alg1.l2.m1.1.1.3.3.2.1.cmml" xref="alg1.l2.m1.1.1.3.3.2">superscript</csymbol><ci id="alg1.l2.m1.1.1.3.3.2.2.cmml" xref="alg1.l2.m1.1.1.3.3.2.2">𝑥</ci><cn type="integer" id="alg1.l2.m1.1.1.3.3.2.3.cmml" xref="alg1.l2.m1.1.1.3.3.2.3">2</cn></apply><apply id="alg1.l2.m1.1.1.3.3.3.cmml" xref="alg1.l2.m1.1.1.3.3.3"><csymbol cd="ambiguous" id="alg1.l2.m1.1.1.3.3.3.1.cmml" xref="alg1.l2.m1.1.1.3.3.3">superscript</csymbol><ci id="alg1.l2.m1.1.1.3.3.3.2.cmml" xref="alg1.l2.m1.1.1.3.3.3.2">𝑦</ci><cn type="integer" id="alg1.l2.m1.1.1.3.3.3.3.cmml" xref="alg1.l2.m1.1.1.3.3.3.3">2</cn></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l2.m1.1c">r\leftarrow\sqrt[2]{x^{2}+y^{2}}</annotation></semantics></math>
+
+</div>
+<div id="alg1.l3" class="ltx_listingline">     <math id="alg1.l3.m1.2" class="ltx_Math" alttext="\theta\leftarrow atan2(y,x)" display="inline"><semantics id="alg1.l3.m1.2a"><mrow id="alg1.l3.m1.2.3" xref="alg1.l3.m1.2.3.cmml"><mi id="alg1.l3.m1.2.3.2" xref="alg1.l3.m1.2.3.2.cmml">θ</mi><mo stretchy="false" id="alg1.l3.m1.2.3.1" xref="alg1.l3.m1.2.3.1.cmml">←</mo><mrow id="alg1.l3.m1.2.3.3" xref="alg1.l3.m1.2.3.3.cmml"><mi id="alg1.l3.m1.2.3.3.2" xref="alg1.l3.m1.2.3.3.2.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l3.m1.2.3.3.1" xref="alg1.l3.m1.2.3.3.1.cmml">​</mo><mi id="alg1.l3.m1.2.3.3.3" xref="alg1.l3.m1.2.3.3.3.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l3.m1.2.3.3.1a" xref="alg1.l3.m1.2.3.3.1.cmml">​</mo><mi id="alg1.l3.m1.2.3.3.4" xref="alg1.l3.m1.2.3.3.4.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l3.m1.2.3.3.1b" xref="alg1.l3.m1.2.3.3.1.cmml">​</mo><mi id="alg1.l3.m1.2.3.3.5" xref="alg1.l3.m1.2.3.3.5.cmml">n</mi><mo lspace="0em" rspace="0em" id="alg1.l3.m1.2.3.3.1c" xref="alg1.l3.m1.2.3.3.1.cmml">​</mo><mn id="alg1.l3.m1.2.3.3.6" xref="alg1.l3.m1.2.3.3.6.cmml">2</mn><mo lspace="0em" rspace="0em" id="alg1.l3.m1.2.3.3.1d" xref="alg1.l3.m1.2.3.3.1.cmml">​</mo><mrow id="alg1.l3.m1.2.3.3.7.2" xref="alg1.l3.m1.2.3.3.7.1.cmml"><mo stretchy="false" id="alg1.l3.m1.2.3.3.7.2.1" xref="alg1.l3.m1.2.3.3.7.1.cmml">(</mo><mi id="alg1.l3.m1.1.1" xref="alg1.l3.m1.1.1.cmml">y</mi><mo id="alg1.l3.m1.2.3.3.7.2.2" xref="alg1.l3.m1.2.3.3.7.1.cmml">,</mo><mi id="alg1.l3.m1.2.2" xref="alg1.l3.m1.2.2.cmml">x</mi><mo stretchy="false" id="alg1.l3.m1.2.3.3.7.2.3" xref="alg1.l3.m1.2.3.3.7.1.cmml">)</mo></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l3.m1.2b"><apply id="alg1.l3.m1.2.3.cmml" xref="alg1.l3.m1.2.3"><ci id="alg1.l3.m1.2.3.1.cmml" xref="alg1.l3.m1.2.3.1">←</ci><ci id="alg1.l3.m1.2.3.2.cmml" xref="alg1.l3.m1.2.3.2">𝜃</ci><apply id="alg1.l3.m1.2.3.3.cmml" xref="alg1.l3.m1.2.3.3"><times id="alg1.l3.m1.2.3.3.1.cmml" xref="alg1.l3.m1.2.3.3.1"></times><ci id="alg1.l3.m1.2.3.3.2.cmml" xref="alg1.l3.m1.2.3.3.2">𝑎</ci><ci id="alg1.l3.m1.2.3.3.3.cmml" xref="alg1.l3.m1.2.3.3.3">𝑡</ci><ci id="alg1.l3.m1.2.3.3.4.cmml" xref="alg1.l3.m1.2.3.3.4">𝑎</ci><ci id="alg1.l3.m1.2.3.3.5.cmml" xref="alg1.l3.m1.2.3.3.5">𝑛</ci><cn type="integer" id="alg1.l3.m1.2.3.3.6.cmml" xref="alg1.l3.m1.2.3.3.6">2</cn><interval closure="open" id="alg1.l3.m1.2.3.3.7.1.cmml" xref="alg1.l3.m1.2.3.3.7.2"><ci id="alg1.l3.m1.1.1.cmml" xref="alg1.l3.m1.1.1">𝑦</ci><ci id="alg1.l3.m1.2.2.cmml" xref="alg1.l3.m1.2.2">𝑥</ci></interval></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l3.m1.2c">\theta\leftarrow atan2(y,x)</annotation></semantics></math>
+
+</div>
+<div id="alg1.l4" class="ltx_listingline">     <math id="alg1.l4.m1.1" class="ltx_Math" alttext="P\leftarrow\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}" display="inline"><semantics id="alg1.l4.m1.1a"><mrow id="alg1.l4.m1.1.1" xref="alg1.l4.m1.1.1.cmml"><mi id="alg1.l4.m1.1.1.2" xref="alg1.l4.m1.1.1.2.cmml">P</mi><mo stretchy="false" id="alg1.l4.m1.1.1.1" xref="alg1.l4.m1.1.1.1.cmml">←</mo><mrow id="alg1.l4.m1.1.1.3" xref="alg1.l4.m1.1.1.3.cmml"><mfrac id="alg1.l4.m1.1.1.3.2" xref="alg1.l4.m1.1.1.3.2.cmml"><msup id="alg1.l4.m1.1.1.3.2.2" xref="alg1.l4.m1.1.1.3.2.2.cmml"><mi id="alg1.l4.m1.1.1.3.2.2.2" xref="alg1.l4.m1.1.1.3.2.2.2.cmml">x</mi><mn id="alg1.l4.m1.1.1.3.2.2.3" xref="alg1.l4.m1.1.1.3.2.2.3.cmml">2</mn></msup><msup id="alg1.l4.m1.1.1.3.2.3" xref="alg1.l4.m1.1.1.3.2.3.cmml"><mi id="alg1.l4.m1.1.1.3.2.3.2" xref="alg1.l4.m1.1.1.3.2.3.2.cmml">a</mi><mn id="alg1.l4.m1.1.1.3.2.3.3" xref="alg1.l4.m1.1.1.3.2.3.3.cmml">2</mn></msup></mfrac><mo id="alg1.l4.m1.1.1.3.1" xref="alg1.l4.m1.1.1.3.1.cmml">+</mo><mfrac id="alg1.l4.m1.1.1.3.3" xref="alg1.l4.m1.1.1.3.3.cmml"><msup id="alg1.l4.m1.1.1.3.3.2" xref="alg1.l4.m1.1.1.3.3.2.cmml"><mi id="alg1.l4.m1.1.1.3.3.2.2" xref="alg1.l4.m1.1.1.3.3.2.2.cmml">y</mi><mn id="alg1.l4.m1.1.1.3.3.2.3" xref="alg1.l4.m1.1.1.3.3.2.3.cmml">2</mn></msup><msup id="alg1.l4.m1.1.1.3.3.3" xref="alg1.l4.m1.1.1.3.3.3.cmml"><mi id="alg1.l4.m1.1.1.3.3.3.2" xref="alg1.l4.m1.1.1.3.3.3.2.cmml">b</mi><mn id="alg1.l4.m1.1.1.3.3.3.3" xref="alg1.l4.m1.1.1.3.3.3.3.cmml">2</mn></msup></mfrac></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l4.m1.1b"><apply id="alg1.l4.m1.1.1.cmml" xref="alg1.l4.m1.1.1"><ci id="alg1.l4.m1.1.1.1.cmml" xref="alg1.l4.m1.1.1.1">←</ci><ci id="alg1.l4.m1.1.1.2.cmml" xref="alg1.l4.m1.1.1.2">𝑃</ci><apply id="alg1.l4.m1.1.1.3.cmml" xref="alg1.l4.m1.1.1.3"><plus id="alg1.l4.m1.1.1.3.1.cmml" xref="alg1.l4.m1.1.1.3.1"></plus><apply id="alg1.l4.m1.1.1.3.2.cmml" xref="alg1.l4.m1.1.1.3.2"><divide id="alg1.l4.m1.1.1.3.2.1.cmml" xref="alg1.l4.m1.1.1.3.2"></divide><apply id="alg1.l4.m1.1.1.3.2.2.cmml" xref="alg1.l4.m1.1.1.3.2.2"><csymbol cd="ambiguous" id="alg1.l4.m1.1.1.3.2.2.1.cmml" xref="alg1.l4.m1.1.1.3.2.2">superscript</csymbol><ci id="alg1.l4.m1.1.1.3.2.2.2.cmml" xref="alg1.l4.m1.1.1.3.2.2.2">𝑥</ci><cn type="integer" id="alg1.l4.m1.1.1.3.2.2.3.cmml" xref="alg1.l4.m1.1.1.3.2.2.3">2</cn></apply><apply id="alg1.l4.m1.1.1.3.2.3.cmml" xref="alg1.l4.m1.1.1.3.2.3"><csymbol cd="ambiguous" id="alg1.l4.m1.1.1.3.2.3.1.cmml" xref="alg1.l4.m1.1.1.3.2.3">superscript</csymbol><ci id="alg1.l4.m1.1.1.3.2.3.2.cmml" xref="alg1.l4.m1.1.1.3.2.3.2">𝑎</ci><cn type="integer" id="alg1.l4.m1.1.1.3.2.3.3.cmml" xref="alg1.l4.m1.1.1.3.2.3.3">2</cn></apply></apply><apply id="alg1.l4.m1.1.1.3.3.cmml" xref="alg1.l4.m1.1.1.3.3"><divide id="alg1.l4.m1.1.1.3.3.1.cmml" xref="alg1.l4.m1.1.1.3.3"></divide><apply id="alg1.l4.m1.1.1.3.3.2.cmml" xref="alg1.l4.m1.1.1.3.3.2"><csymbol cd="ambiguous" id="alg1.l4.m1.1.1.3.3.2.1.cmml" xref="alg1.l4.m1.1.1.3.3.2">superscript</csymbol><ci id="alg1.l4.m1.1.1.3.3.2.2.cmml" xref="alg1.l4.m1.1.1.3.3.2.2">𝑦</ci><cn type="integer" id="alg1.l4.m1.1.1.3.3.2.3.cmml" xref="alg1.l4.m1.1.1.3.3.2.3">2</cn></apply><apply id="alg1.l4.m1.1.1.3.3.3.cmml" xref="alg1.l4.m1.1.1.3.3.3"><csymbol cd="ambiguous" id="alg1.l4.m1.1.1.3.3.3.1.cmml" xref="alg1.l4.m1.1.1.3.3.3">superscript</csymbol><ci id="alg1.l4.m1.1.1.3.3.3.2.cmml" xref="alg1.l4.m1.1.1.3.3.3.2">𝑏</ci><cn type="integer" id="alg1.l4.m1.1.1.3.3.3.3.cmml" xref="alg1.l4.m1.1.1.3.3.3.3">2</cn></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l4.m1.1c">P\leftarrow\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}</annotation></semantics></math>
+
+</div>
+<div id="alg1.l5" class="ltx_listingline">     <span id="alg1.l5.1" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l5.m1.1" class="ltx_Math" alttext="P" display="inline"><semantics id="alg1.l5.m1.1a"><mi id="alg1.l5.m1.1.1" xref="alg1.l5.m1.1.1.cmml">P</mi><annotation-xml encoding="MathML-Content" id="alg1.l5.m1.1b"><ci id="alg1.l5.m1.1.1.cmml" xref="alg1.l5.m1.1.1">𝑃</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l5.m1.1c">P</annotation></semantics></math> is greater than 1 <span id="alg1.l5.2" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l6" class="ltx_listingline">         <span id="alg1.l6.1" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l6.m1.1" class="ltx_Math" alttext="y" display="inline"><semantics id="alg1.l6.m1.1a"><mi id="alg1.l6.m1.1.1" xref="alg1.l6.m1.1.1.cmml">y</mi><annotation-xml encoding="MathML-Content" id="alg1.l6.m1.1b"><ci id="alg1.l6.m1.1.1.cmml" xref="alg1.l6.m1.1.1">𝑦</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l6.m1.1c">y</annotation></semantics></math> is less than 0 <span id="alg1.l6.2" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l7" class="ltx_listingline">              <math id="alg1.l7.m1.1" class="ltx_Math" alttext="r\leftarrow-r" display="inline"><semantics id="alg1.l7.m1.1a"><mrow id="alg1.l7.m1.1.1" xref="alg1.l7.m1.1.1.cmml"><mi id="alg1.l7.m1.1.1.2" xref="alg1.l7.m1.1.1.2.cmml">r</mi><mo stretchy="false" id="alg1.l7.m1.1.1.1" xref="alg1.l7.m1.1.1.1.cmml">←</mo><mrow id="alg1.l7.m1.1.1.3" xref="alg1.l7.m1.1.1.3.cmml"><mo id="alg1.l7.m1.1.1.3a" xref="alg1.l7.m1.1.1.3.cmml">−</mo><mi id="alg1.l7.m1.1.1.3.2" xref="alg1.l7.m1.1.1.3.2.cmml">r</mi></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l7.m1.1b"><apply id="alg1.l7.m1.1.1.cmml" xref="alg1.l7.m1.1.1"><ci id="alg1.l7.m1.1.1.1.cmml" xref="alg1.l7.m1.1.1.1">←</ci><ci id="alg1.l7.m1.1.1.2.cmml" xref="alg1.l7.m1.1.1.2">𝑟</ci><apply id="alg1.l7.m1.1.1.3.cmml" xref="alg1.l7.m1.1.1.3"><minus id="alg1.l7.m1.1.1.3.1.cmml" xref="alg1.l7.m1.1.1.3"></minus><ci id="alg1.l7.m1.1.1.3.2.cmml" xref="alg1.l7.m1.1.1.3.2">𝑟</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l7.m1.1c">r\leftarrow-r</annotation></semantics></math>
+
+</div>
+<div id="alg1.l8" class="ltx_listingline">         <span id="alg1.l8.1" class="ltx_text ltx_font_bold">end</span> <span id="alg1.l8.2" class="ltx_text ltx_font_bold">if</span>
+</div>
+<div id="alg1.l9" class="ltx_listingline">         <span id="alg1.l9.1" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l9.m1.1" class="ltx_Math" alttext="\theta" display="inline"><semantics id="alg1.l9.m1.1a"><mi id="alg1.l9.m1.1.1" xref="alg1.l9.m1.1.1.cmml">θ</mi><annotation-xml encoding="MathML-Content" id="alg1.l9.m1.1b"><ci id="alg1.l9.m1.1.1.cmml" xref="alg1.l9.m1.1.1">𝜃</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l9.m1.1c">\theta</annotation></semantics></math> is less than <math id="alg1.l9.m2.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l9.m2.1a"><mi id="alg1.l9.m2.1.1" xref="alg1.l9.m2.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l9.m2.1b"><ci id="alg1.l9.m2.1.1.cmml" xref="alg1.l9.m2.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l9.m2.1c">\pi</annotation></semantics></math>/4 <span id="alg1.l9.2" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l10" class="ltx_listingline">              <math id="alg1.l10.m1.2" class="ltx_Math" alttext="Yaw\leftarrow 0.3,Pitch\leftarrow 0" display="inline"><semantics id="alg1.l10.m1.2a"><mrow id="alg1.l10.m1.2.2.2" xref="alg1.l10.m1.2.2.3.cmml"><mrow id="alg1.l10.m1.1.1.1.1" xref="alg1.l10.m1.1.1.1.1.cmml"><mrow id="alg1.l10.m1.1.1.1.1.2" xref="alg1.l10.m1.1.1.1.1.2.cmml"><mi id="alg1.l10.m1.1.1.1.1.2.2" xref="alg1.l10.m1.1.1.1.1.2.2.cmml">Y</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.1.1.1.1.2.1" xref="alg1.l10.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l10.m1.1.1.1.1.2.3" xref="alg1.l10.m1.1.1.1.1.2.3.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.1.1.1.1.2.1a" xref="alg1.l10.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l10.m1.1.1.1.1.2.4" xref="alg1.l10.m1.1.1.1.1.2.4.cmml">w</mi></mrow><mo stretchy="false" id="alg1.l10.m1.1.1.1.1.1" xref="alg1.l10.m1.1.1.1.1.1.cmml">←</mo><mn id="alg1.l10.m1.1.1.1.1.3" xref="alg1.l10.m1.1.1.1.1.3.cmml">0.3</mn></mrow><mo id="alg1.l10.m1.2.2.2.3" xref="alg1.l10.m1.2.2.3a.cmml">,</mo><mrow id="alg1.l10.m1.2.2.2.2" xref="alg1.l10.m1.2.2.2.2.cmml"><mrow id="alg1.l10.m1.2.2.2.2.2" xref="alg1.l10.m1.2.2.2.2.2.cmml"><mi id="alg1.l10.m1.2.2.2.2.2.2" xref="alg1.l10.m1.2.2.2.2.2.2.cmml">P</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.2.2.2.2.2.1" xref="alg1.l10.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l10.m1.2.2.2.2.2.3" xref="alg1.l10.m1.2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.2.2.2.2.2.1a" xref="alg1.l10.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l10.m1.2.2.2.2.2.4" xref="alg1.l10.m1.2.2.2.2.2.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.2.2.2.2.2.1b" xref="alg1.l10.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l10.m1.2.2.2.2.2.5" xref="alg1.l10.m1.2.2.2.2.2.5.cmml">c</mi><mo lspace="0em" rspace="0em" id="alg1.l10.m1.2.2.2.2.2.1c" xref="alg1.l10.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l10.m1.2.2.2.2.2.6" xref="alg1.l10.m1.2.2.2.2.2.6.cmml">h</mi></mrow><mo stretchy="false" id="alg1.l10.m1.2.2.2.2.1" xref="alg1.l10.m1.2.2.2.2.1.cmml">←</mo><mn id="alg1.l10.m1.2.2.2.2.3" xref="alg1.l10.m1.2.2.2.2.3.cmml">0</mn></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l10.m1.2b"><apply id="alg1.l10.m1.2.2.3.cmml" xref="alg1.l10.m1.2.2.2"><csymbol cd="ambiguous" id="alg1.l10.m1.2.2.3a.cmml" xref="alg1.l10.m1.2.2.2.3">formulae-sequence</csymbol><apply id="alg1.l10.m1.1.1.1.1.cmml" xref="alg1.l10.m1.1.1.1.1"><ci id="alg1.l10.m1.1.1.1.1.1.cmml" xref="alg1.l10.m1.1.1.1.1.1">←</ci><apply id="alg1.l10.m1.1.1.1.1.2.cmml" xref="alg1.l10.m1.1.1.1.1.2"><times id="alg1.l10.m1.1.1.1.1.2.1.cmml" xref="alg1.l10.m1.1.1.1.1.2.1"></times><ci id="alg1.l10.m1.1.1.1.1.2.2.cmml" xref="alg1.l10.m1.1.1.1.1.2.2">𝑌</ci><ci id="alg1.l10.m1.1.1.1.1.2.3.cmml" xref="alg1.l10.m1.1.1.1.1.2.3">𝑎</ci><ci id="alg1.l10.m1.1.1.1.1.2.4.cmml" xref="alg1.l10.m1.1.1.1.1.2.4">𝑤</ci></apply><cn type="float" id="alg1.l10.m1.1.1.1.1.3.cmml" xref="alg1.l10.m1.1.1.1.1.3">0.3</cn></apply><apply id="alg1.l10.m1.2.2.2.2.cmml" xref="alg1.l10.m1.2.2.2.2"><ci id="alg1.l10.m1.2.2.2.2.1.cmml" xref="alg1.l10.m1.2.2.2.2.1">←</ci><apply id="alg1.l10.m1.2.2.2.2.2.cmml" xref="alg1.l10.m1.2.2.2.2.2"><times id="alg1.l10.m1.2.2.2.2.2.1.cmml" xref="alg1.l10.m1.2.2.2.2.2.1"></times><ci id="alg1.l10.m1.2.2.2.2.2.2.cmml" xref="alg1.l10.m1.2.2.2.2.2.2">𝑃</ci><ci id="alg1.l10.m1.2.2.2.2.2.3.cmml" xref="alg1.l10.m1.2.2.2.2.2.3">𝑖</ci><ci id="alg1.l10.m1.2.2.2.2.2.4.cmml" xref="alg1.l10.m1.2.2.2.2.2.4">𝑡</ci><ci id="alg1.l10.m1.2.2.2.2.2.5.cmml" xref="alg1.l10.m1.2.2.2.2.2.5">𝑐</ci><ci id="alg1.l10.m1.2.2.2.2.2.6.cmml" xref="alg1.l10.m1.2.2.2.2.2.6">ℎ</ci></apply><cn type="integer" id="alg1.l10.m1.2.2.2.2.3.cmml" xref="alg1.l10.m1.2.2.2.2.3">0</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l10.m1.2c">Yaw\leftarrow 0.3,Pitch\leftarrow 0</annotation></semantics></math>
+
+</div>
+<div id="alg1.l11" class="ltx_listingline">         <span id="alg1.l11.1" class="ltx_text ltx_font_bold">else</span> <span id="alg1.l11.2" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l11.m1.1" class="ltx_Math" alttext="\theta" display="inline"><semantics id="alg1.l11.m1.1a"><mi id="alg1.l11.m1.1.1" xref="alg1.l11.m1.1.1.cmml">θ</mi><annotation-xml encoding="MathML-Content" id="alg1.l11.m1.1b"><ci id="alg1.l11.m1.1.1.cmml" xref="alg1.l11.m1.1.1">𝜃</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l11.m1.1c">\theta</annotation></semantics></math> is between -3<math id="alg1.l11.m2.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l11.m2.1a"><mi id="alg1.l11.m2.1.1" xref="alg1.l11.m2.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l11.m2.1b"><ci id="alg1.l11.m2.1.1.cmml" xref="alg1.l11.m2.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l11.m2.1c">\pi</annotation></semantics></math>/4 and 3<math id="alg1.l11.m3.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l11.m3.1a"><mi id="alg1.l11.m3.1.1" xref="alg1.l11.m3.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l11.m3.1b"><ci id="alg1.l11.m3.1.1.cmml" xref="alg1.l11.m3.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l11.m3.1c">\pi</annotation></semantics></math>/4 <span id="alg1.l11.3" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l12" class="ltx_listingline">              <math id="alg1.l12.m1.2" class="ltx_Math" alttext="Yaw\leftarrow-0.3,Pitch\leftarrow 0" display="inline"><semantics id="alg1.l12.m1.2a"><mrow id="alg1.l12.m1.2.2.2" xref="alg1.l12.m1.2.2.3.cmml"><mrow id="alg1.l12.m1.1.1.1.1" xref="alg1.l12.m1.1.1.1.1.cmml"><mrow id="alg1.l12.m1.1.1.1.1.2" xref="alg1.l12.m1.1.1.1.1.2.cmml"><mi id="alg1.l12.m1.1.1.1.1.2.2" xref="alg1.l12.m1.1.1.1.1.2.2.cmml">Y</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.1.1.1.1.2.1" xref="alg1.l12.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l12.m1.1.1.1.1.2.3" xref="alg1.l12.m1.1.1.1.1.2.3.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.1.1.1.1.2.1a" xref="alg1.l12.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l12.m1.1.1.1.1.2.4" xref="alg1.l12.m1.1.1.1.1.2.4.cmml">w</mi></mrow><mo stretchy="false" id="alg1.l12.m1.1.1.1.1.1" xref="alg1.l12.m1.1.1.1.1.1.cmml">←</mo><mrow id="alg1.l12.m1.1.1.1.1.3" xref="alg1.l12.m1.1.1.1.1.3.cmml"><mo id="alg1.l12.m1.1.1.1.1.3a" xref="alg1.l12.m1.1.1.1.1.3.cmml">−</mo><mn id="alg1.l12.m1.1.1.1.1.3.2" xref="alg1.l12.m1.1.1.1.1.3.2.cmml">0.3</mn></mrow></mrow><mo id="alg1.l12.m1.2.2.2.3" xref="alg1.l12.m1.2.2.3a.cmml">,</mo><mrow id="alg1.l12.m1.2.2.2.2" xref="alg1.l12.m1.2.2.2.2.cmml"><mrow id="alg1.l12.m1.2.2.2.2.2" xref="alg1.l12.m1.2.2.2.2.2.cmml"><mi id="alg1.l12.m1.2.2.2.2.2.2" xref="alg1.l12.m1.2.2.2.2.2.2.cmml">P</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.2.2.2.2.2.1" xref="alg1.l12.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l12.m1.2.2.2.2.2.3" xref="alg1.l12.m1.2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.2.2.2.2.2.1a" xref="alg1.l12.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l12.m1.2.2.2.2.2.4" xref="alg1.l12.m1.2.2.2.2.2.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.2.2.2.2.2.1b" xref="alg1.l12.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l12.m1.2.2.2.2.2.5" xref="alg1.l12.m1.2.2.2.2.2.5.cmml">c</mi><mo lspace="0em" rspace="0em" id="alg1.l12.m1.2.2.2.2.2.1c" xref="alg1.l12.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l12.m1.2.2.2.2.2.6" xref="alg1.l12.m1.2.2.2.2.2.6.cmml">h</mi></mrow><mo stretchy="false" id="alg1.l12.m1.2.2.2.2.1" xref="alg1.l12.m1.2.2.2.2.1.cmml">←</mo><mn id="alg1.l12.m1.2.2.2.2.3" xref="alg1.l12.m1.2.2.2.2.3.cmml">0</mn></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l12.m1.2b"><apply id="alg1.l12.m1.2.2.3.cmml" xref="alg1.l12.m1.2.2.2"><csymbol cd="ambiguous" id="alg1.l12.m1.2.2.3a.cmml" xref="alg1.l12.m1.2.2.2.3">formulae-sequence</csymbol><apply id="alg1.l12.m1.1.1.1.1.cmml" xref="alg1.l12.m1.1.1.1.1"><ci id="alg1.l12.m1.1.1.1.1.1.cmml" xref="alg1.l12.m1.1.1.1.1.1">←</ci><apply id="alg1.l12.m1.1.1.1.1.2.cmml" xref="alg1.l12.m1.1.1.1.1.2"><times id="alg1.l12.m1.1.1.1.1.2.1.cmml" xref="alg1.l12.m1.1.1.1.1.2.1"></times><ci id="alg1.l12.m1.1.1.1.1.2.2.cmml" xref="alg1.l12.m1.1.1.1.1.2.2">𝑌</ci><ci id="alg1.l12.m1.1.1.1.1.2.3.cmml" xref="alg1.l12.m1.1.1.1.1.2.3">𝑎</ci><ci id="alg1.l12.m1.1.1.1.1.2.4.cmml" xref="alg1.l12.m1.1.1.1.1.2.4">𝑤</ci></apply><apply id="alg1.l12.m1.1.1.1.1.3.cmml" xref="alg1.l12.m1.1.1.1.1.3"><minus id="alg1.l12.m1.1.1.1.1.3.1.cmml" xref="alg1.l12.m1.1.1.1.1.3"></minus><cn type="float" id="alg1.l12.m1.1.1.1.1.3.2.cmml" xref="alg1.l12.m1.1.1.1.1.3.2">0.3</cn></apply></apply><apply id="alg1.l12.m1.2.2.2.2.cmml" xref="alg1.l12.m1.2.2.2.2"><ci id="alg1.l12.m1.2.2.2.2.1.cmml" xref="alg1.l12.m1.2.2.2.2.1">←</ci><apply id="alg1.l12.m1.2.2.2.2.2.cmml" xref="alg1.l12.m1.2.2.2.2.2"><times id="alg1.l12.m1.2.2.2.2.2.1.cmml" xref="alg1.l12.m1.2.2.2.2.2.1"></times><ci id="alg1.l12.m1.2.2.2.2.2.2.cmml" xref="alg1.l12.m1.2.2.2.2.2.2">𝑃</ci><ci id="alg1.l12.m1.2.2.2.2.2.3.cmml" xref="alg1.l12.m1.2.2.2.2.2.3">𝑖</ci><ci id="alg1.l12.m1.2.2.2.2.2.4.cmml" xref="alg1.l12.m1.2.2.2.2.2.4">𝑡</ci><ci id="alg1.l12.m1.2.2.2.2.2.5.cmml" xref="alg1.l12.m1.2.2.2.2.2.5">𝑐</ci><ci id="alg1.l12.m1.2.2.2.2.2.6.cmml" xref="alg1.l12.m1.2.2.2.2.2.6">ℎ</ci></apply><cn type="integer" id="alg1.l12.m1.2.2.2.2.3.cmml" xref="alg1.l12.m1.2.2.2.2.3">0</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l12.m1.2c">Yaw\leftarrow-0.3,Pitch\leftarrow 0</annotation></semantics></math>
+
+</div>
+<div id="alg1.l13" class="ltx_listingline">         <span id="alg1.l13.1" class="ltx_text ltx_font_bold">else</span> <span id="alg1.l13.2" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l13.m1.1" class="ltx_Math" alttext="\theta" display="inline"><semantics id="alg1.l13.m1.1a"><mi id="alg1.l13.m1.1.1" xref="alg1.l13.m1.1.1.cmml">θ</mi><annotation-xml encoding="MathML-Content" id="alg1.l13.m1.1b"><ci id="alg1.l13.m1.1.1.cmml" xref="alg1.l13.m1.1.1">𝜃</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l13.m1.1c">\theta</annotation></semantics></math> is between <math id="alg1.l13.m2.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l13.m2.1a"><mi id="alg1.l13.m2.1.1" xref="alg1.l13.m2.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l13.m2.1b"><ci id="alg1.l13.m2.1.1.cmml" xref="alg1.l13.m2.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l13.m2.1c">\pi</annotation></semantics></math>/4 and 3<math id="alg1.l13.m3.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l13.m3.1a"><mi id="alg1.l13.m3.1.1" xref="alg1.l13.m3.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l13.m3.1b"><ci id="alg1.l13.m3.1.1.cmml" xref="alg1.l13.m3.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l13.m3.1c">\pi</annotation></semantics></math>/4 <span id="alg1.l13.3" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l14" class="ltx_listingline">              <math id="alg1.l14.m1.2" class="ltx_Math" alttext="Yaw\leftarrow 0,Pitch\leftarrow 0.3" display="inline"><semantics id="alg1.l14.m1.2a"><mrow id="alg1.l14.m1.2.2.2" xref="alg1.l14.m1.2.2.3.cmml"><mrow id="alg1.l14.m1.1.1.1.1" xref="alg1.l14.m1.1.1.1.1.cmml"><mrow id="alg1.l14.m1.1.1.1.1.2" xref="alg1.l14.m1.1.1.1.1.2.cmml"><mi id="alg1.l14.m1.1.1.1.1.2.2" xref="alg1.l14.m1.1.1.1.1.2.2.cmml">Y</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.1.1.1.1.2.1" xref="alg1.l14.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l14.m1.1.1.1.1.2.3" xref="alg1.l14.m1.1.1.1.1.2.3.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.1.1.1.1.2.1a" xref="alg1.l14.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l14.m1.1.1.1.1.2.4" xref="alg1.l14.m1.1.1.1.1.2.4.cmml">w</mi></mrow><mo stretchy="false" id="alg1.l14.m1.1.1.1.1.1" xref="alg1.l14.m1.1.1.1.1.1.cmml">←</mo><mn id="alg1.l14.m1.1.1.1.1.3" xref="alg1.l14.m1.1.1.1.1.3.cmml">0</mn></mrow><mo id="alg1.l14.m1.2.2.2.3" xref="alg1.l14.m1.2.2.3a.cmml">,</mo><mrow id="alg1.l14.m1.2.2.2.2" xref="alg1.l14.m1.2.2.2.2.cmml"><mrow id="alg1.l14.m1.2.2.2.2.2" xref="alg1.l14.m1.2.2.2.2.2.cmml"><mi id="alg1.l14.m1.2.2.2.2.2.2" xref="alg1.l14.m1.2.2.2.2.2.2.cmml">P</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.2.2.2.2.2.1" xref="alg1.l14.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l14.m1.2.2.2.2.2.3" xref="alg1.l14.m1.2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.2.2.2.2.2.1a" xref="alg1.l14.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l14.m1.2.2.2.2.2.4" xref="alg1.l14.m1.2.2.2.2.2.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.2.2.2.2.2.1b" xref="alg1.l14.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l14.m1.2.2.2.2.2.5" xref="alg1.l14.m1.2.2.2.2.2.5.cmml">c</mi><mo lspace="0em" rspace="0em" id="alg1.l14.m1.2.2.2.2.2.1c" xref="alg1.l14.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l14.m1.2.2.2.2.2.6" xref="alg1.l14.m1.2.2.2.2.2.6.cmml">h</mi></mrow><mo stretchy="false" id="alg1.l14.m1.2.2.2.2.1" xref="alg1.l14.m1.2.2.2.2.1.cmml">←</mo><mn id="alg1.l14.m1.2.2.2.2.3" xref="alg1.l14.m1.2.2.2.2.3.cmml">0.3</mn></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l14.m1.2b"><apply id="alg1.l14.m1.2.2.3.cmml" xref="alg1.l14.m1.2.2.2"><csymbol cd="ambiguous" id="alg1.l14.m1.2.2.3a.cmml" xref="alg1.l14.m1.2.2.2.3">formulae-sequence</csymbol><apply id="alg1.l14.m1.1.1.1.1.cmml" xref="alg1.l14.m1.1.1.1.1"><ci id="alg1.l14.m1.1.1.1.1.1.cmml" xref="alg1.l14.m1.1.1.1.1.1">←</ci><apply id="alg1.l14.m1.1.1.1.1.2.cmml" xref="alg1.l14.m1.1.1.1.1.2"><times id="alg1.l14.m1.1.1.1.1.2.1.cmml" xref="alg1.l14.m1.1.1.1.1.2.1"></times><ci id="alg1.l14.m1.1.1.1.1.2.2.cmml" xref="alg1.l14.m1.1.1.1.1.2.2">𝑌</ci><ci id="alg1.l14.m1.1.1.1.1.2.3.cmml" xref="alg1.l14.m1.1.1.1.1.2.3">𝑎</ci><ci id="alg1.l14.m1.1.1.1.1.2.4.cmml" xref="alg1.l14.m1.1.1.1.1.2.4">𝑤</ci></apply><cn type="integer" id="alg1.l14.m1.1.1.1.1.3.cmml" xref="alg1.l14.m1.1.1.1.1.3">0</cn></apply><apply id="alg1.l14.m1.2.2.2.2.cmml" xref="alg1.l14.m1.2.2.2.2"><ci id="alg1.l14.m1.2.2.2.2.1.cmml" xref="alg1.l14.m1.2.2.2.2.1">←</ci><apply id="alg1.l14.m1.2.2.2.2.2.cmml" xref="alg1.l14.m1.2.2.2.2.2"><times id="alg1.l14.m1.2.2.2.2.2.1.cmml" xref="alg1.l14.m1.2.2.2.2.2.1"></times><ci id="alg1.l14.m1.2.2.2.2.2.2.cmml" xref="alg1.l14.m1.2.2.2.2.2.2">𝑃</ci><ci id="alg1.l14.m1.2.2.2.2.2.3.cmml" xref="alg1.l14.m1.2.2.2.2.2.3">𝑖</ci><ci id="alg1.l14.m1.2.2.2.2.2.4.cmml" xref="alg1.l14.m1.2.2.2.2.2.4">𝑡</ci><ci id="alg1.l14.m1.2.2.2.2.2.5.cmml" xref="alg1.l14.m1.2.2.2.2.2.5">𝑐</ci><ci id="alg1.l14.m1.2.2.2.2.2.6.cmml" xref="alg1.l14.m1.2.2.2.2.2.6">ℎ</ci></apply><cn type="float" id="alg1.l14.m1.2.2.2.2.3.cmml" xref="alg1.l14.m1.2.2.2.2.3">0.3</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l14.m1.2c">Yaw\leftarrow 0,Pitch\leftarrow 0.3</annotation></semantics></math>
+
+</div>
+<div id="alg1.l15" class="ltx_listingline">         <span id="alg1.l15.1" class="ltx_text ltx_font_bold">else</span> <span id="alg1.l15.2" class="ltx_text ltx_font_bold">if</span> <math id="alg1.l15.m1.1" class="ltx_Math" alttext="\theta" display="inline"><semantics id="alg1.l15.m1.1a"><mi id="alg1.l15.m1.1.1" xref="alg1.l15.m1.1.1.cmml">θ</mi><annotation-xml encoding="MathML-Content" id="alg1.l15.m1.1b"><ci id="alg1.l15.m1.1.1.cmml" xref="alg1.l15.m1.1.1">𝜃</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l15.m1.1c">\theta</annotation></semantics></math> is between -<math id="alg1.l15.m2.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l15.m2.1a"><mi id="alg1.l15.m2.1.1" xref="alg1.l15.m2.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l15.m2.1b"><ci id="alg1.l15.m2.1.1.cmml" xref="alg1.l15.m2.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l15.m2.1c">\pi</annotation></semantics></math>/4 and -3<math id="alg1.l15.m3.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="alg1.l15.m3.1a"><mi id="alg1.l15.m3.1.1" xref="alg1.l15.m3.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="alg1.l15.m3.1b"><ci id="alg1.l15.m3.1.1.cmml" xref="alg1.l15.m3.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="alg1.l15.m3.1c">\pi</annotation></semantics></math>/4 <span id="alg1.l15.3" class="ltx_text ltx_font_bold">then</span>
+
+</div>
+<div id="alg1.l16" class="ltx_listingline">              <math id="alg1.l16.m1.2" class="ltx_Math" alttext="Yaw\leftarrow 0,Pitch\leftarrow-0.3" display="inline"><semantics id="alg1.l16.m1.2a"><mrow id="alg1.l16.m1.2.2.2" xref="alg1.l16.m1.2.2.3.cmml"><mrow id="alg1.l16.m1.1.1.1.1" xref="alg1.l16.m1.1.1.1.1.cmml"><mrow id="alg1.l16.m1.1.1.1.1.2" xref="alg1.l16.m1.1.1.1.1.2.cmml"><mi id="alg1.l16.m1.1.1.1.1.2.2" xref="alg1.l16.m1.1.1.1.1.2.2.cmml">Y</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.1.1.1.1.2.1" xref="alg1.l16.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l16.m1.1.1.1.1.2.3" xref="alg1.l16.m1.1.1.1.1.2.3.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.1.1.1.1.2.1a" xref="alg1.l16.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l16.m1.1.1.1.1.2.4" xref="alg1.l16.m1.1.1.1.1.2.4.cmml">w</mi></mrow><mo stretchy="false" id="alg1.l16.m1.1.1.1.1.1" xref="alg1.l16.m1.1.1.1.1.1.cmml">←</mo><mn id="alg1.l16.m1.1.1.1.1.3" xref="alg1.l16.m1.1.1.1.1.3.cmml">0</mn></mrow><mo id="alg1.l16.m1.2.2.2.3" xref="alg1.l16.m1.2.2.3a.cmml">,</mo><mrow id="alg1.l16.m1.2.2.2.2" xref="alg1.l16.m1.2.2.2.2.cmml"><mrow id="alg1.l16.m1.2.2.2.2.2" xref="alg1.l16.m1.2.2.2.2.2.cmml"><mi id="alg1.l16.m1.2.2.2.2.2.2" xref="alg1.l16.m1.2.2.2.2.2.2.cmml">P</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.2.2.2.2.2.1" xref="alg1.l16.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l16.m1.2.2.2.2.2.3" xref="alg1.l16.m1.2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.2.2.2.2.2.1a" xref="alg1.l16.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l16.m1.2.2.2.2.2.4" xref="alg1.l16.m1.2.2.2.2.2.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.2.2.2.2.2.1b" xref="alg1.l16.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l16.m1.2.2.2.2.2.5" xref="alg1.l16.m1.2.2.2.2.2.5.cmml">c</mi><mo lspace="0em" rspace="0em" id="alg1.l16.m1.2.2.2.2.2.1c" xref="alg1.l16.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l16.m1.2.2.2.2.2.6" xref="alg1.l16.m1.2.2.2.2.2.6.cmml">h</mi></mrow><mo stretchy="false" id="alg1.l16.m1.2.2.2.2.1" xref="alg1.l16.m1.2.2.2.2.1.cmml">←</mo><mrow id="alg1.l16.m1.2.2.2.2.3" xref="alg1.l16.m1.2.2.2.2.3.cmml"><mo id="alg1.l16.m1.2.2.2.2.3a" xref="alg1.l16.m1.2.2.2.2.3.cmml">−</mo><mn id="alg1.l16.m1.2.2.2.2.3.2" xref="alg1.l16.m1.2.2.2.2.3.2.cmml">0.3</mn></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l16.m1.2b"><apply id="alg1.l16.m1.2.2.3.cmml" xref="alg1.l16.m1.2.2.2"><csymbol cd="ambiguous" id="alg1.l16.m1.2.2.3a.cmml" xref="alg1.l16.m1.2.2.2.3">formulae-sequence</csymbol><apply id="alg1.l16.m1.1.1.1.1.cmml" xref="alg1.l16.m1.1.1.1.1"><ci id="alg1.l16.m1.1.1.1.1.1.cmml" xref="alg1.l16.m1.1.1.1.1.1">←</ci><apply id="alg1.l16.m1.1.1.1.1.2.cmml" xref="alg1.l16.m1.1.1.1.1.2"><times id="alg1.l16.m1.1.1.1.1.2.1.cmml" xref="alg1.l16.m1.1.1.1.1.2.1"></times><ci id="alg1.l16.m1.1.1.1.1.2.2.cmml" xref="alg1.l16.m1.1.1.1.1.2.2">𝑌</ci><ci id="alg1.l16.m1.1.1.1.1.2.3.cmml" xref="alg1.l16.m1.1.1.1.1.2.3">𝑎</ci><ci id="alg1.l16.m1.1.1.1.1.2.4.cmml" xref="alg1.l16.m1.1.1.1.1.2.4">𝑤</ci></apply><cn type="integer" id="alg1.l16.m1.1.1.1.1.3.cmml" xref="alg1.l16.m1.1.1.1.1.3">0</cn></apply><apply id="alg1.l16.m1.2.2.2.2.cmml" xref="alg1.l16.m1.2.2.2.2"><ci id="alg1.l16.m1.2.2.2.2.1.cmml" xref="alg1.l16.m1.2.2.2.2.1">←</ci><apply id="alg1.l16.m1.2.2.2.2.2.cmml" xref="alg1.l16.m1.2.2.2.2.2"><times id="alg1.l16.m1.2.2.2.2.2.1.cmml" xref="alg1.l16.m1.2.2.2.2.2.1"></times><ci id="alg1.l16.m1.2.2.2.2.2.2.cmml" xref="alg1.l16.m1.2.2.2.2.2.2">𝑃</ci><ci id="alg1.l16.m1.2.2.2.2.2.3.cmml" xref="alg1.l16.m1.2.2.2.2.2.3">𝑖</ci><ci id="alg1.l16.m1.2.2.2.2.2.4.cmml" xref="alg1.l16.m1.2.2.2.2.2.4">𝑡</ci><ci id="alg1.l16.m1.2.2.2.2.2.5.cmml" xref="alg1.l16.m1.2.2.2.2.2.5">𝑐</ci><ci id="alg1.l16.m1.2.2.2.2.2.6.cmml" xref="alg1.l16.m1.2.2.2.2.2.6">ℎ</ci></apply><apply id="alg1.l16.m1.2.2.2.2.3.cmml" xref="alg1.l16.m1.2.2.2.2.3"><minus id="alg1.l16.m1.2.2.2.2.3.1.cmml" xref="alg1.l16.m1.2.2.2.2.3"></minus><cn type="float" id="alg1.l16.m1.2.2.2.2.3.2.cmml" xref="alg1.l16.m1.2.2.2.2.3.2">0.3</cn></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l16.m1.2c">Yaw\leftarrow 0,Pitch\leftarrow-0.3</annotation></semantics></math>
+
+</div>
+<div id="alg1.l17" class="ltx_listingline">         <span id="alg1.l17.1" class="ltx_text ltx_font_bold">end</span> <span id="alg1.l17.2" class="ltx_text ltx_font_bold">if</span>
+</div>
+<div id="alg1.l18" class="ltx_listingline">     <span id="alg1.l18.1" class="ltx_text ltx_font_bold">else</span>
+</div>
+<div id="alg1.l19" class="ltx_listingline">         <math id="alg1.l19.m1.2" class="ltx_Math" alttext="Yaw\leftarrow 0,Pitch\leftarrow 0" display="inline"><semantics id="alg1.l19.m1.2a"><mrow id="alg1.l19.m1.2.2.2" xref="alg1.l19.m1.2.2.3.cmml"><mrow id="alg1.l19.m1.1.1.1.1" xref="alg1.l19.m1.1.1.1.1.cmml"><mrow id="alg1.l19.m1.1.1.1.1.2" xref="alg1.l19.m1.1.1.1.1.2.cmml"><mi id="alg1.l19.m1.1.1.1.1.2.2" xref="alg1.l19.m1.1.1.1.1.2.2.cmml">Y</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.1.1.1.1.2.1" xref="alg1.l19.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l19.m1.1.1.1.1.2.3" xref="alg1.l19.m1.1.1.1.1.2.3.cmml">a</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.1.1.1.1.2.1a" xref="alg1.l19.m1.1.1.1.1.2.1.cmml">​</mo><mi id="alg1.l19.m1.1.1.1.1.2.4" xref="alg1.l19.m1.1.1.1.1.2.4.cmml">w</mi></mrow><mo stretchy="false" id="alg1.l19.m1.1.1.1.1.1" xref="alg1.l19.m1.1.1.1.1.1.cmml">←</mo><mn id="alg1.l19.m1.1.1.1.1.3" xref="alg1.l19.m1.1.1.1.1.3.cmml">0</mn></mrow><mo id="alg1.l19.m1.2.2.2.3" xref="alg1.l19.m1.2.2.3a.cmml">,</mo><mrow id="alg1.l19.m1.2.2.2.2" xref="alg1.l19.m1.2.2.2.2.cmml"><mrow id="alg1.l19.m1.2.2.2.2.2" xref="alg1.l19.m1.2.2.2.2.2.cmml"><mi id="alg1.l19.m1.2.2.2.2.2.2" xref="alg1.l19.m1.2.2.2.2.2.2.cmml">P</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.2.2.2.2.2.1" xref="alg1.l19.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l19.m1.2.2.2.2.2.3" xref="alg1.l19.m1.2.2.2.2.2.3.cmml">i</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.2.2.2.2.2.1a" xref="alg1.l19.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l19.m1.2.2.2.2.2.4" xref="alg1.l19.m1.2.2.2.2.2.4.cmml">t</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.2.2.2.2.2.1b" xref="alg1.l19.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l19.m1.2.2.2.2.2.5" xref="alg1.l19.m1.2.2.2.2.2.5.cmml">c</mi><mo lspace="0em" rspace="0em" id="alg1.l19.m1.2.2.2.2.2.1c" xref="alg1.l19.m1.2.2.2.2.2.1.cmml">​</mo><mi id="alg1.l19.m1.2.2.2.2.2.6" xref="alg1.l19.m1.2.2.2.2.2.6.cmml">h</mi></mrow><mo stretchy="false" id="alg1.l19.m1.2.2.2.2.1" xref="alg1.l19.m1.2.2.2.2.1.cmml">←</mo><mn id="alg1.l19.m1.2.2.2.2.3" xref="alg1.l19.m1.2.2.2.2.3.cmml">0</mn></mrow></mrow><annotation-xml encoding="MathML-Content" id="alg1.l19.m1.2b"><apply id="alg1.l19.m1.2.2.3.cmml" xref="alg1.l19.m1.2.2.2"><csymbol cd="ambiguous" id="alg1.l19.m1.2.2.3a.cmml" xref="alg1.l19.m1.2.2.2.3">formulae-sequence</csymbol><apply id="alg1.l19.m1.1.1.1.1.cmml" xref="alg1.l19.m1.1.1.1.1"><ci id="alg1.l19.m1.1.1.1.1.1.cmml" xref="alg1.l19.m1.1.1.1.1.1">←</ci><apply id="alg1.l19.m1.1.1.1.1.2.cmml" xref="alg1.l19.m1.1.1.1.1.2"><times id="alg1.l19.m1.1.1.1.1.2.1.cmml" xref="alg1.l19.m1.1.1.1.1.2.1"></times><ci id="alg1.l19.m1.1.1.1.1.2.2.cmml" xref="alg1.l19.m1.1.1.1.1.2.2">𝑌</ci><ci id="alg1.l19.m1.1.1.1.1.2.3.cmml" xref="alg1.l19.m1.1.1.1.1.2.3">𝑎</ci><ci id="alg1.l19.m1.1.1.1.1.2.4.cmml" xref="alg1.l19.m1.1.1.1.1.2.4">𝑤</ci></apply><cn type="integer" id="alg1.l19.m1.1.1.1.1.3.cmml" xref="alg1.l19.m1.1.1.1.1.3">0</cn></apply><apply id="alg1.l19.m1.2.2.2.2.cmml" xref="alg1.l19.m1.2.2.2.2"><ci id="alg1.l19.m1.2.2.2.2.1.cmml" xref="alg1.l19.m1.2.2.2.2.1">←</ci><apply id="alg1.l19.m1.2.2.2.2.2.cmml" xref="alg1.l19.m1.2.2.2.2.2"><times id="alg1.l19.m1.2.2.2.2.2.1.cmml" xref="alg1.l19.m1.2.2.2.2.2.1"></times><ci id="alg1.l19.m1.2.2.2.2.2.2.cmml" xref="alg1.l19.m1.2.2.2.2.2.2">𝑃</ci><ci id="alg1.l19.m1.2.2.2.2.2.3.cmml" xref="alg1.l19.m1.2.2.2.2.2.3">𝑖</ci><ci id="alg1.l19.m1.2.2.2.2.2.4.cmml" xref="alg1.l19.m1.2.2.2.2.2.4">𝑡</ci><ci id="alg1.l19.m1.2.2.2.2.2.5.cmml" xref="alg1.l19.m1.2.2.2.2.2.5">𝑐</ci><ci id="alg1.l19.m1.2.2.2.2.2.6.cmml" xref="alg1.l19.m1.2.2.2.2.2.6">ℎ</ci></apply><cn type="integer" id="alg1.l19.m1.2.2.2.2.3.cmml" xref="alg1.l19.m1.2.2.2.2.3">0</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="alg1.l19.m1.2c">Yaw\leftarrow 0,Pitch\leftarrow 0</annotation></semantics></math>
+
+</div>
+<div id="alg1.l20" class="ltx_listingline">     <span id="alg1.l20.1" class="ltx_text ltx_font_bold">end</span> <span id="alg1.l20.2" class="ltx_text ltx_font_bold">if</span>
+</div>
+<div id="alg1.l21" class="ltx_listingline">
+<span id="alg1.l21.1" class="ltx_text ltx_font_bold">end</span> <span id="alg1.l21.2" class="ltx_text ltx_font_bold">procedure</span>
+</div>
+</div>
+</figure>
+<figure id="S3.F4" class="ltx_figure"><img src="/html/1710.02932/assets/setup.jpeg" id="S3.F4.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="169" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 4: </span>Experimental setup of Fotokite UAV</figcaption>
+</figure>
+<figure id="S3.F5" class="ltx_figure"><img src="/html/1710.02932/assets/x1.jpg" id="S3.F5.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="332" height="162" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 5: </span>Simulation in UNITY 3D</figcaption>
+</figure>
+<figure id="S3.F6" class="ltx_figure"><img src="/html/1710.02932/assets/testarenas.png" id="S3.F6.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="190" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 6: </span>Two test arenas used for proof of concept trials</figcaption>
+</figure>
+<figure id="S3.F7" class="ltx_figure"><img src="/html/1710.02932/assets/pvalueplot_2.jpg" id="S3.F7.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="111" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 7: </span>Results from UNITY 3D simulation</figcaption>
+</figure>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">IV </span><span id="S4.1.1" class="ltx_text ltx_font_smallcaps">Implementations</span>
+</h2>
+
+<section id="S4.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection"><span id="S4.SS1.4.1.1" class="ltx_text">IV-A</span> </span><span id="S4.SS1.5.2" class="ltx_text ltx_font_italic">Simulation of the tracking algorithm in UNITY 3D</span>
+</h3>
+
+<div id="S4.SS1.p1" class="ltx_para">
+<p id="S4.SS1.p1.1" class="ltx_p">A simulation scene consisting of a bright red colored USV in water, with a camera placed on a UAV was developed in UNITY 3D. Fig <a href="#S3.F5" title="Figure 5 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> shows a frame from the UAV’s video feed. The USV is modeled to be a holonomic vehicle, like EMILY, which can only move forward using thrust, and steer using its rudder. Directional arrows Up, Left, and Right are programmed to control the motion of the USV. The camera is able to perform pan/tilt motion relative to the UAV. The algorithm is tested for two test arena tracks, as shown in Fig <a href="#S3.F6" title="Figure 6 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6</span></a>. These test cases are chosen because they maximize the instances when the USV goes out of the ROI. A simulation is run with 20 trials to validate the algorithm. Fig <a href="#S3.F7" title="Figure 7 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">7</span></a> shows the time history of the P value calculated as shown in equation <a href="#S3.E1" title="In III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. The red line in Fig <a href="#S3.F7" title="Figure 7 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">7</span></a> represents the boundary of the ellipse. It can be seen that as the USV moves out of the elliptical boundary, the control algorithm moves the USV inside the ROI by controlling the pan or tilt of the camera.</p>
+</div>
+<figure id="S4.F8" class="ltx_figure"><img src="/html/1710.02932/assets/testarena.jpg" id="S4.F8.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="199" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 8: </span>Arena 1 marked on the ground with black markers.</figcaption>
+</figure>
+</section>
+<section id="S4.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection"><span id="S4.SS2.4.1.1" class="ltx_text">IV-B</span> </span><span id="S4.SS2.5.2" class="ltx_text ltx_font_italic">Laboratory test</span>
+</h3>
+
+<div id="S4.SS2.p1" class="ltx_para">
+<p id="S4.SS2.p1.1" class="ltx_p">A Fotokite Pro is used as the UAV and a bright red object is chosen to substitute for EMILY. Since this algorithm uses only the position data of the object and not the orientation, any red object could be used for the test. Fotokite is chosen as the UAV because the UAV unit is tethered and receives uninterrupted power supply from the groundstation that can be powered from an AC supply, enabling extended flight times. Each unit (UAV and ground-station) has its own dedicated backup power supply from LiPo batteries. The Fotokite Pro has a gimbal equipped visual system installed on its frame. The camera used is a GoPro Hero 4 and it streams 720p HD video of 1920x720 frame size to the ground station and the computer.</p>
+</div>
+<div id="S4.SS2.p2" class="ltx_para">
+<p id="S4.SS2.p2.1" class="ltx_p">To control the pitch or yaw of the UAV’s camera, we use UART serial communication to talk to the groundstation-Fotokite system and send commands to it. Fotokite Pro accepts inputs for pitch or yaw in specific String formats with the angular velocity value in rad/sec appended to the end of the command. For example, the yaw can be controlled by sending ”Yaw 0.2”. The actuator used in the gimbal can move at a maximum of 0.3 rad/sec and so does the yaw control.</p>
+</div>
+<div id="S4.SS2.p3" class="ltx_para">
+<p id="S4.SS2.p3.3" class="ltx_p">The video feed from the camera is fed to the visual localization subsystem that generates the <math id="S4.SS2.p3.1.m1.2" class="ltx_Math" alttext="x,y" display="inline"><semantics id="S4.SS2.p3.1.m1.2a"><mrow id="S4.SS2.p3.1.m1.2.3.2" xref="S4.SS2.p3.1.m1.2.3.1.cmml"><mi id="S4.SS2.p3.1.m1.1.1" xref="S4.SS2.p3.1.m1.1.1.cmml">x</mi><mo id="S4.SS2.p3.1.m1.2.3.2.1" xref="S4.SS2.p3.1.m1.2.3.1.cmml">,</mo><mi id="S4.SS2.p3.1.m1.2.2" xref="S4.SS2.p3.1.m1.2.2.cmml">y</mi></mrow><annotation-xml encoding="MathML-Content" id="S4.SS2.p3.1.m1.2b"><list id="S4.SS2.p3.1.m1.2.3.1.cmml" xref="S4.SS2.p3.1.m1.2.3.2"><ci id="S4.SS2.p3.1.m1.1.1.cmml" xref="S4.SS2.p3.1.m1.1.1">𝑥</ci><ci id="S4.SS2.p3.1.m1.2.2.cmml" xref="S4.SS2.p3.1.m1.2.2">𝑦</ci></list></annotation-xml><annotation encoding="application/x-tex" id="S4.SS2.p3.1.m1.2c">x,y</annotation></semantics></math> coordinates of the tracked object. Using this data, the relative position value <math id="S4.SS2.p3.2.m2.1" class="ltx_Math" alttext="P" display="inline"><semantics id="S4.SS2.p3.2.m2.1a"><mi id="S4.SS2.p3.2.m2.1.1" xref="S4.SS2.p3.2.m2.1.1.cmml">P</mi><annotation-xml encoding="MathML-Content" id="S4.SS2.p3.2.m2.1b"><ci id="S4.SS2.p3.2.m2.1.1.cmml" xref="S4.SS2.p3.2.m2.1.1">𝑃</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.SS2.p3.2.m2.1c">P</annotation></semantics></math> is computed as in equation <a href="#S3.E1" title="In III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. The control acts only when <math id="S4.SS2.p3.3.m3.1" class="ltx_Math" alttext="P" display="inline"><semantics id="S4.SS2.p3.3.m3.1a"><mi id="S4.SS2.p3.3.m3.1.1" xref="S4.SS2.p3.3.m3.1.1.cmml">P</mi><annotation-xml encoding="MathML-Content" id="S4.SS2.p3.3.m3.1b"><ci id="S4.SS2.p3.3.m3.1.1.cmml" xref="S4.SS2.p3.3.m3.1.1">𝑃</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.SS2.p3.3.m3.1c">P</annotation></semantics></math> is greater than 1 and generates yaw and pitch values. The generated yaw and pitch values are sent to the Fotokite ground station via a USART serial interface at a baudrate of 9600 bps. The experimental setup is shown in Fig <a href="#S3.F4" title="Figure 4 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> and Fig <a href="#S4.F9" title="Figure 9 ‣ IV-B Laboratory test ‣ IV Implementations ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">9</span></a> shows the flowchart of the implementation.</p>
+</div>
+<figure id="S4.F9" class="ltx_figure"><img src="/html/1710.02932/assets/x2.jpg" id="S4.F9.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="332" height="153" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 9: </span>Flowchart of the Camera Control Implementation</figcaption>
+</figure>
+</section>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">V </span><span id="S5.1.1" class="ltx_text ltx_font_smallcaps">Trials</span>
+</h2>
+
+<div id="S5.p1" class="ltx_para">
+<p id="S5.p1.1" class="ltx_p">Two test arenas are introduced and used in the testing phase to validate the algorithm. Fig <a href="#S3.F6" title="Figure 6 ‣ III Approach ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6</span></a> shows the two test areans - 1 and 2 and the respective paths. Fig <a href="#S4.F8" title="Figure 8 ‣ IV-A Simulation of the tracking algorithm in UNITY 3D ‣ IV Implementations ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">8</span></a> shows the setup of the arena in the laboratory space. The Fotokite is kept in flight mode at a constant altitude of 6 feet from the ground, with the control algorithm running real-time and a human operator moves the red object along the designated path in the arenas once every trial. The program records the location coordinates of the object, relative distance P from the center of the ROI, pitch and yaw control values over time.</p>
+</div>
+<div id="S5.p2" class="ltx_para">
+<p id="S5.p2.4" class="ltx_p">The time taken for the camera to bring the object of interest back into the ROI is a measure of sensitivity of the algorithm and hardware combined. It is defined as follows:</p>
+<table id="S5.E2" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S5.E2.m1.1" class="ltx_Math" alttext="s=\frac{h}{b}" display="block"><semantics id="S5.E2.m1.1a"><mrow id="S5.E2.m1.1.1" xref="S5.E2.m1.1.1.cmml"><mi id="S5.E2.m1.1.1.2" xref="S5.E2.m1.1.1.2.cmml">s</mi><mo id="S5.E2.m1.1.1.1" xref="S5.E2.m1.1.1.1.cmml">=</mo><mfrac id="S5.E2.m1.1.1.3" xref="S5.E2.m1.1.1.3.cmml"><mi id="S5.E2.m1.1.1.3.2" xref="S5.E2.m1.1.1.3.2.cmml">h</mi><mi id="S5.E2.m1.1.1.3.3" xref="S5.E2.m1.1.1.3.3.cmml">b</mi></mfrac></mrow><annotation-xml encoding="MathML-Content" id="S5.E2.m1.1b"><apply id="S5.E2.m1.1.1.cmml" xref="S5.E2.m1.1.1"><eq id="S5.E2.m1.1.1.1.cmml" xref="S5.E2.m1.1.1.1"></eq><ci id="S5.E2.m1.1.1.2.cmml" xref="S5.E2.m1.1.1.2">𝑠</ci><apply id="S5.E2.m1.1.1.3.cmml" xref="S5.E2.m1.1.1.3"><divide id="S5.E2.m1.1.1.3.1.cmml" xref="S5.E2.m1.1.1.3"></divide><ci id="S5.E2.m1.1.1.3.2.cmml" xref="S5.E2.m1.1.1.3.2">ℎ</ci><ci id="S5.E2.m1.1.1.3.3.cmml" xref="S5.E2.m1.1.1.3.3">𝑏</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S5.E2.m1.1c">s=\frac{h}{b}</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(2)</span></td>
+</tr></tbody>
+</table>
+<p id="S5.p2.3" class="ltx_p">where <math id="S5.p2.1.m1.1" class="ltx_Math" alttext="s" display="inline"><semantics id="S5.p2.1.m1.1a"><mi id="S5.p2.1.m1.1.1" xref="S5.p2.1.m1.1.1.cmml">s</mi><annotation-xml encoding="MathML-Content" id="S5.p2.1.m1.1b"><ci id="S5.p2.1.m1.1.1.cmml" xref="S5.p2.1.m1.1.1">𝑠</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.p2.1.m1.1c">s</annotation></semantics></math> is the sensitivity, <math id="S5.p2.2.m2.1" class="ltx_Math" alttext="h" display="inline"><semantics id="S5.p2.2.m2.1a"><mi id="S5.p2.2.m2.1.1" xref="S5.p2.2.m2.1.1.cmml">h</mi><annotation-xml encoding="MathML-Content" id="S5.p2.2.m2.1b"><ci id="S5.p2.2.m2.1.1.cmml" xref="S5.p2.2.m2.1.1">ℎ</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.p2.2.m2.1c">h</annotation></semantics></math> and <math id="S5.p2.3.m3.1" class="ltx_Math" alttext="b" display="inline"><semantics id="S5.p2.3.m3.1a"><mi id="S5.p2.3.m3.1.1" xref="S5.p2.3.m3.1.1.cmml">b</mi><annotation-xml encoding="MathML-Content" id="S5.p2.3.m3.1b"><ci id="S5.p2.3.m3.1.1.cmml" xref="S5.p2.3.m3.1.1">𝑏</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.p2.3.m3.1c">b</annotation></semantics></math> are the height and breadth respectively of the peaks in the graph shown in Fig <a href="#S5.F10" title="Figure 10 ‣ V-A Arena 1 ‣ V Trials ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">10</span></a></p>
+</div>
+<div id="S5.p3" class="ltx_para">
+<p id="S5.p3.2" class="ltx_p">To obtain a normalized metric independent of the arena chosen, the sensitivity metric shown above is divided by a value <math id="S5.p3.1.m1.1" class="ltx_Math" alttext="n" display="inline"><semantics id="S5.p3.1.m1.1a"><mi id="S5.p3.1.m1.1.1" xref="S5.p3.1.m1.1.1.cmml">n</mi><annotation-xml encoding="MathML-Content" id="S5.p3.1.m1.1b"><ci id="S5.p3.1.m1.1.1.cmml" xref="S5.p3.1.m1.1.1">𝑛</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.p3.1.m1.1c">n</annotation></semantics></math>, where <math id="S5.p3.2.m2.1" class="ltx_Math" alttext="n" display="inline"><semantics id="S5.p3.2.m2.1a"><mi id="S5.p3.2.m2.1.1" xref="S5.p3.2.m2.1.1.cmml">n</mi><annotation-xml encoding="MathML-Content" id="S5.p3.2.m2.1b"><ci id="S5.p3.2.m2.1.1.cmml" xref="S5.p3.2.m2.1.1">𝑛</ci></annotation-xml><annotation encoding="application/x-tex" id="S5.p3.2.m2.1c">n</annotation></semantics></math> refers to the number of times the object goes out of the ROI. In these two test cases, the values of n are 18 and 13 respectively in arena 1 and 2.</p>
+</div>
+<section id="S5.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection"><span id="S5.SS1.4.1.1" class="ltx_text">V-A</span> </span><span id="S5.SS1.5.2" class="ltx_text ltx_font_italic">Arena 1</span>
+</h3>
+
+<div id="S5.SS1.p1" class="ltx_para">
+<p id="S5.SS1.p1.1" class="ltx_p">13 trials were performed on this test arena and all were successful in tracking the red object. The relative distance from the center of ROI in the video feed from the boundary of the ellipse is recorded and is termed here as P. Plotting the values of P over time, it can be seen that the control is activated for the pitch or yaw when P exceeds 1.0 (as explained in Sec. III). The Fig <a href="#S5.F10" title="Figure 10 ‣ V-A Arena 1 ‣ V Trials ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">10</span></a> demonstrates this for a particular trial in Arena 1.</p>
+</div>
+<figure id="S5.F10" class="ltx_figure"><img src="/html/1710.02932/assets/1.jpg" id="S5.F10.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="189" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 10: </span>Time history of recorded data - Arena 1</figcaption>
+</figure>
+<div id="S5.SS1.p2" class="ltx_para">
+<p id="S5.SS1.p2.1" class="ltx_p">Fig <a href="#S5.F11" title="Figure 11 ‣ V-A Arena 1 ‣ V Trials ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">11</span></a> shows the control expenditure of pitch and yaw for the same test case. It can be seen that pitch and yaw motions are almost always mutually exclusive when the object moves out of the ROI, thereby reducing the number of camera movements in tracking the object.</p>
+</div>
+<figure id="S5.F11" class="ltx_figure"><img src="/html/1710.02932/assets/12.jpg" id="S5.F11.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="189" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 11: </span>Pitch/Yaw control - Arena 1</figcaption>
+</figure>
+<div id="S5.SS1.p3" class="ltx_para">
+<p id="S5.SS1.p3.1" class="ltx_p">The mean sensitivities for the 13 trials of Arena 1 is calculated to be 0.6045.</p>
+</div>
+</section>
+<section id="S5.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection"><span id="S5.SS2.4.1.1" class="ltx_text">V-B</span> </span><span id="S5.SS2.5.2" class="ltx_text ltx_font_italic">Arena 2</span>
+</h3>
+
+<div id="S5.SS2.p1" class="ltx_para">
+<p id="S5.SS2.p1.1" class="ltx_p">For the second test case 17 trials were performed with 100<math id="S5.SS2.p1.1.m1.1" class="ltx_Math" alttext="\%" display="inline"><semantics id="S5.SS2.p1.1.m1.1a"><mo id="S5.SS2.p1.1.m1.1.1" xref="S5.SS2.p1.1.m1.1.1.cmml">%</mo><annotation-xml encoding="MathML-Content" id="S5.SS2.p1.1.m1.1b"><csymbol cd="latexml" id="S5.SS2.p1.1.m1.1.1.cmml" xref="S5.SS2.p1.1.m1.1.1">percent</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.SS2.p1.1.m1.1c">\%</annotation></semantics></math> success rate in tracking the red object, as in none of the trials the camera lost track of the object. Fig <a href="#S5.F12" title="Figure 12 ‣ V-B Arena 2 ‣ V Trials ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">12</span></a> demonstrates this for a particular trial in Arena 2 as it can be seen that when the value of P becomes greater than 1, the controller acts and tries to bring the object inside/on the ellipse.</p>
+</div>
+<figure id="S5.F12" class="ltx_figure"><img src="/html/1710.02932/assets/21.jpg" id="S5.F12.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="189" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 12: </span>Time history of recorded data - Arena 2</figcaption>
+</figure>
+<div id="S5.SS2.p2" class="ltx_para">
+<p id="S5.SS2.p2.1" class="ltx_p">The mean sensitivities for the 17 trials of Arena 2 is obtained to be 0.4536 and the normalized sensitivity value for the two arenas is 0.034. The sensitivities are low due to the relatively low value of the fixed pitch and yaw gimbal velocities of 0.3 rad/s in the Fotokite UAV, but can be significantly ramped up or stepped down by using a different setup according to the requirement.</p>
+</div>
+<div id="S5.SS2.p3" class="ltx_para">
+<p id="S5.SS2.p3.1" class="ltx_p">Fig <a href="#S5.F13" title="Figure 13 ‣ V-B Arena 2 ‣ V Trials ‣ Visual Servoing of Unmanned Surface Vehicle from Small Tethered Unmanned Aerial Vehicle" class="ltx_ref"><span class="ltx_text ltx_ref_tag">13</span></a> shows the control expenditure of the pitch and yaw for the same test case.</p>
+</div>
+<figure id="S5.F13" class="ltx_figure"><img src="/html/1710.02932/assets/22.jpg" id="S5.F13.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="299" height="189" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 13: </span>Pitch/Yaw control - Arena 2</figcaption>
+</figure>
+</section>
+</section>
+<section id="S6" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">VI </span><span id="S6.1.1" class="ltx_text ltx_font_smallcaps">Conclusion</span>
+</h2>
+
+<div id="S6.p1" class="ltx_para">
+<p id="S6.p1.1" class="ltx_p">A motor schema with minimum camera movements for visual servoing of a USV from UAV was developed and tested. Metrics and graphs from repeated laboratory trials as well as computer simulation trials for the two test arenas have confirmed the viability and success rate of the algorithm in tracking the USV with minimal camera movement. In both the test arenas the success rate in tracking the object was 100<math id="S6.p1.1.m1.1" class="ltx_Math" alttext="\%" display="inline"><semantics id="S6.p1.1.m1.1a"><mo id="S6.p1.1.m1.1.1" xref="S6.p1.1.m1.1.1.cmml">%</mo><annotation-xml encoding="MathML-Content" id="S6.p1.1.m1.1b"><csymbol cd="latexml" id="S6.p1.1.m1.1.1.cmml" xref="S6.p1.1.m1.1.1">percent</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S6.p1.1.m1.1c">\%</annotation></semantics></math> with a normalized sensitivity value of 0.034. This work shows the possibility of eliminating the marine casuality responder’s work in tracking the USV from the UAV’s camera in a multi-robot USV-UAV team by efficiently automating the process.</p>
+</div>
+</section>
+<section id="S7" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">VII </span><span id="S7.1.1" class="ltx_text ltx_font_smallcaps">Future Work</span>
+</h2>
+
+<div id="S7.p1" class="ltx_para">
+<p id="S7.p1.1" class="ltx_p">In this research, the control algorithm was tested in the laboratory (closed environment) and computer simulation only. This needs to be taken outdoors and tested in the field with USV on water bodies and UAV on open atmosphere.</p>
+</div>
+<div id="S7.p2" class="ltx_para">
+<p id="S7.p2.1" class="ltx_p">Also, an optimal control method can be formulated such that it controls both pan and tilt simultaneously to bring the USV into ROI with minimal control energy as constraints.</p>
+</div>
+</section>
+<section id="Sx1" class="ltx_section">
+<h2 class="ltx_title ltx_font_smallcaps ltx_title_section">ACKNOWLEDGMENT</h2>
+
+<div id="Sx1.p1" class="ltx_para">
+<p id="Sx1.p1.1" class="ltx_p">We would like to thank Xuesu Xiao, Tim Woodbury, and other members of the EMILY project for providing us with the Fotokite UAV and other timely help during the testing phase of this research.</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[1]</span>
+<span class="ltx_bibblock">Syrian Refugee Crisis; http://syrianrefugees.eu/
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[2]</span>
+<span class="ltx_bibblock"> Murphy, Robin R., et al., ”Use of remotely operated marine vehicles at Minamisanriku and Rikuzentakata Japan for disaster recovery.” Safety, Security, and Rescue Robotics (SSRR), 2011 IEEE International Symposium on. IEEE, 2011.
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[3]</span>
+<span class="ltx_bibblock">Murphy, Robin R., et al., ”Cooperative use of unmanned sea surface and micro aerial vehicles at Hurricane Wilma.” Journal of Field Robotics 25.3 (2008): 164-180.
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[4]</span>
+<span class="ltx_bibblock">Murphy, Robin, et al., ”Cooperative damage inspection with unmanned surface vehicle and micro unmanned aerial vehicle at hurricane wilma.” Intelligent Robots and Systems, 2006 IEEE/RSJ International Conference on. IEEE, 2006.
+
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[5]</span>
+<span class="ltx_bibblock">Steimle, Eric T., et al. ”Unmanned marine vehicle use at Hurricanes Wilma and Ike.” OCEANS 2009, MTS/IEEE Biloxi-Marine Technology for Our Future: Global and Local Challenges. IEEE, 2009.
+
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[6]</span>
+<span class="ltx_bibblock">Murphy, Robin R., et al. ”Marine heterogeneous multirobot systems at the great Eastern Japan Tsunami recovery.” Journal of Field Robotics 29.5 (2012): 819-831.
+
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[7]</span>
+<span class="ltx_bibblock">Company Website, Hydronalix; https://hydronalix.com/emily/
+
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[8]</span>
+<span class="ltx_bibblock"> Dufek, Jan, and Robin Murphy. ”Visual pose estimation of USV from UAV to assist drowning victims recovery.” Safety, Security, and Rescue Robotics (SSRR), 2016 IEEE International Symposium on. IEEE, 2016.
+
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[9]</span>
+<span class="ltx_bibblock">Doyle, Daniel D., Alan L. Jennings, and Jonathan T. Black. ”Optical flow background estimation for real-time pan/tilt camera object tracking.” Measurement 48 (2014): 195-207
+
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[10]</span>
+<span class="ltx_bibblock">Zou, Hairong, et al. ”A pan-tilt camera control system of UAV visual tracking based on biomimetic eye.” Robotics and Biomimetics, 2006. ROBIO’06. IEEE International Conference on. IEEE, 2006.
+
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[11]</span>
+<span class="ltx_bibblock">Hongkai Chen, Xiaoguang Zhao and Min Tan, ”A novel pan-tilt camera control approach for visual tracking,” Proceeding of the 11th World Congress on Intelligent Control and Automation, Shenyang, 2014, pp. 2860-2865.
+doi: 10.1109/WCICA.2014.7053182
+
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[12]</span>
+<span class="ltx_bibblock">Kang, Sangkyu, et al. ”Real-time video tracking using PTZ cameras.” Quality Control by Artificial Vision. International Society for Optics and Photonics, 2003.
+
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[13]</span>
+<span class="ltx_bibblock"> Sin, YongChol, MyongSong Choe, and GyongIl Ryang. ”Pan-Tilt Camera and PIR Sensor Fusion Based Moving Object Detection for Mobile Security Robots.” arXiv preprint arXiv:1510.07390 (2015).
+Moving Object Detection for Mobile Security Robots by YongChol Sin, MyongSong Choe, GyongIl Ryang
+
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[14]</span>
+<span class="ltx_bibblock"> INPROCEEDINGS, X. Xiao and J. Dufek and T. Woodbury and R. Murphy. ”UAV assisted USV visual navigation for marine mass casualty incident response”, 2017 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)
+
+</span>
+</li>
+</ul>
+</section>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02931" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02932" class="ar5iv-text-button ar5iv-severity-ok">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02932">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02932" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02933" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Wed Mar  6 07:49:34 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

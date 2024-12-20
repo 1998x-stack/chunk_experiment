@@ -1,0 +1,1176 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02310] Detecting the Moment of Completion: Temporal Models for Localising Action Completion</title><meta property="og:description" content="Action completion detection is the problem of modelling the action’s progression towards localising the moment of completion - when the action’s goal is confidently considered achieved. In this work, we assess the abil…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Detecting the Moment of Completion: Temporal Models for Localising Action Completion">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="Detecting the Moment of Completion: Temporal Models for Localising Action Completion">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02310">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02310">
+
+<!--Generated on Wed Mar 20 02:15:12 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="keywords" lang="en" content="action completion,  action recognition/detection,  Convolutional Neural Network,  Long-Short Term Memory,  Hidden Markov Model">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line"><span id="id1" class="ltx_note ltx_role_institutetext"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_note_type">institutetext: </span>Computer Science Department,
+University of Bristol,
+Bristol, BS8 1UB, UK
+<br class="ltx_break"><span id="id1.1" class="ltx_note ltx_role_email"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_note_type">email: </span>farnoosh.heidarivincheh@bristol.ac.uk</span></span></span>
+</span></span></span>
+<h1 class="ltx_title ltx_title_document">Detecting the Moment of Completion:
+<br class="ltx_break">Temporal Models for Localising Action Completion</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Farnoosh Heidarivincheh 
+</span></span>
+<span class="ltx_author_before">  </span><span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Majid Mirmehdi
+</span></span>
+<span class="ltx_author_before">  </span><span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Dima Damen
+</span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id1.1a" class="ltx_p">Action completion detection is the problem of modelling the action’s progression towards localising the <span id="id1.1a.1" class="ltx_text ltx_font_italic">moment</span> of completion - when the action’s goal is confidently considered achieved. In this work, we assess the ability of two temporal models, namely Hidden Markov Models (HMM) and Long-Short Term Memory (LSTM), to localise completion for six object interactions: <span id="id1.1a.2" class="ltx_text ltx_font_italic">switch, plug, open, pull, pick</span> and <span id="id1.1a.3" class="ltx_text ltx_font_italic">drink</span>. We use a supervised approach, where annotations of <span id="id1.1a.4" class="ltx_text ltx_font_italic">pre-completion</span> and <span id="id1.1a.5" class="ltx_text ltx_font_italic">post-completion</span> frames are available per action, and fine-tuned CNN features are used to train temporal models.
+Tested on the Action-Completion-2016 dataset from <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>, we detect completion within 10 frames of annotations for <math id="id1.1.m1.1" class="ltx_Math" alttext="\sim" display="inline"><semantics id="id1.1.m1.1a"><mo id="id1.1.m1.1.1" xref="id1.1.m1.1.1.cmml">∼</mo><annotation-xml encoding="MathML-Content" id="id1.1.m1.1b"><csymbol cd="latexml" id="id1.1.m1.1.1.cmml" xref="id1.1.m1.1.1">similar-to</csymbol></annotation-xml><annotation encoding="application/x-tex" id="id1.1.m1.1c">\sim</annotation></semantics></math>75% of completed action sequences using both temporal models. Results show that fine-tuned CNN features outperform hand-crafted features for localisation, and that observing incomplete instances is necessary when incomplete sequences are also present in the test set.</p>
+</div>
+<div class="ltx_keywords">
+<h6 class="ltx_title ltx_title_keywords">Keywords: </h6>action completion, action recognition/detection, Convolutional Neural Network, Long-Short Term Memory, Hidden Markov Model
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">An action is defined, based on the Oxford dictionary, as <span id="S1.p1.1.1" class="ltx_text ltx_font_italic">the fact or process of doing something, typically to achieve an aim</span>.
+Previous works on action recognition from visual data have overlooked assessing whether the action’s <span id="S1.p1.1.2" class="ltx_text ltx_font_italic">aim</span> has actually been achieved, rather than merely attempted.
+Similarly, action localisation approaches detect the start and the end of an action’s attempt, without assessing whether the <span id="S1.p1.1.3" class="ltx_text ltx_font_italic">aim</span> has been successfully achieved.
+The notion of assessing completion was introduced in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>
+where the performance of a variety of hand-crafted RGB-D features to distinguish between complete and incomplete sequences was reported, using a binary classifier which was learnt per action.
+However, the approach in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite> considered the sequence as a whole and classified it as either complete or incomplete.
+In this work, we
+closely examine the progression of the action and attempt to locate the <span id="S1.p1.1.4" class="ltx_text ltx_font_italic">moment</span> in time when the action can indeed be considered completed. Temporal localisation of the moment of completion is a step towards an online approach that can detect completion once the action’s goal has been achieved.
+Completion could prompt reminders or guidance for the next action.
+For example, when preparing a food recipe, the user could be notified to wash the vegetables once these have been picked up.</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">Thus, we define the problem of ‘detecting the moment of completion’ as detecting the frame that separates <span id="S1.p2.1.1" class="ltx_text ltx_font_italic">pre-completion</span> from <span id="S1.p2.1.2" class="ltx_text ltx_font_italic">post-completion</span> per sequence, when present.
+Note that the ‘moment of completion’ is different from the typical ‘start’/‘end’ frames in action localisation. The former focuses on the action’s goal, while the latter focuses on the start and conclusion of any motion of relevance to the action.
+Consider the action ‘drink’; the action is completed when the subject consumes some of the beverage from a cup or glass. Traditionally, localisation approaches locate the first movement of the hand as it lifts the cup up to the mouth, all the way to putting the cup down. Even if drinking does not actually take place, the start and end of the hand motion is localised. In contrast, the moment of completion is as soon as the subject actually drinks the beverage. The moment of completion cannot be localised when the action’s goal has not been completed.</p>
+</div>
+<figure id="S1.F1" class="ltx_figure"><img src="/html/1710.02310/assets/x1.png" id="S1.F1.1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="461" height="204" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Complete and incomplete sequences for action <span id="S1.F1.5.1" class="ltx_text ltx_font_italic">switch</span> are performed similarly up to the completion moment, after which an observer would confidently confirm completion. In this example, completion occurs as soon as the light is off. The <span id="S1.F1.6.2" class="ltx_text ltx_font_italic">pre</span>- and <span id="S1.F1.7.3" class="ltx_text ltx_font_italic">post-completion</span> frames are shown in orange and purple bordering, respectively.</figcaption>
+</figure>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">In detecting the moment of completion, we take a supervised approach, where we observe complete and incomplete sequences for the same action.
+Up to the moment of completion, both complete and incomplete sequences would be similar, and an observer cannot confidently say if the action is going to be completed. The sequences differ after the completion takes place.
+Fig. <a href="#S1.F1" title="Figure 1 ‣ 1 Introduction ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> illustrates this notion using two sequences of action <span id="S1.p3.1.1" class="ltx_text ltx_font_italic">switch</span> from the dataset in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>. In this example, our approach detects the moment the light is observed to be switched off, as the moment of completion - whereas in <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite> the aim was to label the entire sequence as complete/incomplete.
+Completing an action makes changes in the scene which can be considered as visual cues for detecting completion. We propose an approach for completion detection in which these learnt signatures
+are trained using Convolutional Neural Network (CNN) features along with a temporal model to encode the action’s evolution, similar to <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib2" title="" class="ltx_ref">2</a>, <a href="#bib.bib3" title="" class="ltx_ref">3</a>, <a href="#bib.bib4" title="" class="ltx_ref">4</a>]</cite>.
+This approach is particularly useful for action/activity detection tasks, where the classification per frame depends not only on the observations of the current frame but also on the information passed from previous frames.
+Hidden Markov Models (HMMs) and Long-Short Temporal Memory models (LSTMs) are two temporal models, suitable for dealing with sequential input data and capable of handling frame by frame analysis of an action sequence.
+In this work, we compare HMM and LSTM for completion detection on six action classes.</p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p">The remainder of this paper is organised as follows: related work in Sec. <a href="#S2" title="2 Related Work ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>, the proposed method and features used in Sec. <a href="#S3" title="3 Proposed Method for Detecting Completion ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>, results in Sec. <a href="#S4" title="4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> and conclusion and future work in Sec. <a href="#S5" title="5 Conclusion and Future Work ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a>.</p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>Related Work</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">We now present a brief review of related works in action recognition/detection and discuss which methods could be applied for completion detection.</p>
+</div>
+<div id="S2.p2" class="ltx_para">
+<p id="S2.p2.1" class="ltx_p">Remarkable results for action recognition/detection have been achieved through extracting robust features, encoding them, then feeding them into classification methods <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib5" title="" class="ltx_ref">5</a>]</cite>. For example,  <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib6" title="" class="ltx_ref">6</a>, <a href="#bib.bib7" title="" class="ltx_ref">7</a>, <a href="#bib.bib8" title="" class="ltx_ref">8</a>, <a href="#bib.bib9" title="" class="ltx_ref">9</a>, <a href="#bib.bib10" title="" class="ltx_ref">10</a>, <a href="#bib.bib11" title="" class="ltx_ref">11</a>, <a href="#bib.bib12" title="" class="ltx_ref">12</a>, <a href="#bib.bib13" title="" class="ltx_ref">13</a>]</cite> extract space-time features from interest points or dense trajectories, encode them using BoWs or FVs, and then use SVM to recognise the actions. Such approaches do not model the temporal dynamics of actions explicitly, thus cannot provide per-frame detection.
+Recently, CNN features of spatial and temporal information have been used for action recognition/detection using dual streams <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib14" title="" class="ltx_ref">14</a>, <a href="#bib.bib15" title="" class="ltx_ref">15</a>]</cite> or 3D convolutions <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib16" title="" class="ltx_ref">16</a>, <a href="#bib.bib17" title="" class="ltx_ref">17</a>]</cite>.
+A seminal work of Wang <span id="S2.p2.1.1" class="ltx_text ltx_font_italic">et al.</span> <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib13" title="" class="ltx_ref">13</a>]</cite> encodes the transformations an action introduces to the scene from precondition into effect.
+Although their approach is similar to ours, focussing on the changes that actions make into the scene, they perform action recognition without an explicit temporal encoding, which makes the approach unsuitable for frame level analysis or detecting the moment of completion.</p>
+</div>
+<div id="S2.p3" class="ltx_para">
+<p id="S2.p3.1" class="ltx_p">Many recent works on action recognition/detection, such as <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib2" title="" class="ltx_ref">2</a>, <a href="#bib.bib3" title="" class="ltx_ref">3</a>, <a href="#bib.bib4" title="" class="ltx_ref">4</a>, <a href="#bib.bib18" title="" class="ltx_ref">18</a>, <a href="#bib.bib19" title="" class="ltx_ref">19</a>]</cite>, take advantage of CNN models to extract features from their last fully-connected layers in order to have a good representation of spatial information per frame. Then, they also train a temporal model on top of the extracted features to encode the dynamics of the action. This approach suits our completion detection task in two ways. First, extracting features from the CNN helps to encode the appearance changes in the scene. Second, it uses a temporal model and can provide per-frame decisions, while considering the context.
+Two temporal models widely applied for action recognition/detection are HMMs and LSTMs.
+HMM and its variants have been widely used in action recognition/detection to model temporal dynamics of actions <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib20" title="" class="ltx_ref">20</a>, <a href="#bib.bib21" title="" class="ltx_ref">21</a>, <a href="#bib.bib22" title="" class="ltx_ref">22</a>, <a href="#bib.bib23" title="" class="ltx_ref">23</a>, <a href="#bib.bib24" title="" class="ltx_ref">24</a>, <a href="#bib.bib25" title="" class="ltx_ref">25</a>]</cite>. For this purpose, an HMM model is usually trained per desired class. Then, the likelihood of a test sequence to belong to each model is evaluated and classification is performed by specifying the model which produces the maximum likelihood for the sequence.
+To detect completion, we similarly learn a single supervised HMM model per action, with two hidden states <span id="S2.p3.1.1" class="ltx_text ltx_font_italic">pre-completion</span>/<span id="S2.p3.1.2" class="ltx_text ltx_font_italic">post-completion</span>,
+then use the Viterbi algorithm to find the most likely label sequence.
+LSTM, as another temporal model designed to deal with sequential information, is able to capture long-term dependencies in the input data, using the memory inside each cell.
+In many recent works, LSTMs have achieved promising results for the task of action recognition/detection, such as <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib26" title="" class="ltx_ref">26</a>, <a href="#bib.bib18" title="" class="ltx_ref">18</a>, <a href="#bib.bib27" title="" class="ltx_ref">27</a>, <a href="#bib.bib28" title="" class="ltx_ref">28</a>, <a href="#bib.bib2" title="" class="ltx_ref">2</a>, <a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite>.</p>
+</div>
+<div id="S2.p4" class="ltx_para">
+<p id="S2.p4.1" class="ltx_p">The closest work to ours, <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>, extracts skeletal features from depth data which are temporally encoded by Fourier temporal pyramid for recognising sequence-level completion. As they use a sequence-level representation, the method is not suitable for per-frame decisions.</p>
+</div>
+<div id="S2.p5" class="ltx_para">
+<p id="S2.p5.1" class="ltx_p">In this work, we go beyond sequence-level completion to, (i) achieve frame-level detection of the <span id="S2.p5.1.1" class="ltx_text ltx_font_italic">moment</span> of completion, (ii) show fine-tuned appearance features outperform pre-trained and previously used skeletal features for completion detection, (iii) report results on six actions from the previously introduced action completion dataset <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>, and (iv) compare per-action HMM and LSTM temporal models. Using fine-tuned appearance features, we detect the moment of completion for six different actions - within 10 frames - for 75.1% and 74.6% of the sequences by HMM and LSTM models, respectively.</p>
+</div>
+<figure id="S2.F2" class="ltx_figure"><img src="/html/1710.02310/assets/x2.png" id="S2.F2.1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="461" height="142" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>Overall scheme of the proposed method for completion detection (of action <span id="S2.F2.7.1" class="ltx_text ltx_font_italic">plug</span>):: CNN features are extracted per frame and fed into the temporal model (LSTM or HMM). The outputs <span id="S2.F2.8.2" class="ltx_text ltx_font_italic">pre</span> and <span id="S2.F2.9.3" class="ltx_text ltx_font_italic">post</span> represent <span id="S2.F2.10.4" class="ltx_text ltx_font_italic">pre-</span> and <span id="S2.F2.11.5" class="ltx_text ltx_font_italic">post-completion</span> labels, respectively.</figcaption>
+</figure>
+<figure id="S2.F3" class="ltx_figure"><img src="/html/1710.02310/assets/x3.png" id="S2.F3.1.g1" class="ltx_graphics ltx_centering ltx_img_square" width="184" height="172" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>An HMM model for completion detection encodes that the model starts at <span id="S2.F3.5.1" class="ltx_text ltx_font_italic">pre-</span> state, and cannot transiting back to <span id="S2.F3.6.2" class="ltx_text ltx_font_italic">pre-</span> state once at <span id="S2.F3.7.3" class="ltx_text ltx_font_italic">post-</span> state.</figcaption>
+</figure>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>Proposed Method for Detecting Completion</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">To present our proposal for detecting action completion, we first consider the underlying assumptions of the model, and then discuss how we use per-frame features and train two temporal models, HMMs and LSTMs. We make three reasonable assumptions, namely;</p>
+<ul id="S3.I1" class="ltx_itemize">
+<li id="S3.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S3.I1.i1.p1" class="ltx_para">
+<p id="S3.I1.i1.p1.1" class="ltx_p"><span id="S3.I1.i1.p1.1.1" class="ltx_text ltx_font_bold">Temporally Segmented Sequences:</span> We assume sequences include a single instance of the action that has not been completed at the beginning of the sequence, and the action is not repeated within the sequence. Accordingly, we only need to detect a single moment of completion per sequence, if at all. The sequences do not include cases where the subject undertakes steps to undo the completion, e.g. a person places the cup down after picking it up.</p>
+</div>
+</li>
+<li id="S3.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S3.I1.i2.p1" class="ltx_para">
+<p id="S3.I1.i2.p1.1" class="ltx_p"><span id="S3.I1.i2.p1.1.1" class="ltx_text ltx_font_bold">Momentary Completion</span>: we assume completion could be detected using a single frame in the sequence. This is typically the first frame where a human observer would be sufficiently confident that the goal has been achieved. All frames prior to the completion localisation are <span id="S3.I1.i2.p1.1.2" class="ltx_text ltx_font_italic">pre-completion</span> and all frames from the completion moment onwards indicate <span id="S3.I1.i2.p1.1.3" class="ltx_text ltx_font_italic">post-completion</span>. For an incomplete sequence, all the frames would be labelled as <span id="S3.I1.i2.p1.1.4" class="ltx_text ltx_font_italic">pre-completion</span>.</p>
+</div>
+</li>
+<li id="S3.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S3.I1.i3.p1" class="ltx_para">
+<p id="S3.I1.i3.p1.1" class="ltx_p"><span id="S3.I1.i3.p1.1.1" class="ltx_text ltx_font_bold">Uniform Prior for Completion:</span> in a Bayesian setting one might wish to consider the prior probability of an action being completed. Consider that the prior probability for a person to forget to switch off the light in their home is 0.01. A method that thus assumes completion for every sequence will have a high accuracy but is nevertheless not suitable for completion detection. Thus, we assume a uniform prior (i.e. 50-50 chance) for an action to be completed.</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S3.p2" class="ltx_para">
+<p id="S3.p2.1" class="ltx_p">Fig. <a href="#S2.F2" title="Figure 2 ‣ 2 Related Work ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> illustrates the overall scheme of the proposed method,
+which relies on per-frame features, optimised to classify <span id="S3.p2.1.1" class="ltx_text ltx_font_italic">pre-completion</span> and <span id="S3.p2.1.2" class="ltx_text ltx_font_italic">post-completion</span> frames.
+We test hand-crafted, pre-trained and fine-tuned CNN features for per-frame representations. For hand-crafted features, we evaluate the best skeletal feature from <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>, namely Joint-Velocities (JV), as well as the best raw-depth feature, namely Local Occupancy Patterns (LOP) <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib29" title="" class="ltx_ref">29</a>]</cite>. We also test hand-crafted RGB features, namely Histogram of Oriented Gradients (HOG). For CNN features, we use the “very deep VGG-16-layer” model <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib30" title="" class="ltx_ref">30</a>]</cite> trained on UCF101 action dataset <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib14" title="" class="ltx_ref">14</a>]</cite>, as pre-trained features.
+We also fine-tune these models per action for two classes: <span id="S3.p2.1.3" class="ltx_text ltx_font_italic">pre-completion</span> and <span id="S3.p2.1.4" class="ltx_text ltx_font_italic">post-completion</span>, using leave-one-subject-out.
+Features are then extracted from the <span id="S3.p2.1.5" class="ltx_text ltx_font_italic">fc7</span> layer for both the pre-trained and fine-tuned CNNs.</p>
+</div>
+<div id="S3.p3" class="ltx_para">
+<p id="S3.p3.1" class="ltx_p">Completion detection is then trained as a temporal model and evaluated using two temporal approaches:</p>
+</div>
+<div id="S3.p4" class="ltx_para ltx_noindent">
+<p id="S3.p4.1" class="ltx_p"><span id="S3.p4.1.1" class="ltx_text ltx_font_bold">HMM:</span> A supervised HMM model with two hidden states is trained per action. Fig. <a href="#S2.F3" title="Figure 3 ‣ 2 Related Work ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a> illustrates this model. The parameters of this HMM, i.e. initial and transition probabilities, in addition to covariance matrices and mean vectors of two multivariate Gaussians (for the two states of <span id="S3.p4.1.2" class="ltx_text ltx_font_italic">pre-</span> and <span id="S3.p4.1.3" class="ltx_text ltx_font_italic">post-completion</span>) are computed from the training data.
+Note that, due to the assumptions made for completion detection, in this supervised HMM model, the initial probabilities for <span id="S3.p4.1.4" class="ltx_text ltx_font_italic">pre-</span> and <span id="S3.p4.1.5" class="ltx_text ltx_font_italic">post- completion</span> states are learned from training data to be 1 and 0, respectively.
+Also, the probability of transitioning from <span id="S3.p4.1.6" class="ltx_text ltx_font_italic">post-completion</span> state to <span id="S3.p4.1.7" class="ltx_text ltx_font_italic">pre-completion</span> state is learned to be 0, as the sequence remains in <span id="S3.p4.1.8" class="ltx_text ltx_font_italic">post-completion</span> state once it transitions to it.</p>
+</div>
+<div id="S3.p5" class="ltx_para ltx_noindent">
+<p id="S3.p5.1" class="ltx_p"><span id="S3.p5.1.1" class="ltx_text ltx_font_bold">LSTM:</span> The LSTM model is also trained per action. For this purpose, the frames’ CNN features, along with the frames’ labels (<span id="S3.p5.1.2" class="ltx_text ltx_font_italic">pre-</span> or <span id="S3.p5.1.3" class="ltx_text ltx_font_italic">post-completion</span>), are fed into an LSTM network. The LSTM is optimised using Stochastic Gradient Descent with back-propagation. Also, the labels per frame are predicted using a <span id="S3.p5.1.4" class="ltx_text ltx_font_italic">softmax</span> layer on top of the LSTM hidden layer. The details of the LSTM architecture are presented in Sec <a href="#S4" title="4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>.</p>
+</div>
+<div id="S3.p6" class="ltx_para">
+<p id="S3.p6.1" class="ltx_p">In presenting results, we also evaluate the need for training using incomplete sequences per action. For these results, we only train on labeled complete sequences. This aims to assess when completion detection requires, or benefits from, observing incompletion.</p>
+</div>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>Experimental Results</h2>
+
+<div id="S4.p1" class="ltx_para ltx_noindent">
+<p id="S4.p1.1" class="ltx_p"><span id="S4.p1.1.1" class="ltx_text ltx_font_bold">Dataset and Completion Annotation:</span>
+We use the RGBD-AC dataset from <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>,
+which contains both complete and incomplete sequences for the same action. It contains 414 complete and incomplete sequences of six actions: <span id="S4.p1.1.2" class="ltx_text ltx_font_italic">switch, plug, open, pull, pick</span> and <span id="S4.p1.1.3" class="ltx_text ltx_font_italic">drink</span>.
+However, the annotations provided by the dataset are sequence-level annotations. Thus, we re-annotate each sequence in the dataset for the moment of completion.
+An annotation corresponding to the completion moment is assigned to every complete sequence by one human observer.</p>
+</div>
+<div id="S4.p2" class="ltx_para ltx_noindent">
+<p id="S4.p2.2" class="ltx_p"><span id="S4.p2.2.1" class="ltx_text ltx_font_bold">Implementation Details:</span> As noted earlier, we use a pre-trained spatial stream CNN from <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib14" title="" class="ltx_ref">14</a>]</cite> which uses the VGG-16 architecture <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib30" title="" class="ltx_ref">30</a>]</cite>, fine-tuned on UCF101 action dataset <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib31" title="" class="ltx_ref">31</a>]</cite>. We perform Leave-One-Person-Out cross validation on the 8 subjects in the dataset.
+For fine-tuning, 15 epochs are performed, and the learning rate is started at <math id="S4.p2.1.m1.1" class="ltx_Math" alttext="10^{-3}" display="inline"><semantics id="S4.p2.1.m1.1a"><msup id="S4.p2.1.m1.1.1" xref="S4.p2.1.m1.1.1.cmml"><mn id="S4.p2.1.m1.1.1.2" xref="S4.p2.1.m1.1.1.2.cmml">10</mn><mrow id="S4.p2.1.m1.1.1.3" xref="S4.p2.1.m1.1.1.3.cmml"><mo id="S4.p2.1.m1.1.1.3a" xref="S4.p2.1.m1.1.1.3.cmml">−</mo><mn id="S4.p2.1.m1.1.1.3.2" xref="S4.p2.1.m1.1.1.3.2.cmml">3</mn></mrow></msup><annotation-xml encoding="MathML-Content" id="S4.p2.1.m1.1b"><apply id="S4.p2.1.m1.1.1.cmml" xref="S4.p2.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p2.1.m1.1.1.1.cmml" xref="S4.p2.1.m1.1.1">superscript</csymbol><cn type="integer" id="S4.p2.1.m1.1.1.2.cmml" xref="S4.p2.1.m1.1.1.2">10</cn><apply id="S4.p2.1.m1.1.1.3.cmml" xref="S4.p2.1.m1.1.1.3"><minus id="S4.p2.1.m1.1.1.3.1.cmml" xref="S4.p2.1.m1.1.1.3"></minus><cn type="integer" id="S4.p2.1.m1.1.1.3.2.cmml" xref="S4.p2.1.m1.1.1.3.2">3</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p2.1.m1.1c">10^{-3}</annotation></semantics></math>, divided by 10 at epochs 3 and 5, and fixed thereafter.
+All the other hyper-parameters are set similar to <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib15" title="" class="ltx_ref">15</a>]</cite>.
+The 4096-dimension <math id="S4.p2.2.m2.1" class="ltx_Math" alttext="fc7" display="inline"><semantics id="S4.p2.2.m2.1a"><mrow id="S4.p2.2.m2.1.1" xref="S4.p2.2.m2.1.1.cmml"><mi id="S4.p2.2.m2.1.1.2" xref="S4.p2.2.m2.1.1.2.cmml">f</mi><mo lspace="0em" rspace="0em" id="S4.p2.2.m2.1.1.1" xref="S4.p2.2.m2.1.1.1.cmml">​</mo><mi id="S4.p2.2.m2.1.1.3" xref="S4.p2.2.m2.1.1.3.cmml">c</mi><mo lspace="0em" rspace="0em" id="S4.p2.2.m2.1.1.1a" xref="S4.p2.2.m2.1.1.1.cmml">​</mo><mn id="S4.p2.2.m2.1.1.4" xref="S4.p2.2.m2.1.1.4.cmml">7</mn></mrow><annotation-xml encoding="MathML-Content" id="S4.p2.2.m2.1b"><apply id="S4.p2.2.m2.1.1.cmml" xref="S4.p2.2.m2.1.1"><times id="S4.p2.2.m2.1.1.1.cmml" xref="S4.p2.2.m2.1.1.1"></times><ci id="S4.p2.2.m2.1.1.2.cmml" xref="S4.p2.2.m2.1.1.2">𝑓</ci><ci id="S4.p2.2.m2.1.1.3.cmml" xref="S4.p2.2.m2.1.1.3">𝑐</ci><cn type="integer" id="S4.p2.2.m2.1.1.4.cmml" xref="S4.p2.2.m2.1.1.4">7</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p2.2.m2.1c">fc7</annotation></semantics></math> features are extracted per frame.</p>
+</div>
+<div id="S4.p3" class="ltx_para">
+<p id="S4.p3.2" class="ltx_p">We test the full dimension as well as applying dimensionality reduction via PCA, as this proves essential for training the HMM.
+Without applying PCA, the HMM remains in the <span id="S4.p3.2.1" class="ltx_text ltx_font_italic">pre-completion</span> state and never goes to <span id="S4.p3.2.2" class="ltx_text ltx_font_italic">post-completion</span>.
+We keep the number of components that encapsulates at least 90% of the variance.
+LSTM however, does not require dimensionality reduction, and indeed we see a slight drop in performance when PCA is applied. Hence, for all results reported below, we use PCA-HMM or LSTM for the temporal models.
+The LSTM model has one hidden layer with 128 units. After a random initialisation, 25 epochs are performed for training. The learning rate is <math id="S4.p3.1.m1.1" class="ltx_Math" alttext="10^{-3}" display="inline"><semantics id="S4.p3.1.m1.1a"><msup id="S4.p3.1.m1.1.1" xref="S4.p3.1.m1.1.1.cmml"><mn id="S4.p3.1.m1.1.1.2" xref="S4.p3.1.m1.1.1.2.cmml">10</mn><mrow id="S4.p3.1.m1.1.1.3" xref="S4.p3.1.m1.1.1.3.cmml"><mo id="S4.p3.1.m1.1.1.3a" xref="S4.p3.1.m1.1.1.3.cmml">−</mo><mn id="S4.p3.1.m1.1.1.3.2" xref="S4.p3.1.m1.1.1.3.2.cmml">3</mn></mrow></msup><annotation-xml encoding="MathML-Content" id="S4.p3.1.m1.1b"><apply id="S4.p3.1.m1.1.1.cmml" xref="S4.p3.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p3.1.m1.1.1.1.cmml" xref="S4.p3.1.m1.1.1">superscript</csymbol><cn type="integer" id="S4.p3.1.m1.1.1.2.cmml" xref="S4.p3.1.m1.1.1.2">10</cn><apply id="S4.p3.1.m1.1.1.3.cmml" xref="S4.p3.1.m1.1.1.3"><minus id="S4.p3.1.m1.1.1.3.1.cmml" xref="S4.p3.1.m1.1.1.3"></minus><cn type="integer" id="S4.p3.1.m1.1.1.3.2.cmml" xref="S4.p3.1.m1.1.1.3.2">3</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p3.1.m1.1c">10^{-3}</annotation></semantics></math> for the first epoch and is fixed at <math id="S4.p3.2.m2.1" class="ltx_Math" alttext="10^{-4}" display="inline"><semantics id="S4.p3.2.m2.1a"><msup id="S4.p3.2.m2.1.1" xref="S4.p3.2.m2.1.1.cmml"><mn id="S4.p3.2.m2.1.1.2" xref="S4.p3.2.m2.1.1.2.cmml">10</mn><mrow id="S4.p3.2.m2.1.1.3" xref="S4.p3.2.m2.1.1.3.cmml"><mo id="S4.p3.2.m2.1.1.3a" xref="S4.p3.2.m2.1.1.3.cmml">−</mo><mn id="S4.p3.2.m2.1.1.3.2" xref="S4.p3.2.m2.1.1.3.2.cmml">4</mn></mrow></msup><annotation-xml encoding="MathML-Content" id="S4.p3.2.m2.1b"><apply id="S4.p3.2.m2.1.1.cmml" xref="S4.p3.2.m2.1.1"><csymbol cd="ambiguous" id="S4.p3.2.m2.1.1.1.cmml" xref="S4.p3.2.m2.1.1">superscript</csymbol><cn type="integer" id="S4.p3.2.m2.1.1.2.cmml" xref="S4.p3.2.m2.1.1.2">10</cn><apply id="S4.p3.2.m2.1.1.3.cmml" xref="S4.p3.2.m2.1.1.3"><minus id="S4.p3.2.m2.1.1.3.1.cmml" xref="S4.p3.2.m2.1.1.3"></minus><cn type="integer" id="S4.p3.2.m2.1.1.3.2.cmml" xref="S4.p3.2.m2.1.1.3.2">4</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p3.2.m2.1c">10^{-4}</annotation></semantics></math> for the next epochs.
+For each test sequence, the output of HMM’s Viterbi algorithm and LSTM are validated against ground truth labels.</p>
+</div>
+<figure id="S4.T1" class="ltx_table">
+<table id="S4.T1.7.7" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S4.T1.7.7.8.1" class="ltx_tr">
+<td id="S4.T1.7.7.8.1.1" class="ltx_td ltx_border_r" colspan="2"></td>
+<td id="S4.T1.7.7.8.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.8.1.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">JV</span></td>
+<td id="S4.T1.7.7.8.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.8.1.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">LOP</span></td>
+<td id="S4.T1.7.7.8.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.8.1.4.1" class="ltx_text ltx_font_bold" style="font-size:90%;">HOG</span></td>
+<td id="S4.T1.7.7.8.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.8.1.5.1" class="ltx_text ltx_font_bold" style="font-size:90%;">PT-CNN</span></td>
+<td id="S4.T1.7.7.8.1.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.8.1.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">FT-CNN</span></td>
+</tr>
+<tr id="S4.T1.7.7.9.2" class="ltx_tr">
+<td id="S4.T1.7.7.9.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t" rowspan="3"><span id="S4.T1.7.7.9.2.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">switch</span></td>
+<td id="S4.T1.7.7.9.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.9.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.3.1" class="ltx_text" style="font-size:90%;">78.0</span></td>
+<td id="S4.T1.7.7.9.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.4.1" class="ltx_text" style="font-size:90%;">99.0</span></td>
+<td id="S4.T1.7.7.9.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.5.1" class="ltx_text" style="font-size:90%;">99.8</span></td>
+<td id="S4.T1.7.7.9.2.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.6.1" class="ltx_text" style="font-size:90%;">99.7</span></td>
+<td id="S4.T1.7.7.9.2.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.9.2.7.1" class="ltx_text" style="font-size:90%;">99.8</span></td>
+</tr>
+<tr id="S4.T1.7.7.10.3" class="ltx_tr">
+<td id="S4.T1.7.7.10.3.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.10.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.2.1" class="ltx_text" style="font-size:90%;">86.0</span></td>
+<td id="S4.T1.7.7.10.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.3.1" class="ltx_text" style="font-size:90%;">36.8</span></td>
+<td id="S4.T1.7.7.10.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.4.1" class="ltx_text" style="font-size:90%;">95.1</span></td>
+<td id="S4.T1.7.7.10.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.5.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T1.7.7.10.3.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.10.3.6.1" class="ltx_text" style="font-size:90%;">100</span></td>
+</tr>
+<tr id="S4.T1.1.1.1" class="ltx_tr">
+<td id="S4.T1.1.1.1.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.1.1.1.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.1.1.1.1.m1.1a"><msub id="S4.T1.1.1.1.1.m1.1.1" xref="S4.T1.1.1.1.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.1.1.1.1.m1.1.1.2" xref="S4.T1.1.1.1.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.1.1.1.1.m1.1.1.3" xref="S4.T1.1.1.1.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.1.1.1.1.m1.1b"><apply id="S4.T1.1.1.1.1.m1.1.1.cmml" xref="S4.T1.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.1.1.1.1.m1.1.1.1.cmml" xref="S4.T1.1.1.1.1.m1.1.1">subscript</csymbol><ci id="S4.T1.1.1.1.1.m1.1.1.2.cmml" xref="S4.T1.1.1.1.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.1.1.1.1.m1.1.1.3.cmml" xref="S4.T1.1.1.1.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.1.1.1.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.1.1.1.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.1.1.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.1.1.1.2.1" class="ltx_text" style="font-size:90%;">81.8</span></td>
+<td id="S4.T1.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.1.1.1.3.1" class="ltx_text" style="font-size:90%;">53.7</span></td>
+<td id="S4.T1.1.1.1.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.1.1.1.4.1" class="ltx_text" style="font-size:90%;">97.4</span></td>
+<td id="S4.T1.1.1.1.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.1.1.1.5.1" class="ltx_text ltx_font_bold" style="font-size:90%;">99.9</span></td>
+<td id="S4.T1.1.1.1.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.1.1.1.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T1.7.7.11.4" class="ltx_tr">
+<td id="S4.T1.7.7.11.4.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T1.7.7.11.4.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">plug</span></td>
+<td id="S4.T1.7.7.11.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.11.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.3.1" class="ltx_text" style="font-size:90%;">43.0</span></td>
+<td id="S4.T1.7.7.11.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.4.1" class="ltx_text" style="font-size:90%;">23.8</span></td>
+<td id="S4.T1.7.7.11.4.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.5.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T1.7.7.11.4.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.6.1" class="ltx_text" style="font-size:90%;">82.4</span></td>
+<td id="S4.T1.7.7.11.4.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.11.4.7.1" class="ltx_text" style="font-size:90%;">99.5</span></td>
+</tr>
+<tr id="S4.T1.7.7.12.5" class="ltx_tr">
+<td id="S4.T1.7.7.12.5.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.12.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.2.1" class="ltx_text" style="font-size:90%;">76.4</span></td>
+<td id="S4.T1.7.7.12.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.3.1" class="ltx_text" style="font-size:90%;">56.3</span></td>
+<td id="S4.T1.7.7.12.5.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.4.1" class="ltx_text" style="font-size:90%;">9.3</span></td>
+<td id="S4.T1.7.7.12.5.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.5.1" class="ltx_text" style="font-size:90%;">21.0</span></td>
+<td id="S4.T1.7.7.12.5.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.12.5.6.1" class="ltx_text" style="font-size:90%;">94.5</span></td>
+</tr>
+<tr id="S4.T1.2.2.2" class="ltx_tr">
+<td id="S4.T1.2.2.2.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.2.2.2.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.2.2.2.1.m1.1a"><msub id="S4.T1.2.2.2.1.m1.1.1" xref="S4.T1.2.2.2.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.2.2.2.1.m1.1.1.2" xref="S4.T1.2.2.2.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.2.2.2.1.m1.1.1.3" xref="S4.T1.2.2.2.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.2.2.2.1.m1.1b"><apply id="S4.T1.2.2.2.1.m1.1.1.cmml" xref="S4.T1.2.2.2.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.2.2.2.1.m1.1.1.1.cmml" xref="S4.T1.2.2.2.1.m1.1.1">subscript</csymbol><ci id="S4.T1.2.2.2.1.m1.1.1.2.cmml" xref="S4.T1.2.2.2.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.2.2.2.1.m1.1.1.3.cmml" xref="S4.T1.2.2.2.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.2.2.2.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.2.2.2.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.2.2.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.2.2.2.2.1" class="ltx_text" style="font-size:90%;">55.0</span></td>
+<td id="S4.T1.2.2.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.2.2.2.3.1" class="ltx_text" style="font-size:90%;">33.4</span></td>
+<td id="S4.T1.2.2.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.2.2.2.4.1" class="ltx_text" style="font-size:90%;">17.1</span></td>
+<td id="S4.T1.2.2.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.2.2.2.5.1" class="ltx_text" style="font-size:90%;">33.4</span></td>
+<td id="S4.T1.2.2.2.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.2.2.2.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">97.0</span></td>
+</tr>
+<tr id="S4.T1.7.7.13.6" class="ltx_tr">
+<td id="S4.T1.7.7.13.6.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T1.7.7.13.6.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">open</span></td>
+<td id="S4.T1.7.7.13.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.13.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.3.1" class="ltx_text" style="font-size:90%;">56.9</span></td>
+<td id="S4.T1.7.7.13.6.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.4.1" class="ltx_text" style="font-size:90%;">NA</span></td>
+<td id="S4.T1.7.7.13.6.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.5.1" class="ltx_text" style="font-size:90%;">NA</span></td>
+<td id="S4.T1.7.7.13.6.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.6.1" class="ltx_text" style="font-size:90%;">80.9</span></td>
+<td id="S4.T1.7.7.13.6.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.13.6.7.1" class="ltx_text" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T1.7.7.14.7" class="ltx_tr">
+<td id="S4.T1.7.7.14.7.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.14.7.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.2.1" class="ltx_text" style="font-size:90%;">85.1</span></td>
+<td id="S4.T1.7.7.14.7.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.3.1" class="ltx_text" style="font-size:90%;">0</span></td>
+<td id="S4.T1.7.7.14.7.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.4.1" class="ltx_text" style="font-size:90%;">0</span></td>
+<td id="S4.T1.7.7.14.7.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.5.1" class="ltx_text" style="font-size:90%;">9.2</span></td>
+<td id="S4.T1.7.7.14.7.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.14.7.6.1" class="ltx_text" style="font-size:90%;">36.2</span></td>
+</tr>
+<tr id="S4.T1.3.3.3" class="ltx_tr">
+<td id="S4.T1.3.3.3.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.3.3.3.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.3.3.3.1.m1.1a"><msub id="S4.T1.3.3.3.1.m1.1.1" xref="S4.T1.3.3.3.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.3.3.3.1.m1.1.1.2" xref="S4.T1.3.3.3.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.3.3.3.1.m1.1.1.3" xref="S4.T1.3.3.3.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.3.3.3.1.m1.1b"><apply id="S4.T1.3.3.3.1.m1.1.1.cmml" xref="S4.T1.3.3.3.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.3.3.3.1.m1.1.1.1.cmml" xref="S4.T1.3.3.3.1.m1.1.1">subscript</csymbol><ci id="S4.T1.3.3.3.1.m1.1.1.2.cmml" xref="S4.T1.3.3.3.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.3.3.3.1.m1.1.1.3.cmml" xref="S4.T1.3.3.3.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.3.3.3.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.3.3.3.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.3.3.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.3.3.3.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">68.2</span></td>
+<td id="S4.T1.3.3.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.3.3.3.3.1" class="ltx_text" style="font-size:90%;">NA</span></td>
+<td id="S4.T1.3.3.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.3.3.3.4.1" class="ltx_text" style="font-size:90%;">NA</span></td>
+<td id="S4.T1.3.3.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.3.3.3.5.1" class="ltx_text" style="font-size:90%;">16.6</span></td>
+<td id="S4.T1.3.3.3.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.3.3.3.6.1" class="ltx_text" style="font-size:90%;">53.2</span></td>
+</tr>
+<tr id="S4.T1.7.7.15.8" class="ltx_tr">
+<td id="S4.T1.7.7.15.8.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T1.7.7.15.8.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">pull</span></td>
+<td id="S4.T1.7.7.15.8.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.15.8.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.3.1" class="ltx_text" style="font-size:90%;">57.6</span></td>
+<td id="S4.T1.7.7.15.8.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.4.1" class="ltx_text" style="font-size:90%;">77.8</span></td>
+<td id="S4.T1.7.7.15.8.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.5.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T1.7.7.15.8.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.6.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T1.7.7.15.8.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.15.8.7.1" class="ltx_text" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T1.7.7.16.9" class="ltx_tr">
+<td id="S4.T1.7.7.16.9.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.16.9.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.2.1" class="ltx_text" style="font-size:90%;">69.6</span></td>
+<td id="S4.T1.7.7.16.9.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.3.1" class="ltx_text" style="font-size:90%;">11.5</span></td>
+<td id="S4.T1.7.7.16.9.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.4.1" class="ltx_text" style="font-size:90%;">44.1</span></td>
+<td id="S4.T1.7.7.16.9.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.5.1" class="ltx_text" style="font-size:90%;">14.5</span></td>
+<td id="S4.T1.7.7.16.9.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.16.9.6.1" class="ltx_text" style="font-size:90%;">94.6</span></td>
+</tr>
+<tr id="S4.T1.4.4.4" class="ltx_tr">
+<td id="S4.T1.4.4.4.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.4.4.4.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.4.4.4.1.m1.1a"><msub id="S4.T1.4.4.4.1.m1.1.1" xref="S4.T1.4.4.4.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.4.4.4.1.m1.1.1.2" xref="S4.T1.4.4.4.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.4.4.4.1.m1.1.1.3" xref="S4.T1.4.4.4.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.4.4.4.1.m1.1b"><apply id="S4.T1.4.4.4.1.m1.1.1.cmml" xref="S4.T1.4.4.4.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.4.4.4.1.m1.1.1.1.cmml" xref="S4.T1.4.4.4.1.m1.1.1">subscript</csymbol><ci id="S4.T1.4.4.4.1.m1.1.1.2.cmml" xref="S4.T1.4.4.4.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.4.4.4.1.m1.1.1.3.cmml" xref="S4.T1.4.4.4.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.4.4.4.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.4.4.4.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.4.4.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.4.4.4.2.1" class="ltx_text" style="font-size:90%;">63.0</span></td>
+<td id="S4.T1.4.4.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.4.4.4.3.1" class="ltx_text" style="font-size:90%;">20.0</span></td>
+<td id="S4.T1.4.4.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.4.4.4.4.1" class="ltx_text" style="font-size:90%;">61.2</span></td>
+<td id="S4.T1.4.4.4.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.4.4.4.5.1" class="ltx_text" style="font-size:90%;">25.3</span></td>
+<td id="S4.T1.4.4.4.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.4.4.4.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">97.2</span></td>
+</tr>
+<tr id="S4.T1.7.7.17.10" class="ltx_tr">
+<td id="S4.T1.7.7.17.10.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T1.7.7.17.10.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">pick</span></td>
+<td id="S4.T1.7.7.17.10.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.17.10.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.3.1" class="ltx_text" style="font-size:90%;">62.9</span></td>
+<td id="S4.T1.7.7.17.10.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.4.1" class="ltx_text" style="font-size:90%;">93.7</span></td>
+<td id="S4.T1.7.7.17.10.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.5.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T1.7.7.17.10.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.6.1" class="ltx_text" style="font-size:90%;">83.1</span></td>
+<td id="S4.T1.7.7.17.10.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.17.10.7.1" class="ltx_text" style="font-size:90%;">88.7</span></td>
+</tr>
+<tr id="S4.T1.7.7.18.11" class="ltx_tr">
+<td id="S4.T1.7.7.18.11.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.18.11.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.2.1" class="ltx_text" style="font-size:90%;">82.3</span></td>
+<td id="S4.T1.7.7.18.11.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.3.1" class="ltx_text" style="font-size:90%;">65.7</span></td>
+<td id="S4.T1.7.7.18.11.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.4.1" class="ltx_text" style="font-size:90%;">3.8</span></td>
+<td id="S4.T1.7.7.18.11.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.5.1" class="ltx_text" style="font-size:90%;">56.3</span></td>
+<td id="S4.T1.7.7.18.11.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.18.11.6.1" class="ltx_text" style="font-size:90%;">97.4</span></td>
+</tr>
+<tr id="S4.T1.5.5.5" class="ltx_tr">
+<td id="S4.T1.5.5.5.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.5.5.5.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.5.5.5.1.m1.1a"><msub id="S4.T1.5.5.5.1.m1.1.1" xref="S4.T1.5.5.5.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.5.5.5.1.m1.1.1.2" xref="S4.T1.5.5.5.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.5.5.5.1.m1.1.1.3" xref="S4.T1.5.5.5.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.5.5.5.1.m1.1b"><apply id="S4.T1.5.5.5.1.m1.1.1.cmml" xref="S4.T1.5.5.5.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.5.5.5.1.m1.1.1.1.cmml" xref="S4.T1.5.5.5.1.m1.1.1">subscript</csymbol><ci id="S4.T1.5.5.5.1.m1.1.1.2.cmml" xref="S4.T1.5.5.5.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.5.5.5.1.m1.1.1.3.cmml" xref="S4.T1.5.5.5.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.5.5.5.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.5.5.5.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.5.5.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.5.5.5.2.1" class="ltx_text" style="font-size:90%;">71.3</span></td>
+<td id="S4.T1.5.5.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.5.5.5.3.1" class="ltx_text" style="font-size:90%;">77.3</span></td>
+<td id="S4.T1.5.5.5.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.5.5.5.4.1" class="ltx_text" style="font-size:90%;">7.3</span></td>
+<td id="S4.T1.5.5.5.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.5.5.5.5.1" class="ltx_text" style="font-size:90%;">67.1</span></td>
+<td id="S4.T1.5.5.5.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.5.5.5.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">92.9</span></td>
+</tr>
+<tr id="S4.T1.7.7.19.12" class="ltx_tr">
+<td id="S4.T1.7.7.19.12.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T1.7.7.19.12.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">drink</span></td>
+<td id="S4.T1.7.7.19.12.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.19.12.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.3.1" class="ltx_text" style="font-size:90%;">66.2</span></td>
+<td id="S4.T1.7.7.19.12.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.4.1" class="ltx_text" style="font-size:90%;">96.1</span></td>
+<td id="S4.T1.7.7.19.12.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.5.1" class="ltx_text" style="font-size:90%;">95.6</span></td>
+<td id="S4.T1.7.7.19.12.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.6.1" class="ltx_text" style="font-size:90%;">68.2</span></td>
+<td id="S4.T1.7.7.19.12.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T1.7.7.19.12.7.1" class="ltx_text" style="font-size:90%;">84.7</span></td>
+</tr>
+<tr id="S4.T1.7.7.20.13" class="ltx_tr">
+<td id="S4.T1.7.7.20.13.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.20.13.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.2.1" class="ltx_text" style="font-size:90%;">94.9</span></td>
+<td id="S4.T1.7.7.20.13.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.3.1" class="ltx_text" style="font-size:90%;">43.4</span></td>
+<td id="S4.T1.7.7.20.13.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.4.1" class="ltx_text" style="font-size:90%;">13.7</span></td>
+<td id="S4.T1.7.7.20.13.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.5.1" class="ltx_text" style="font-size:90%;">32.4</span></td>
+<td id="S4.T1.7.7.20.13.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.20.13.6.1" class="ltx_text" style="font-size:90%;">90.8</span></td>
+</tr>
+<tr id="S4.T1.6.6.6" class="ltx_tr">
+<td id="S4.T1.6.6.6.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T1.6.6.6.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.6.6.6.1.m1.1a"><msub id="S4.T1.6.6.6.1.m1.1.1" xref="S4.T1.6.6.6.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.6.6.6.1.m1.1.1.2" xref="S4.T1.6.6.6.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.6.6.6.1.m1.1.1.3" xref="S4.T1.6.6.6.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.6.6.6.1.m1.1b"><apply id="S4.T1.6.6.6.1.m1.1.1.cmml" xref="S4.T1.6.6.6.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.6.6.6.1.m1.1.1.1.cmml" xref="S4.T1.6.6.6.1.m1.1.1">subscript</csymbol><ci id="S4.T1.6.6.6.1.m1.1.1.2.cmml" xref="S4.T1.6.6.6.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.6.6.6.1.m1.1.1.3.cmml" xref="S4.T1.6.6.6.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.6.6.6.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.6.6.6.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.6.6.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.6.6.6.2.1" class="ltx_text" style="font-size:90%;">78.0</span></td>
+<td id="S4.T1.6.6.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.6.6.6.3.1" class="ltx_text" style="font-size:90%;">59.8</span></td>
+<td id="S4.T1.6.6.6.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.6.6.6.4.1" class="ltx_text" style="font-size:90%;">24.0</span></td>
+<td id="S4.T1.6.6.6.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.6.6.6.5.1" class="ltx_text" style="font-size:90%;">43.9</span></td>
+<td id="S4.T1.6.6.6.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.6.6.6.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">87.6</span></td>
+</tr>
+<tr id="S4.T1.7.7.21.14" class="ltx_tr">
+<td id="S4.T1.7.7.21.14.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_tt ltx_border_t" rowspan="3"><span id="S4.T1.7.7.21.14.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Total</span></td>
+<td id="S4.T1.7.7.21.14.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T1.7.7.21.14.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.3.1" class="ltx_text" style="font-size:90%;">61.5</span></td>
+<td id="S4.T1.7.7.21.14.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.4.1" class="ltx_text" style="font-size:90%;">63.2</span></td>
+<td id="S4.T1.7.7.21.14.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.5.1" class="ltx_text" style="font-size:90%;">99.1</span></td>
+<td id="S4.T1.7.7.21.14.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.6.1" class="ltx_text" style="font-size:90%;">84.3</span></td>
+<td id="S4.T1.7.7.21.14.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T1.7.7.21.14.7.1" class="ltx_text" style="font-size:90%;">92.4</span></td>
+</tr>
+<tr id="S4.T1.7.7.22.15" class="ltx_tr">
+<td id="S4.T1.7.7.22.15.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T1.7.7.22.15.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.2.1" class="ltx_text" style="font-size:90%;">85.1</span></td>
+<td id="S4.T1.7.7.22.15.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.3.1" class="ltx_text" style="font-size:90%;">36.1</span></td>
+<td id="S4.T1.7.7.22.15.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.4.1" class="ltx_text" style="font-size:90%;">30.2</span></td>
+<td id="S4.T1.7.7.22.15.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.5.1" class="ltx_text" style="font-size:90%;">39.8</span></td>
+<td id="S4.T1.7.7.22.15.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T1.7.7.22.15.6.1" class="ltx_text" style="font-size:90%;">89.0</span></td>
+</tr>
+<tr id="S4.T1.7.7.7" class="ltx_tr">
+<td id="S4.T1.7.7.7.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">
+<math id="S4.T1.7.7.7.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T1.7.7.7.1.m1.1a"><msub id="S4.T1.7.7.7.1.m1.1.1" xref="S4.T1.7.7.7.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T1.7.7.7.1.m1.1.1.2" xref="S4.T1.7.7.7.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T1.7.7.7.1.m1.1.1.3" xref="S4.T1.7.7.7.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T1.7.7.7.1.m1.1b"><apply id="S4.T1.7.7.7.1.m1.1.1.cmml" xref="S4.T1.7.7.7.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T1.7.7.7.1.m1.1.1.1.cmml" xref="S4.T1.7.7.7.1.m1.1.1">subscript</csymbol><ci id="S4.T1.7.7.7.1.m1.1.1.2.cmml" xref="S4.T1.7.7.7.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T1.7.7.7.1.m1.1.1.3.cmml" xref="S4.T1.7.7.7.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T1.7.7.7.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T1.7.7.7.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T1.7.7.7.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T1.7.7.7.2.1" class="ltx_text" style="font-size:90%;">71.4</span></td>
+<td id="S4.T1.7.7.7.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T1.7.7.7.3.1" class="ltx_text" style="font-size:90%;">46.0</span></td>
+<td id="S4.T1.7.7.7.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T1.7.7.7.4.1" class="ltx_text" style="font-size:90%;">46.3</span></td>
+<td id="S4.T1.7.7.7.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T1.7.7.7.5.1" class="ltx_text" style="font-size:90%;">54.1</span></td>
+<td id="S4.T1.7.7.7.6" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T1.7.7.7.6.1" class="ltx_text ltx_font_bold" style="font-size:90%;">90.6</span></td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption" style="font-size:90%;"><span class="ltx_tag ltx_tag_table">Table 1: </span>Comparing features for completion detection using PCA-HMM.</figcaption>
+</figure>
+<div id="S4.p4" class="ltx_para ltx_noindent">
+<p id="S4.p4.1" class="ltx_p"><span id="S4.p4.1.1" class="ltx_text ltx_font_bold">Evaluation Metrics:</span> Due to the imbalance in the number of <span id="S4.p4.1.2" class="ltx_text ltx_font_italic">pre-</span> and <span id="S4.p4.1.3" class="ltx_text ltx_font_italic">post-completion</span> labels, we present precision and recall results, where the <span id="S4.p4.1.4" class="ltx_text ltx_font_italic">post-completion</span> is considered as the positive class. For comparison, <math id="S4.p4.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.p4.1.m1.1a"><msub id="S4.p4.1.m1.1.1" xref="S4.p4.1.m1.1.1.cmml"><mi id="S4.p4.1.m1.1.1.2" xref="S4.p4.1.m1.1.1.2.cmml">F</mi><mn id="S4.p4.1.m1.1.1.3" xref="S4.p4.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.p4.1.m1.1b"><apply id="S4.p4.1.m1.1.1.cmml" xref="S4.p4.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p4.1.m1.1.1.1.cmml" xref="S4.p4.1.m1.1.1">subscript</csymbol><ci id="S4.p4.1.m1.1.1.2.cmml" xref="S4.p4.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.p4.1.m1.1.1.3.cmml" xref="S4.p4.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p4.1.m1.1c">F_{1}</annotation></semantics></math>-score percentage is also reported.</p>
+</div>
+<div id="S4.p5" class="ltx_para ltx_noindent">
+<p id="S4.p5.1" class="ltx_p">While precision, recall and <math id="S4.p5.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.p5.1.m1.1a"><msub id="S4.p5.1.m1.1.1" xref="S4.p5.1.m1.1.1.cmml"><mi id="S4.p5.1.m1.1.1.2" xref="S4.p5.1.m1.1.1.2.cmml">F</mi><mn id="S4.p5.1.m1.1.1.3" xref="S4.p5.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.p5.1.m1.1b"><apply id="S4.p5.1.m1.1.1.cmml" xref="S4.p5.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p5.1.m1.1.1.1.cmml" xref="S4.p5.1.m1.1.1">subscript</csymbol><ci id="S4.p5.1.m1.1.1.2.cmml" xref="S4.p5.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.p5.1.m1.1.1.3.cmml" xref="S4.p5.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.1.m1.1c">F_{1}</annotation></semantics></math>-score are suitable for comparing per-frame decisions, we wish to evaluate the accuracy with which the moment of completion is detected.
+Thus, we introduce a cumulative metric for evaluating completion detection that captures the difference between the labelled and estimated moment of completion,</p>
+<table id="S4.E1" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S4.E1.m1.2" class="ltx_Math" alttext="C(i)=\frac{1}{N}\sum_{seq=1}^{N}\bigl{[}(p_{seq}-g_{seq})\leq i\bigr{]}" display="block"><semantics id="S4.E1.m1.2a"><mrow id="S4.E1.m1.2.2" xref="S4.E1.m1.2.2.cmml"><mrow id="S4.E1.m1.2.2.3" xref="S4.E1.m1.2.2.3.cmml"><mi id="S4.E1.m1.2.2.3.2" xref="S4.E1.m1.2.2.3.2.cmml">C</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.3.1" xref="S4.E1.m1.2.2.3.1.cmml">​</mo><mrow id="S4.E1.m1.2.2.3.3.2" xref="S4.E1.m1.2.2.3.cmml"><mo stretchy="false" id="S4.E1.m1.2.2.3.3.2.1" xref="S4.E1.m1.2.2.3.cmml">(</mo><mi id="S4.E1.m1.1.1" xref="S4.E1.m1.1.1.cmml">i</mi><mo stretchy="false" id="S4.E1.m1.2.2.3.3.2.2" xref="S4.E1.m1.2.2.3.cmml">)</mo></mrow></mrow><mo id="S4.E1.m1.2.2.2" xref="S4.E1.m1.2.2.2.cmml">=</mo><mrow id="S4.E1.m1.2.2.1" xref="S4.E1.m1.2.2.1.cmml"><mfrac id="S4.E1.m1.2.2.1.3" xref="S4.E1.m1.2.2.1.3.cmml"><mn id="S4.E1.m1.2.2.1.3.2" xref="S4.E1.m1.2.2.1.3.2.cmml">1</mn><mi id="S4.E1.m1.2.2.1.3.3" xref="S4.E1.m1.2.2.1.3.3.cmml">N</mi></mfrac><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.2" xref="S4.E1.m1.2.2.1.2.cmml">​</mo><mrow id="S4.E1.m1.2.2.1.1" xref="S4.E1.m1.2.2.1.1.cmml"><munderover id="S4.E1.m1.2.2.1.1.2" xref="S4.E1.m1.2.2.1.1.2.cmml"><mo movablelimits="false" rspace="0em" id="S4.E1.m1.2.2.1.1.2.2.2" xref="S4.E1.m1.2.2.1.1.2.2.2.cmml">∑</mo><mrow id="S4.E1.m1.2.2.1.1.2.2.3" xref="S4.E1.m1.2.2.1.1.2.2.3.cmml"><mrow id="S4.E1.m1.2.2.1.1.2.2.3.2" xref="S4.E1.m1.2.2.1.1.2.2.3.2.cmml"><mi id="S4.E1.m1.2.2.1.1.2.2.3.2.2" xref="S4.E1.m1.2.2.1.1.2.2.3.2.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.2.2.3.2.1" xref="S4.E1.m1.2.2.1.1.2.2.3.2.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.2.2.3.2.3" xref="S4.E1.m1.2.2.1.1.2.2.3.2.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.2.2.3.2.1a" xref="S4.E1.m1.2.2.1.1.2.2.3.2.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.2.2.3.2.4" xref="S4.E1.m1.2.2.1.1.2.2.3.2.4.cmml">q</mi></mrow><mo id="S4.E1.m1.2.2.1.1.2.2.3.1" xref="S4.E1.m1.2.2.1.1.2.2.3.1.cmml">=</mo><mn id="S4.E1.m1.2.2.1.1.2.2.3.3" xref="S4.E1.m1.2.2.1.1.2.2.3.3.cmml">1</mn></mrow><mi id="S4.E1.m1.2.2.1.1.2.3" xref="S4.E1.m1.2.2.1.1.2.3.cmml">N</mi></munderover><mrow id="S4.E1.m1.2.2.1.1.1.1" xref="S4.E1.m1.2.2.1.1.1.2.cmml"><mo maxsize="120%" minsize="120%" id="S4.E1.m1.2.2.1.1.1.1.2" xref="S4.E1.m1.2.2.1.1.1.2.1.cmml">[</mo><mrow id="S4.E1.m1.2.2.1.1.1.1.1" xref="S4.E1.m1.2.2.1.1.1.1.1.cmml"><mrow id="S4.E1.m1.2.2.1.1.1.1.1.1.1" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.cmml"><mo stretchy="false" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.cmml">(</mo><mrow id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.cmml"><msub id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.cmml"><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.2.cmml">p</mi><mrow id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.cmml"><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1a" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.4" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.4.cmml">q</mi></mrow></msub><mo id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.1" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.1.cmml">−</mo><msub id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.cmml"><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.2.cmml">g</mi><mrow id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.cmml"><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.2" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1a" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1.cmml">​</mo><mi id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.4" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.4.cmml">q</mi></mrow></msub></mrow><mo stretchy="false" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.3" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.cmml">)</mo></mrow><mo id="S4.E1.m1.2.2.1.1.1.1.1.2" xref="S4.E1.m1.2.2.1.1.1.1.1.2.cmml">≤</mo><mi id="S4.E1.m1.2.2.1.1.1.1.1.3" xref="S4.E1.m1.2.2.1.1.1.1.1.3.cmml">i</mi></mrow><mo maxsize="120%" minsize="120%" id="S4.E1.m1.2.2.1.1.1.1.3" xref="S4.E1.m1.2.2.1.1.1.2.1.cmml">]</mo></mrow></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="S4.E1.m1.2b"><apply id="S4.E1.m1.2.2.cmml" xref="S4.E1.m1.2.2"><eq id="S4.E1.m1.2.2.2.cmml" xref="S4.E1.m1.2.2.2"></eq><apply id="S4.E1.m1.2.2.3.cmml" xref="S4.E1.m1.2.2.3"><times id="S4.E1.m1.2.2.3.1.cmml" xref="S4.E1.m1.2.2.3.1"></times><ci id="S4.E1.m1.2.2.3.2.cmml" xref="S4.E1.m1.2.2.3.2">𝐶</ci><ci id="S4.E1.m1.1.1.cmml" xref="S4.E1.m1.1.1">𝑖</ci></apply><apply id="S4.E1.m1.2.2.1.cmml" xref="S4.E1.m1.2.2.1"><times id="S4.E1.m1.2.2.1.2.cmml" xref="S4.E1.m1.2.2.1.2"></times><apply id="S4.E1.m1.2.2.1.3.cmml" xref="S4.E1.m1.2.2.1.3"><divide id="S4.E1.m1.2.2.1.3.1.cmml" xref="S4.E1.m1.2.2.1.3"></divide><cn type="integer" id="S4.E1.m1.2.2.1.3.2.cmml" xref="S4.E1.m1.2.2.1.3.2">1</cn><ci id="S4.E1.m1.2.2.1.3.3.cmml" xref="S4.E1.m1.2.2.1.3.3">𝑁</ci></apply><apply id="S4.E1.m1.2.2.1.1.cmml" xref="S4.E1.m1.2.2.1.1"><apply id="S4.E1.m1.2.2.1.1.2.cmml" xref="S4.E1.m1.2.2.1.1.2"><csymbol cd="ambiguous" id="S4.E1.m1.2.2.1.1.2.1.cmml" xref="S4.E1.m1.2.2.1.1.2">superscript</csymbol><apply id="S4.E1.m1.2.2.1.1.2.2.cmml" xref="S4.E1.m1.2.2.1.1.2"><csymbol cd="ambiguous" id="S4.E1.m1.2.2.1.1.2.2.1.cmml" xref="S4.E1.m1.2.2.1.1.2">subscript</csymbol><sum id="S4.E1.m1.2.2.1.1.2.2.2.cmml" xref="S4.E1.m1.2.2.1.1.2.2.2"></sum><apply id="S4.E1.m1.2.2.1.1.2.2.3.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3"><eq id="S4.E1.m1.2.2.1.1.2.2.3.1.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.1"></eq><apply id="S4.E1.m1.2.2.1.1.2.2.3.2.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.2"><times id="S4.E1.m1.2.2.1.1.2.2.3.2.1.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.2.1"></times><ci id="S4.E1.m1.2.2.1.1.2.2.3.2.2.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.2.2">𝑠</ci><ci id="S4.E1.m1.2.2.1.1.2.2.3.2.3.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.2.3">𝑒</ci><ci id="S4.E1.m1.2.2.1.1.2.2.3.2.4.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.2.4">𝑞</ci></apply><cn type="integer" id="S4.E1.m1.2.2.1.1.2.2.3.3.cmml" xref="S4.E1.m1.2.2.1.1.2.2.3.3">1</cn></apply></apply><ci id="S4.E1.m1.2.2.1.1.2.3.cmml" xref="S4.E1.m1.2.2.1.1.2.3">𝑁</ci></apply><apply id="S4.E1.m1.2.2.1.1.1.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1"><csymbol cd="latexml" id="S4.E1.m1.2.2.1.1.1.2.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.2">delimited-[]</csymbol><apply id="S4.E1.m1.2.2.1.1.1.1.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1"><leq id="S4.E1.m1.2.2.1.1.1.1.1.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.2"></leq><apply id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1"><minus id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.1"></minus><apply id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2"><csymbol cd="ambiguous" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2">subscript</csymbol><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.2">𝑝</ci><apply id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3"><times id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.1"></times><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.2">𝑠</ci><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.3">𝑒</ci><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.4.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.2.3.4">𝑞</ci></apply></apply><apply id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3"><csymbol cd="ambiguous" id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3">subscript</csymbol><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.2">𝑔</ci><apply id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3"><times id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.1"></times><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.2.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.2">𝑠</ci><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.3">𝑒</ci><ci id="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.4.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.1.1.1.3.3.4">𝑞</ci></apply></apply></apply><ci id="S4.E1.m1.2.2.1.1.1.1.1.3.cmml" xref="S4.E1.m1.2.2.1.1.1.1.1.3">𝑖</ci></apply></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.E1.m1.2c">C(i)=\frac{1}{N}\sum_{seq=1}^{N}\bigl{[}(p_{seq}-g_{seq})\leq i\bigr{]}</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(1)</span></td>
+</tr></tbody>
+</table>
+<p id="S4.p5.8" class="ltx_p">where <math id="S4.p5.2.m1.1" class="ltx_Math" alttext="g_{seq}" display="inline"><semantics id="S4.p5.2.m1.1a"><msub id="S4.p5.2.m1.1.1" xref="S4.p5.2.m1.1.1.cmml"><mi id="S4.p5.2.m1.1.1.2" xref="S4.p5.2.m1.1.1.2.cmml">g</mi><mrow id="S4.p5.2.m1.1.1.3" xref="S4.p5.2.m1.1.1.3.cmml"><mi id="S4.p5.2.m1.1.1.3.2" xref="S4.p5.2.m1.1.1.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.p5.2.m1.1.1.3.1" xref="S4.p5.2.m1.1.1.3.1.cmml">​</mo><mi id="S4.p5.2.m1.1.1.3.3" xref="S4.p5.2.m1.1.1.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.p5.2.m1.1.1.3.1a" xref="S4.p5.2.m1.1.1.3.1.cmml">​</mo><mi id="S4.p5.2.m1.1.1.3.4" xref="S4.p5.2.m1.1.1.3.4.cmml">q</mi></mrow></msub><annotation-xml encoding="MathML-Content" id="S4.p5.2.m1.1b"><apply id="S4.p5.2.m1.1.1.cmml" xref="S4.p5.2.m1.1.1"><csymbol cd="ambiguous" id="S4.p5.2.m1.1.1.1.cmml" xref="S4.p5.2.m1.1.1">subscript</csymbol><ci id="S4.p5.2.m1.1.1.2.cmml" xref="S4.p5.2.m1.1.1.2">𝑔</ci><apply id="S4.p5.2.m1.1.1.3.cmml" xref="S4.p5.2.m1.1.1.3"><times id="S4.p5.2.m1.1.1.3.1.cmml" xref="S4.p5.2.m1.1.1.3.1"></times><ci id="S4.p5.2.m1.1.1.3.2.cmml" xref="S4.p5.2.m1.1.1.3.2">𝑠</ci><ci id="S4.p5.2.m1.1.1.3.3.cmml" xref="S4.p5.2.m1.1.1.3.3">𝑒</ci><ci id="S4.p5.2.m1.1.1.3.4.cmml" xref="S4.p5.2.m1.1.1.3.4">𝑞</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.2.m1.1c">g_{seq}</annotation></semantics></math> and <math id="S4.p5.3.m2.1" class="ltx_Math" alttext="p_{seq}" display="inline"><semantics id="S4.p5.3.m2.1a"><msub id="S4.p5.3.m2.1.1" xref="S4.p5.3.m2.1.1.cmml"><mi id="S4.p5.3.m2.1.1.2" xref="S4.p5.3.m2.1.1.2.cmml">p</mi><mrow id="S4.p5.3.m2.1.1.3" xref="S4.p5.3.m2.1.1.3.cmml"><mi id="S4.p5.3.m2.1.1.3.2" xref="S4.p5.3.m2.1.1.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.p5.3.m2.1.1.3.1" xref="S4.p5.3.m2.1.1.3.1.cmml">​</mo><mi id="S4.p5.3.m2.1.1.3.3" xref="S4.p5.3.m2.1.1.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.p5.3.m2.1.1.3.1a" xref="S4.p5.3.m2.1.1.3.1.cmml">​</mo><mi id="S4.p5.3.m2.1.1.3.4" xref="S4.p5.3.m2.1.1.3.4.cmml">q</mi></mrow></msub><annotation-xml encoding="MathML-Content" id="S4.p5.3.m2.1b"><apply id="S4.p5.3.m2.1.1.cmml" xref="S4.p5.3.m2.1.1"><csymbol cd="ambiguous" id="S4.p5.3.m2.1.1.1.cmml" xref="S4.p5.3.m2.1.1">subscript</csymbol><ci id="S4.p5.3.m2.1.1.2.cmml" xref="S4.p5.3.m2.1.1.2">𝑝</ci><apply id="S4.p5.3.m2.1.1.3.cmml" xref="S4.p5.3.m2.1.1.3"><times id="S4.p5.3.m2.1.1.3.1.cmml" xref="S4.p5.3.m2.1.1.3.1"></times><ci id="S4.p5.3.m2.1.1.3.2.cmml" xref="S4.p5.3.m2.1.1.3.2">𝑠</ci><ci id="S4.p5.3.m2.1.1.3.3.cmml" xref="S4.p5.3.m2.1.1.3.3">𝑒</ci><ci id="S4.p5.3.m2.1.1.3.4.cmml" xref="S4.p5.3.m2.1.1.3.4">𝑞</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.3.m2.1c">p_{seq}</annotation></semantics></math> correspond to the first <span id="S4.p5.8.1" class="ltx_text ltx_font_italic">post-completion</span> label in ground truth and predicted labels, respectively, <math id="S4.p5.4.m3.1" class="ltx_Math" alttext="i" display="inline"><semantics id="S4.p5.4.m3.1a"><mi id="S4.p5.4.m3.1.1" xref="S4.p5.4.m3.1.1.cmml">i</mi><annotation-xml encoding="MathML-Content" id="S4.p5.4.m3.1b"><ci id="S4.p5.4.m3.1.1.cmml" xref="S4.p5.4.m3.1.1">𝑖</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.4.m3.1c">i</annotation></semantics></math> is the shift between the predicted and true completion frames, <math id="S4.p5.5.m4.1" class="ltx_math_unparsed" alttext="[.]" display="inline"><semantics id="S4.p5.5.m4.1a"><mrow id="S4.p5.5.m4.1b"><mo stretchy="false" id="S4.p5.5.m4.1.1">[</mo><mo lspace="0em" rspace="0.167em" id="S4.p5.5.m4.1.2">.</mo><mo stretchy="false" id="S4.p5.5.m4.1.3">]</mo></mrow><annotation encoding="application/x-tex" id="S4.p5.5.m4.1c">[.]</annotation></semantics></math> is a boolean function, and <math id="S4.p5.6.m5.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S4.p5.6.m5.1a"><mi id="S4.p5.6.m5.1.1" xref="S4.p5.6.m5.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S4.p5.6.m5.1b"><ci id="S4.p5.6.m5.1.1.cmml" xref="S4.p5.6.m5.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.6.m5.1c">N</annotation></semantics></math> is the number of sequences. We do not use the absolute difference in frames, so that for complete sequences, we can capture whether detection takes place prematurely, or is overdue per action. When completion is not detected, <math id="S4.p5.7.m6.1" class="ltx_Math" alttext="p_{seq}=\infty" display="inline"><semantics id="S4.p5.7.m6.1a"><mrow id="S4.p5.7.m6.1.1" xref="S4.p5.7.m6.1.1.cmml"><msub id="S4.p5.7.m6.1.1.2" xref="S4.p5.7.m6.1.1.2.cmml"><mi id="S4.p5.7.m6.1.1.2.2" xref="S4.p5.7.m6.1.1.2.2.cmml">p</mi><mrow id="S4.p5.7.m6.1.1.2.3" xref="S4.p5.7.m6.1.1.2.3.cmml"><mi id="S4.p5.7.m6.1.1.2.3.2" xref="S4.p5.7.m6.1.1.2.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.p5.7.m6.1.1.2.3.1" xref="S4.p5.7.m6.1.1.2.3.1.cmml">​</mo><mi id="S4.p5.7.m6.1.1.2.3.3" xref="S4.p5.7.m6.1.1.2.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.p5.7.m6.1.1.2.3.1a" xref="S4.p5.7.m6.1.1.2.3.1.cmml">​</mo><mi id="S4.p5.7.m6.1.1.2.3.4" xref="S4.p5.7.m6.1.1.2.3.4.cmml">q</mi></mrow></msub><mo id="S4.p5.7.m6.1.1.1" xref="S4.p5.7.m6.1.1.1.cmml">=</mo><mi mathvariant="normal" id="S4.p5.7.m6.1.1.3" xref="S4.p5.7.m6.1.1.3.cmml">∞</mi></mrow><annotation-xml encoding="MathML-Content" id="S4.p5.7.m6.1b"><apply id="S4.p5.7.m6.1.1.cmml" xref="S4.p5.7.m6.1.1"><eq id="S4.p5.7.m6.1.1.1.cmml" xref="S4.p5.7.m6.1.1.1"></eq><apply id="S4.p5.7.m6.1.1.2.cmml" xref="S4.p5.7.m6.1.1.2"><csymbol cd="ambiguous" id="S4.p5.7.m6.1.1.2.1.cmml" xref="S4.p5.7.m6.1.1.2">subscript</csymbol><ci id="S4.p5.7.m6.1.1.2.2.cmml" xref="S4.p5.7.m6.1.1.2.2">𝑝</ci><apply id="S4.p5.7.m6.1.1.2.3.cmml" xref="S4.p5.7.m6.1.1.2.3"><times id="S4.p5.7.m6.1.1.2.3.1.cmml" xref="S4.p5.7.m6.1.1.2.3.1"></times><ci id="S4.p5.7.m6.1.1.2.3.2.cmml" xref="S4.p5.7.m6.1.1.2.3.2">𝑠</ci><ci id="S4.p5.7.m6.1.1.2.3.3.cmml" xref="S4.p5.7.m6.1.1.2.3.3">𝑒</ci><ci id="S4.p5.7.m6.1.1.2.3.4.cmml" xref="S4.p5.7.m6.1.1.2.3.4">𝑞</ci></apply></apply><infinity id="S4.p5.7.m6.1.1.3.cmml" xref="S4.p5.7.m6.1.1.3"></infinity></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.7.m6.1c">p_{seq}=\infty</annotation></semantics></math>. Also, for incomplete sequences <math id="S4.p5.8.m7.1" class="ltx_Math" alttext="g_{seq}=0" display="inline"><semantics id="S4.p5.8.m7.1a"><mrow id="S4.p5.8.m7.1.1" xref="S4.p5.8.m7.1.1.cmml"><msub id="S4.p5.8.m7.1.1.2" xref="S4.p5.8.m7.1.1.2.cmml"><mi id="S4.p5.8.m7.1.1.2.2" xref="S4.p5.8.m7.1.1.2.2.cmml">g</mi><mrow id="S4.p5.8.m7.1.1.2.3" xref="S4.p5.8.m7.1.1.2.3.cmml"><mi id="S4.p5.8.m7.1.1.2.3.2" xref="S4.p5.8.m7.1.1.2.3.2.cmml">s</mi><mo lspace="0em" rspace="0em" id="S4.p5.8.m7.1.1.2.3.1" xref="S4.p5.8.m7.1.1.2.3.1.cmml">​</mo><mi id="S4.p5.8.m7.1.1.2.3.3" xref="S4.p5.8.m7.1.1.2.3.3.cmml">e</mi><mo lspace="0em" rspace="0em" id="S4.p5.8.m7.1.1.2.3.1a" xref="S4.p5.8.m7.1.1.2.3.1.cmml">​</mo><mi id="S4.p5.8.m7.1.1.2.3.4" xref="S4.p5.8.m7.1.1.2.3.4.cmml">q</mi></mrow></msub><mo id="S4.p5.8.m7.1.1.1" xref="S4.p5.8.m7.1.1.1.cmml">=</mo><mn id="S4.p5.8.m7.1.1.3" xref="S4.p5.8.m7.1.1.3.cmml">0</mn></mrow><annotation-xml encoding="MathML-Content" id="S4.p5.8.m7.1b"><apply id="S4.p5.8.m7.1.1.cmml" xref="S4.p5.8.m7.1.1"><eq id="S4.p5.8.m7.1.1.1.cmml" xref="S4.p5.8.m7.1.1.1"></eq><apply id="S4.p5.8.m7.1.1.2.cmml" xref="S4.p5.8.m7.1.1.2"><csymbol cd="ambiguous" id="S4.p5.8.m7.1.1.2.1.cmml" xref="S4.p5.8.m7.1.1.2">subscript</csymbol><ci id="S4.p5.8.m7.1.1.2.2.cmml" xref="S4.p5.8.m7.1.1.2.2">𝑔</ci><apply id="S4.p5.8.m7.1.1.2.3.cmml" xref="S4.p5.8.m7.1.1.2.3"><times id="S4.p5.8.m7.1.1.2.3.1.cmml" xref="S4.p5.8.m7.1.1.2.3.1"></times><ci id="S4.p5.8.m7.1.1.2.3.2.cmml" xref="S4.p5.8.m7.1.1.2.3.2">𝑠</ci><ci id="S4.p5.8.m7.1.1.2.3.3.cmml" xref="S4.p5.8.m7.1.1.2.3.3">𝑒</ci><ci id="S4.p5.8.m7.1.1.2.3.4.cmml" xref="S4.p5.8.m7.1.1.2.3.4">𝑞</ci></apply></apply><cn type="integer" id="S4.p5.8.m7.1.1.3.cmml" xref="S4.p5.8.m7.1.1.3">0</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.8.m7.1c">g_{seq}=0</annotation></semantics></math>.</p>
+</div>
+<div id="S4.p6" class="ltx_para">
+<p id="S4.p6.2" class="ltx_p">We report these results as a cumulative graph of <math id="S4.p6.1.m1.1" class="ltx_Math" alttext="i" display="inline"><semantics id="S4.p6.1.m1.1a"><mi id="S4.p6.1.m1.1.1" xref="S4.p6.1.m1.1.1.cmml">i</mi><annotation-xml encoding="MathML-Content" id="S4.p6.1.m1.1b"><ci id="S4.p6.1.m1.1.1.cmml" xref="S4.p6.1.m1.1.1">𝑖</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.p6.1.m1.1c">i</annotation></semantics></math> vs <math id="S4.p6.2.m2.1" class="ltx_Math" alttext="C(i)" display="inline"><semantics id="S4.p6.2.m2.1a"><mrow id="S4.p6.2.m2.1.2" xref="S4.p6.2.m2.1.2.cmml"><mi id="S4.p6.2.m2.1.2.2" xref="S4.p6.2.m2.1.2.2.cmml">C</mi><mo lspace="0em" rspace="0em" id="S4.p6.2.m2.1.2.1" xref="S4.p6.2.m2.1.2.1.cmml">​</mo><mrow id="S4.p6.2.m2.1.2.3.2" xref="S4.p6.2.m2.1.2.cmml"><mo stretchy="false" id="S4.p6.2.m2.1.2.3.2.1" xref="S4.p6.2.m2.1.2.cmml">(</mo><mi id="S4.p6.2.m2.1.1" xref="S4.p6.2.m2.1.1.cmml">i</mi><mo stretchy="false" id="S4.p6.2.m2.1.2.3.2.2" xref="S4.p6.2.m2.1.2.cmml">)</mo></mrow></mrow><annotation-xml encoding="MathML-Content" id="S4.p6.2.m2.1b"><apply id="S4.p6.2.m2.1.2.cmml" xref="S4.p6.2.m2.1.2"><times id="S4.p6.2.m2.1.2.1.cmml" xref="S4.p6.2.m2.1.2.1"></times><ci id="S4.p6.2.m2.1.2.2.cmml" xref="S4.p6.2.m2.1.2.2">𝐶</ci><ci id="S4.p6.2.m2.1.1.cmml" xref="S4.p6.2.m2.1.1">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p6.2.m2.1c">C(i)</annotation></semantics></math>, for complete and incomplete sequences of each action, independently. The optimal plot for complete sequences is one that shows a step function from 0 to 1 when i = 0. The optimal graph for incomplete sequences would thus be a flat line at 0.</p>
+</div>
+<div id="S4.p7" class="ltx_para ltx_noindent">
+<p id="S4.p7.1" class="ltx_p"><span id="S4.p7.1.1" class="ltx_text ltx_font_bold">Feature evaluation:</span>
+We compare fine-tuned CNN features (FT-CNN) features to the other hand-crafted and pre-trained features using PCA-HMM in Table <a href="#S4.T1" title="Table 1 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. As can be seen, FT-CNN has the highest <math id="S4.p7.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.p7.1.m1.1a"><msub id="S4.p7.1.m1.1.1" xref="S4.p7.1.m1.1.1.cmml"><mi id="S4.p7.1.m1.1.1.2" xref="S4.p7.1.m1.1.1.2.cmml">F</mi><mn id="S4.p7.1.m1.1.1.3" xref="S4.p7.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.p7.1.m1.1b"><apply id="S4.p7.1.m1.1.1.cmml" xref="S4.p7.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p7.1.m1.1.1.1.cmml" xref="S4.p7.1.m1.1.1">subscript</csymbol><ci id="S4.p7.1.m1.1.1.2.cmml" xref="S4.p7.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.p7.1.m1.1.1.3.cmml" xref="S4.p7.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p7.1.m1.1c">F_{1}</annotation></semantics></math>-score in total which shows its ability to represent the subtle changes in the scene observed after completion.</p>
+</div>
+<div id="S4.p8" class="ltx_para ltx_noindent">
+<p id="S4.p8.1" class="ltx_p"><span id="S4.p8.1.1" class="ltx_text ltx_font_bold">Temporal Model evaluation:</span>
+The results of comparing PCA-HMM with LSTM per action (using CNN features), are summarised in Table <a href="#S4.T2" title="Table 2 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> and shown in Fig. <a href="#S4.F4" title="Figure 4 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>. Also, the combined results for all six actions in the dataset are shown in Fig. <a href="#S4.F5" title="Figure 5 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a>. The figure shows that while LSTM detects completion more frequently - in fact completion is detected for 96.7% of the complete sequences using LSTM, compared to 88.5% using PCA-HMM,
+LSTM is more likely to detect completion in incomplete sequences as well.
+The slightly delayed detection by PCA-HMM could be because of its low transition probability (less than 1%) to go from <span id="S4.p8.1.2" class="ltx_text ltx_font_italic">pre-</span> to <span id="S4.p8.1.3" class="ltx_text ltx_font_italic">post-completion</span> state.
+Also, it should be noted that, since LSTM does not learn any definite constraint on its transitions, it can transit back from <span id="S4.p8.1.4" class="ltx_text ltx_font_italic">post-completion</span> to <span id="S4.p8.1.5" class="ltx_text ltx_font_italic">pre-completion</span>, while PCA-HMM is forced to remain in <span id="S4.p8.1.6" class="ltx_text ltx_font_italic">post-completion</span>.
+The results also show that action <span id="S4.p8.1.7" class="ltx_text ltx_font_italic">switch</span> is the nearest to the ground truth for both temporal models, which is due to the obvious change it introduces to the scene. In contrast, action <span id="S4.p8.1.8" class="ltx_text ltx_font_italic">open</span> has the worst performance, probably due to the subtle change it introduces to the environment.</p>
+</div>
+<figure id="S4.T2" class="ltx_table">
+<table id="S4.T2.7.7" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S4.T2.7.7.8.1" class="ltx_tr">
+<td id="S4.T2.7.7.8.1.1" class="ltx_td ltx_border_r" colspan="2"></td>
+<td id="S4.T2.7.7.8.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.8.1.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">LSTM</span></td>
+<td id="S4.T2.7.7.8.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.8.1.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">PCA+HMM</span></td>
+</tr>
+<tr id="S4.T2.7.7.9.2" class="ltx_tr">
+<td id="S4.T2.7.7.9.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t" rowspan="3"><span id="S4.T2.7.7.9.2.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">switch</span></td>
+<td id="S4.T2.7.7.9.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.9.2.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.9.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.9.2.3.1" class="ltx_text" style="font-size:90%;">100</span></td>
+<td id="S4.T2.7.7.9.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.9.2.4.1" class="ltx_text" style="font-size:90%;">99.8</span></td>
+</tr>
+<tr id="S4.T2.7.7.10.3" class="ltx_tr">
+<td id="S4.T2.7.7.10.3.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.10.3.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.10.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.10.3.2.1" class="ltx_text" style="font-size:90%;">99.7</span></td>
+<td id="S4.T2.7.7.10.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.10.3.3.1" class="ltx_text" style="font-size:90%;">100</span></td>
+</tr>
+<tr id="S4.T2.1.1.1" class="ltx_tr">
+<td id="S4.T2.1.1.1.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.1.1.1.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.1.1.1.1.m1.1a"><msub id="S4.T2.1.1.1.1.m1.1.1" xref="S4.T2.1.1.1.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.1.1.1.1.m1.1.1.2" xref="S4.T2.1.1.1.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.1.1.1.1.m1.1.1.3" xref="S4.T2.1.1.1.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.1.1.1.1.m1.1b"><apply id="S4.T2.1.1.1.1.m1.1.1.cmml" xref="S4.T2.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.1.1.1.1.m1.1.1.1.cmml" xref="S4.T2.1.1.1.1.m1.1.1">subscript</csymbol><ci id="S4.T2.1.1.1.1.m1.1.1.2.cmml" xref="S4.T2.1.1.1.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.1.1.1.1.m1.1.1.3.cmml" xref="S4.T2.1.1.1.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.1.1.1.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.1.1.1.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.1.1.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.1.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">99.9</span></td>
+<td id="S4.T2.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.1.1.1.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T2.7.7.11.4" class="ltx_tr">
+<td id="S4.T2.7.7.11.4.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T2.7.7.11.4.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">plug</span></td>
+<td id="S4.T2.7.7.11.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.11.4.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.11.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.11.4.3.1" class="ltx_text" style="font-size:90%;">92.2</span></td>
+<td id="S4.T2.7.7.11.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.11.4.4.1" class="ltx_text" style="font-size:90%;">99.5</span></td>
+</tr>
+<tr id="S4.T2.7.7.12.5" class="ltx_tr">
+<td id="S4.T2.7.7.12.5.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.12.5.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.12.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.12.5.2.1" class="ltx_text" style="font-size:90%;">96.0</span></td>
+<td id="S4.T2.7.7.12.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.12.5.3.1" class="ltx_text" style="font-size:90%;">94.5</span></td>
+</tr>
+<tr id="S4.T2.2.2.2" class="ltx_tr">
+<td id="S4.T2.2.2.2.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.2.2.2.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.2.2.2.1.m1.1a"><msub id="S4.T2.2.2.2.1.m1.1.1" xref="S4.T2.2.2.2.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.2.2.2.1.m1.1.1.2" xref="S4.T2.2.2.2.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.2.2.2.1.m1.1.1.3" xref="S4.T2.2.2.2.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.2.2.2.1.m1.1b"><apply id="S4.T2.2.2.2.1.m1.1.1.cmml" xref="S4.T2.2.2.2.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.2.2.2.1.m1.1.1.1.cmml" xref="S4.T2.2.2.2.1.m1.1.1">subscript</csymbol><ci id="S4.T2.2.2.2.1.m1.1.1.2.cmml" xref="S4.T2.2.2.2.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.2.2.2.1.m1.1.1.3.cmml" xref="S4.T2.2.2.2.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.2.2.2.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.2.2.2.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.2.2.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.2.2.2.2.1" class="ltx_text" style="font-size:90%;">94.0</span></td>
+<td id="S4.T2.2.2.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.2.2.2.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">97.0</span></td>
+</tr>
+<tr id="S4.T2.7.7.13.6" class="ltx_tr">
+<td id="S4.T2.7.7.13.6.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T2.7.7.13.6.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">open</span></td>
+<td id="S4.T2.7.7.13.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.13.6.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.13.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.13.6.3.1" class="ltx_text" style="font-size:90%;">84.8</span></td>
+<td id="S4.T2.7.7.13.6.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.13.6.4.1" class="ltx_text" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T2.7.7.14.7" class="ltx_tr">
+<td id="S4.T2.7.7.14.7.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.14.7.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.14.7.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.14.7.2.1" class="ltx_text" style="font-size:90%;">69.1</span></td>
+<td id="S4.T2.7.7.14.7.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.14.7.3.1" class="ltx_text" style="font-size:90%;">36.2</span></td>
+</tr>
+<tr id="S4.T2.3.3.3" class="ltx_tr">
+<td id="S4.T2.3.3.3.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.3.3.3.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.3.3.3.1.m1.1a"><msub id="S4.T2.3.3.3.1.m1.1.1" xref="S4.T2.3.3.3.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.3.3.3.1.m1.1.1.2" xref="S4.T2.3.3.3.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.3.3.3.1.m1.1.1.3" xref="S4.T2.3.3.3.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.3.3.3.1.m1.1b"><apply id="S4.T2.3.3.3.1.m1.1.1.cmml" xref="S4.T2.3.3.3.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.3.3.3.1.m1.1.1.1.cmml" xref="S4.T2.3.3.3.1.m1.1.1">subscript</csymbol><ci id="S4.T2.3.3.3.1.m1.1.1.2.cmml" xref="S4.T2.3.3.3.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.3.3.3.1.m1.1.1.3.cmml" xref="S4.T2.3.3.3.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.3.3.3.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.3.3.3.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.3.3.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.3.3.3.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">76.2</span></td>
+<td id="S4.T2.3.3.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.3.3.3.3.1" class="ltx_text" style="font-size:90%;">53.2</span></td>
+</tr>
+<tr id="S4.T2.7.7.15.8" class="ltx_tr">
+<td id="S4.T2.7.7.15.8.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T2.7.7.15.8.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">pull</span></td>
+<td id="S4.T2.7.7.15.8.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.15.8.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.15.8.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.15.8.3.1" class="ltx_text" style="font-size:90%;">96.0</span></td>
+<td id="S4.T2.7.7.15.8.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.15.8.4.1" class="ltx_text" style="font-size:90%;">99.9</span></td>
+</tr>
+<tr id="S4.T2.7.7.16.9" class="ltx_tr">
+<td id="S4.T2.7.7.16.9.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.16.9.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.16.9.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.16.9.2.1" class="ltx_text" style="font-size:90%;">96.5</span></td>
+<td id="S4.T2.7.7.16.9.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.16.9.3.1" class="ltx_text" style="font-size:90%;">94.6</span></td>
+</tr>
+<tr id="S4.T2.4.4.4" class="ltx_tr">
+<td id="S4.T2.4.4.4.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.4.4.4.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.4.4.4.1.m1.1a"><msub id="S4.T2.4.4.4.1.m1.1.1" xref="S4.T2.4.4.4.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.4.4.4.1.m1.1.1.2" xref="S4.T2.4.4.4.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.4.4.4.1.m1.1.1.3" xref="S4.T2.4.4.4.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.4.4.4.1.m1.1b"><apply id="S4.T2.4.4.4.1.m1.1.1.cmml" xref="S4.T2.4.4.4.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.4.4.4.1.m1.1.1.1.cmml" xref="S4.T2.4.4.4.1.m1.1.1">subscript</csymbol><ci id="S4.T2.4.4.4.1.m1.1.1.2.cmml" xref="S4.T2.4.4.4.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.4.4.4.1.m1.1.1.3.cmml" xref="S4.T2.4.4.4.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.4.4.4.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.4.4.4.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.4.4.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.4.4.4.2.1" class="ltx_text" style="font-size:90%;">96.2</span></td>
+<td id="S4.T2.4.4.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.4.4.4.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">97.2</span></td>
+</tr>
+<tr id="S4.T2.7.7.17.10" class="ltx_tr">
+<td id="S4.T2.7.7.17.10.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T2.7.7.17.10.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">pick</span></td>
+<td id="S4.T2.7.7.17.10.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.17.10.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.17.10.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.17.10.3.1" class="ltx_text" style="font-size:90%;">75.6</span></td>
+<td id="S4.T2.7.7.17.10.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.17.10.4.1" class="ltx_text" style="font-size:90%;">88.7</span></td>
+</tr>
+<tr id="S4.T2.7.7.18.11" class="ltx_tr">
+<td id="S4.T2.7.7.18.11.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.18.11.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.18.11.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.18.11.2.1" class="ltx_text" style="font-size:90%;">96.1</span></td>
+<td id="S4.T2.7.7.18.11.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.18.11.3.1" class="ltx_text" style="font-size:90%;">97.4</span></td>
+</tr>
+<tr id="S4.T2.5.5.5" class="ltx_tr">
+<td id="S4.T2.5.5.5.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.5.5.5.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.5.5.5.1.m1.1a"><msub id="S4.T2.5.5.5.1.m1.1.1" xref="S4.T2.5.5.5.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.5.5.5.1.m1.1.1.2" xref="S4.T2.5.5.5.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.5.5.5.1.m1.1.1.3" xref="S4.T2.5.5.5.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.5.5.5.1.m1.1b"><apply id="S4.T2.5.5.5.1.m1.1.1.cmml" xref="S4.T2.5.5.5.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.5.5.5.1.m1.1.1.1.cmml" xref="S4.T2.5.5.5.1.m1.1.1">subscript</csymbol><ci id="S4.T2.5.5.5.1.m1.1.1.2.cmml" xref="S4.T2.5.5.5.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.5.5.5.1.m1.1.1.3.cmml" xref="S4.T2.5.5.5.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.5.5.5.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.5.5.5.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.5.5.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.5.5.5.2.1" class="ltx_text" style="font-size:90%;">84.7</span></td>
+<td id="S4.T2.5.5.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.5.5.5.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">92.9</span></td>
+</tr>
+<tr id="S4.T2.7.7.19.12" class="ltx_tr">
+<td id="S4.T2.7.7.19.12.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_tt" rowspan="3"><span id="S4.T2.7.7.19.12.1.1" class="ltx_text ltx_font_italic" style="font-size:90%;">drink</span></td>
+<td id="S4.T2.7.7.19.12.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.19.12.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.19.12.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.19.12.3.1" class="ltx_text" style="font-size:90%;">82.1</span></td>
+<td id="S4.T2.7.7.19.12.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt"><span id="S4.T2.7.7.19.12.4.1" class="ltx_text" style="font-size:90%;">84.7</span></td>
+</tr>
+<tr id="S4.T2.7.7.20.13" class="ltx_tr">
+<td id="S4.T2.7.7.20.13.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.20.13.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.20.13.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.20.13.2.1" class="ltx_text" style="font-size:90%;">91.9</span></td>
+<td id="S4.T2.7.7.20.13.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.20.13.3.1" class="ltx_text" style="font-size:90%;">90.8</span></td>
+</tr>
+<tr id="S4.T2.6.6.6" class="ltx_tr">
+<td id="S4.T2.6.6.6.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">
+<math id="S4.T2.6.6.6.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.6.6.6.1.m1.1a"><msub id="S4.T2.6.6.6.1.m1.1.1" xref="S4.T2.6.6.6.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.6.6.6.1.m1.1.1.2" xref="S4.T2.6.6.6.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.6.6.6.1.m1.1.1.3" xref="S4.T2.6.6.6.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.6.6.6.1.m1.1b"><apply id="S4.T2.6.6.6.1.m1.1.1.cmml" xref="S4.T2.6.6.6.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.6.6.6.1.m1.1.1.1.cmml" xref="S4.T2.6.6.6.1.m1.1.1">subscript</csymbol><ci id="S4.T2.6.6.6.1.m1.1.1.2.cmml" xref="S4.T2.6.6.6.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.6.6.6.1.m1.1.1.3.cmml" xref="S4.T2.6.6.6.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.6.6.6.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.6.6.6.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.6.6.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.6.6.6.2.1" class="ltx_text" style="font-size:90%;">86.7</span></td>
+<td id="S4.T2.6.6.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.6.6.6.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">87.6</span></td>
+</tr>
+<tr id="S4.T2.7.7.21.14" class="ltx_tr">
+<td id="S4.T2.7.7.21.14.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_tt ltx_border_t" rowspan="3"><span id="S4.T2.7.7.21.14.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">total</span></td>
+<td id="S4.T2.7.7.21.14.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T2.7.7.21.14.2.1" class="ltx_text" style="font-size:90%;">precision</span></td>
+<td id="S4.T2.7.7.21.14.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T2.7.7.21.14.3.1" class="ltx_text" style="font-size:90%;">87.7</span></td>
+<td id="S4.T2.7.7.21.14.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_tt ltx_border_t"><span id="S4.T2.7.7.21.14.4.1" class="ltx_text" style="font-size:90%;">92.4</span></td>
+</tr>
+<tr id="S4.T2.7.7.22.15" class="ltx_tr">
+<td id="S4.T2.7.7.22.15.1" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.22.15.1.1" class="ltx_text" style="font-size:90%;">recall</span></td>
+<td id="S4.T2.7.7.22.15.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.22.15.2.1" class="ltx_text" style="font-size:90%;">92.7</span></td>
+<td id="S4.T2.7.7.22.15.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t"><span id="S4.T2.7.7.22.15.3.1" class="ltx_text" style="font-size:90%;">89.0</span></td>
+</tr>
+<tr id="S4.T2.7.7.7" class="ltx_tr">
+<td id="S4.T2.7.7.7.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">
+<math id="S4.T2.7.7.7.1.m1.1" class="ltx_Math" alttext="F_{1}" display="inline"><semantics id="S4.T2.7.7.7.1.m1.1a"><msub id="S4.T2.7.7.7.1.m1.1.1" xref="S4.T2.7.7.7.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.T2.7.7.7.1.m1.1.1.2" xref="S4.T2.7.7.7.1.m1.1.1.2.cmml">F</mi><mn mathsize="90%" id="S4.T2.7.7.7.1.m1.1.1.3" xref="S4.T2.7.7.7.1.m1.1.1.3.cmml">1</mn></msub><annotation-xml encoding="MathML-Content" id="S4.T2.7.7.7.1.m1.1b"><apply id="S4.T2.7.7.7.1.m1.1.1.cmml" xref="S4.T2.7.7.7.1.m1.1.1"><csymbol cd="ambiguous" id="S4.T2.7.7.7.1.m1.1.1.1.cmml" xref="S4.T2.7.7.7.1.m1.1.1">subscript</csymbol><ci id="S4.T2.7.7.7.1.m1.1.1.2.cmml" xref="S4.T2.7.7.7.1.m1.1.1.2">𝐹</ci><cn type="integer" id="S4.T2.7.7.7.1.m1.1.1.3.cmml" xref="S4.T2.7.7.7.1.m1.1.1.3">1</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.T2.7.7.7.1.m1.1c">F_{1}</annotation></semantics></math><span id="S4.T2.7.7.7.1.1" class="ltx_text" style="font-size:90%;">-score</span>
+</td>
+<td id="S4.T2.7.7.7.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T2.7.7.7.2.1" class="ltx_text" style="font-size:90%;">90.1</span></td>
+<td id="S4.T2.7.7.7.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t"><span id="S4.T2.7.7.7.3.1" class="ltx_text ltx_font_bold" style="font-size:90%;">90.6</span></td>
+</tr>
+</tbody>
+</table>
+<figcaption class="ltx_caption" style="font-size:90%;"><span class="ltx_tag ltx_tag_table">Table 2: </span>Comparing LSTM and PCA-HMM using FT-CNN features.</figcaption>
+</figure>
+<figure id="S4.F4" class="ltx_figure"><img src="/html/1710.02310/assets/x4.png" id="S4.F4.1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="461" height="123" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 4: </span>LSTM vs PCA-HMM for complete (top) and incomplete (bottom) sequences.</figcaption>
+</figure>
+<figure id="S4.F5" class="ltx_figure">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02310/assets/x5.png" id="S4.F5.1.g1" class="ltx_graphics ltx_centering ltx_figure_panel ltx_img_landscape" width="184" height="141" alt="Refer to caption"></div>
+<div class="ltx_flex_cell ltx_flex_size_2"><img src="/html/1710.02310/assets/x6.png" id="S4.F5.2.g2" class="ltx_graphics ltx_centering ltx_figure_panel ltx_img_landscape" width="184" height="141" alt="Refer to caption"></div>
+</div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 5: </span>Results for complete (left) and incomplete (right) sequences across the six actions</figcaption>
+</figure>
+<div id="S4.p9" class="ltx_para ltx_noindent">
+<p id="S4.p9.1" class="ltx_p"><span id="S4.p9.1.1" class="ltx_text ltx_font_bold">The need for observing incomplete sequences:</span> In theory, completion detection could use any dataset (which only contains complete sequences), as both <span id="S4.p9.1.2" class="ltx_text ltx_font_italic">pre-</span> and <span id="S4.p9.1.3" class="ltx_text ltx_font_italic">post-completion</span> labels are present in complete sequences.
+In this experiment, we train PCA-HMM on only complete sequences, but test on both complete and incomplete sequences. The results are shown in Fig <a href="#S4.F6" title="Figure 6 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6</span></a>. As seen, while performance is slightly improved for detecting completion in complete sequences, particularly for actions <span id="S4.p9.1.4" class="ltx_text ltx_font_italic">open</span> and <span id="S4.p9.1.5" class="ltx_text ltx_font_italic">pull</span>, the performance on incomplete sequences clearly deteriorates. The method tends to label completion when the action is not completed,
+(especially for actions <span id="S4.p9.1.6" class="ltx_text ltx_font_italic">switch</span> and <span id="S4.p9.1.7" class="ltx_text ltx_font_italic">drink</span>). This shows that training only on complete sequences may cause the CNN learn incorrect features for completion detection and supports the need for learning from both complete and incomplete sequences.</p>
+</div>
+<div id="S4.p10" class="ltx_para">
+<p id="S4.p10.1" class="ltx_p">In Fig. <a href="#S4.F7" title="Figure 7 ‣ 4 Experimental Results ‣ Detecting the Moment of Completion: Temporal Models for Localising Action Completion" class="ltx_ref"><span class="ltx_text ltx_ref_tag">7</span></a>, we present some qualitative success and failure results for detecting completion.</p>
+</div>
+<figure id="S4.F6" class="ltx_figure"><img src="/html/1710.02310/assets/x7.png" id="S4.F6.1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="461" height="123" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 6: </span>The PCA-HMM model is trained only on complete sequences, then tested on complete (top) and incomplete (bottom) sequences.</figcaption>
+</figure>
+<figure id="S4.F7" class="ltx_figure">
+<div id="S4.F7.5" class="ltx_block ltx_minipage ltx_align_center ltx_align_middle" style="width:17.3pt;">
+<p id="S4.F7.5.1" class="ltx_p">(a)</p>
+<p id="S4.F7.5.2" class="ltx_p">(b)</p>
+<p id="S4.F7.5.3" class="ltx_p">(c)</p>
+<p id="S4.F7.5.4" class="ltx_p">(d)</p>
+<div id="S4.F7.4.4" class="ltx_block ltx_minipage ltx_align_center ltx_align_middle" style="width:390.3pt;">
+<img src="/html/1710.02310/assets/x8.png" id="S4.F7.1.1.g1" class="ltx_graphics ltx_img_landscape" width="461" height="101" alt="Refer to caption"><img src="/html/1710.02310/assets/x9.png" id="S4.F7.2.2.g2" class="ltx_graphics ltx_img_landscape" width="461" height="100" alt="Refer to caption"><img src="/html/1710.02310/assets/x10.png" id="S4.F7.3.3.g3" class="ltx_graphics ltx_img_landscape" width="461" height="101" alt="Refer to caption"><img src="/html/1710.02310/assets/x11.png" id="S4.F7.4.4.g4" class="ltx_graphics ltx_img_landscape" width="461" height="101" alt="Refer to caption">
+</div>
+</div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 7: </span>sample sequences of success and failure for completion detection for both PCA-HMM and LSTM: (a) PCA-HMM has an early detection by 1 frame, (b) LSTM has a late detection by 1 frame, (c) PCA-HMM is delayed by 7 frames (6 frames omitted for space), while LSTM is delayed by 1 frame, (d) both PCA-HMM and LSTM fail to detect completion.</figcaption>
+</figure>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">5 </span>Conclusion and Future Work</h2>
+
+<div id="S5.p1" class="ltx_para">
+<p id="S5.p1.1" class="ltx_p">This paper presents <span id="S5.p1.1.1" class="ltx_text ltx_font_italic">action completion detection</span> as the task of localising the moment in time when a human observer believes an action’s goal has been achieved, for example an object has been picked up, or the light has been switched off. The approach goes beyond sequence-level recognition of completion towards frame level fine-grained perception of completion.</p>
+</div>
+<div id="S5.p2" class="ltx_para">
+<p id="S5.p2.1" class="ltx_p">We proposed a supervised approach for detecting completion per action. Fine-tuned CNN features were extracted per-frame and used to train temporal models. Two widely used temporal models, HMM and LSTM, were applied and their results were validated against the ground truth <span id="S5.p2.1.1" class="ltx_text ltx_font_italic">pre-</span> and <span id="S5.p2.1.2" class="ltx_text ltx_font_italic">post-completion</span> labels. We showed that, for detecting completion, fine-tuned CNN features outperform pre-trained and hand-crafted features, as they capture the subtle changes in the scene when the action is completed. We also introduced a metric for completion detection to assess when completion is prematurely detected or when the decision is overdue. We showed that both temporal models (LSTM and PCA-HMM) can detect completion within 10 frames in
+<math id="S5.p2.1.m1.1" class="ltx_Math" alttext="\sim" display="inline"><semantics id="S5.p2.1.m1.1a"><mo id="S5.p2.1.m1.1.1" xref="S5.p2.1.m1.1.1.cmml">∼</mo><annotation-xml encoding="MathML-Content" id="S5.p2.1.m1.1b"><csymbol cd="latexml" id="S5.p2.1.m1.1.1.cmml" xref="S5.p2.1.m1.1.1">similar-to</csymbol></annotation-xml><annotation encoding="application/x-tex" id="S5.p2.1.m1.1c">\sim</annotation></semantics></math>75% of complete sequences. However, we found that PCA-HMM outperforms LSTM on incomplete sequences.</p>
+</div>
+<div id="S5.p3" class="ltx_para">
+<p id="S5.p3.1" class="ltx_p">We aim to pursue two directions for future work. First, we aim to search for novel temporal models that particularly aim at completion detection, and can work in untrimmed videos. Second, we aim to test the method on other datasets including a variety of actions for a wider understanding of action completion detection.</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[1]</span>
+<span class="ltx_bibblock">
+Heidarivincheh, F., Mirmehdi, M., Damen, D.:
+
+</span>
+<span class="ltx_bibblock">Beyond action recognition: Action completion in rgb-d data.
+
+</span>
+<span class="ltx_bibblock">In: British Machine Vision Conference (BMVC). (2016)
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[2]</span>
+<span class="ltx_bibblock">
+Ma, S., Sigal, L., Sclaroff, S.:
+
+</span>
+<span class="ltx_bibblock">Learning activity progression in lstms for activity detection and
+early detection.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2016)
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[3]</span>
+<span class="ltx_bibblock">
+Yeung, S., Russakovsky, O., Jin, N., Andriluka, M., Mori, G., Li, F.F.:
+
+</span>
+<span class="ltx_bibblock">Every moment counts: Dense detailed labeling of actions in complex
+videos.
+
+</span>
+<span class="ltx_bibblock">arXiv preprint arXiv:1507.05738 (2015)
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[4]</span>
+<span class="ltx_bibblock">
+Lei, J., Li, G., Zhang, J., Guo, Q., Tu, D.:
+
+</span>
+<span class="ltx_bibblock">Continuous action segmentation and recognition using hybrid
+convolutional neural network-hidden markov model model.
+
+</span>
+<span class="ltx_bibblock">IET Computer Vision (2016)
+
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[5]</span>
+<span class="ltx_bibblock">
+Kang, S.M., Wildes, R.P.:
+
+</span>
+<span class="ltx_bibblock">Review of action recognition and detection methods.
+
+</span>
+<span class="ltx_bibblock">arXiv preprint arXiv:1610.06906 (2016)
+
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[6]</span>
+<span class="ltx_bibblock">
+Zhang, H., Zhou, W., Reardon, C., Parker, L.E.:
+
+</span>
+<span class="ltx_bibblock">Simplex-based 3d spatio-temporal feature description for action
+recognition.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2014)
+
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[7]</span>
+<span class="ltx_bibblock">
+Laptev, I., Marszalek, M., Schmid, C., Rozenfeld, B.:
+
+</span>
+<span class="ltx_bibblock">Learning realistic human actions from movies.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2008)
+
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[8]</span>
+<span class="ltx_bibblock">
+Niebles, J.C., Wang, H., Fei-Fei, L.:
+
+</span>
+<span class="ltx_bibblock">Unsupervised learning of human action categories using
+spatial-temporal words.
+
+</span>
+<span class="ltx_bibblock">International Journal of Computer Vision (2008)
+
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[9]</span>
+<span class="ltx_bibblock">
+Gilbert, A., Illingworth, J., Bowden, R.:
+
+</span>
+<span class="ltx_bibblock">Scale invariant action recognition using compound features mined from
+dense spatio-temporal corners.
+
+</span>
+<span class="ltx_bibblock">In: European Conference on Computer Vision (ECCV). (2008)
+
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[10]</span>
+<span class="ltx_bibblock">
+Matikainen, P.K., Hebert, M., Sukthankar, R.:
+
+</span>
+<span class="ltx_bibblock">Trajectons: Action recognition through the motion analysis of tracked
+features.
+
+</span>
+<span class="ltx_bibblock">In: ICCV Workshop on Video-Oriented Object and Event Classification.
+(2009)
+
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[11]</span>
+<span class="ltx_bibblock">
+Wang, H., Kläser, A., Schmid, C., Liu, C.L.:
+
+</span>
+<span class="ltx_bibblock">Dense trajectories and motion boundary descriptors for action
+recognition.
+
+</span>
+<span class="ltx_bibblock">International Journal of Computer Vision (2013)
+
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[12]</span>
+<span class="ltx_bibblock">
+Wang, H., Schmid, C.:
+
+</span>
+<span class="ltx_bibblock">Action Recognition with Improved Trajectories.
+
+</span>
+<span class="ltx_bibblock">In: IEEE International Conference on Computer Vision (ICCV). (2013)
+
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[13]</span>
+<span class="ltx_bibblock">
+Wang, X., Farhadi, A., Gupta, A.:
+
+</span>
+<span class="ltx_bibblock">Actions ~ transformations.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2016)
+
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[14]</span>
+<span class="ltx_bibblock">
+Simonyan, K., Zisserman, A.:
+
+</span>
+<span class="ltx_bibblock">Two-stream convolutional networks for action recognition in videos.
+
+</span>
+<span class="ltx_bibblock">In: Advances in Neural Information Processing Systems (NIPS).
+
+</span>
+<span class="ltx_bibblock">(2014)
+
+</span>
+</li>
+<li id="bib.bib15" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[15]</span>
+<span class="ltx_bibblock">
+Feichtenhofer, C., Pinz, A., Zisserman, A.:
+
+</span>
+<span class="ltx_bibblock">Convolutional two-stream network fusion for video action recognition.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2016)
+
+</span>
+</li>
+<li id="bib.bib16" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[16]</span>
+<span class="ltx_bibblock">
+Ji, S., Xu, W., Yang, M., Yu, K.:
+
+</span>
+<span class="ltx_bibblock">3d convolutional neural networks for human action recognition.
+
+</span>
+<span class="ltx_bibblock">IEEE Transaction on Pattern Analysis and Machine Intelligence (2013)
+
+</span>
+</li>
+<li id="bib.bib17" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[17]</span>
+<span class="ltx_bibblock">
+Tran, D., Bourdev, L., Fergus, R., Torresani, L., Paluri, M.:
+
+</span>
+<span class="ltx_bibblock">Learning spatiotemporal features with 3d convolutional networks.
+
+</span>
+<span class="ltx_bibblock">In: IEEE International Conference on Computer Vision (ICCV). (2015)
+
+</span>
+</li>
+<li id="bib.bib18" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[18]</span>
+<span class="ltx_bibblock">
+Donahue, J., Hendricks, L.A., Guadarrama, S., Rohrbach, M., Venugopalan, S.,
+Saenko, K., Darrell, T.:
+
+</span>
+<span class="ltx_bibblock">Long-term recurrent convolutional networks for visual recognition and
+description.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2015)
+
+</span>
+</li>
+<li id="bib.bib19" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[19]</span>
+<span class="ltx_bibblock">
+Yue-Hei Ng, J., Hausknecht, M., Vijayanarasimhan, S., Vinyals, O., Monga, R.,
+Toderici, G.:
+
+</span>
+<span class="ltx_bibblock">Beyond short snippets: Deep networks for video classification.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2015)
+
+</span>
+</li>
+<li id="bib.bib20" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[20]</span>
+<span class="ltx_bibblock">
+Brand, M., Oliver, N., Pentland, A.:
+
+</span>
+<span class="ltx_bibblock">Coupled hidden markov models for complex action recognition.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (1997)
+
+</span>
+</li>
+<li id="bib.bib21" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[21]</span>
+<span class="ltx_bibblock">
+Oliver, N.M., Rosario, B., Pentland, A.P.:
+
+</span>
+<span class="ltx_bibblock">A bayesian computer vision system for modeling human interactions.
+
+</span>
+<span class="ltx_bibblock">IEEE Transaction on Pattern Analysis and Machine Intelligence (2000)
+
+</span>
+</li>
+<li id="bib.bib22" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[22]</span>
+<span class="ltx_bibblock">
+Ramanan, D., Forsyth, D.A.:
+
+</span>
+<span class="ltx_bibblock">Automatic annotation of everyday movements.
+
+</span>
+<span class="ltx_bibblock">In: International Conference on Neural Information Processing Systems
+(NIPS). (2003)
+
+</span>
+</li>
+<li id="bib.bib23" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[23]</span>
+<span class="ltx_bibblock">
+Weinland, D., Boyer, E., Ronfard, R.:
+
+</span>
+<span class="ltx_bibblock">Action recognition from arbitrary views using 3d exemplars.
+
+</span>
+<span class="ltx_bibblock">In: IEEE International Conference on Computer Vision (ICCV). (2007)
+
+</span>
+</li>
+<li id="bib.bib24" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[24]</span>
+<span class="ltx_bibblock">
+Yu, E., Aggarwal, J.K.:
+
+</span>
+<span class="ltx_bibblock">Human action recognition with extremities as semantic posture
+representation.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+Workshops (CVPRW). (2009)
+
+</span>
+</li>
+<li id="bib.bib25" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[25]</span>
+<span class="ltx_bibblock">
+Kellokumpu, V., Zhao, G., Pietikäinen, M.:
+
+</span>
+<span class="ltx_bibblock">Recognition of human actions using texture descriptors.
+
+</span>
+<span class="ltx_bibblock">Machine Vision and Applications (2011)
+
+</span>
+</li>
+<li id="bib.bib26" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[26]</span>
+<span class="ltx_bibblock">
+Baccouche, M., Mamalet, F., Wolf, C., Garcia, C., Baskurt, A.:
+
+</span>
+<span class="ltx_bibblock">Action classification in soccer videos with long short-term memory
+recurrent neural networks.
+
+</span>
+<span class="ltx_bibblock">In: International Conference on Artificial Neural Networks. (2010)
+
+</span>
+</li>
+<li id="bib.bib27" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[27]</span>
+<span class="ltx_bibblock">
+Grushin, A., Monner, D., Reggia, J.A., Mishra, A.:
+
+</span>
+<span class="ltx_bibblock">Robust human action recognition via long short-term memory.
+
+</span>
+<span class="ltx_bibblock">In: International Joint Conference on Neural Networks (IJCNN). (2013)
+
+</span>
+</li>
+<li id="bib.bib28" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[28]</span>
+<span class="ltx_bibblock">
+Veeriah, V., Zhuang, N., Qi, G.J.:
+
+</span>
+<span class="ltx_bibblock">Differential recurrent neural networks for action recognition.
+
+</span>
+<span class="ltx_bibblock">In: IEEE International Conference on Computer Vision (ICCV). (2015)
+
+</span>
+</li>
+<li id="bib.bib29" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[29]</span>
+<span class="ltx_bibblock">
+Wang, J., Liu, Z., Wu, Y., Yuan, J.:
+
+</span>
+<span class="ltx_bibblock">Mining actionlet ensemble for action recognition with depth cameras.
+
+</span>
+<span class="ltx_bibblock">In: IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR). (2012)
+
+</span>
+</li>
+<li id="bib.bib30" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[30]</span>
+<span class="ltx_bibblock">
+Simonyan, K., Zisserman, A.:
+
+</span>
+<span class="ltx_bibblock">Very deep convolutional networks for large-scale image recognition.
+
+</span>
+<span class="ltx_bibblock">CoRR (2014)
+
+</span>
+</li>
+<li id="bib.bib31" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[31]</span>
+<span class="ltx_bibblock">
+Soomro, K., Zamir, A.R., Shah, M.:
+
+</span>
+<span class="ltx_bibblock">A dataset of 101 human actions classes from videos in the wild.
+
+</span>
+<span class="ltx_bibblock">CoRR (2012)
+
+</span>
+</li>
+</ul>
+</section>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02309" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02310" class="ar5iv-text-button ar5iv-severity-warning">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02310">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02310" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02311" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Wed Mar 20 02:15:12 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

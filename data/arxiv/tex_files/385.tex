@@ -1,0 +1,373 @@
+\section{Introduction}
+
+In recent years, one of the most fruitful directions of research has been providing theoretical guarantees for optimization in non-convex settings. In particular, a routine task in both unsupervised and supervised learning  is to use training data to fit the optimal parameters for a model in some parametric family. Theoretical successes in this context range from analyzing tensor-based approaches using method-of-moments, to iterative techniques like gradient descent, EM, and variational inference 
+in a variety of models. These models include topic models \cite{anandkumar2012spectral, arora2012topic, arora2013practical, awasthi2015some}, dictionary learning \cite{arora2015simple, agarwal2014learning}, gaussian mixture models \cite{hsu2013learning}, and Bayesian networks \cite{arora2016provable}. 
+
+%Yet, 
+
+Finding maximum likelihood values of unobserved quantities via optimization is reasonable in many learning settings, as when the number of samples is large maximum likelihood will converge to the true values of the quantities. However, for Bayesian inference problems (e.g. given a document, what topics is it about) the number of samples can be limited and maximum likelihood may not be well-behaved \cite{sontag2011complexity}. In these cases we would prefer to {\em sample} from the posterior distribution. \Rnote{added the paragraph to try to discuss why sampling is important.} %Bayesian formulations of these problems often involve sampling and estimating marginals of distributions which have an explicit form up to a constant of proportionality. 
+In more generality, the above (typical) scenario is sampling from the \emph{posterior} distribution over the latent variables of a latent variable Bayesian model whose parameters are known. In such models, the observable variables $x$ follow a distribution $p(x)$ which has a simple and succinct form \emph{given} the values of some latent variables $h$, i.e., the joint $p(h,x)$ factorizes as $p(h) p(x|h)$ where both factors are explicit. Hence, the \emph{posterior} distribution $p(h|x) $ has the form $p(h|x) = \frac{p(h) p(x|h)}{p(x)}$. Even though the numerator is easy to evaluate,
+without structural assumptions such distributions are often hard to sample from (exactly or approximately). The difficulty is in evaluating the denominator $p(x)=\sum_h p(h)p(x|h)$, which can be NP-hard to do even approximately even for simple models like topic models \cite{sontag2011complexity}.
+
+The sampling analogues of convex functions, which are arguably the widest class of real-valued functions for which optimization is easy, are \emph{log-concave} distributions, i.e. distributions of the form $p(x) \propto e^{-f(x)}$ for a convex function $f(x)$. Recently, there has been renewed interest in analyzing a popular Markov Chain for sampling from such distributions, when given gradient access to $f$---a natural setup for the posterior sampling task described above. In particular, a Markov chain called \emph{Langevin Monte Carlo} (see Section~\ref{sec:overview-l}), popular with Bayesian practitioners, has been proven to work, with various rates depending on the properties of $f$ \cite{dalalyan2016theoretical, durmus2016high,dalalyan2017further}.  
+
+Log-concave distributions are necessarily uni-modal: their density functions have only one local maximum, which must then be a global maximum. This fails to capture many interesting scenarios.
+Many simple posterior distributions are neither log-concave nor uni-modal, for instance, the posterior distribution of the means for a mixture of gaussians.
+%This may not even be true in simple settings. %\Rnote{ such as ??? Is there an obvious example? I guess if for some applications the prior is a mixture of gaussians then it will not be surprising that the posterior is also multi-modal}. 
+In a more practical direction, complicated posterior distributions associated with deep generative models \cite{rezende2014stochastic} and variational auto-encoders \cite{kingma2013auto} are believed to be multimodal as well.  
+%The potential posterior distributions we care about may have multiple modes, and far from log-concave.
+
+The goal of this work is to initiate an  exploration of provable methods for sampling ``beyond log-concavity,'' in parallel to optimization ``beyond convexity''. As worst-case results are prohibited by hardness results, we must again make assumptions on the distributions we will be interested in. %Towards that, the limitations of log-concave distributions is the fact that they cannot capture multimodal distributions, which is a common phenomenon when sampling from posteriors in complicated generative models \cite{??}. 
+As a first step, in this paper we consider the prototypical multimodal distribution,  a mixture of gaussians. %where the mean of each of the gaussians corresponds to one of the modes -- which is the setting we will be focusing on in this paper. 
+%\Hnote{Not necessarily corresponding.}
+
+\subsection{Our results}
+\label{s:assumptions}
+
+We formalize the problem of interest as follows. We wish to sample from a distribution $p: \mathbb{R}^d \to \mathbb{R}$, such that $p(x) \propto e^{-f(x)}$, and we are allowed to query $\nabla f(x)$ and $f(x)$ at any point $x \in \mathbb{R}^d$. 
+
+To start with, we focus on a problem where $e^{-f(x)}$ is the density function of a mixture of gaussians. That is, given centers $\mu_1,\mu_2,\ldots, \mu_n \in \R^d$, weights $w_1,w_2,\ldots, w_n$ ($\sum_{i=1}^n w_i = 1$), variance $\sigma^2$ (all the gaussians are spherical with same covariance matrix $\sigma^2 I$), the function $f(x)$ is defined as\footnote{Note that the expression inside the $\log$ is essentially the probability density of a mixture of gaussians, except the normalization factor is missing. However, the normalization factor can just introduce a constant shift of $f$ and does not really change $\nabla f$.}
+\begin{equation}
+f(x) = - \log\left(\sum_{i=1}^n w_i \exp\left(-\frac{\|x - \mu_i\|^2}{2\sigma^2}\right)\right). % \sigma^2 \geq 1/B \text{ for some }B\ge 1. 
+\label{eq:f}
+\end{equation}
+
+\Rnote{I'm removing the bound $B$ since we can just talk about $\sigma^2$ right?} \Anote{I guess the point was that we can even get away with a \emph{bound} on $\sigma$ even if we don't know sigma exactly,  but I am fine switching to $\sigma$ only. Up to you.} 
+Furthermore, suppose that $D$ is such that $\|\mu_i\| \leq D, \forall i \in [n]$. %Note $B$ imposes a bound on the spikyness of the distribution: the larger $B$ is, the spikier the distribution is allowed to be. 
+We show that there is an efficient algorithm that can sample from this distribution given just access to $f(x)$ and $\nabla f(x)$.
+
+\begin{thm}[main, informal] Given $f(x)$ as defined in Equation (\ref{eq:f}), there is an algorithm with running time $\poly\pa{w_{\min},D,d,\rc{\ep}, \rc{\sigma^2}}$ that outputs a sample from a distribution within TV-distance $\ep$ of $p(x)$.
+\end{thm}
+\Rnote{$B$ should appear in the dependency right? It is not written in Theorem 3.1.}
+\Hnote{The main theorem is phrased in terms of $\sigma$ instead of $B$. Can we just write everything in terms of $\sigma$ and drop $B$?}
+
+Note that because the algorithm does not have direct access to $\mu_1, \mu_2, \ldots, \mu_n$, even sampling from this mixture of gaussians distribution is very non-trivial. Sampling algorithms that are based on making local steps (such as the ball-walk \cite{lovasz1993random,vempala2005geometric} and Langevin Monte Carlo) cannot move between different components of the gaussian mixture when the gaussians are well-separated (see Figure~\ref{fig:mix} left). In the algorithm we use simulated tempering (see Section~\ref{sec:overview-st}), which is a technique that considers the distribution at different temperatures (see Figure~\ref{fig:mix} right) in order to move between different components.
+
+\begin{figure}
+\centering
+\includegraphics[height=1in]{figure/2gaussians.png}
+\includegraphics[height=1in]{figure/2gaussians_ht.png}
+\caption{Mixture of two gaussians. Left: the two gaussians are well-separated, local sampling algorithm cannot move between modes. Right: Same distribution at high temperature, it is now possible to move between modes.}
+\label{fig:mix}
+\end{figure}
+
+In Appendix~\ref{sec:examples}, we give a few examples to show some simple heuristics cannot work and the assumption that all gaussians have the same covariance cannot be removed. In particular, we show random initialization is not enough to find all the modes. We also give an example where for a mixture of two gaussians, even if the covariance only differs by a constant multiplicative factor, simulated tempering is known to take exponential time.
+
+Of course, requiring the distribution to be {\em exactly} a mixture of gaussians is a very strong assumption. Our results can be generalized to all functions that are ``close'' to a mixture of gaussians.
+
+More precisely, the function $f$ satisfies the following properties: %\\(A0): 
+\begin{align}
+\exists \tilde{f}:\quad \mathbb{R}^d \to \mathbb{R}
+\text{ where } & \ve{\tilde{f} - f}_{\infty} \leq \dellarge \text{   ,   } \ve{\nabla \tilde{f} - \nabla f}_{\infty} \leq \delsmall \text{ and } \nabla^2 \tilde{f}(x) \preceq \nabla^2 f(x) + \delsmall I, \forall x \in \mathbb{R}^d \label{eq:A0}\\
+\text{and } \tilde{f}(x) &= -\log\left(\sum_{i=1}^n w_i \exp\left(-\frac{\|x - \mu_i\|^2}{2\sigma^2}\right)\right) \label{eq:tildef}
+\end{align}
+\Hnote{deleted the $B$}
+%Furthermore, suppose that $D$ is such that $\|\mu_i\| \leq D, \forall i \in [n]$. Note $B$ imposes a bound on the spikyness of the distribution: the larger $B$ is, the spikier the distribution is allowed to be. We assume that $B$ and $D$ are both known. \Anote{The bounds on the gradients up to second order are necessary since all the results I know on discretizing Langevin require a Lipschitz gradient.} Note that while sampling from a mixture of gaussians, knowing the means is trivial -- the scenario here is rather different. We assume that $f$, for which we have a value and gradient oracle, approximately has the form of a mixture whose components are unknown. \Anote{Perhaps we need to mention why some trivial ``optimization'' with random restarts algorithm trying to locate the means doesn't work? } 
+
+Intuitively, these conditions show that the density of the  distribution is within a $e^\Delta$ multiplicative factor to an (unknown) mixture of gaussians. Our theorem can be generalized to this case.
+
+\begin{thm}[general case, informal] For function $f(x)$ that satisfies Equations (\ref{eq:A0}) and (\ref{eq:tildef}), there is an algorithm that runs in time $\poly\pa{w_{\min},D,d,\rc{\ep}, \rc{\sigma^2}, e^\De}$ that outputs a sample $x$ from a distribution that has TV-distance at most $\ep$ from $p(x)$.
+\label{t:informalperturb}
+\end{thm}
+
+\subsection{Prior work}
+\label{s:priorwork}
+
+Our algorithm will use two classical techniques in the theory of Markov chains:  \emph{Langevin diffusion}, a chain for sampling from distributions in the form $p(x)\propto e^{-f(x)}$ given only gradient access to $f$ and \emph{simulated tempering}, a heuristic technique used for tackling multimodal distributions. We recall briefly what is known for both of these techniques.  
+ 
+For Langevin dynamics, convergence to the stationary distribution is a classic result \cite{bhattacharya1978criteria}. Understanding the mixing time of the continuous dynamics for log-concave distributions is also a classic result: \cite{bakry1985diffusions, bakry2008simple} show that log-concave distributions satisfy a Poincar\'e and log-Sobolev inequality, which characterize the rate of convergence. Of course, algorithmically, one can only run a ``discretized'' version of the Langevin dynamics, but results on such approaches are much more recent: \cite{dalalyan2016theoretical, durmus2016high,dalalyan2017further} obtained an algorithm for sampling from a log-concave distribution over $\mathbb{R}^d$, and \cite{bubeck2015sampling} gave a algorithm to sample from a log-concave distribution restricted to a convex set by incorporating a projection step. \cite{raginsky2017non} give a nonasymptotic analysis of Langevin dynamics for arbitrary non-log-concave distributions with certain regularity and decay properties. Of course, the mixing time is exponential in general when the spectral gap of the chain is small; furthermore, it has long been known that transitioning between different modes can take an exponentially long time, a phenomenon known as meta-stability \cite{bovier2002metastability, bovier2004metastability, bovier2005metastability}. It is a folklore result that guarantees for mixing extend to distributions $e^{-f(x)}$ where $f(x)$ is a ``nice'' function that is close to a convex function in $L^\iy$ distance; however, this does not address more global deviations from convexity.
+
+% We should mention, in the face of these facts, \cite{zhang2017hitting} provided a hitting time, rather than mixing time analysis. For example, in the case of multiple deep local minima, there result can conclude that Langevin Monte Carlo comes close to one of them in polynomial time. (In contrast, our work addresses head-on mixing for distributions with multiple deep local minima.)
+
+%In practice, Langevin Monte Carlo has been increasingly applied in recent years, not only in Bayesian learning but also in nonconvex optimization such as in training of neural networks (\cite{welling2011bayesian,
+%mandt2016variational,
+%ye2017langevin,
+%chaudhari2017deep}).
+
+%\subsection{Prior work on methods involving temperature}
+
+%Tempering is one of many techniques addressing this difficulty of transitioning between multiple modes. The idea is to 
+
+It is clear that for distributions that are far from being log-concave and many deep modes, additional techniques will be necessary. Among many proposed heuristics for such situations is simulated tempering, which effectively runs multiple Markov chains, each corresponding to a different temperature of the original chain, and ``mixes'' between these different Markov chains. The intuition is that the Markov chains at higher temperature can move between modes more easily, and if one can ``mix in'' points from these into the lower temperature chains, their mixing time ought to improve as well. Provable results of this heuristic are however few and far between.  
+%Note that the only polynomial-time guarantees for mixing for Langevin dynamics are from log-concave distributions, i.e., $p(x)\propto e^{-f(x)}$ where $f(x)$ is convex. By a folklore result, guarantees extend to distributions $p(x)$ where $f(x)$ is close to a convex function in $L^\iy$ norm. Given the intractability of sampling for general nonconvex $f$ using Langevin dynamics, one hope is to consider methods that involve transitioning between ``temperatures'' of the Markov chain, such as simulated annealing, annealed importance sampling, simulated tempering, or parallel tempering. The function $f(x)$ can either be multiplied by $0<\be<1$, or  smoothed out in some other way.
+%also particle learning
+%? mention others - AIS, parallel tempering, particles
+%? mention folklore of $L^\iy$?
+\cite{woodard2009conditions, zheng2003swapping} lower-bound the spectral gap for generic simulated tempering chains. The crucial technique our paper shares with theirs is a Markov chain decomposition technique due to \cite{madras2002markov}. However, for the scenario of Section~\ref{s:assumptions} we are interested in, the spectral gap bound in \cite{woodard2009conditions} is exponentially small as a function of the number of modes. Our result will remedy this. %\cite{woodard2009sufficient} shows a lower bound on mixing time that depends on 
+%\cite{geman1986diffusions} showed that simulated annealing with a fine enough temperature schedule will approximate the desired stationary distribution; however, the schedule is logarithmic so that in general, exponentially many temperatures are required.  
+
+%Although changing the temperature improves convergence in practice, in our setting, there have not been any polynomial-time guarantees for temperature-based methods. 
+%In particular, there have been no guarantees for mixing time for distributions with multiple deep modes. This is because prior analyses have focused on a constant temperature, and for these distributions, Langevin suffers from torpid mixing at a constant temperature. 
+
+%for any nontrivial class multimodal distributions.
+
+\section{Preliminaries}
+
+In this section we first introduce notations for Markov chains. More details are deferred to Appendix~\ref{a:markovchain}. Then we briefly discuss Langevin Monte Carlo and Simulated Tempering.
+%\Rnote{I feel we should first introduce LMC because then when we talk about ``temperature'' it makes more sense.}
+
+\subsection{Markov chains}
+
+In this paper, we use both discrete time and continuous time Markov chains. In this section we briefly give definitions and notations for discrete time Markov chains. Continuous time Markov chains follow the same intuition, but we defer the formal definitions to Appendix~\ref{a:markovchain}. 
+
+\begin{df}
+A (discrete time) Markov chain is $M=(\Om,P)$, where $\Om$ is a measure space and $P(x,y)\dy$ is a probability measure for each $x$.
+%\footnote{All chains we will consider will be absolutely continuous with respect to $\R^n$, so we use the notation $p(x)\dx$ rather than $d\mu(x)$, and $P(x,y)\dy$ rather than $P(x,dy)$.}  
+%\footnote{For simplicity of notation, in this appendix we consider chains absolutely continuous with respect to $\R^n$, so we use the notation $p(x)\dx$ rather than $d\mu(x)$, and $P(x,y)\dy$ rather than $P(x,dy)$. The same results and definitions apply with the modified notation if this is not the case.}
+It defines a random process $(X_t)_{t\in \N_0}$ as follows. If $X_s=x$, then 
+\begin{align}
+\Pj(X_{s+1}\in A) = P(x,A) :&=\int_A p(x,y)\dy. 
+\end{align}
+
+A \vocab{stationary distribution} is $p(x)$ such that if $X_0\sim p$, then $X_t\sim p$ for all $t$; equivalently, $\int_\Om p(x) P(x,y) \dx = p(y)$. 
+
+A chain is \vocab{reversible} if $p(x)P(x,y) = p(y) P(y,x)$. 
+\end{df}
+%Any irreducible aperiodic Markov chain has a unique stationary distribution.
+
+If a Markov chain has a finite number of states, then it can be represented as a weighted graph where the transition probabilities are proportional to the weights on the edges. A reversible Markov chain can be represented as a undirected graph. 
+
+\paragraph{Variance, Dirichlet form and Spectral Gap}
+An important quantity of the Markov chain is the {\em spectral gap}.
+
+\begin{df}
+For a discrete-time Markov chain $M=(\Om, P)$, let $P$ operate on functions as
+\begin{align}
+(Pg)(x) = \E_{y\sim P(x,\cdot)} g(y) = \int_{\Om} g(x)P(x,y)\dy.
+\end{align}
+
+Suppose $M=(\Om, P)$ has unique stationary distribution $p$.
+Let
+$\an{g,h}_p :=\int_{\Om} g(x)h(x)p(x)\dx$ and define the Dirichlet form and variance by
+%, and spectral gap by
+\begin{align}
+\cal E_M(g,h) &= \an{g, (I-P)h}_p \\
+%&= \int_{\Om} f(I-P)f\,d\mu\\
+\Var_p(g) &= \ve{g-\int_{\Om} gp\dx}_p^2
+\end{align}
+Write $\cal E_M(g)$ for $\cal E_M(g,g)$. 
+Define the eigenvalues of $M$, $0=\la_1\le \la_2\le \cdots$ to be the eigenvalues of $I-P$ with respect to the norm $\ved_{p}$. 
+
+Define the spectral gap by
+\begin{align}
+\Gap(M) &= \inf_{g\in L^2(p)} \fc{\cal E_M(g)}{\Var_p(g)}.
+\end{align}
+\end{df}
+%Note that 
+%\begin{align}
+%\cal E_M(f) &= \rc 2 \iint_{\Om\times \Om}(f(x)-f(y))^2 p(x)P(x,y)\dx\dy
+%\end{align}
+%and that 
+%\begin{align}
+%\Gap(M) = \inf_{f\in L_2(p), f\perp_p \one} \fc{\cal E_M(f}{\ve{f}_p^2} = \la_2(I-P).
+%\end{align}
+
+In the case of a finite, undirected graph, the function just corresponds to a vector $x\perp \vec{1}$. The Dirichlet form corresponds to $x^\top \cL x$ where $\cL$ is the normalized Laplacian matrix, and the variance is just the squared norm $\|x\|^2$.
+
+The spectral gap controls mixing for the Markov chain. Define the $\chi^2$ distance between $p,q$ by
+\begin{align}
+\chi_2(p||q) &= \int_\Om \pf{q(x)-p(x)}{p(x)}^2p(x)\dx
+= \int_\Om \pf{q(x)^2}{p(x)} - 1.
+\end{align}
+Let $p^0$ be any initial distribution and $p^t$ be the distribution after running the Markov chain for $t$ steps. Then
+\begin{align}\label{eq:gap-mix}
+\chi_2(p||p^t) \le (1-G')^t \chi(p||p^0)
+\end{align}•
+where $G'=\min(\la_2, 2-\la_{\max})$. 
+
+\paragraph{Restrictions and Projections}
+Later we will also work with continuous time Markov chains (such as Langevin dynamics, see Section~\ref{sec:overview-l}). In the proof we will also need to consider {\em restrictions} and {\em projections} of Markov chains. Intuitively, restricting a Markov chain $M$ to a subset of states $A$ (which we denote by $M|A$) removes all the states out of $A$, and replaces transitions to $A$ with self-loops. Projecting a Markov chain $M$ to partition $\cP$ (which we denote by $\bar{M}^\cP$) ``merges'' all parts of the partition into individual states. For formal definitions see Appendix~\ref{a:markovchain}.
+
+\paragraph{Conductance and clustering} Finally we define conductance and clusters for Markov chains. These are the same as the familiar concepts as in undirected graphs.
+
+\begin{df}\label{df:conduct}
+Let $M=(\Om, P)$ be a Markov chain with unique stationary distribution $p$. Let
+%Given a Markov chain with $P(x,y)$ being the transition probability from $x$ to $y$ and $p(x)$ being the stationary distribution, let 
+\begin{align}
+Q(x,y) &= p(x) P(x,y)\\
+Q(A,B) & = \iint_{A\times B} Q(x,y)\dx\dy.
+\end{align}
+(I.e., $x$ is drawn from the stationary distribution and $y$ is the next state in the Markov chain.)
+Define the \vocab{(external) conductance} of $S$, $\phi_M(S)$, and the \vocab{Cheeger constant} of $M$, $\Phi(M)$, by
+\begin{align}
+\phi_M(S) & = \fc{Q(S,S^c)}{p(S)}\\
+\Phi(M) &= \min_{S\sub \Om, p(S)\le \rc 2}
+\phi_M(S).
+\end{align}
+\end{df}
+
+The clustering of a Markov chain is analogous to a partition of vertices for undirected graphs. For a good clustering, we require the inner-conductance to be large and the outer-conductance to be small.
+
+\begin{df}\label{df:in-out}
+Let $M=(\Om,P)$ be a Markov chain on a finite state space $\Om$. 
+We say that $k$ disjoint subsets $A_1,\ldots, A_k$ of $\Om$ are a $(\phi_{\text{in}}, \phi_{\text{out}})$-clustering if for all $1\le i\le k$,
+\begin{align}
+\Phi(M|_{A_i}) &\ge \phi_{\text{in}}\\
+\phi_M(A_i)&\le \phi_{\text{out}}.
+\end{align}•
+\end{df}
+
+
+
+\subsection{Overview of Langevin dynamics} 
+
+\label{sec:overview-l}
+
+Langevin diffusion is a stochastic process, described by the stochastic differential equation (henceforth SDE)
+\begin{equation}
+dX_t = -\nb f (X_t) \,dt + \sqrt{2}\,dW_t \label{eq:langevinsde}
+\end{equation}
+where $W_t$ is the Wiener process. %The SDE tracks the location of a stochastic particle that drifts along the gradient direction $-\nb f(X_t)$ and undergoes Brownian motion ($dW_t$) at the same time. 
+The crucial (folklore) fact about Langevin dynamics is that Langevin dynamics converges to the stationary distribution given by $p(x) \propto e^{-f(x)}$.  
+%\exp(-f(x))$. 
+Substituting $\be f$ for $f$ in~\eqref{eq:langevinsde} gives the Langevin diffusion process for inverse temperature $\be$, which has stationary distribution $\propto e^{-\be f(x)}$. Equivalently it is also possible to consider the temperature as changing the magnitude of the noise:
+$$
+dX_t = -\nabla f(X_t)dt + \sqrt{2\beta^{-1}}dW_t.
+$$
+
+Of course algorithmically we cannot run a continuous-time process, so we run a \emph{discretized} version of the above process: namely, we run a Markov chain where the random variable at time $t$ is described as 
+\begin{equation} 
+X_{t+1} = X_t - \eta \nb f(X_t)  + \sqrt{2 \eta }\xi_k, \quad \xi_k \sim N(0,I) \label{eq:langevind} 
+\end{equation}
+where $\eta$ is the step size. (The reason for the $\sqrt \eta$ scaling is that running Brownian motion for $\eta$ of the time scales the variance by $\sqrt{\eta}$.)
+
+The works \cite{dalalyan2016theoretical, durmus2016high, dalalyan2017further} have analyzed the convergence properties (both bias from the stationary distribution, and the convergence rate) for log-concave distributions, while \cite{raginsky2017non} give convergence rates for non-log-concave distributions. Of course, in the latter case, the rates depend on the spectral gap, which is often exponential in the dimension. 
+
+%There have been existing works \Anote{add stuff} on analyzing the convergence properties (both in terms of bias from the stationary distribution, and the convergence speed) for mostly log-concave distributions, with the exception of \cite{Raginsky}.  
+
+
+
+\subsection{Overview of simulated tempering}
+\label{sec:overview-st}
+%We will be using a slight generalization of the usual tempering chain, which allows for different relative probabilities for the various temperatures. More concretely: 
+
+%Let $0=t_0<\cdots < t_{l-1}=1$ be temperatures, and consider Markov chains $M_t$ with state space $\Om$ at temperatures $t=t_0,\ldots, t_{l-1}$. 
+
+Simulated tempering is a technique that converts a Markov chain to a new Markov chain whose state space is a product of the original state space and a temperature. The new Markov chain allows the original chain to change ``temperature'' while maintaining the correct marginal distributions. Given a discrete time Markov chain, we will consider it in $L$ temperatures. Let $[L]$ denote the set $\{1,2,...,L\}$, we define the simulated tempering chain as follows:
+
+\begin{df}
+Let $M_i, i\in [L]$ be a sequence of Markov chains with state space $\Om$ and unique stationary distributions $p_i$. 
+Let $r_1,\ldots, r_{L}$ be such that 
+$$
+r_i> 0,\quad \sumo i{L} r_i = 1.
+$$
+
+Define the \vocab{simulated tempering Markov chain} with \emph{relative probabilities} $r_i$ as follows. 
+The states of $M_{\st}$ are $\Om\times [L]$. 
+Suppose the current state is $(x, k)$. 
+\begin{enumerate}
+\item
+With probability $\rc2$, keep $k$ fixed, and update $x$ according to $M_{k}$. We will call this a Type 1 transition. 
+\item
+With probability $\rc2$, do the following Metropolis-Hastings step: draw $k'$ randomly from $\{0,\ldots, L-1\}$. Then transition to $(x,k')$ with probability
+$$
+\min \bc{\fc{r_{k'}p_{k'}(x)}{r_kp_k(x)}, 1}
+$$
+and stay at $(x,k)$ otherwise. We will call this a Type 2 transition. 
+%SAVER
+%With probability $\rc 2$, let $k'=k-1$, and with probability $\rc2$, let $k'=k+1$. If $k'\nin [L]$, let $k'=k$ instead. Transition to $(x,k')$ with probability
+%$$
+%\min \bc{\fc{r_{k'}p_{k'}(x)}{r_kp_k(x)}, 1}
+%$$
+%and  stay at $(x,k)$ otherwise. We will call this a Type 2 transition.
+%\footnote{In the literature, often for a Type 2 transition, $k'$ is drawn from $[L]$ rather than $\{k-1,k+1\}$. We modify this to just adjacent $k$ because in our case the ratio $\fc{p_{k'}(x)}{p_k(x)}$ for $k'\in \{k-1,k+1\}$ is bounded, and can be exponential otherwise.}
+\end{enumerate}
+\label{df:temperingchain}
+\end{df}
+
+\begin{rem}
+For the type two transitions, we can instead just pick $k'$ from $\{k-1,k,k+1\}$. This will slightly improve our bounds on mixing time, because the ratio $\fc{p_{k'}(x)}{p_k(x)}$ for $k'\in \{k-1,k+1\}$ is bounded, and can be exponential otherwise. For simplicity, we stick with the traditional definition of the simulated tempering Markov chain.
+\end{rem}
+%\Rnote{I'm not sure if the above remark is necessary for this paper.}
+
+The typical setting is as follows. The Markov chains come from a smooth family of Markov chains with parameter $\be\ge 0$, and $M_i$ is the Markov chain with parameter $\be_i$, where $0\le \be_1\le \cdots \be_{L}=1$. (Using terminology from statistical physics, $\be=\rc\tau$ is the inverse temperature.) 
+We are interested in sampling from the distribution when $\be$ is large ($\tau$ is small). However, the chain suffers from torpid mixing in this case, because the distribution is more peaked. The simulated tempering chain uses smaller $\be$ (larger $\tau$) to help with mixing.
+For us, the stationary distribution at inverse temperature $\be$ is $\propto e^{-\be f(x)}$. 
+
+Of course, the Langevin dynamics introduced in previous section is a continuous time Markov chain. In the algorithm we change it to a discrete time Markov chain by fixing a step size. Another difficulty in running the simulated tempering chain directly is that we don't have access to $p_k$ (because we do not know the partition function). We make use of the flexibility in $r_i$'s to fix this issue. For more details see Section~\ref{sec:overview-alg}.
+
+%Actually, the general formulation appears in the literature, so I've removed this.
+%In the literature, often $(r_0,\ldots, r_{L-1})$ is taken to be $(\rc L,\ldots, \rc L)$. However, we will need this more general version, as we will only be able to estimate $p_t$ within a constant factor.  \Hnote{Actually, may be better to just transition to just the next higher or lower temperature. Possibly save a factor of $L$?}
+
+The crucial fact to note is that the stationary distribution is a ``mixture'' of the distributions corresponding to the different temperatures. Namely:  
+
+\begin{pr} [folklore]
+If the $M_{k}$ are reversible Markov chains with stationary distributions $p_k$, then the simulated tempering chain $M$
+%$M_{\st}$ 
+is a reversible Markov chain with stationary distribution
+$$
+p(x,i) = r_ip_i(x).
+%\sum_{j=0}^{L-1} r_jp_k(x) \de_j(i).
+$$
+\end{pr}
+
+
+
+\section{Our Algorithm} 
+
+%The algorithm is based on running a simulated tempering Markov chain, where the individual Markov chains corresponding to each temperature will be discretized Langevin chains. 
+
+%In order to survey each of the ingredients briefly, in Section~\ref{sec:overview-st} we an overview of simulated tempering; in Section~\ref{sec:overview-l} we give an overview of Langevin dynamics; finally, in Section~\ref{sec:overview-alg} we define the Markov chain we will use and give the main algorithm.
+
+
+%\subsection{Overview of our algorithm} 
+
+\label{sec:overview-alg}
+
+Our algorithm will run a simulated tempering chain, with a polynomial number of temperatures, while running discretized Langevin dynamics at the various temperatures. The full algorithm is specified in Algorithm~\ref{a:mainalgo}. 
+
+As we mentioned before, an obstacle in running the simulated tempering chain is that we do not have access to the partition function. We solve this problem by estimating the partition function from high temperature to low temperature, adding one temperature at a time (see Algorithm~\ref{a:mainalgo}). Note that if the simulated tempering chain mixes and produce good samples, by standard reductions it is easy to estimate the (ratios of) partition functions.
+
+\begin{algorithm}
+\begin{algorithmic}
+\STATE INPUT: Temperatures $\be_1,\ldots, \be_\ell$; partition function estimates $\wh Z_1,\ldots, \wh Z_\ell$; step size $\eta$, time interval $T$, number of steps $t$.
+\STATE OUTPUT: A random sample $x\in \R^d$ (approximately from the distribution $p_\ell(x)\propto e^{\be_\ell f(x)}$).
+\STATE Let $(x,k)=(x_0,1)$ where $x_0\sim N(0, \rc{\be}I)$.
+\FOR{$s=0\to t-1$}
+\STATE (1) With probability $\rc 2$, keep $k$ fixed. Update $x$ according to $x \mapsfrom x - \eta \be_k\nb f(x) +\sqrt{2\eta}\xi_k$, $\xi_k\sim N(0,I)$. Repeat this $\fc{T}{\eta}$ times.
+\STATE (2) With probability $\rc2$, make a type 2 transition, where the acceptance ratio is 
+$\min \bc{
+\fc{e^{-\be_{k'}f(x)}/\wh Z_{k'}}
+{e^{-\be_{k}f(x)}/\wh Z_{k}}, 1
+}
+$.
+\ENDFOR
+\STATE If the final state is $(x,l)$ for some $x\in \R^d$, return $x$. Otherwise, re-run the chain.
+\end{algorithmic}
+ \caption{Simulated tempering Langevin Monte Carlo}
+ \label{a:stlmc}
+\end{algorithm}
+%\Hnote{Take the last sample at temperature 1, or the first sample at temperature 1 after the burn-in time?}
+
+\begin{algorithm}
+\begin{algorithmic}
+\STATE INPUT: A function $ f: \mathbb{R}^d$, satisfying assumption~\eqref{eq:A0}, to which we have gradient access.  
+\STATE OUTPUT: A random sample $x \in \mathbb{R}^d$. 
+\STATE Let $0\le \be_1<\cdots < \be_L=1$ be a sequence of inverse temperatures satisfying~\eqref{eq:beta1} and~\eqref{eq:beta-diff}. %with $\be_1=O\pf{1}{D^2}$, $\be_{i}-\be_{i-1} = O\pf{1}{D^2}$. 
+\STATE Let $\wh Z_1=1$.
+\FOR{$\ell = 1 \to L$}  
+ \STATE Run the simulated tempering chain in Algorithm~\ref{a:stlmc} with temperatures 
+$\be_1,\ldots, \be_{\ell}$, estimates $\wh Z_1,\ldots, \wh Z_{i}$, step size $\eta$, time interval $T$, and 
+number of steps $t$ given by Lemma~\ref{lem:a1-correct}. 
+ %$Z_{\beta_i}$
+ \STATE If $\ell=L$, return the sample.
+ \STATE If $\ell<L$, repeat to get $m=O(L^2\ln \prc{\de})$ samples, and let $\wh{Z_{\ell+1}} = \wh{Z_\ell} \pa{
+ \rc m \sumo jm e^{(-\be_{\ell+1}+\be_\ell)f(x_j)}}$.
+ %, and samples for temperature $\beta_{i-1}$ via Lemma \ref{l:partitionfunc}. 
+% \STATE Run the simulated tempering chain defined in Def. \ref{df:temperingchain}, using a discretized Langevin Markov Chain \eqref{eq:langevind} for the Type 1 moves for t = \Anote{fill-in-runtime} number of steps.   
+\ENDFOR
+\end{algorithmic}
+ \caption{Main algorithm}
+\label{a:mainalgo}
+\end{algorithm}
+
+Our main theorem is the following. 
+\begin{thm}[Main theorem]\label{thm:main}
+Suppose $f(x) = -\ln \pa{\sumo in w_i \exp\pa{-\fc{\ve{x-\mu_i}^2}{2\si^2}}}$ on $\R^d$ where $\sumo in w_i=1$, $w_{\min}=\min_{1\le i\le n}w_i>0$, and $D=\max_{1\le i\le n}\ve{\mu_i}$. Then 
+Algorithm~\ref{a:mainalgo} with parameters given by Lemma~\ref{lem:a1-correct} produces a sample from a distribution $p'$ with $\ve{p-p'}_1\le \ep$ in time $\poly\pa{w_{\min}, D, d, \rc{\si}, \frac{1}{\ep}}$.
+\end{thm}
+For simplicity, we stated the theorem for distributions which are exactly mixtures of gaussians. The theorem is robust to $L^\iy$ perturbations as in~\eqref{eq:A0}, we give the more general theorem in Appendix~\ref{sec:perturb}.
+
+%\Rnote{1. It might be good to give the parameters now instead of just in Lemma 9.4.
+%}
+%\Hnote{expressions are complicated; I didn't want to clutter up the algorithm statement}

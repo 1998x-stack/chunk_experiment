@@ -1,0 +1,149 @@
+\def\year{2017}\relax
+%File: formatting-instruction.tex
+\documentclass[letterpaper]{article} %DO NOT CHANGE THIS
+\usepackage{aaai17}  %Required
+\usepackage{times}  %Required
+\usepackage{helvet}  %Required
+\usepackage{courier}  %Required
+\usepackage{url}  %Required
+\usepackage{graphicx}  %Required
+\frenchspacing  %Required
+\setlength{\pdfpagewidth}{8.5in}  %Required
+\setlength{\pdfpageheight}{11in}  %Required
+%PDF Info Is Required:
+  \pdfinfo{
+/Title (Interactive Learning of State Representation through Natural Language Instruction and Explanation)
+/Author (Qiaozi Gao, Lanbo She, and Joyce Y. Chai)}
+\setcounter{secnumdepth}{0}  
+ \begin{document}
+% The file aaai.sty is the style file for AAAI Press 
+% proceedings, working notes, and technical reports.
+%
+\title{Interactive Learning of State Representation through Natural Language Instruction and Explanation}
+\author{Qiaozi Gao, Lanbo She, and Joyce Y. Chai\\
+Department of Computer Science and Engineering\\
+Michigan State University, East Lansing, MI 48824, USA\\
+\{gaoqiaoz, shelanbo, jchai\}@cse.msu.edu\\
+}
+\maketitle
+
+\begin{abstract}
+%To support task learning through language instructions, previous work has modeled concrete action verbs, critical part of instructions, as how they might change the state of the physical world. However, 
+One significant simplification in most previous work on robot learning is the closed-world assumption where the robot is assumed to know ahead of time a complete set of predicates describing the state of the physical world. However, robots are not likely to have a complete model of the world especially when learning a new task. To address this problem, this extended abstract gives a brief introduction to our on-going work that aims to enable the robot to acquire new state representations through language communication with humans.
+\end{abstract}
+
+\section{Introduction}
+As cognitive robots start to enter our lives, being able to teach robots new tasks through natural interaction becomes important~\cite{matuszek2012joint,liu16a,liu16b,chai2017}. One of the most natural ways for humans to teach task knowledge is through natural language instructions, which are often expressed by verbs or verb phrases. Previous work has investigated how to connect action verbs to low-level primitive actions \cite{branavan2009reinforcement,mohan2014learning,she14sigdial,misra2015environment,misra2016tell,she2016incremental,she2017interactive}. In most of these studies, a robot first acquires the state change of an action from human demonstrations and represents verb semantics using the desired goal state. With learned verb semantics, given a language instruction, the robot can apply the goal states of the involved verbs to plan for a sequence of low-level actions.
+
+\begin{figure}
+\includegraphics[width=0.47\textwidth]{heat_water.pdf}
+\centering
+\vspace{-10pt}
+\caption{An example of learning the state-based representation for the command {\em``heat water''}.}
+\label{fig:boil}
+\vspace{-5pt}
+\end{figure}
+
+For example, a human can teach the robot the meaning of the verb phrase {\em ``heat water''} through step-by-step instructions as shown in H2 in Figure~\ref{fig:boil}. The robot can identify the state change by comparing the final environment to the initial environment. The learned verb semantics is represented by the goal state (e.g., \texttt{Temp(x,High)}). To handle uncertainties of perception, the robot can also ask questions and acquire better representations of the world through interaction with humans~\cite{she2017interactive}.
+
+Previous work is developed based on a significant simplification: the robot knows ahead of time a complete set of predicates (or classifiers) that can describe the state of the physical world. However in reality robots are not likely to have a complete model of the world.
+%For example, the robot has to know the predicate ``Temperature(x,x)'' to represent the environment.  However, in reality, the robot may not have a complete state representation for several reasons. First, the robot may not have the predicate or relevant sensors to detect the environment. Second, even the predicate is there, the robot may not be able to correctly capture the current situation due to sensory/perception limitations. 
+Thus, it is important for the robot to be proactive~\cite{chai2014,chai2016} and transparent~\cite{alexandrova2014,alexandrova2015,whitney2016,hayes2017} about its internal representations so that humans can provide the right kind of feedback to help capture new world states. To address this problem, we are developing a framework that allows the robot to acquire new states through language communication with humans.  
+%acquire environment states for verb representations through language-based interaction with humans.
+
+\section{Interactive State Acquisition}
+
+The proposed framework is shown in Figure~\ref{fig:process}. In additional to modules to support language communication (e.g., {\bf grounded language understanding} and {\bf dialogue manager}) and action (e.g., {\bf action planning} and {\bf action execution}), the robot has a {\bf knowledge base} and a {\bf memory/experience} component. The {\bf knowledge base} contains the robot's existing knowledge about verb semantics, state predicates, and action schema (both primitive actions and high-level actions). The {\bf memory/experience} component keeps track of interaction history such as language input from the human and sensory input from the environment. 
+%as well as the status of other modules in the robot system.
+
+%Robot has multiple levels of actions: primitive action, high-level action and complex action/task. In this work, we focus on the first two levels. For primitive actions, robot has the most detailed knowledge. Robot knows how to execute all the primitive actions, and what are the preconditions and effects of them. 
+
+Suppose the robot does not have the state predicate \texttt{Temp(x, High)} in its knowledge base and the effect of the primitive action \texttt{PressOvenButton} only describes the change of the oven status (i.e., \texttt{Status(Oven, On)}). Our framework will allow the robot to acquire the new state predicate \texttt{Temp(x, High)} and update action representation (shown below with the added condition and state in bold) through interaction with the human as shown in Figure~\ref{fig:dialogue}.  %The updated representation for {\texttt PressOvenButton} is shown below with the added condition and state in bold. 
+% Then the robot also does not have any effect knowledge of its primitive actions that are described by this predicate. For example, the bold part in the effect knowledge of the primitive action {\it PressOvenButton} would be missing:\\
+%\begin{quote}
+\\
+\begin{scriptsize}
+%\begin{verbatim}
+\indent \indent if (not Status(Oven, On)), then:\\
+\indent \indent \indent Status(Oven, On) {\bf and if In(x, Oven), then: {\bf Temp(x, High)}} \\ 
+%\indent \indent \indent \indent {\bf Temp(x, High)}\\
+\indent \indent if Status(Oven, On), then:\\
+\indent \indent \indent not Status(Oven, On)\\
+%\end{verbatim}
+\end{scriptsize}
+%\end{quote}
+This framework includes two main processes: (1) acquiring and detecting new states; and (2) updating action representation.
+
+%An example dialogue of the interactive state acquisition framework is shown in Figure~\ref{fig:dialogue}.
+
+
+ %(i.e., robot does not know that when the oven is off and an object is in the oven, pressing the oven button will result in a high temperature of that object). 
+
+%Next we will introduce the process of acquiring new state predicates and updating primitive action effects through an example (shown in Figure~\ref{fig:dialogue}) of human teaching robot how to ``boil water''. In this example, we suppose there is no predicate representation for temperature.
+
+\begin{figure}
+\includegraphics[width=0.47\textwidth]{process3.pdf}
+\centering
+\vspace{-10pt}
+\caption{Interactive acquisition of new physical states.}
+\label{fig:process}
+\vspace{-5pt}
+\end{figure}
+
+\subsection{Acquiring and Detecting New States}
+
+%In order to acquire new state predicates, the robot first needs to discover limitations of the set of predicates in its knowledge base. This is done through detecting planning abnormality. And then the robot communicates its limitations to human user and acquire new state predicates with human's help. Once a new state predicate is acquired, robot can updates its knowledge of primitive actions based on its interaction with human user.
+
+%Robot rely on state predicates to represent its environment, to define action schemas, and then to do planning. So if robot does not have enough state predicates to capture the state change caused by a high-level action, its planning result is likely to be problematic and can not achieve the goal state in human mind. 
+
+%To acquire new state predicates, the robot first communicates its limitations to human user and ask for human's help in defining new state predicates. 
+
+Since an incomplete action schema can cause planning problems~\cite{gil1994learning}, the robot can potentially discover the related abnormality by retrospective planning. In our example, the robot does not have the state predicate \texttt{Temp(x,High)} in its current knowledge base. Thus in the robot's mind, the final environment will not contain \texttt{Temp(Water, High)}. After the human provides instructions on how to heat water, the dialogue manager calls a retrospective planning process based on the robot's current knowledge to achieve the final environment. Then the {\bf abnormality detection} module compares the planned action sequence with human provided action sequence and finds that the planning result lacks of primitive actions \texttt{Moveto(Cup, Oven)} and  \texttt{PressOvenButton}. Once an abnormality is detected, the robot explains its limitation to human for diagnosis (R1). Note that there is a gap between the robot's mind and the human's mind. The human does not know the state predicates that the robot uses to represent the physical world. In order for humans to understand its limitation, the robot explains the differences between the two action sequences, and requests the human to provide missing effects. Based on the human's response, the {\bf state predicate acquisition} module adds a new state predicate \texttt{Temp(x, High)} to the knowledge base.
+Next the robot needs to know how to detect such state from the physical environment. State detection is a challenging problem by itself. It often involves classifying continuous signals from the sensors into certain classes, for examples, as in previous work that jointly learns concepts and their physical groundings by integrating language and vision~\cite{matuszek2012joint,krishnamurthy2013jointly}. We are currently exploring approaches that automatically bootstrap training examples from the web for detection of state. 
+%Some state detection can be taught directly using language instructions, for example, ``to measure the temperature of liquid, you dip the thermometer into it''. 
+%Some state predicates especially those involving visual perception require training classifiers based on explicitly labeled visual data, or jointly learning concepts and their physical groundings from language and vision parallel data~\cite{matuszek2012joint,krishnamurthy2013jointly}. Instead of using manually labeled data, we are developing a system that can automatically bootstrap training examples from the web for detection of state. 
+
+
+%by simply doing the following: pick up the cup, move to the faucet, turn on the faucet, turn off the faucet, and move the cup to table. What am I missing if I do so?''
+
+\begin{figure}
+\includegraphics[width=0.48\textwidth]{dialogue.pdf}
+\centering
+\vspace{-10pt}
+\caption{An example of interactively learning a new state predicate during the human teaches the robot how to  ``heat water''.}
+\label{fig:dialogue}
+\vspace{-5pt}
+\end{figure}
+
+
+\subsection{Updating Action Representation}
+
+%After acquiring a new state predicate, there are two problems to solve: one is to detect the new state predicate from the environment; the other is to update the primitive action schemas. 
+
+Once a new state predicate is acquired, the robot needs to know what primitive actions and under what conditions the related state change can be caused. 
+%, which is fundamental knowledge for action planning.
+The relevant primitive action can be identified by applying the state detection model to the sensory input from the environment that is stored in the memory. Now the problem is reduced to determine what condition is needed to cause that particular state change. And this is similar to the {\it planning operator acquisition} problem, which has been studied extensively~\cite{wang1995learning,amir2008learning,Mourao12,zhuo2014action}. However, in previous work, primitive actions are acquired based on multiple demonstration instances. Inspired by recent work that support interactive question answering~\cite{cakmak2012,she2017interactive}, we intend to enable robots to ask questions to identify the correct conditions for primitive actions (R4). We are currently extending an approach based on reinforcement learning to learn when to ask what questions. Based on the human's response, the {\bf action schema update} module adds a pair of condition and effect to the primitive action \texttt{PressOvenButton} as shown earlier. 
+
+\section{Conclusion and Future Work}
+
+This paper gives a brief introduction to our on-going work that enables the robot to acquire new state predicates to better represent the physical world through language communication with humans. Our current and future work is to evaluate this framework in both offline data and real-time interactions, and extend it to interactive task learning.
+%This framework will not only allow the robot to learn better representations for verbs, to follow more reliably human language instructions, but also allow the robot and human to come closer to a common ground on how the world works, which will enable better human-robot communication and collaboration.
+%The main contributions of this work is two-fold. First, it is the first work that breaks the closed-world assumptions on state predicates. Robot incrementally learns environment representation through interacting with human. Second, it explores approaches to improve robot's explanation ability for its limitations, which will benefit human-robot collaboration. 
+%In the future, we will apply the state acquisition approach to action learning task in both virtual environment and real world.
+
+\section{Acknowledgment}
+This work was supported by the National Science Foundation (IIS-1208390 and IIS-1617682) and the DARPA XAI program under a subcontract from UCLA (N66001-17-2-4029).
+
+
+\bibliographystyle{aaai}
+\bibliography{inuse}
+
+\end{document}
+
+
+
+
+
+
+
+

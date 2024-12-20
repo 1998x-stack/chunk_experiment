@@ -1,0 +1,657 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02714] Interactive Learning of State Representation through Natural Language Instruction and Explanation</title><meta property="og:description" content="One significant simplification in most previous work on robot learning is the closed-world assumption where the robot is assumed to know ahead of time a complete set of predicates describing the state of the physical w…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Interactive Learning of State Representation through Natural Language Instruction and Explanation">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="Interactive Learning of State Representation through Natural Language Instruction and Explanation">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02714">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02714">
+
+<!--Generated on Sat Mar 16 04:09:43 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line">
+<h1 class="ltx_title ltx_title_document">Interactive Learning of State Representation through Natural Language Instruction and Explanation</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Qiaozi Gao, Lanbo She, and Joyce Y. Chai
+<br class="ltx_break">Department of Computer Science and Engineering
+<br class="ltx_break">Michigan State University, East Lansing, MI 48824, USA
+<br class="ltx_break">{gaoqiaoz, shelanbo, jchai}@cse.msu.edu
+<br class="ltx_break">
+</span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id1.id1" class="ltx_p">One significant simplification in most previous work on robot learning is the closed-world assumption where the robot is assumed to know ahead of time a complete set of predicates describing the state of the physical world. However, robots are not likely to have a complete model of the world especially when learning a new task. To address this problem, this extended abstract gives a brief introduction to our on-going work that aims to enable the robot to acquire new state representations through language communication with humans.</p>
+</div>
+<section id="Sx1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">Introduction</h2>
+
+<div id="Sx1.p1" class="ltx_para">
+<p id="Sx1.p1.1" class="ltx_p">As cognitive robots start to enter our lives, being able to teach robots new tasks through natural interaction becomes important (<span id="Sx1.p1.1.1" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.2" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.3" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.4" class="ltx_text ltx_font_bold">?</span>). One of the most natural ways for humans to teach task knowledge is through natural language instructions, which are often expressed by verbs or verb phrases. Previous work has investigated how to connect action verbs to low-level primitive actions (<span id="Sx1.p1.1.5" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.6" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.7" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.8" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.9" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.10" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p1.1.11" class="ltx_text ltx_font_bold">?</span>). In most of these studies, a robot first acquires the state change of an action from human demonstrations and represents verb semantics using the desired goal state. With learned verb semantics, given a language instruction, the robot can apply the goal states of the involved verbs to plan for a sequence of low-level actions.</p>
+</div>
+<figure id="Sx1.F1" class="ltx_figure"><img src="/html/1710.02714/assets/x1.png" id="Sx1.F1.g1" class="ltx_graphics ltx_img_landscape" width="252" height="169" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>An example of learning the state-based representation for the command <span id="Sx1.F1.2.1" class="ltx_text ltx_font_italic">“heat water”</span>.</figcaption>
+</figure>
+<div id="Sx1.p2" class="ltx_para">
+<p id="Sx1.p2.1" class="ltx_p">For example, a human can teach the robot the meaning of the verb phrase <span id="Sx1.p2.1.1" class="ltx_text ltx_font_italic">“heat water”</span> through step-by-step instructions as shown in H2 in Figure <a href="#Sx1.F1" title="Figure 1 ‣ Introduction ‣ Interactive Learning of State Representation through Natural Language Instruction and Explanation" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. The robot can identify the state change by comparing the final environment to the initial environment. The learned verb semantics is represented by the goal state (e.g., <span id="Sx1.p2.1.2" class="ltx_text ltx_font_typewriter">Temp(x,High)</span>). To handle uncertainties of perception, the robot can also ask questions and acquire better representations of the world through interaction with humans (<span id="Sx1.p2.1.3" class="ltx_text ltx_font_bold">?</span>).</p>
+</div>
+<div id="Sx1.p3" class="ltx_para">
+<p id="Sx1.p3.1" class="ltx_p">Previous work is developed based on a significant simplification: the robot knows ahead of time a complete set of predicates (or classifiers) that can describe the state of the physical world. However in reality robots are not likely to have a complete model of the world.
+Thus, it is important for the robot to be proactive (<span id="Sx1.p3.1.1" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p3.1.2" class="ltx_text ltx_font_bold">?</span>) and transparent (<span id="Sx1.p3.1.3" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p3.1.4" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p3.1.5" class="ltx_text ltx_font_bold">?</span>; <span id="Sx1.p3.1.6" class="ltx_text ltx_font_bold">?</span>) about its internal representations so that humans can provide the right kind of feedback to help capture new world states. To address this problem, we are developing a framework that allows the robot to acquire new states through language communication with humans.</p>
+</div>
+</section>
+<section id="Sx2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">Interactive State Acquisition</h2>
+
+<div id="Sx2.p1" class="ltx_para">
+<p id="Sx2.p1.1" class="ltx_p">The proposed framework is shown in Figure <a href="#Sx2.F2" title="Figure 2 ‣ Interactive State Acquisition ‣ Interactive Learning of State Representation through Natural Language Instruction and Explanation" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>. In additional to modules to support language communication (e.g., <span id="Sx2.p1.1.1" class="ltx_text ltx_font_bold">grounded language understanding</span> and <span id="Sx2.p1.1.2" class="ltx_text ltx_font_bold">dialogue manager</span>) and action (e.g., <span id="Sx2.p1.1.3" class="ltx_text ltx_font_bold">action planning</span> and <span id="Sx2.p1.1.4" class="ltx_text ltx_font_bold">action execution</span>), the robot has a <span id="Sx2.p1.1.5" class="ltx_text ltx_font_bold">knowledge base</span> and a <span id="Sx2.p1.1.6" class="ltx_text ltx_font_bold">memory/experience</span> component. The <span id="Sx2.p1.1.7" class="ltx_text ltx_font_bold">knowledge base</span> contains the robot’s existing knowledge about verb semantics, state predicates, and action schema (both primitive actions and high-level actions). The <span id="Sx2.p1.1.8" class="ltx_text ltx_font_bold">memory/experience</span> component keeps track of interaction history such as language input from the human and sensory input from the environment.</p>
+</div>
+<div id="Sx2.p2" class="ltx_para">
+<p id="Sx2.p2.1" class="ltx_p">Suppose the robot does not have the state predicate <span id="Sx2.p2.1.1" class="ltx_text ltx_font_typewriter">Temp(x, High)</span> in its knowledge base and the effect of the primitive action <span id="Sx2.p2.1.2" class="ltx_text ltx_font_typewriter">PressOvenButton</span> only describes the change of the oven status (i.e., <span id="Sx2.p2.1.3" class="ltx_text ltx_font_typewriter">Status(Oven, On)</span>). Our framework will allow the robot to acquire the new state predicate <span id="Sx2.p2.1.4" class="ltx_text ltx_font_typewriter">Temp(x, High)</span> and update action representation (shown below with the added condition and state in bold) through interaction with the human as shown in Figure <a href="#Sx2.F3" title="Figure 3 ‣ Acquiring and Detecting New States ‣ Interactive State Acquisition ‣ Interactive Learning of State Representation through Natural Language Instruction and Explanation" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>. 
+<br class="ltx_break">
+if (not Status(Oven, On)), then:
+<br class="ltx_break">Status(Oven, On) <span id="Sx2.p2.1.5" class="ltx_text ltx_font_bold">and if In(x, Oven), then: Temp(x, High)</span> 
+<br class="ltx_break">if Status(Oven, On), then:
+<br class="ltx_break">not Status(Oven, On)
+<br class="ltx_break">
+This framework includes two main processes: (1) acquiring and detecting new states; and (2) updating action representation.
+</p>
+</div>
+<figure id="Sx2.F2" class="ltx_figure"><img src="/html/1710.02714/assets/x2.png" id="Sx2.F2.g1" class="ltx_graphics ltx_img_landscape" width="252" height="154" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>Interactive acquisition of new physical states.</figcaption>
+</figure>
+<section id="Sx2.SSx1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">Acquiring and Detecting New States</h3>
+
+<div id="Sx2.SSx1.p1" class="ltx_para">
+<p id="Sx2.SSx1.p1.1" class="ltx_p">Since an incomplete action schema can cause planning problems (<span id="Sx2.SSx1.p1.1.1" class="ltx_text ltx_font_bold">?</span>), the robot can potentially discover the related abnormality by retrospective planning. In our example, the robot does not have the state predicate <span id="Sx2.SSx1.p1.1.2" class="ltx_text ltx_font_typewriter">Temp(x,High)</span> in its current knowledge base. Thus in the robot’s mind, the final environment will not contain <span id="Sx2.SSx1.p1.1.3" class="ltx_text ltx_font_typewriter">Temp(Water, High)</span>. After the human provides instructions on how to heat water, the dialogue manager calls a retrospective planning process based on the robot’s current knowledge to achieve the final environment. Then the <span id="Sx2.SSx1.p1.1.4" class="ltx_text ltx_font_bold">abnormality detection</span> module compares the planned action sequence with human provided action sequence and finds that the planning result lacks of primitive actions <span id="Sx2.SSx1.p1.1.5" class="ltx_text ltx_font_typewriter">Moveto(Cup, Oven)</span> and <span id="Sx2.SSx1.p1.1.6" class="ltx_text ltx_font_typewriter">PressOvenButton</span>. Once an abnormality is detected, the robot explains its limitation to human for diagnosis (R1). Note that there is a gap between the robot’s mind and the human’s mind. The human does not know the state predicates that the robot uses to represent the physical world. In order for humans to understand its limitation, the robot explains the differences between the two action sequences, and requests the human to provide missing effects. Based on the human’s response, the <span id="Sx2.SSx1.p1.1.7" class="ltx_text ltx_font_bold">state predicate acquisition</span> module adds a new state predicate <span id="Sx2.SSx1.p1.1.8" class="ltx_text ltx_font_typewriter">Temp(x, High)</span> to the knowledge base.
+Next the robot needs to know how to detect such state from the physical environment. State detection is a challenging problem by itself. It often involves classifying continuous signals from the sensors into certain classes, for examples, as in previous work that jointly learns concepts and their physical groundings by integrating language and vision (<span id="Sx2.SSx1.p1.1.9" class="ltx_text ltx_font_bold">?</span>; <span id="Sx2.SSx1.p1.1.10" class="ltx_text ltx_font_bold">?</span>). We are currently exploring approaches that automatically bootstrap training examples from the web for detection of state.</p>
+</div>
+<figure id="Sx2.F3" class="ltx_figure"><img src="/html/1710.02714/assets/x3.png" id="Sx2.F3.g1" class="ltx_graphics ltx_img_landscape" width="258" height="181" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>An example of interactively learning a new state predicate during the human teaches the robot how to “heat water”.</figcaption>
+</figure>
+</section>
+<section id="Sx2.SSx2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">Updating Action Representation</h3>
+
+<div id="Sx2.SSx2.p1" class="ltx_para">
+<p id="Sx2.SSx2.p1.1" class="ltx_p">Once a new state predicate is acquired, the robot needs to know what primitive actions and under what conditions the related state change can be caused.
+The relevant primitive action can be identified by applying the state detection model to the sensory input from the environment that is stored in the memory. Now the problem is reduced to determine what condition is needed to cause that particular state change. And this is similar to the <span id="Sx2.SSx2.p1.1.1" class="ltx_text ltx_font_italic">planning operator acquisition</span> problem, which has been studied extensively (<span id="Sx2.SSx2.p1.1.2" class="ltx_text ltx_font_bold">?</span>; <span id="Sx2.SSx2.p1.1.3" class="ltx_text ltx_font_bold">?</span>; <span id="Sx2.SSx2.p1.1.4" class="ltx_text ltx_font_bold">?</span>; <span id="Sx2.SSx2.p1.1.5" class="ltx_text ltx_font_bold">?</span>). However, in previous work, primitive actions are acquired based on multiple demonstration instances. Inspired by recent work that support interactive question answering (<span id="Sx2.SSx2.p1.1.6" class="ltx_text ltx_font_bold">?</span>; <span id="Sx2.SSx2.p1.1.7" class="ltx_text ltx_font_bold">?</span>), we intend to enable robots to ask questions to identify the correct conditions for primitive actions (R4). We are currently extending an approach based on reinforcement learning to learn when to ask what questions. Based on the human’s response, the <span id="Sx2.SSx2.p1.1.8" class="ltx_text ltx_font_bold">action schema update</span> module adds a pair of condition and effect to the primitive action <span id="Sx2.SSx2.p1.1.9" class="ltx_text ltx_font_typewriter">PressOvenButton</span> as shown earlier.</p>
+</div>
+</section>
+</section>
+<section id="Sx3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">Conclusion and Future Work</h2>
+
+<div id="Sx3.p1" class="ltx_para">
+<p id="Sx3.p1.1" class="ltx_p">This paper gives a brief introduction to our on-going work that enables the robot to acquire new state predicates to better represent the physical world through language communication with humans. Our current and future work is to evaluate this framework in both offline data and real-time interactions, and extend it to interactive task learning.</p>
+</div>
+</section>
+<section id="Sx4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">Acknowledgment</h2>
+
+<div id="Sx4.p1" class="ltx_para">
+<p id="Sx4.p1.1" class="ltx_p">This work was supported by the National Science Foundation (IIS-1208390 and IIS-1617682) and the DARPA XAI program under a subcontract from UCLA (N66001-17-2-4029).</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bibx1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Alexandrova et al<span id="bib.bibx1.1.1.1" class="ltx_text">.</span> 2014]</span>
+<span class="ltx_bibblock">
+Alexandrova, S.; Cakmak, M.; Hsaio, K.; and Takayama, L.
+
+</span>
+<span class="ltx_bibblock">2014.
+
+</span>
+<span class="ltx_bibblock">Robot programming by demonstration with interactive action
+visualizations.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx1.3.1" class="ltx_text ltx_font_italic">In Robotics: Science and Systems (RSS)</span>.
+
+</span>
+</li>
+<li id="bib.bibx2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Alexandrova, Tatlock, and
+Cakmak 2015]</span>
+<span class="ltx_bibblock">
+Alexandrova, S.; Tatlock, Z.; and Cakmak, M.
+
+</span>
+<span class="ltx_bibblock">2015.
+
+</span>
+<span class="ltx_bibblock">Roboflow: A flow-based visual programming language for mobile
+manipulation tasks.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx2.1.1" class="ltx_text ltx_font_italic">IEEE International Conference on Robotics and Automation
+(ICRA)</span>.
+
+</span>
+</li>
+<li id="bib.bibx3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Amir and Chang 2008]</span>
+<span class="ltx_bibblock">
+Amir, E., and Chang, A.
+
+</span>
+<span class="ltx_bibblock">2008.
+
+</span>
+<span class="ltx_bibblock">Learning partially observable deterministic action models.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bibx3.1.1" class="ltx_text ltx_font_italic">Journal of Artificial Intelligence Research</span> 33:349–402.
+
+</span>
+</li>
+<li id="bib.bibx4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Branavan et al<span id="bib.bibx4.1.1.1" class="ltx_text">.</span> 2009]</span>
+<span class="ltx_bibblock">
+Branavan, S.; Chen, H.; Zettlemoyer, L. S.; and Barzilay, R.
+
+</span>
+<span class="ltx_bibblock">2009.
+
+</span>
+<span class="ltx_bibblock">Reinforcement learning for mapping instructions to actions.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx4.3.1" class="ltx_text ltx_font_italic">Proceedings of the Joint Conference of the 47th Annual
+Meeting of the ACL and the 4th International Joint Conference on Natural
+Language Processing of the AFNLP: Volume 1-Volume 1</span>, 82–90.
+
+</span>
+<span class="ltx_bibblock">Association for Computational Linguistics.
+
+</span>
+</li>
+<li id="bib.bibx5" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Cakmak and Thomaz 2012]</span>
+<span class="ltx_bibblock">
+Cakmak, M., and Thomaz, A. L.
+
+</span>
+<span class="ltx_bibblock">2012.
+
+</span>
+<span class="ltx_bibblock">Designing robot learners that ask good questions.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx5.1.1" class="ltx_text ltx_font_italic">ACM/IEEE International Conference on Human-Robot
+Interaction</span>, 17–24.
+
+</span>
+</li>
+<li id="bib.bibx6" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Chai et al<span id="bib.bibx6.1.1.1" class="ltx_text">.</span> 2014]</span>
+<span class="ltx_bibblock">
+Chai, J. Y.; She, L.; Fang, R.; Ottarson, S.; Littley, C.; Liu, C.; and Hanson,
+K.
+
+</span>
+<span class="ltx_bibblock">2014.
+
+</span>
+<span class="ltx_bibblock">Collaborative effort towards common ground in situated human-robot
+dialogue.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx6.3.1" class="ltx_text ltx_font_italic">The 9th ACM/IEEE Conference on Human-Robot Interaction
+(HRI)</span>.
+
+</span>
+</li>
+<li id="bib.bibx7" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Chai et al<span id="bib.bibx7.1.1.1" class="ltx_text">.</span> 2016]</span>
+<span class="ltx_bibblock">
+Chai, J. Y.; Fang, R.; Liu, C.; and She, L.
+
+</span>
+<span class="ltx_bibblock">2016.
+
+</span>
+<span class="ltx_bibblock">Collaborative language grounding towards situated human robot
+dialogue.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bibx7.3.1" class="ltx_text ltx_font_italic">AI Magazine</span> 37(4):32–45.
+
+</span>
+</li>
+<li id="bib.bibx8" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Chai, Cakmak, and Sidner 2017]</span>
+<span class="ltx_bibblock">
+Chai, J. Y.; Cakmak, M.; and Sidner, C.
+
+</span>
+<span class="ltx_bibblock">2017.
+
+</span>
+<span class="ltx_bibblock">Teaching robots new tasks through natural interaction.
+
+</span>
+<span class="ltx_bibblock">In Gluck, K. A., and Laird, J. E., eds., <span id="bib.bibx8.1.1" class="ltx_text ltx_font_italic">Interactive Task
+Learning: Agents, Robots, and Humans Acquiring New Tasks through Natural
+Interactions, Strüngmann Forum Reports, J. Lupp, series editor</span>, volume 26.
+MIT Press.
+
+</span>
+</li>
+<li id="bib.bibx9" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Gil 1994]</span>
+<span class="ltx_bibblock">
+Gil, Y.
+
+</span>
+<span class="ltx_bibblock">1994.
+
+</span>
+<span class="ltx_bibblock">Learning by experimentation: Incremental refinement of incomplete
+planning domains.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx9.1.1" class="ltx_text ltx_font_italic">International Conference on Machine Learning</span>, 87–95.
+
+</span>
+</li>
+<li id="bib.bibx10" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Hayes and Shah 2017]</span>
+<span class="ltx_bibblock">
+Hayes, B., and Shah, J.
+
+</span>
+<span class="ltx_bibblock">2017.
+
+</span>
+<span class="ltx_bibblock">Improving robot controller interpretability and transparency through
+autonomous policy explanation.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx10.1.1" class="ltx_text ltx_font_italic">ACM International Conference on Human-Robot Interaction</span>.
+
+</span>
+</li>
+<li id="bib.bibx11" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Krishnamurthy and
+Kollar 2013]</span>
+<span class="ltx_bibblock">
+Krishnamurthy, J., and Kollar, T.
+
+</span>
+<span class="ltx_bibblock">2013.
+
+</span>
+<span class="ltx_bibblock">Jointly learning to parse and perceive: Connecting natural language
+to the physical world.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bibx11.1.1" class="ltx_text ltx_font_italic">Transactions of the Association for Computational Linguistics</span>
+1:193–206.
+
+</span>
+</li>
+<li id="bib.bibx12" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Liu et al<span id="bib.bibx12.1.1.1" class="ltx_text">.</span> 2016a]</span>
+<span class="ltx_bibblock">
+Liu, C.; Chai, J. Y.; Shukla, N.; and Zhu, S.
+
+</span>
+<span class="ltx_bibblock">2016a.
+
+</span>
+<span class="ltx_bibblock">Task learning through visual demonstration and situated dialogue.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx12.3.1" class="ltx_text ltx_font_italic">AAAI 2016 Workshop on Symbiotic Cognitive Systems</span>.
+
+</span>
+</li>
+<li id="bib.bibx13" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Liu et al<span id="bib.bibx13.1.1.1" class="ltx_text">.</span> 2016b]</span>
+<span class="ltx_bibblock">
+Liu, C.; Yang, S.; Saba-Sadiya, S.; Shukla, N.; He, Y.; Zhu, S.-C.; and Chai,
+J.
+
+</span>
+<span class="ltx_bibblock">2016b.
+
+</span>
+<span class="ltx_bibblock">Jointly learning grounded task structures from language instruction
+and visual demonstration.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx13.3.1" class="ltx_text ltx_font_italic">Proceedings of the 2016 Conference on Empirical Methods in
+Natural Language Processing</span>, 1482–1492.
+
+</span>
+</li>
+<li id="bib.bibx14" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Matuszek et al<span id="bib.bibx14.1.1.1" class="ltx_text">.</span> 2012]</span>
+<span class="ltx_bibblock">
+Matuszek, C.; Fitzgerald, N.; Zettlemoyer, L.; Bo, L.; and Fox, D.
+
+</span>
+<span class="ltx_bibblock">2012.
+
+</span>
+<span class="ltx_bibblock">A joint model of language and perception for grounded attribute
+learning.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx14.3.1" class="ltx_text ltx_font_italic">Proceedings of the 29th International Conference on Machine
+Learning (ICML-12)</span>, 1671–1678.
+
+</span>
+</li>
+<li id="bib.bibx15" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Misra et al<span id="bib.bibx15.1.1.1" class="ltx_text">.</span> 2015]</span>
+<span class="ltx_bibblock">
+Misra, D. K.; Tao, K.; Liang, P.; and Saxena, A.
+
+</span>
+<span class="ltx_bibblock">2015.
+
+</span>
+<span class="ltx_bibblock">Environment-driven lexicon induction for high-level instructions.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx15.3.1" class="ltx_text ltx_font_italic">Proceedings of the 53rd Annual Meeting of the Association for
+Computational Linguistics</span>, 992–1002.
+
+</span>
+</li>
+<li id="bib.bibx16" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Misra et al<span id="bib.bibx16.1.1.1" class="ltx_text">.</span> 2016]</span>
+<span class="ltx_bibblock">
+Misra, D. K.; Sung, J.; Lee, K.; and Saxena, A.
+
+</span>
+<span class="ltx_bibblock">2016.
+
+</span>
+<span class="ltx_bibblock">Tell me dave: Context-sensitive grounding of natural language to
+manipulation instructions.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bibx16.3.1" class="ltx_text ltx_font_italic">The International Journal of Robotics Research</span>
+35(1-3):281–300.
+
+</span>
+</li>
+<li id="bib.bibx17" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Mohan and Laird 2014]</span>
+<span class="ltx_bibblock">
+Mohan, S., and Laird, J. E.
+
+</span>
+<span class="ltx_bibblock">2014.
+
+</span>
+<span class="ltx_bibblock">Learning goal-oriented hierarchical tasks from situated interactive
+instruction.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx17.1.1" class="ltx_text ltx_font_italic">AAAI</span>, 387–394.
+
+</span>
+</li>
+<li id="bib.bibx18" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Mourão et al<span id="bib.bibx18.1.1.1" class="ltx_text">.</span> 2012]</span>
+<span class="ltx_bibblock">
+Mourão, K.; Zettlemoyer, L. S.; Petrick, R. P. A.; and Steedman, M.
+
+</span>
+<span class="ltx_bibblock">2012.
+
+</span>
+<span class="ltx_bibblock">Learning STRIPS operators from noisy and incomplete observations.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx18.3.1" class="ltx_text ltx_font_italic">Proceedings of the Twenty-Eighth Conference on Uncertainty in
+Artificial Intelligence</span>, 614–623.
+
+</span>
+</li>
+<li id="bib.bibx19" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[She and Chai 2016]</span>
+<span class="ltx_bibblock">
+She, L., and Chai, J. Y.
+
+</span>
+<span class="ltx_bibblock">2016.
+
+</span>
+<span class="ltx_bibblock">Incremental acquisition of verb hypothesis space towards physical
+world interaction.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx19.1.1" class="ltx_text ltx_font_italic">Proceedings of the 54th Annual Meeting of the Association for
+Computational Linguistics</span>, volume 1.
+
+</span>
+</li>
+<li id="bib.bibx20" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[She and Chai 2017]</span>
+<span class="ltx_bibblock">
+She, L., and Chai, J. Y.
+
+</span>
+<span class="ltx_bibblock">2017.
+
+</span>
+<span class="ltx_bibblock">Interactive learning of grounded verb semantics towards human-robot
+communication.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx20.1.1" class="ltx_text ltx_font_italic">Proceedings of the 55th Annual Meeting of the Association for
+Computational Linguistics</span>, volume 1.
+
+</span>
+</li>
+<li id="bib.bibx21" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[She et al<span id="bib.bibx21.1.1.1" class="ltx_text">.</span> 2014]</span>
+<span class="ltx_bibblock">
+She, L.; Yang, S.; Cheng, Y.; Jia, Y.; Chai, J.; and Xi, N.
+
+</span>
+<span class="ltx_bibblock">2014.
+
+</span>
+<span class="ltx_bibblock">Back to the blocks world: Learning new actions through situated
+human-robot dialogue.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx21.3.1" class="ltx_text ltx_font_italic">Proceedings of the SIGDIAL 2014 Conference</span>.
+
+</span>
+</li>
+<li id="bib.bibx22" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Wang 1995]</span>
+<span class="ltx_bibblock">
+Wang, X.
+
+</span>
+<span class="ltx_bibblock">1995.
+
+</span>
+<span class="ltx_bibblock">Learning by observation and practice: An incremental approach for
+planning operator acquisition.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx22.1.1" class="ltx_text ltx_font_italic">ICML</span>, 549–557.
+
+</span>
+</li>
+<li id="bib.bibx23" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Whitney et al<span id="bib.bibx23.1.1.1" class="ltx_text">.</span> 2016]</span>
+<span class="ltx_bibblock">
+Whitney, D.; Eldon, M.; Oberlin, J.; and Tellex, S.
+
+</span>
+<span class="ltx_bibblock">2016.
+
+</span>
+<span class="ltx_bibblock">Interpreting multimodal referring expressions in real time.
+
+</span>
+<span class="ltx_bibblock">In <span id="bib.bibx23.3.1" class="ltx_text ltx_font_italic">IEEE International Conference on Robotics and Automation
+(ICRA)</span>, 3331––3338.
+
+</span>
+</li>
+<li id="bib.bibx24" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[Zhuo and Yang 2014]</span>
+<span class="ltx_bibblock">
+Zhuo, H. H., and Yang, Q.
+
+</span>
+<span class="ltx_bibblock">2014.
+
+</span>
+<span class="ltx_bibblock">Action-model acquisition for planning via transfer learning.
+
+</span>
+<span class="ltx_bibblock"><span id="bib.bibx24.1.1" class="ltx_text ltx_font_italic">Artificial intelligence</span> 212:80–103.
+
+</span>
+</li>
+</ul>
+</section>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02713" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02714" class="ar5iv-text-button ar5iv-severity-warning">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02714">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02714" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02715" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Sat Mar 16 04:09:43 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

@@ -1,0 +1,190 @@
+\section{Discretizing the continuous chains} 
+
+As a notational convenience, in the section to follow we will denote $x^* = \mbox{argmin}_{x \in \mathbb{R}^d} \tilde{f}(x)$. 
+
+\begin{lem} Let $p^t, q^t: \mathbb{R}^d \times [L]  \to \mathbb{R}$ be the distributions after running the simulated tempering chain for $t$ steps, where in $p^t$, for any temperature $i \in L$, the Type 1 transitions are taken according to the (discrete time) Markov kernel $P_T$: running Langevin diffusion for time $T$; in $q^t$, the Type 1 transitions are taken according to running $\frac{T}{\eta}$ steps of the discretized Langevin diffusion, using $\eta$ as the discretization granularity, s.t. $\eta \leq \frac{\sigma^2}{2}$.  
+Then, 
+\begin{align*} \mbox{KL} (p^t || q^t) \lesssim \frac{\eta^2}{\sigma^6} (D^2+d) T t^2 + \frac{\eta^2}{\sigma^6} \max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 + \frac{\eta}{\sigma^4} d t T  \end{align*}
+\label{l:maindiscretize}
+\end{lem} 
+
+
+Before proving the above statement, we make a note on the location of $x^*$ to make sense of $\max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2$ Namely, we show:  
+
+\begin{lem}[Location of minimum] Let $x^* = \mbox{argmin}_{x \in \mathbb{R}^d} \tilde{f}(x)$. Then, $\|x^*\| \leq \sqrt{2} D$.  
+\label{l:locatemin}
+\end{lem} 
+\begin{proof} 
+Since $\tilde{f}(0) = \frac{D^2}{\sigma^2}$, it follows that $\min_{x \in \mathbb{R}^d} \tilde{f}(x) \leq -D^2/\sigma^2$. However, for any $x$, it holds that 
+\begin{align*} \tilde{f}(x) &\geq \min_i \frac{\|\mu_i - x\|^2}{\sigma^2} \\
+&\geq \frac{\|x\|^2 - \max_i\|\mu_i\|^2}{\sigma^2} \\
+&\geq \frac{\|x\|^2 - D^2}{\sigma^2} \end{align*} 
+Hence, if $\|x\| > \sqrt{2} D$, $\tilde{f}(x) >  \min_{x \in \mathbb{R}^d} \tilde{f}(x)$. This implies the statement of the lemma. 
+\end{proof} 
+
+We prove a few technical lemmas. First, we prove that the continuous chain is essentially contained in a ball of radius $D$. More precisely, we show: 
+
+
+\begin{lem}[Reach of continuous chain] Let $P^{\beta}_T(X)$ be the Markov kernel corresponding to evolving Langevin diffusion 
+\begin{equation*}\frac{dX_t}{\mathop{dt}} = - \beta \nabla \tilde{f}(X_t) + \mathop{d B_t}\end{equation*} 
+with $\tilde{f}$ and $D$ are as defined in \ref{eq:A0} for time $T$. Then, 
+\begin{equation*}\E[\|X_t - x^*\|^2] \leq \E[\|X_0 - x^*\|^2] + (4 \beta D^2 + 2 d)T \end{equation*} 
+\label{l:reachcontinuous}
+\end{lem} 
+\begin{proof} 
+Let $Y_t = \|X_t - x^*\|^2$. By It\^{o}s Lemma, we have 
+\begin{equation} d Y_t = -2 \langle X_t - x^*, \beta \sum_{i=1}^n \frac{w_i e^{-\frac{\|X_t - \mu_i\|^2}{\sigma^2}} (X_t - \mu_i)}{\sum_{i=1}^n w_i e^{-\frac{\|X_t - \mu_i\|^2}{\sigma^2}}}  \rangle + 2 d \mathop{dt} + \sqrt{8} \sum_{i=1}^d (X_t)_i \mathop{d(B_i)_t} \label{eq:contdrift1} \end{equation} 
+We claim that 
+$$- \langle X_t - x^*, X_t - \mu_i \rangle \leq \frac{D}{2}$$
+Indeed, 
+\begin{align*} 
+- \langle X_t - x^*, X_t - \mu_i \rangle &\leq -\|X_t\|^2 + \|X_t\| (\|\mu_i\| + \|x^*\|) + \|x^*\| \|\mu_i\| \\ 
+&\leq 4 D^2  
+\end{align*} 
+where the last inequality follows from $\|\mu_i|\leq D$ and Lemma~\ref{l:locatemin}
+Together with \eqref{eq:contdrift1}, we get 
+\begin{equation*} d Y_t \leq  \beta 4 D^2 + 2 d \mathop{dt} + \sqrt{8} \sum_{i=1}^d (X_t)_i \mathop{d(B_i)_t}  \end{equation*} 
+Integrating, we get 
+\begin{equation*} Y_t \leq  Y_0 + \beta 4 D^2  T + 2 d T + \sqrt{8} \int^T_0 \sum_{i=1}^d (X_t)_i \mathop{d(B_i)_t}  \end{equation*} 
+Taking expectations and using the martingale property of the It\^{o}  integral, we get the claim of the lemma. 
+\end{proof} 
+
+Next, we prove a few technicall bound the drift of the discretized chain after $T/\eta$ discrete steps. The proofs follow similar calculations as those in \cite{dalalyan2016theoretical}.   
+
+We will first need to bound the Hessian of $\tilde{f}$. 
+\begin{lem}[Hessian bound] %Let $p(x) = \sum_{i=1}^n w_i \frac{e^{-f_i}(x)}{Z}$, where $f_i(x) = \frac{(x - \mu_i)^2}{\sigma^2}$ and $Z = \int_{\mathbb{R}^d} e^{-f_i} \dx$ and $\tilde{f}(x) = - \log p(x)$, we have
+$$\nabla^2 \tilde{f}(x) \preceq \frac{2}{\sigma^2} I, \forall x \in \mathbb{R}^d$$ 
+\label{l:hessianbound}
+\end{lem}
+\begin{proof}
+For notational convenience, let $p(x) = \sum_{i=1}^n w_i e^{-f_i(x)}$, where $f_i(x) = \frac{(x - \mu_i)^2}{\sigma^2} + \log Z$ and $Z = \int_{\mathbb{R}^d} e^{-f_i(x)} \dx$. Note that $\tilde{f}(x) = - \log p(x)$. The Hessian of $\tilde{f}$ satisfies 
+\begin{align*} \nabla^2 {\tilde{f}} %&= -\frac{\sum_i w_i e^{-f_i} \nabla f_i^{\otimes 2}}{p}  + \frac{\left(w_i e^{-f_i} \nabla^2 f_i\right) + (\sum_i e^{-f_i} \nabla f_i)^{\otimes 2}}{p^2} \\ 
+&= \frac{\sum_i w_i e^{-f_i} \nabla^2 f_i}{p} - \frac{\frac{1}{2} \sum_{i,j} w_i w_j e^{-f_i} e^{-f_j} (\nabla f_i - \nabla f_j)^{\otimes 2}}{p^2} \\
+&\preceq \max_i \nabla^2 f_i \preceq \frac{2}{\sigma^2} I \end{align*}
+as we need. 
+%Let us introduce for notational convenience the functions $g_i(x) = p_i(x) \sigma^{-1}_i (\mu_i - x)$, $H_i(x) = \frac{g_i g_i^{\top}}{p_i(x)} - p_i(x) \sigma^{-1}_{i}$ and let's denote by $p(x) = \sum_i w_i p_i(x)$.  
+
+%It is easy to check \Anote{cite something here} that the gradient and hessian of $\tilde{f}$ satisfy 
+%\begin{align} \nabla{\tilde{f}} &= - \frac{1}{p} \sum_i w_i g_i \\ 
+%              \nabla^2{\tilde{f}} &= - \frac{1}{p} (\sum_i w_i H_i) + \frac{1}{p^2} \left(\sum_i w_i g_i\right)^{\otimes 2} \label{eq:hessiangradmixture}\end{align}
+
+ 
+%Since $\frac{1}{p} (\sum_i w_i H_i) \succ 0$, it suffices to bound $\frac{1}{p^2} \left(\sum_i w_i g_i\right)^{\otimes 2}$ in a PSD sense. 
+%We have  
+%\begin{align*} \|\left(\sum_i w_i g_i\right)^{\otimes 2}\| \leq \max_{i} \|g_i\|^2  \end{align*} 
+%On the other hand, $\forall i, p(x) \geq w_{\min} p_i(x)$, so 
+%\begin{align*} \frac{1}{p^2} \left(\sum_i w_i g_i\right)^{\otimes 2} &\leq \max_{i} \frac{1}{w^2_{\min}} \frac{1}{p^2_i} \|g_i\|^2  \\ 
+%&= \max_{i} \frac{1}{w^2_{\min}} \frac{1}{p^2_i} p^2_i \sigma^{-1}_i (\mu_i - x)  \end{align*}
+
+\end{proof} 
+
+
+\begin{lem}[Bounding interval drift] In the setting of this section, let $x \in \mathbb{R}^d, i \in [L]$, and let $\eta \leq \frac{\sigma^2}{2 \alpha}$.
+%$$\mbox{KL}(P_T(x, i) || \widehat{P_T}(x,i)) \leq \frac{4 \eta^2 \alpha}{3 \sigma^6 (2\alpha - 1)} \left(\|x - x^*\|_2^2) + 2 Td\right) + \frac{d T \eta}{\sigma^4}$$
+$$\mbox{KL}(P_T(x, i) || \widehat{P_T}(x,i)) \leq \frac{4 \eta^2 }{3 \sigma^6} \left(\|x - x^*\|_2^2) + 2 Td\right) + \frac{d T \eta}{\sigma^4}$$
+
+\Anote{Doesn't seem we need the general $\alpha$ formulation -- setting it to 1 works?}
+\label{l:intervaldrift}
+\end{lem}    
+\begin{proof}
+Let $x_j, i \in [0, T/\eta - 1]$ be a random variable distributed as $\widehat{P_{\eta j}}(x,i)$. By Lemma 2 in \cite{dalalyan2016theoretical} and Lemma~\ref{l:hessianbound}
+, we have 
+\begin{equation*} \mbox{KL}(P_T(x, i) || \widehat{P_T}(x,i)) \leq \frac{\eta^3}{3 \sigma^4} \sum_{k=0}^{T/\eta - 1} \E[\|\nabla f(x^k)\|^2_2] + \frac{d T \eta}{\sigma^4} \end{equation*}
+Similarly, the proof of Corollary 4 in \cite{dalalyan2016theoretical} implies that%
+%\begin{equation*} \eta \sum_{k=0}^{T/\eta -1} \E[\|\nabla f(x^k)\|^2_2] \leq \frac{2\alpha}{\sigma^2(2\alpha - 1)} \|x - x^*\|^2_2 + \frac{2\alpha}{2\alpha-1} \frac{1}{2\sigma^2} T d\end{equation*}
+\begin{equation*} \eta \sum_{k=0}^{T/\eta -1} \E[\|\nabla f(x^k)\|^2_2] \leq \frac{4}{\sigma^2} \|x - x^*\|^2_2 + \frac{8 T d}{\sigma^2}\end{equation*}
+
+\end{proof} 
+
+Finally, we prove a convenient decomposition theorem for the KL divergence of two mixtures of distributions, in terms of the KL divergence of the weights and the components in the mixture. Concretely:
+
+\begin{lem} Let $w, w': I \to \mathbb{R}$ be distributions over a domain $I$ with full support. Let $p_i, q_i: \forall i \in I$ be distributions over an arbitrary domain. Then: 
+$$ \mbox{KL}\left(\int_{i \in I} w_i p_i || \int_{i \in I} w'_i q_i\right) \leq \mbox{KL}(w || w') + \int_{i \in I} w_i \mbox{KL}(p_i || q_i) $$ 
+\label{l:decomposingKL}
+\end{lem} 
+
+\begin{proof}  
+Overloading notation, we will use $KL (a || b) $ for two measures $a,b$ even if they are not necessarily probability distributions, with the obvious definition.  
+\begin{align*} 
+\mbox{KL}\left(\int_{i \in I} w_i p_i || \int_{i \in I} w'_i q_i\right) &= \mbox{KL}\left(\int_{i \in I} w_i p_i || \int_{i \in I} w_i q_i \frac{w'_i}{w_i}\right) \\ 
+&\leq \int_{i \in I} w_i  \mbox{KL}\left( p_i || q_i \frac{w'_i}{w_i}\right) \\ 
+&=\int_{i \in I} w_i \log\left(\frac{w_i}{w'_i}\right) + \mbox{KL}(p_i || q_i) \\ 
+&=\mbox{KL}(w || w') + \int_{i \in I} w_i \mbox{KL}(p_i || q_i) \end{align*} 
+
+where the first inequality holds due to the convexity of KL divergence. 
+
+\end{proof} 
+
+With this in mind, we can prove the main claim: 
+
+\begin{proof}[Proof of \ref{l:maindiscretize}]
+Let's denote by $P_T\left(x, i\right): \mathbb{R}^d \times [L]  \to \mathbb{R}, \forall x \in \mathbb{R}^d, i \in [L]$ the distribution on $\mathbb{R}^d \times [L]$ corresponding to running the Langevin diffusion chain for $T$ time steps on the $i$-th coordinate, starting at $x \times \{i\}$, and keeping the remaining coordinates fixed. Let us define 
+ by $\widehat{P_T}\left(x, i\right): \mathbb{R}^d \times [L]  \to \mathbb{R}$ the analogous distribution, except running the discretized Langevin diffusion chain for $\frac{T}{\eta}$ time steps on the $i$-th coordinate.  
+
+Let's denote by $R\left(x, i\right): \mathbb{R}^d \times [L]  \to \mathbb{R}$ the distribution on $\mathbb{R}^d \times [L]$, running the Markov transition matrix corresponding to a Type 2 transition in the simulated tempering chain, starting at $(x,i)$.   
+
+We will proceed by induction. Towards that, we can obviously write   
+\begin{align*} 
+p^{t+1} &= \frac{1}{2} \left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} p^{t}(x,i) P_T(x, i) \right) + \frac{1}{2} \left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  p^{t}(x,i) R(x, i) \right) 
+\end{align*} 
+and similarly
+\begin{align*} 
+q^{t+1}(x,i) &= \frac{1}{2} \left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} q^{t}(x,i) \widehat{P_T} (x, i) \right) + \frac{1}{2} \left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  q^{t}(x,i) R(x, i) \right) 
+\end{align*}
+(Note: the $R$ transition matrix doesn't change in the discretized vs continuous version.) 
+
+By convexity of KL divergence, we have
+\begin{align*}
+\mbox{KL}(p^{t+1} || q^{t+1}) &\leq \frac{1}{2} \mbox{KL}\left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} p^{t}(x,i) P_T(x, i) || \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} q^{t}(x,i) \widehat{P_T}(x, i) \right) \\ 
+&+ \frac{1}{2} \mbox{KL}\left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  p^{t}(x,i) R(x, i) || \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  q^{t}(x,i) R(x, i)  \right)  
+\end{align*} 
+
+By Lemma~\ref{l:decomposingKL}, we have that 
+$$\mbox{KL}\left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  p^{t}(x,i) R(x, i) || \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1}  q^{t}(x,i) R(x, i)  \right) \leq \mbox{KL} (p^t || q^t) $$ 
+Similarly, by Lemma~\ref{l:intervaldrift} together with Lemma~\ref{l:decomposingKL} we have
+\begin{align*} & \mbox{KL}\left( \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} p^{t}(x,i) P_T(x, i) || \int_{x \in \mathbb{R}^d} \sum_{i=0}^{L-1} q^{t}(x,i) \widehat{P_T}(x, i) \right)  \leq \\ & \mbox{KL} (p^t || q^t) + \frac{4 \eta^2}{3 \sigma^6} \left( \max_i \E_{x \sim p^t( \cdot, i)}\|x - x^*\|_2^2 + 2 Td\right) + \frac{d T \eta}{\sigma^4} \end{align*}
+
+By Lemmas~\ref{l:reachcontinuous} and \ref{l:locatemin}, we have that for any $i \in [0, L-1]$, 
+\begin{align*} \E_{x \sim p^t( \cdot, i)}\|x - x^*\|_2^2 &\leq  \E_{x \sim p^{t-1}( \cdot, i)}\|x\|_2 + (4 D^2 + 2d) T \end{align*} 
+Hence, inductively, we have $\E_{x \sim p^t( \cdot, i)}\|x - x^*\|_2^2 \leq \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 +  (4 D^2+2d) T t$
+
+Putting together, we have 
+\begin{align*} \mbox{KL} (p^{t+1} || q^{t+1}) \leq \mbox{KL}(p^t || q^t) + \frac{4 \eta^2}{3 \sigma^6} \left( \max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 + (4 D^2 + 2d) T t + 2 Td \right) + \frac{d T \eta}{\sigma^4} \end{align*}
+
+%\begin{align*} \E_{x \sim p^t( \cdot, i)}\|x - x^*\|_2^2 &\leq 2 \E_{x \sim p^t( \cdot, i)}\|x\|^2 + \|x^*\|^2 \\
+%&\leq 2 \left(\E_{x \sim p^{t-1}( \cdot, i)}\|x\|_2 + (D + 2d) T \right)  + \|f^*\|^2 \\
+%&\leq 2 2 \end{align*} 
+%By the definition of $B$, $\forall t, \E_{x \sim p^t}\|x - f^*\|_2^2 \leq B$ \Anote{include and bound B somewhere}, so
+By induction, we hence have 
+\begin{align*} \mbox{KL} (p^t || q^t) \lesssim \frac{\eta^2}{\sigma^6} (D^2+d) T t^2 + \frac{\eta^2}{\sigma^6} \max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 + \frac{\eta}{\sigma^4} d t T \eta  \end{align*}
+as we need. 
+%&= \int{x,x' \in \mathbb{R}^d} \sum_{i, i'=0}^{L-1}  p^{t}(x',i') P_T ((x',i'), (x,i)) \log \left(\frac{p^{t+1}(x, i)}{q^{t+1}(x, i)}\right) 
+%&= \E_{i \sim p_L} \E_{x \sim p^i} \log \left(\frac{p_L(i) p^i(x)}{q_L(i) q^i(x)}\right) \\ 
+%&= \E_{i \sim p_L} \E_{x \sim p^i} \log \left(\frac{p_L(i)}{q_L(i)}\right) + \log \left( \frac{p^i(x)}{q^i(x)}\right) \\ 
+%&= \mbox{KL}(p_L || q_L) + \E_{i \sim p_L} \mbox{KL}(p^i || q^i) 
+%\end{align*}
+%as we need.  
+\end{proof} 
+
+%\begin{lem} [Total KL divergence] For any two probability distributions $p ,q: \Omega \times [L] \to \mathbb{R}$, let $p_L, q_L: [L] \to \mathbb{R}$ be the marginal distributions of $p$ and $q$ on the coordinates corresponding to $[L]$ respectively, and let $p^i, q^i: i \in [L]$ be the conditional distributions of $p$ and $q$, conditioning on the value of the second coordinate being $i$.  
+%
+%Then, the following equality holds:
+%$$\mbox{KL}(p || q) = \mbox{KL}(p_L || q_L) + \E_{i \sim p_L} \mbox{KL}(p^i || q^i) $$     
+%
+%\end{lem}     
+%\begin{proof}
+%By the definition of KL divergence, 
+%\begin{align*} 
+%\mbox{KL}(p || q) & = \E_{(x,i) \sim p} \log \left(\frac{p(x, i)}{q(x, i)}\right) \\ 
+%&= \E_{i \sim p_L} \E_{x \sim p^i} \log \left(\frac{p_L(i) p^i(x)}{q_L(i) q^i(x)}\right) \\ 
+%&= \E_{i \sim p_L} \E_{x \sim p^i} \log \left(\frac{p_L(i)}{q_L(i)}\right) + \log \left( \frac{p^i(x)}{q^i(x)}\right) \\ 
+%&= \mbox{KL}(p_L || q_L) + \E_{i \sim p_L} \mbox{KL}(p^i || q^i) 
+%\end{align*}
+%as we need.  
+%\end{proof} 
+
+%Moreover, the following holds: 
+
+
+%Finally, the 
+

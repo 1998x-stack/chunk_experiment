@@ -1,0 +1,264 @@
+\section{Graph Connectivity and Spanning Forest}\label{sec:cc}
+
+This section describes parallel write-efficient algorithms for graph
+connectivity and spanning forest; that is, identifying which vertices
+belong to each connected component and producing a spanning forest of
+the graph.  These task can be easily accomplished sequentially by
+performing a breadth-first or depth-first search in the graph with
+$O(m)$ operations and $O(n)$ writes.  While there are several
+work-efficient parallel algorithms for the
+problem~\cite{Shun2014,ColeKT96,Gazit1991,PoonR97,PettieR02,Halperin00,HalperinZ96},
+all of them use $\Omega(n+m)$ writes.  This section has two main
+contributions: (1) Section~\ref{sec:cc-linear} provides a parallel
+algorithm using $O(n+m/\wcost)$ writes in expectation,
+$O(n\wcost + m)$ expected work, and $O(\wcost^2\log^2n)$ \depth{} with
+high probability; (2) Section~\ref{sec:cc-sublinear} gives an
+algorithm for constructing a connectivity oracle on constant-degree
+graphs in $O(n/\sqrt{\wcost})$ expected writes and $O(n\sqrt{\wcost})$ expected
+total operations.  Our oracle-construction algorithm is parallel,
+having \depth{} $O(\wcost^{3/2}\log^3n)$ \whp{}, but it also
+represents a contribution as a sequential algorithm.
+
+Our parallel algorithm (Section~\ref{sec:cc-linear}) can be viewed as
+a write-efficient version of the parallel algorithm due to Shun et
+al.~\cite{Shun2014}.  This algorithm uses a low-diameter decomposition
+algorithm of Miller et al.~\cite{miller2013parallel} as a subroutine,
+which we review and adapt next in Section~\ref{sec:ldd} and
+Appendix~\ref{sec:appendix-cc}.
+%% Any omitted proofs for this section
+%% appear in Appendix~\ref{sec:appendix-cc}.
+
+%% The \defn{exponential distribution} with parameter $\lambda$ is
+%% defined by the probability density function:
+%% \vspace{-2pt}
+%% \begin{align*}
+%% f(x,\lambda) =\begin{cases}
+%% \lambda e^{-\lambda x} & \text{if $x \ge 0$}\\
+%% 0 & \text{otherwise}
+%% \end{cases}
+%% \end{align*}
+%% \vspace{-2pt}
+%% The mean of the exponential distribution is $1/\lambda$.
+
+\subsection{Low-diameter Decomposition}\label{sec:ldd}
+Here we review the low-diameter decomposition of Miller et
+al.~\cite{miller2013parallel}.  The so-called
+``$(\beta,d)$-decomposition'' is terminology lifted from their paper,
+and it should not be confused with our implicit
+$k$-decompositions. The details of the decomposition subroutine are
+only important to extract a bound on the number of writes, and it is
+briefly summarized in Appendix~\ref{sec:appendix-cc}.
+
+A \defn{$(\beta,d)$-decomposition} of an undirected graph $G = (V,E)$,
+where $0<\beta<1$ and $1\leq d \leq n$, is defined as a partition of
+$V$ into subsets $V_1,\ldots,V_k$ such that (1) the shortest path
+between any two vertices in each $V_i$ using only vertices in $V_i$ is
+at most $d$, and (2) the number of edges $(u,v) \in E$ crossing the
+partition, i.e., such that $u \in V_i$, $v \in V_j$, and $i \neq j$,
+is at most $\beta m$.
+Miller et al.~\cite{miller2013parallel} provide an efficient parallel
+algorithm for generating a $(\beta,O(\log n / \beta))$-decomposition.
+As described, however, their algorithm performs $\Theta(m)$ writes.
+The key subroutine of the algorithm, however, is just breadth-first
+searches (BFS's).  Replacing these BFS's by write-efficient
+BFS's~\cite{BBFGGMS16} yields the following theorem:
+
+\begin{theorem}\label{thm:ldd}
+A $(\beta, O({\log n}/\beta))$ decomposition can be generated in
+$O(n)$ expected writes, $O(m+\wcost n)$ expected work, and
+$O(\wcost{\log^2 n}/\beta)$ \depth\ \whp{} on the \ourmodel\ model.
+\end{theorem}
+
+\subsection{Connectivity and Spanning Forest}\label{sec:cc-linear}
+The parallel connectivity algorithm of~\cite{Shun2014} applies the
+low-diameter decomposition recursively with $\beta$ set to a
+constant less than $1$. Each level of recursion contracts a subset of vertices into
+a single supervertex for the next level. The algorithm terminates when
+each connected component is reduced to a single supervertex.  The
+stumbling block for write efficiency is this contraction step, which
+performs writes proportional to the number of remaining edges.
+% For a constant $\beta$ less than $1$,
+% the number of remaining edges decreases geometrically, and so the
+% algorithm has linear work. There are $O(\log_{1/\beta}m)$ levels of
+% recursion \whp{} and so the overall \depth\ is
+% $O(\wcost\log_{1/\beta}m\log^2n/\beta)$ \whp{}.
+% However, even though
+% the low-diameter decomposition only requires $O(n)$ writes, the
+% connectivity algorithm requires contracting the graph, which takes
+% writes proportional to the number of remaining edges.
+
+Instead, our write-efficient algorithm applies the low-diameter
+decomposition just once, but with a much smaller $\beta$, as follows:
+\begin{enumerate}
+\item Perform the low-diameter decomposition with parameter
+  $\beta = 1/\wcost$.
+\item Find a spanning tree on each $V_i$ (in parallel) using
+  write-efficient BFS's of~\cite{BBFGGMS16}.
+\item Create a contracted graph, where each vertex subset in the
+  decomposition is contracted down to a single vertex.  To write down
+  the cross-subset edges in a compacted array, employ the
+  write-efficient filter of~\cite{BBFGGMS16}.
+\item Run any parallel linear-work spanning forest algorithm on the
+  contracted graph, e.g., the algorithm from~\cite{ColeKT96} with
+  $O(\wcost \log n)$ \depth{}.
+\end{enumerate}
+Combining the spanning forest edges across subsets (produced in Step
+4) with the spanning tree edges (produced in Step 2) gives a spanning
+forest on the original graph.  Adding the bounds for each step
+together yields the following theorem.  Again only $O(1)$ \local{}
+memory is required per task.
+
+\begin{theorem}\label{thm:cc-linear}
+  For any choice of $0 < \beta < 1$, connectivity and spanning forest
+  can be solved in $O(n+\beta m)$ expected writes,
+  $O(\wcost n + \beta \wcost m + m)$ expected work, and
+  $O(\wcost \log^2 n / \beta)$ \depth{} \whp{} on the \ourmodel{}
+  model.  For $\beta = 1/\wcost$, these bounds reduce to
+  $O(n + m/\wcost)$ expected writes, $O(m+\wcost n)$ expected work and
+  $O(\wcost^2\log^2n)$ \depth{} \whp{}.
+\end{theorem}
+\begin{proof}
+  Step~1 has performance bounds given by Theorem~\ref{thm:ldd}, and
+  the expected number of edges remaining in the contracted graph is at
+  most $\beta m$.  Step~2 performs BFS's on disjoint subgraphs, so
+  summing across subsets yields $O(n)$ expected writes and
+  $O(m+n\wcost)$ expected work.  Since each tree has low diameter
+  ${\cal D} = O(\log n / \beta)$, the BFS's have \depth{} $O(\wcost
+  {\cal D} \log n) = O(\wcost \log^2 n / \beta)$
+  \whp{}~\cite{BBFGGMS16}.  Step~3 is dominated by the filter, which
+  has a number of writes proportional to the output size of $O(\beta
+  m)$, for $O(m + \beta \wcost m)$ work. The \depth{} is $O(\wcost
+  \log n)$~\cite{BBFGGMS16}.  Finally, the algorithm used in Step~4 is
+  not write-efficient, but the size of the graph is $O(n+\beta m)$,
+  giving that many writes and $O(\wcost (n + m\beta))$ work.  Adding
+  these bounds together yields the theorem.
+\end{proof}
+
+\subsection{Connectivity Oracle in Sublinear Writes}\label{sec:cc-sublinear}
+A connectivity oracle supports queries that take as input a vertex and
+return the label (component ID) of the vertex.  This allows one to
+determine whether two vertices belong in the same component.  The
+algorithm is parameterized by a value $k$, to be chosen later.  We
+assume throughout that the \local{} memory per task is
+$\Omega(k\log n)$ words and that the graph has bounded degree.
+
+We begin with an outline of the algorithm.  The goal is to produce an
+oracle that can answer for any vertex which component it belongs to in
+$O(k)$ work.  To build the oracle, we would like to run the
+connectivity algorithm on the \clustergraph{} produced by an implicit
+$k$-decomposition. The result would be that all center vertices in the
+same component be labeled with the same identifier.  Answering a query
+then amounts to outputting the component ID of the center it maps to,
+which can be queried in $O(k)$ expected work and $O(k\log n)$ work
+\whp{} according to Lemma~\ref{lemma:findcenter}.
+
+The main challenge in implementing this strategy is that we cannot
+afford to write out the edges of the \clustergraph\ (as there could be
+too many edges). Instead, we treat the implicit $k$-decomposition as
+an implicit representation of the \clustergraph{}. Given an implicit
+representation, our connected components algorithm is the following:
+\begin{enumerate}
+\item Find a $k$-implicit decomposition of the graph.
+\item Run the write-efficient connectivity algorithm from
+  Section~\ref{sec:cc-linear} with $\beta=1/k$, treating the
+  $k$-decomposition as an implicit representation of the
+  \clustergraph{}, i.e., querying edges as needed.
+\end{enumerate}
+
+As used in the connectivity algorithm, our implicit representation
+need only be able to list the edges adjacent to a center vertex $x$ in
+the \clustergraph{}.  To do so, start at $x$, and explore outwards
+(e.g., with BFS), keeping all vertices and edges encountered so far in
+\local{} memory.  For each frontier vertex $v$, query its center (as
+in Lemma~\ref{lemma:findcluster}) --- if $\rho(v) = x$, then $v$'s
+unexplored neighbors are added to the next frontier; otherwise (if
+$\rho(v) \neq x$) the edge $(x,\rho(v))$ is in the \clustergraph{}, so
+add it to the output list.
+
+\begin{lemma}\label{lem:cc-impgraph}
+  Assuming a \local{} memory of size $\Omega(k\log n)$, the centers
+  neighboring each center in the \clustergraph{} can be listed in no writes and work,
+  \depth{}, and operations all $O(k^2)$ in expectation or
+  $O(k^2\log n)$ \whp{}.
+\end{lemma}
+\begin{proof}
+  Listing all the vertices in the cluster takes expected work $O(k^2)$
+  according to Lemma~\ref{lemma:findcluster}, or $O(k^2\log n)$
+  \whp{}.  The number of vertices in the cluster is $O(k)$, so they
+  can all fit in \local{} memory. Moreover, since each vertex in the
+  cluster has $O(1)$ neighbors, the total number of explored vertices
+  in neighboring clusters is $O(k)$, all of which can fit in \local{}
+  memory.  Each of these vertices is queried with a cost of $O(k)$
+  operations in expectation and $O(k\log n)$ \whp{} given the
+  specified \local{} memory (Lemma~\ref{lemma:findcenter}).
+\end{proof}
+
+Note that a consequence of the implicit representation is that listing
+neighbors is more expensive, and thus the number of operations
+performed by a BFS increases, affecting both the work and the
+\depth{}.  The implicit representation is only necessary while
+operating on the original \clustergraph{}, i.e., while finding the
+low-diameter decomposition and spanning trees of each of those vertex
+subsets; the contracted graph can be built explicitly as before.  The
+best choice of $k$ is $k=\sqrt{\wcost}$, giving us the following
+theorem.% whose proof is provided in Appendix~\ref{sec:appendix-cc}.
+
+\begin{theorem}\label{thm:cc-oracle}
+  A connectivity oracle that answers queries in $O(\sqrt{\wcost})$
+  expected work and $O(\sqrt{\wcost}\log n)$ work \whp{} can be
+  constructed in $O(n/\sqrt{\wcost})$ expected writes,
+  $O(\sqrt{\wcost} n)$ expected work, and $O(\wcost^{3/2}\log^3n)$
+  \depth{} \whp{} on the \ourmodel\ model, assuming a \local{} memory of
+  size $\Omega(\sqrt{\wcost}\log n)$.
+\end{theorem}
+
+\begin{proof}%[{\bf Proof of Theorem~\ref{thm:cc-oracle}}]
+  The $k$-implicit decomposition can be found in $O(n/k)$ writes,
+  $O(kn + \wcost n/ k)$ work, and $O(k\log n(k^2\log n + \wcost))$
+  \depth{} by Lemmas~\ref{lemma:genclusters}
+  and~\ref{lemma:pargenclusters}.  For $k=\sqrt{\wcost}$, these bounds
+  reduce to $O(n/\sqrt{\wcost})$ writes, $O(\sqrt{\wcost} n)$ work, and
+  $O(\wcost^{3/2}\log^3n)$ \depth{}.
+
+  If we had an explicit representation of the \clustergraph{} with
+  $n'=O(n/k)$ vertices and $m' = O(m) = O(n)$ edges, the connectivity
+  algorithm would have $O(n'+m'/k) = O(n/k)$ expected writes,
+  $O(\wcost n' + \wcost m' / k + m') = O(\wcost n/k + n)$ expected
+  work, and $O(\wcost k \log^2n)$ \depth{} \whp{} (by
+  Theorem~\ref{thm:cc-linear}).  The fact that the \clustergraph{} is
+  implicit means that the BFS needs to perform $O(k^2)$ additional
+  work (but not writes) per node in the \clustergraph{}, giving
+  expected work $O(\wcost n/k + n + k^2n') = O(\wcost n /k + kn)$.  To
+  get a high probability bound, the \depth{} is multiplied by
+  $O(k^2\log n)$, giving us $O(\wcost k^3 \log^3 n)$.  For
+  $k=\sqrt{\wcost}$, the work and writes match the theorem statement,
+  but the \depth{} is larger than claimed by a $\wcost$ factor.
+
+  To remove the extra $\wcost$ factor on the \depth{}, we need to look
+  inside the BFS algorithm and its analysis~\cite{BBFGGMS16}.  The
+  $O(\wcost {\cal D} \log n)$ \depth{} bound for the BFS, where ${\cal
+    D} = O(k\log n)$ is the diameter, is dominated by the \depth{} of
+  a packing subroutine on vertices of the frontier.  This packing
+  subroutine does not look at edges, and is thus not affected by the
+  overhead of finding a vertex's neighbors in the implicit
+  representation of the \clustergraph{}.  Ignoring the packing and
+  just looking at the exploration itself, the \depth{} of BFS is
+  $O({\cal D} \log n)$, which given the implicit representation
+  increases by a $O(k^2 \log n)$ factor.  Adding these together, we
+  get \depth{} $O(\wcost k \log^2 n + k^3 \log^3 n) =
+  O(\wcost^{3/2}\log^3n)$ for the BFS phases.
+\end{proof}
+
+
+%% We can further reduce the \depth\ by noting that the in-degree of each
+%% is $O(k)$, and so the exponential delaying process in the
+%% write-efficient BFS algorithm only takes $O(\log \wcost)$ rounds to
+%% finish, contributing a total $O(k^2\log\wcost)$ \depth. Each iteration of BFS still requires a pack that takes
+%% $O(\wcost \log n)$ \depth. For $k=\sqrt{\wcost}$, the total \depth\ per iteration is
+%% $O(\wcost\log n)$. This brings the overall \depth\ down to
+%% $O(\wcost^{3/2}\log^2 n)$ w.h.p.
+
+We can also output the spanning forest on the contracted graph in the
+same bounds, which will be used in the biconnectivity algorithm with
+sublinear writes.
+

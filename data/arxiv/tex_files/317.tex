@@ -1,0 +1,428 @@
+\section{Group Decision Analysis} 
+\label{sec:analysis}  
+%We describe some observations from the data collected during our user study in this section. 
+The analysis in this section examines the impact of a number of factors on 
+%invitation completion and 
+group decision. First, we define some concepts and notations that will be used throughout this section. In the 
+following analysis, we only use completed invitations in our dataset. A ``group
+decision'' refers to the information submitted by the host after an event has
+occurred, including the final group consensus rating.
+
+In addition, for each event $e$, we define $T_e$ as the set of suggested meeting
+times and $L_e$ as the set of suggested locations. For each participant $i$ and
+option $o$ of event $e$, we let $V(i, o)$ be an indicator function which
+indicates whether $i$ voted for option $o$:
+\begin{equation}
+V(i, o) = \left\{ \begin{array}{rcl}
+1 & \mbox{Participant $i$ voted for option $o$} \\ 0 & \mbox{Otherwise} 
+\end{array}\right.
+\end{equation}
+
+Then we define user's available time and location options as:
+\begin{equation}
+\label{time_avail}
+\added{\text{user $i$'s time availability for event $e$}} = \frac{1}{|T_e|}\sum_{o = 1}^{T_e}V(i, o)
+\end{equation}
+\begin{equation}
+\label{loc_avail}
+\added{\text{user $i$'s location availability for event $e$}} = \frac{1}{|L_e|}\sum_{o = 1}^{L_e}V(i, o)
+\end{equation}
+\deleted{where $A_t(i, e)$ and $A_l(i, e)$ refers to user $i$'s time availability and location availability for event $e$.}
+
+
+\newtheorem{observation}{Observation}
+\subsection{Impact of User Mobility on Group Decision}
+\label{sec:impact-user-mobility}
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{cluster1}
+  \label{fig:cluster1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{cluster2}
+  \label{fig:cluster2}
+\end{subfigure}
+\caption{User traces of two OutWithFriendz users. }
+\label{fig:cluster}
+\end{figure}
+
+Using an individual user's location trace data, we are able to analyze
+statistical properties of individual mobility. One way to consider a movement is
+to calculate the distance between two consecutive location trace points in our
+dataset.  This will result in the detection of many very short movements, such
+as from one office to another in the same building. However, due to the location
+services limitation in today's mobile phones, these short movements cannot be
+traced precisely. Figure~\ref{fig:cluster} shows two examples of user traces
+recorded in our dataset. There are natural clusters in these location traces
+which appear to correspond to locations frequently visited by users, such as
+work, school, and home.
+To eliminate these very short movements and extract long movements, we implement
+an algorithm introduced by Ye et al~\cite{ye2009mining}, which was originally
+designed for GPS data. Assume that each individual's location trace points
+detected by mobiles devices are ordered by timestamp $L = \{l_1, l_2, l_3,...,
+l_n\}$. We identify two types of movements.
+\textit{Type 1} refers to the short movements of a user within a building. In
+\textit{Type 2}, the user will travel from one area to another with a
+significant travel distance larger then $r$, for some period of time. In our
+experiments, $r$ is set to 0.12 miles (200 meters) and the period threshold is
+set to 30 minutes, as suggested by~\cite{ye2009mining}. To extract all the
+\textit{Type 2} movements and eliminate \textit{Type 1} movements, we
+iteratively seek spatial regions where the user remains for more than 30 minutes
+and all the tracked points within this spatial region lie within 0.12 miles.
+Then the location points in this spatial region are fused together by
+calculating the centroid of these points. The centroid point is considered as a
+\textbf{stationary point} for the spatial region.
+
+\begin{comment}
+\begin{observation}
+Users single movement distances and average number of movements per day 
+on weekends are higher than on weekdays.
+\end{observation}
+\end{comment}
+
+\deleted{
+When the spatial regions are detected, we calculate movement distance as the
+travel distance from one region to another. We ignore all the trivial movements
+that occur within the same spatial region. Figure~\ref{fig:moves} shows the
+distribution of single movement distances calculated by our proposed algorithm.
+The average movement distance is 5.35 miles on weekends and 4.12 miles on
+weekdays. This pattern seems reasonable, as people will be more likely to travel
+long distances for activities on weekends. The distribution of number of
+movements per day is shown in Figure~\ref{fig:trips}. The average movement count
+on weekdays is 5.3 and 5.6 during weekends. We also observe that
+the proportion of very low movements and very high movements is higher on
+weekends than weekdays. One possible explanation could be that people prefer
+either rest on weekends, or to go out for activities on weekends,
+which results in either low-movement or high-movement days.
+We also compare our results with a US National Household Travel Survey conducted in
+2009~\cite{santos2011summary}, which reports 4.2 movements during weekdays and
+3.9 during weekends. Our numbers seem to be higher than the study in this
+survey. Our hypothesis is that some of our OutWithFriendz users may close their
+location services when they are not planning to use the app, in order to
+prolong batter life.
+These days are more likely to be their inactive days. Taking this into
+consideration, it is not surprising that the average movement detected by our
+app is slightly higher than reported by the survey.}
+
+\begin{comment}
+\begin{figure}
+\centering
+\begin{subfigure}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{movement_length}
+  \caption{Single movement distance}
+  \label{fig:moves}
+\end{subfigure}%
+\begin{subfigure}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{movement_num_length}
+  \caption{Number of movement per day}
+  \label{fig:trips}
+\end{subfigure}
+\caption{The distribution of single movement distance (left) and movements per day (right) on weekday and weekend .}
+\end{figure}
+\end{comment}
+
+\begin{comment}
+\begin{observation}
+Paid users have lower mobility than unpaid users.
+\end{observation}
+As described in previous sections, we have both paid and unpaid users in our dataset. The paid users are mainly from Microworkers and Craigslist while the unpaid users are mainly campus students. Figure~\ref{fig:paidmoves} shows the distribution of single movement distances between paid and unpaid users. The average distance is 4.19 miles for unpaid users and 5.57 miles for paid users. Figure~\ref{fig:paidtrips} shows the distribution of number of movements per day between paid and unpaid users. The average movement count for paid users is 4.11 and 6.07 for unpaid users. Both figures illustrates that our paid users will have lower mobility than unpaid users. We believe the most important factor for this is the age difference. Unpaid users are mostly students who are younger and more active in their life. In comparison, the age of paid users will be higher, which generate lower mobility.
+
+\begin{figure}
+\centering
+\begin{subfigure}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{paid_movement_length}
+  \caption{Single movement distance}
+  \label{fig:paidmoves}
+\end{subfigure}%
+\begin{subfigure}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{paid_movement_num_length}
+  \caption{Number of movement per day}
+  \label{fig:paidtrips}
+\end{subfigure}
+\caption{The distribution of single movement distance (left) and movements per day (right) between paid and unpaid users.}
+\end{figure}
+
+\end{comment}
+We now examine the impact of user mobility on group behavior in OutWithFriendz. 
+Here we define user mobility as the total travel distance traveled by a user in
+the 48-hour period preceding an invitation. Our assumption before was that users
+who traveled longer distances will be more exhausted, and thus less likely to
+have significant voting availability. However, our analysis refutes this
+conjecture:
+\begin{observation}
+Users with higher mobility are more active in attending social events.
+\end{observation}
+We use the Pearson correlation coefficient~\cite{lawrence1989concordance} to
+calculate the relationship between user mobility and voting availability.
+Table~\ref{tab:mobility} shows that the correlation of user mobility with both
+date and location voting availability is positive, and the results are
+significant ($p<0.001$).
+These results indicate that highly mobile users are more available for event
+attendance.  There are two reasonable explanations for this phenomenon:
+\begin{itemize}
+\item Previous studies have shown that users who travel by car, bus, and foot
+in daily life differ substantially in their value of time, in both revealed-preference and stated-preference 
+surveys~\cite{liu1997assessment, elgar2004car}. In our OutWithFriendz dataset, the users who 
+travel long distances may travel by car. This increases their likelihood of
+attending events far away from their frequented spots. 
+\item Users who have higher mobility are more likely to be active event
+attenders. They are used to meeting with friends after school or work, which
+results in longer travel distances. Conversely, office workers who sit
+at their desks during the day have little mobility detected, but may still be
+tired after work and less likely to travel.
+\end{itemize}
+
+\begin{table}[]
+\centering
+\caption{The correlation of user mobility and voting availability}
+\label{tab:mobility}
+\begin{tabular}{|l|c|c|}
+\hline
+                                                         & Pearson correlation coefficient & p-value  \\ \hline
+The correlation of user mobility and date voting availability. & 0.276                             & 7.12e-05 \\ \hline
+The correlation of user mobility and location voting availability. & 0.281                             & 2.92e-06 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{observation}
+\added{Group mobility has a positive correlation with an area's development degree.}
+\end{observation}
+\added{Given the spatial regions that are detected, we are interested in investigating whether there exists any pattern between a group's mobility and an area's degree of development. 
+Our hypothesis is that groups living in metro areas have higher mobility than groups living in non-metro areas,  since metro group members may be more spread out in big cities and generate longer travel distances.
+To perform this analysis, we downloaded the 2016 U.S. area development degree data from the U.S. Census Bureau~\cite{uscensus}.
+Here we use population density and number of housing units to calculate the development degree of an area. For simplicity, we consider the location of each group event and that area's development degree. 
+It is possible that group members live in a city but traveled to a rural area for the event. But this is rare in our dataset. 
+Table~\ref{tab:population} shows the relationship between group's total travel distance and the corresponding county's population density and housing units. The Pearson correlation coefficient for these two parameters are positive with p-values that are smaller than 0.05. }
+
+\begin{table}[]
+\centering
+\caption{The correlation of group mobility and area's development degree. }
+\label{tab:population}
+\begin{tabular}{|l|l|l|}
+\hline
+                   & Pearson Correlation Coefficient & p-value \\ \hline
+Population density & 0.1834                          & 0.013   \\ \hline
+Housing unites     & 0.1572                          & 0.018   \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Impact of Individual Preference on Group Decisions}
+\label{sec:impact-individual-preference}
+To discover underlying factors that may lead users to vote for specific event
+options, we first focus our analysis on individual users. A social event is typically characterized by two major factors: event time
+and location. Using the OutWithFriendz dataset we have collected, we first analyze the
+travel distance between event suggested locations and each participant's closest location cluster, 
+with the requirement that this cluster must contain a point with a timestamp that occurs within 2 hours
+before or after the finalized time for the invitation. The 
+suggested location options are further divided into two categories: the location
+options with votes and location options without votes. Based on the results, we
+make the observation:
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\linewidth]{distances}
+\caption{The cumulative distribution of travel distances among voted locations and non-voted locations for each participant.}
+\label{fig:distance}
+\end{figure}
+
+
+\begin{observation}
+Most users would like to vote for event locations near their frequented
+locations.
+\end{observation}
+Figure~\ref{fig:distance} shows the cumulative distribution of travel distances
+among locations voted for and not voted for by each invitation participant.
+The average travel distance for voted locations is 4.19 miles while for
+non-voted locations is 7.53 miles. A Wilcoxon test found this to be a
+significant difference $(z = -4.57, p<0.001)$, which indicates users have clear
+preference to attend events near their frequented places. This is reasonable in
+daily life. For example, we would intuitively expect that users would prefer to
+go to dinner at restaurants that are close to their office or home.
+
+\begin{observation}
+People like to attend social events after work on weekdays, while on weekends,
+events are distributed relatively evenly.
+\end{observation}
+Additionally, we are also interested in investigating individual user's temporal preference. Our hypothesis is 
+that participants are more likely to attend events after work. Figure~\ref{fig:weekday} depicts the suggested
+event times on weekdays and weekends. It is clear that in weekdays there is a high spike around 6pm. While 
+in comparison, event times are distributed more evenly throughout the day on weekends. 
+
+\begin{figure}
+\centering
+\includegraphics[width=0.48\linewidth]{weekday}
+\includegraphics[width=0.48\linewidth]{weekend}
+\caption{The distribution of events by hours on weekday (left) and weekend (right).}
+\label{fig:weekday}
+\end{figure}
+
+\subsection{Impact of Host Preference}
+\label{sec:impact-host-preference}
+In our OutWithFriendz system, the host has more authority than other
+participants. The host can not only decide who to invite, but also finalizes the
+event time and location. This suggests that the host will have more influence
+on the group decision-making process. In our dataset, we have several
+significant observations about host behavior.
+\begin{observation}
+The final meeting location is closer to a host's frequented place than
+other participants.
+\end{observation}
+It's not surprising that event host would show some ``selfishness'' when making
+the final decision. We calculated that the average distance between the final
+location and host's closest frequented place is 5.23 miles. While the same
+metric for common participants is 6.75 miles, 29\% longer than host, a
+significant difference according to a Wilcoxon test ($z=-3.38, p<0.001$).
+
+\begin{table}[]
+\centering
+\caption{The probability of final event option voted by host and participant}
+\label{tab:prob}
+\begin{tabular}{|l|c|}
+\hline
+                                          & Probability \\ \hline
+Final event date voted by host            & 0.71        \\ \hline
+Final event date voted by participant     & 0.36        \\ \hline
+Final event location voted by host        & 0.72        \\ \hline
+Final event location voted by participant & 0.34        \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{observation}
+The probability that the final event date and location is voted by the host
+is \added{significantly} higher than that for other group participants.
+\added{For events in which the host did not choose his/her voting option as the 
+final decision, the main reason is to respect the majority voting results.} 
+\end{observation}
+
+Table~\ref{tab:prob} shows the probability that final event option is voted for
+by the host and by another participant. It is clear that the final option is
+much more likely to have been voted for by the host than by other group members,
+with a probability of 0.71 vs 0.36 for the final event date ($z=-13.22,
+p<0.001$). and 0.72 vs 0.34 ($z=-11.87, p<0.001$) for the final event location.
+\added{We also observe that among all the invitations in which the final event time was not 
+the host's voting option, 95.2\% coincided with the majority voting results. 
+The percentage is 94.4\% for the final event location. This indicates that, although hosts 
+have a higher impact on making decisions, they still highly respect
+other group members' opinions.}
+
+\begin{observation}
+The host choosing not to use the consensus voting result as the final decision
+would have negative influence on the event attendance rate.
+\end{observation}
+
+In our OutWithFriendz application, the host can select a final decision that is
+contrary to the voting results. According to our user study, there are
+two main reasons for this behavior: (1) The option that received most votes is
+not suitable for the event host; (2) the users discussed through using the app's
+chat function and some members changed their minds but did not update their
+votes. In our OutWithFriendz dataset, 7.3\% of final dates and 9.2\% of final
+locations are contrary to voting results.
+We calculated the Pearson correlation between whether the host complies with the
+consensus opinion and the corresponding event attendance rate. The results are
+shown in Table~\ref{tab:comply}. The positive correlation is significant here for both
+location voting and date voting. These results confirm that for event
+organization, hosts that don't comply with voting results have negative
+impact on the attraction of participants.
+
+\begin{table}[]
+\centering
+\caption{The correlation between whether host comply voting results and event attendance rate}
+\label{tab:comply}
+\begin{tabular}{|l|c|c|}
+\hline
+                                                                      & Pearson Correlation & p-value  \\ \hline
+Whether host comply location voting results and event attendance rate & 0.48                & $<10^{-10}$ \\ \hline
+Whether host comply date voting results and event attendance rate     & 0.47                & $<10^{-10}$ \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Voting Process Analysis}
+\label{sec:voting-process}
+Voting is one of the most innovative aspects of our OutWithFriendz system.
+In contrast to traditional online event organization services, such as
+Meetup and Douban Events, where the meeting location and time is decided only by
+group host when the invitation is created, OutWithFriendz allows all group
+members to express their preferences through suggestions and votes.
+After all invitees have responded to the poll, the group host is able to find a
+mutually agreeable location and time that usually accommodates most of the group
+members.  Tracking the group's voting process using our system offers a great
+opportunity to study group decision making behavior.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.48\linewidth]{vote_percentage}
+\caption{The relationship between average availability and voter position.}
+\label{fig:votepercentage}
+\end{figure}
+
+\begin{observation}
+Early voters tend to vote for a wide variety of options, while later voters are
+more likely to report limited availability.
+\end{observation}
+
+Figure~\ref{fig:votepercentage} shows the relationship between group members'
+average availability and their ``voting position''. A user's availability is
+defined by Equations~\ref{time_avail} and~\ref{loc_avail}. Voter position refers
+to the temporal index of casting votes within the scope of an invitation.
+The host's position is 1, the first voter's position is 2, and so on.
+There is a clear decrease of availability as voter position increases, and
+this result is consistent for both location voting and time voting. There are
+several possible explanations for this observation:
+
+\begin{itemize}
+\item People who came to the poll later may be busier than early voters, \added{and had 
+a smaller time window before the actual event time,}
+thus their availability is more limited compared with early voters.
+\item The polls in the OutWithFriendz application are all open polls, which
+means later voters can see the current voting results. Their votes may
+not be able to change the current status significantly because every voter can
+only vote once for a given option.
+\item Late voters will vote only for agreeable options that help the host to
+more easily finalize decisions. This phenomenon will be further discussed by the
+next observation.
+\end{itemize}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.48\linewidth]{vote_correlation}
+\caption{The relationship between average voting coincidence and voter position.}
+\label{fig:votecoin}
+\end{figure}
+
+\begin{observation}
+Late voters tend to vote for options that align with existing voting results
+and are mutually agreeable.
+\end{observation}
+Due to the fact that new voters can observe other voters' responses, these early
+responses would easily affect future voting behaviors. In our dataset, we find
+that later voters are more willing to vote for options that coincide with
+existing voting results, which makes it easier for the host to find
+common mutually agreeable options.  Here we define the voting coincidence by
+cosine similarity:
+\begin{equation}
+Coincidence = Cosine(\vec{v}, \vec{e})
+\end{equation}
+where $\vec{v}$ refers to the new voter's voting vector, and $\vec{e}$ refers to
+the existing voting vector. For example, if there are four date options in
+invitation $i$, and they receive 1, 3, 1, and 0 votes respectively, then the
+$\vec{e}$ is $[1, 3, 1, 0]$. If a new voter $v$ votes for second, and fourth
+option, then $\vec{v}$ is [0, 1, 0, 1]. The coincidence here is the
+cosine similarity between $\vec{v}$ and $\vec{e}$, which is 0.640.
+Figure~\ref{fig:votecoin} shows the relationship between average voting
+coincidence and voter position. It is clear that there is a positive relationship
+between voter position and coincidence in both date voting and location voting.
+Later voters will try to consider their options in light of the whole group's
+voting behavior.  Sometimes, these later voters may vote for less convenient
+options in order to make the host's life easier.
+
+
+
+
+

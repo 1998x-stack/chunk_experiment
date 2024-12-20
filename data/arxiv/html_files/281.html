@@ -1,0 +1,946 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.03112] Handwritten digit string recognition by combination of residual network and RNN-CTC</title><meta property="og:description" content="Recurrent neural network (RNN) and connectionist temporal classification (CTC) have showed successes in many sequence labeling tasks with the strong ability of dealing with the problems where the alignment between the …">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Handwritten digit string recognition by combination of residual network and RNN-CTC">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="Handwritten digit string recognition by combination of residual network and RNN-CTC">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.03112">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.03112">
+
+<!--Generated on Sun Mar  3 04:08:27 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="keywords" lang="en" content="digit string recognition,  end to end,  convolutional neural network,  recurrent neural network,  connectionist temporal classification">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line"><span id="id1" class="ltx_note ltx_role_institutetext"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_note_type">institutetext: </span>Shanghai Key Laboratory of Multidimensional Information Processing
+<br class="ltx_break">Department of Computer Science and Technology
+<br class="ltx_break">East China Normal University, Shanghai 200062, China
+<br class="ltx_break"><span class="ltx_ref ltx_nolink ltx_url ltx_font_typewriter ltx_ref_self">%\mailsa\\%\mailsb\\%\mailsc\\ylu@cs.ecnu.edu.cn</span></span></span></span>
+<div id="p1" class="ltx_para">
+<p id="p1.1" class="ltx_p">Authors’ Instructions</p>
+</div>
+<h1 class="ltx_title ltx_title_document">Handwritten digit string recognition by combination of residual network and RNN-CTC</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Hongjian Zhan
+</span></span>
+<span class="ltx_author_before">  </span><span class="ltx_creator ltx_role_author">
+<span class="ltx_personname"> Qingqing Wang
+</span></span>
+<span class="ltx_author_before">  </span><span class="ltx_creator ltx_role_author">
+<span class="ltx_personname"> Yue Lu
+</span></span>
+</div>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id1.id1" class="ltx_p">Recurrent neural network (RNN) and connectionist temporal classification (CTC) have showed successes in many sequence labeling tasks with the strong ability of dealing with the problems where the alignment between the inputs and the target labels is unknown. Residual network is a new structure of convolutional neural network and works well in various computer vision tasks. In this paper, we take advantage of the architectures mentioned above to create a new network for handwritten digit string recognition. First we design a residual network to extract features from input images, then we employ a RNN to model the contextual information within feature sequences and predict recognition results. At the top of this network, a standard CTC is applied to calculate the loss and yield the final results. These three parts compose an end-to-end trainable network. The proposed new architecture achieves the highest performances on ORAND-CAR-A and ORAND-CAR-B with recognition rates 89.75% and 91.14%, respectively. In addition, the experiments on a generated captcha dataset which has much longer string length show the potential of the proposed network to handle long strings.</p>
+</div>
+<div class="ltx_keywords">
+<h6 class="ltx_title ltx_title_keywords">Keywords: </h6>digit string recognition, end to end, convolutional neural network, recurrent neural network, connectionist temporal classification
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">Recent years, with the advancement of deep learning, handwritten digit string recognition (HDSR) has archived great improvements <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>, <a href="#bib.bib2" title="" class="ltx_ref">2</a>, <a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite>. An intuitive approach to recognize these handwriting strings is to segment string images into pieces which correspond to single characters or part of them, then combine the recognition results of these pieces with path-search algorithms to get global optimal results. These methods are known as over-segmentation strategy. Wu et al. <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite> transformed the string image into a sequence of primitive image segments after binarization, then combined these segments to generate candidate character patterns, forming a segmentation candidate lattice. After that a beam search algorithm was used to find an optimal path over the candidate lattice. This method won the first place on the ICFHR2014 HDSR competition <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>. Saabni <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite> used sliding window and deep neural network to attain high recognition rates. Gattal et al. <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib2" title="" class="ltx_ref">2</a>]</cite> applied three segmentation methods to handle handwritten digit strings by combining these segmentation methods depending on the configuration link between digits. But this kind of methods faced many problems in practice, such as various handwritten styles, connected characters or background noises.</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">An alternative to handle such sequence recognition task is segmentation-free methods.
+Benefitting from the ability of modelling the alignment between inputs and labels directly, connectionist temporal classification (CTC) <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib4" title="" class="ltx_ref">4</a>]</cite> is specifically suitable for temporal classification tasks, such as speech and string recognition. CTC is often used as an output layer for recurrent neural network(RNN). In practice such RNN-CTC framework usually combines with a deep neural network, which generates the feature representation of inputs. Messina <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib5" title="" class="ltx_ref">5</a>]</cite> firstly applied a LSTM-RNN model to off-line Chinese handwritten text recognition. Without well-designed architecture it achieved competitive performance with the state-of-the-art of tradition method <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib6" title="" class="ltx_ref">6</a>]</cite>. Shi et al. <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib7" title="" class="ltx_ref">7</a>]</cite> proposed a network with CNN and RNN named CRNN and applied it to scene text recognition. The CRNN is built with Torch. We rebuild the experimental environment in our machine and apply it to HDSR for comparison.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">In this paper, we propose a new network based on RNN-CTC framework. First we use the more efficient Residual network <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib8" title="" class="ltx_ref">8</a>]</cite>, which was the champion of ILSVRC 2015 classification task, to extract more discriminative feature sequences. Then we modify the standard bi-direction LSTM by adding fully connected layer before combining the two directions for convergence. At the top of our model, a standard CTC is used to calculate the loss and yield the recognition result. By taking the advantages of these models, this new model works well in HDSR task. Compared with the submitted methods in ICFHR 2014 HDSR competition, as well as CRNN, our approach makes significant improvements and achieves the state-of-the-art performance. We conduct our experiments<span id="footnote1" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_tag ltx_tag_note">1</span>https://github.com/LPAIS/HDSR-with-RNN</span></span></span> with Caffe <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib9" title="" class="ltx_ref">9</a>]</cite> toolkit.</p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p">The rest of this paper is organized as follows. In Section 2 we describe the methods. Then, the details of our experiments are presented in Section 3. Section 4 concludes this paper and discusses the future work.</p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>The Proposed Architecture</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">The main idea of our model is using a recurrent neural network to model contextual information, namely, the features extracted by a powerful convolutional neural network from raw images and yield elementary results, then get the final recognition results with the output layer connectionist temporary classification.</p>
+</div>
+<section id="S2.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.1 </span>Feature extractor: Convolutional Neural Networks</h3>
+
+<div id="S2.SS1.p1" class="ltx_para">
+<p id="S2.SS1.p1.1" class="ltx_p">Convolutional neural networks are successful in most computer vision tasks. It remains the space structure of image then fully connected network and generates highly-efficient features that defeats traditional methods. CNN has great improvements since it was put forward. Many fantastic CNN architectures were proposed such as AlexNet <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib10" title="" class="ltx_ref">10</a>]</cite>, GoogleNet <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib11" title="" class="ltx_ref">11</a>]</cite> and network in network(NIN) <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib12" title="" class="ltx_ref">12</a>]</cite>.</p>
+</div>
+<div id="S2.SS1.p2" class="ltx_para">
+<p id="S2.SS1.p2.1" class="ltx_p">When the networks going deeper, a degradation problem has been exposed. In order to address this issue, He et al. <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib8" title="" class="ltx_ref">8</a>]</cite> introduced a deep residual learning framework, i.e. the ResNet.
+The essential structure of ResNet is shortcut connection. Shortcut connections are those that skip one or more layers. With this kind of connections, we can handle the vanishing gradient problem and build deeper networks, which means that we can get more excellent feature representations. In practice the way of shortcut connection is flexible according to specific tasks.</p>
+</div>
+<div id="S2.SS1.p3" class="ltx_para">
+<p id="S2.SS1.p3.1" class="ltx_p">In our model, we design a 10 layers residual network without global pooling layers. With the reason of connecting a deep RNN following, we don’t employee much deep CNN to avoid divergence. We take the advantages of the residual learning to enhance gradient propagation.</p>
+</div>
+</section>
+<section id="S2.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.2 </span>Sequence labelling: Recurrent Neural Network</h3>
+
+<div id="S2.SS2.p1" class="ltx_para">
+<p id="S2.SS2.p1.1" class="ltx_p">A recurrent neural network is a class of neural network models where many connections among its neurons form a directed cycle. With self-connections, it has an important benefit to use contextual information when mapping between input and output sequences. But for traditional RNN, the range of context that can be in practice accessed is quite limited due to vanishing gradient problem. One solution is to impose a memory structure into the RNN, resulting in the so-called long-short time memory (LSTM) <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib13" title="" class="ltx_ref">13</a>]</cite> cell. Such LSTM version of RNN is shown to overcome some fundamental problems of traditional RNN and can be able to efficiently learn to solve long time dependency problems. Nowadays, LSTM becomes one of the most widely used RNN.</p>
+</div>
+<div id="S2.SS2.p2" class="ltx_para">
+<p id="S2.SS2.p2.1" class="ltx_p">For sequence labelling task it is beneficial to have access to future as well as past context. However, the standard LSTM only consider the past information and ignore future context. An alternative solution is to add another LSTM to handle data reversely, which is so-called bi-direction LSTM <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib14" title="" class="ltx_ref">14</a>]</cite>, short for BiLSTM. BiLSTM presents each training sequence forwards and backwards to two separate LSTM layers, both of which are connected to the same output layer. This structure provides the output layer with complete past and future context for every point in the input sequence.</p>
+</div>
+</section>
+<section id="S2.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.3 </span>Connectionist temporal classification</h3>
+
+<div id="S2.SS3.p1" class="ltx_para">
+<p id="S2.SS3.p1.1" class="ltx_p">Connectionist temporal classification <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib4" title="" class="ltx_ref">4</a>]</cite> is a kind of output layer. It has two main functions. One is to calculate the loss, the other is to decode the output of RNN.</p>
+</div>
+<div id="S2.SS3.p2" class="ltx_para">
+<p id="S2.SS3.p2.13" class="ltx_p">For a sequence labelling task, the labels are drawn from a set <math id="S2.SS3.p2.1.m1.1" class="ltx_Math" alttext="A" display="inline"><semantics id="S2.SS3.p2.1.m1.1a"><mi id="S2.SS3.p2.1.m1.1.1" xref="S2.SS3.p2.1.m1.1.1.cmml">A</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.1.m1.1b"><ci id="S2.SS3.p2.1.m1.1.1.cmml" xref="S2.SS3.p2.1.m1.1.1">𝐴</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.1.m1.1c">A</annotation></semantics></math> (in HDSR task, <math id="S2.SS3.p2.2.m2.1" class="ltx_Math" alttext="A" display="inline"><semantics id="S2.SS3.p2.2.m2.1a"><mi id="S2.SS3.p2.2.m2.1.1" xref="S2.SS3.p2.2.m2.1.1.cmml">A</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.2.m2.1b"><ci id="S2.SS3.p2.2.m2.1.1.cmml" xref="S2.SS3.p2.2.m2.1.1">𝐴</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.2.m2.1c">A</annotation></semantics></math> is the ten digits). With an extra label named <em id="S2.SS3.p2.13.1" class="ltx_emph ltx_font_italic">blank</em>, we get a new set <math id="S2.SS3.p2.3.m3.1" class="ltx_Math" alttext="A^{{}^{\prime}}=A\cup\{\emph{blank}\}" display="inline"><semantics id="S2.SS3.p2.3.m3.1a"><mrow id="S2.SS3.p2.3.m3.1.2" xref="S2.SS3.p2.3.m3.1.2.cmml"><msup id="S2.SS3.p2.3.m3.1.2.2" xref="S2.SS3.p2.3.m3.1.2.2.cmml"><mi id="S2.SS3.p2.3.m3.1.2.2.2" xref="S2.SS3.p2.3.m3.1.2.2.2.cmml">A</mi><msup id="S2.SS3.p2.3.m3.1.2.2.3" xref="S2.SS3.p2.3.m3.1.2.2.3.cmml"><mi id="S2.SS3.p2.3.m3.1.2.2.3a" xref="S2.SS3.p2.3.m3.1.2.2.3.cmml"></mi><mo id="S2.SS3.p2.3.m3.1.2.2.3.1" xref="S2.SS3.p2.3.m3.1.2.2.3.1.cmml">′</mo></msup></msup><mo id="S2.SS3.p2.3.m3.1.2.1" xref="S2.SS3.p2.3.m3.1.2.1.cmml">=</mo><mrow id="S2.SS3.p2.3.m3.1.2.3" xref="S2.SS3.p2.3.m3.1.2.3.cmml"><mi id="S2.SS3.p2.3.m3.1.2.3.2" xref="S2.SS3.p2.3.m3.1.2.3.2.cmml">A</mi><mo id="S2.SS3.p2.3.m3.1.2.3.1" xref="S2.SS3.p2.3.m3.1.2.3.1.cmml">∪</mo><mrow id="S2.SS3.p2.3.m3.1.2.3.3.2" xref="S2.SS3.p2.3.m3.1.2.3.3.1.cmml"><mo stretchy="false" id="S2.SS3.p2.3.m3.1.2.3.3.2.1" xref="S2.SS3.p2.3.m3.1.2.3.3.1.cmml">{</mo><mtext class="ltx_mathvariant_italic" id="S2.SS3.p2.3.m3.1.1" xref="S2.SS3.p2.3.m3.1.1b.cmml"><em id="S2.SS3.p2.3.m3.1.1.1nest" class="ltx_emph ltx_font_italic">blank</em></mtext><mo stretchy="false" id="S2.SS3.p2.3.m3.1.2.3.3.2.2" xref="S2.SS3.p2.3.m3.1.2.3.3.1.cmml">}</mo></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.3.m3.1b"><apply id="S2.SS3.p2.3.m3.1.2.cmml" xref="S2.SS3.p2.3.m3.1.2"><eq id="S2.SS3.p2.3.m3.1.2.1.cmml" xref="S2.SS3.p2.3.m3.1.2.1"></eq><apply id="S2.SS3.p2.3.m3.1.2.2.cmml" xref="S2.SS3.p2.3.m3.1.2.2"><csymbol cd="ambiguous" id="S2.SS3.p2.3.m3.1.2.2.1.cmml" xref="S2.SS3.p2.3.m3.1.2.2">superscript</csymbol><ci id="S2.SS3.p2.3.m3.1.2.2.2.cmml" xref="S2.SS3.p2.3.m3.1.2.2.2">𝐴</ci><apply id="S2.SS3.p2.3.m3.1.2.2.3.cmml" xref="S2.SS3.p2.3.m3.1.2.2.3"><ci id="S2.SS3.p2.3.m3.1.2.2.3.1.cmml" xref="S2.SS3.p2.3.m3.1.2.2.3.1">′</ci></apply></apply><apply id="S2.SS3.p2.3.m3.1.2.3.cmml" xref="S2.SS3.p2.3.m3.1.2.3"><union id="S2.SS3.p2.3.m3.1.2.3.1.cmml" xref="S2.SS3.p2.3.m3.1.2.3.1"></union><ci id="S2.SS3.p2.3.m3.1.2.3.2.cmml" xref="S2.SS3.p2.3.m3.1.2.3.2">𝐴</ci><set id="S2.SS3.p2.3.m3.1.2.3.3.1.cmml" xref="S2.SS3.p2.3.m3.1.2.3.3.2"><ci id="S2.SS3.p2.3.m3.1.1b.cmml" xref="S2.SS3.p2.3.m3.1.1"><mtext class="ltx_mathvariant_italic" id="S2.SS3.p2.3.m3.1.1.cmml" xref="S2.SS3.p2.3.m3.1.1"><em id="S2.SS3.p2.3.m3.1.1.1anest" class="ltx_emph ltx_font_italic">blank</em></mtext></ci></set></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.3.m3.1c">A^{{}^{\prime}}=A\cup\{\emph{blank}\}</annotation></semantics></math>, which is used in reality. The input of CTC is a sequence <math id="S2.SS3.p2.4.m4.3" class="ltx_Math" alttext="y=y_{1},...,y_{T}" display="inline"><semantics id="S2.SS3.p2.4.m4.3a"><mrow id="S2.SS3.p2.4.m4.3.3" xref="S2.SS3.p2.4.m4.3.3.cmml"><mi id="S2.SS3.p2.4.m4.3.3.4" xref="S2.SS3.p2.4.m4.3.3.4.cmml">y</mi><mo id="S2.SS3.p2.4.m4.3.3.3" xref="S2.SS3.p2.4.m4.3.3.3.cmml">=</mo><mrow id="S2.SS3.p2.4.m4.3.3.2.2" xref="S2.SS3.p2.4.m4.3.3.2.3.cmml"><msub id="S2.SS3.p2.4.m4.2.2.1.1.1" xref="S2.SS3.p2.4.m4.2.2.1.1.1.cmml"><mi id="S2.SS3.p2.4.m4.2.2.1.1.1.2" xref="S2.SS3.p2.4.m4.2.2.1.1.1.2.cmml">y</mi><mn id="S2.SS3.p2.4.m4.2.2.1.1.1.3" xref="S2.SS3.p2.4.m4.2.2.1.1.1.3.cmml">1</mn></msub><mo id="S2.SS3.p2.4.m4.3.3.2.2.3" xref="S2.SS3.p2.4.m4.3.3.2.3.cmml">,</mo><mi mathvariant="normal" id="S2.SS3.p2.4.m4.1.1" xref="S2.SS3.p2.4.m4.1.1.cmml">…</mi><mo id="S2.SS3.p2.4.m4.3.3.2.2.4" xref="S2.SS3.p2.4.m4.3.3.2.3.cmml">,</mo><msub id="S2.SS3.p2.4.m4.3.3.2.2.2" xref="S2.SS3.p2.4.m4.3.3.2.2.2.cmml"><mi id="S2.SS3.p2.4.m4.3.3.2.2.2.2" xref="S2.SS3.p2.4.m4.3.3.2.2.2.2.cmml">y</mi><mi id="S2.SS3.p2.4.m4.3.3.2.2.2.3" xref="S2.SS3.p2.4.m4.3.3.2.2.2.3.cmml">T</mi></msub></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.4.m4.3b"><apply id="S2.SS3.p2.4.m4.3.3.cmml" xref="S2.SS3.p2.4.m4.3.3"><eq id="S2.SS3.p2.4.m4.3.3.3.cmml" xref="S2.SS3.p2.4.m4.3.3.3"></eq><ci id="S2.SS3.p2.4.m4.3.3.4.cmml" xref="S2.SS3.p2.4.m4.3.3.4">𝑦</ci><list id="S2.SS3.p2.4.m4.3.3.2.3.cmml" xref="S2.SS3.p2.4.m4.3.3.2.2"><apply id="S2.SS3.p2.4.m4.2.2.1.1.1.cmml" xref="S2.SS3.p2.4.m4.2.2.1.1.1"><csymbol cd="ambiguous" id="S2.SS3.p2.4.m4.2.2.1.1.1.1.cmml" xref="S2.SS3.p2.4.m4.2.2.1.1.1">subscript</csymbol><ci id="S2.SS3.p2.4.m4.2.2.1.1.1.2.cmml" xref="S2.SS3.p2.4.m4.2.2.1.1.1.2">𝑦</ci><cn type="integer" id="S2.SS3.p2.4.m4.2.2.1.1.1.3.cmml" xref="S2.SS3.p2.4.m4.2.2.1.1.1.3">1</cn></apply><ci id="S2.SS3.p2.4.m4.1.1.cmml" xref="S2.SS3.p2.4.m4.1.1">…</ci><apply id="S2.SS3.p2.4.m4.3.3.2.2.2.cmml" xref="S2.SS3.p2.4.m4.3.3.2.2.2"><csymbol cd="ambiguous" id="S2.SS3.p2.4.m4.3.3.2.2.2.1.cmml" xref="S2.SS3.p2.4.m4.3.3.2.2.2">subscript</csymbol><ci id="S2.SS3.p2.4.m4.3.3.2.2.2.2.cmml" xref="S2.SS3.p2.4.m4.3.3.2.2.2.2">𝑦</ci><ci id="S2.SS3.p2.4.m4.3.3.2.2.2.3.cmml" xref="S2.SS3.p2.4.m4.3.3.2.2.2.3">𝑇</ci></apply></list></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.4.m4.3c">y=y_{1},...,y_{T}</annotation></semantics></math>, where T is the sequence length. The corresponding label donates as <math id="S2.SS3.p2.5.m5.1" class="ltx_Math" alttext="I" display="inline"><semantics id="S2.SS3.p2.5.m5.1a"><mi id="S2.SS3.p2.5.m5.1.1" xref="S2.SS3.p2.5.m5.1.1.cmml">I</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.5.m5.1b"><ci id="S2.SS3.p2.5.m5.1.1.cmml" xref="S2.SS3.p2.5.m5.1.1">𝐼</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.5.m5.1c">I</annotation></semantics></math> over <math id="S2.SS3.p2.6.m6.1" class="ltx_Math" alttext="A" display="inline"><semantics id="S2.SS3.p2.6.m6.1a"><mi id="S2.SS3.p2.6.m6.1.1" xref="S2.SS3.p2.6.m6.1.1.cmml">A</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.6.m6.1b"><ci id="S2.SS3.p2.6.m6.1.1.cmml" xref="S2.SS3.p2.6.m6.1.1">𝐴</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.6.m6.1c">A</annotation></semantics></math>. Each <math id="S2.SS3.p2.7.m7.1" class="ltx_Math" alttext="y_{i}" display="inline"><semantics id="S2.SS3.p2.7.m7.1a"><msub id="S2.SS3.p2.7.m7.1.1" xref="S2.SS3.p2.7.m7.1.1.cmml"><mi id="S2.SS3.p2.7.m7.1.1.2" xref="S2.SS3.p2.7.m7.1.1.2.cmml">y</mi><mi id="S2.SS3.p2.7.m7.1.1.3" xref="S2.SS3.p2.7.m7.1.1.3.cmml">i</mi></msub><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.7.m7.1b"><apply id="S2.SS3.p2.7.m7.1.1.cmml" xref="S2.SS3.p2.7.m7.1.1"><csymbol cd="ambiguous" id="S2.SS3.p2.7.m7.1.1.1.cmml" xref="S2.SS3.p2.7.m7.1.1">subscript</csymbol><ci id="S2.SS3.p2.7.m7.1.1.2.cmml" xref="S2.SS3.p2.7.m7.1.1.2">𝑦</ci><ci id="S2.SS3.p2.7.m7.1.1.3.cmml" xref="S2.SS3.p2.7.m7.1.1.3">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.7.m7.1c">y_{i}</annotation></semantics></math> is a probability distribution on the set <math id="S2.SS3.p2.8.m8.1" class="ltx_Math" alttext="A^{{}^{\prime}}" display="inline"><semantics id="S2.SS3.p2.8.m8.1a"><msup id="S2.SS3.p2.8.m8.1.1" xref="S2.SS3.p2.8.m8.1.1.cmml"><mi id="S2.SS3.p2.8.m8.1.1.2" xref="S2.SS3.p2.8.m8.1.1.2.cmml">A</mi><msup id="S2.SS3.p2.8.m8.1.1.3" xref="S2.SS3.p2.8.m8.1.1.3.cmml"><mi id="S2.SS3.p2.8.m8.1.1.3a" xref="S2.SS3.p2.8.m8.1.1.3.cmml"></mi><mo id="S2.SS3.p2.8.m8.1.1.3.1" xref="S2.SS3.p2.8.m8.1.1.3.1.cmml">′</mo></msup></msup><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.8.m8.1b"><apply id="S2.SS3.p2.8.m8.1.1.cmml" xref="S2.SS3.p2.8.m8.1.1"><csymbol cd="ambiguous" id="S2.SS3.p2.8.m8.1.1.1.cmml" xref="S2.SS3.p2.8.m8.1.1">superscript</csymbol><ci id="S2.SS3.p2.8.m8.1.1.2.cmml" xref="S2.SS3.p2.8.m8.1.1.2">𝐴</ci><apply id="S2.SS3.p2.8.m8.1.1.3.cmml" xref="S2.SS3.p2.8.m8.1.1.3"><ci id="S2.SS3.p2.8.m8.1.1.3.1.cmml" xref="S2.SS3.p2.8.m8.1.1.3.1">′</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.8.m8.1c">A^{{}^{\prime}}</annotation></semantics></math>. We define a many-to-one function <math id="S2.SS3.p2.9.m9.1" class="ltx_Math" alttext="\mathscr{F}:A^{{}^{\prime}T}\mapsto A^{\leq T}" display="inline"><semantics id="S2.SS3.p2.9.m9.1a"><mrow id="S2.SS3.p2.9.m9.1.1" xref="S2.SS3.p2.9.m9.1.1.cmml"><mi class="ltx_font_mathscript" id="S2.SS3.p2.9.m9.1.1.2" xref="S2.SS3.p2.9.m9.1.1.2.cmml">ℱ</mi><mo lspace="0.278em" rspace="0.278em" id="S2.SS3.p2.9.m9.1.1.1" xref="S2.SS3.p2.9.m9.1.1.1.cmml">:</mo><mrow id="S2.SS3.p2.9.m9.1.1.3" xref="S2.SS3.p2.9.m9.1.1.3.cmml"><msup id="S2.SS3.p2.9.m9.1.1.3.2" xref="S2.SS3.p2.9.m9.1.1.3.2.cmml"><mi id="S2.SS3.p2.9.m9.1.1.3.2.2" xref="S2.SS3.p2.9.m9.1.1.3.2.2.cmml">A</mi><mmultiscripts id="S2.SS3.p2.9.m9.1.1.3.2.3" xref="S2.SS3.p2.9.m9.1.1.3.2.3.cmml"><mi id="S2.SS3.p2.9.m9.1.1.3.2.3.2" xref="S2.SS3.p2.9.m9.1.1.3.2.3.2.cmml">T</mi><mprescripts id="S2.SS3.p2.9.m9.1.1.3.2.3a" xref="S2.SS3.p2.9.m9.1.1.3.2.3.cmml"></mprescripts><mrow id="S2.SS3.p2.9.m9.1.1.3.2.3b" xref="S2.SS3.p2.9.m9.1.1.3.2.3.cmml"></mrow><mo id="S2.SS3.p2.9.m9.1.1.3.2.3.3" xref="S2.SS3.p2.9.m9.1.1.3.2.3.3.cmml">′</mo></mmultiscripts></msup><mo stretchy="false" id="S2.SS3.p2.9.m9.1.1.3.1" xref="S2.SS3.p2.9.m9.1.1.3.1.cmml">↦</mo><msup id="S2.SS3.p2.9.m9.1.1.3.3" xref="S2.SS3.p2.9.m9.1.1.3.3.cmml"><mi id="S2.SS3.p2.9.m9.1.1.3.3.2" xref="S2.SS3.p2.9.m9.1.1.3.3.2.cmml">A</mi><mrow id="S2.SS3.p2.9.m9.1.1.3.3.3" xref="S2.SS3.p2.9.m9.1.1.3.3.3.cmml"><mi id="S2.SS3.p2.9.m9.1.1.3.3.3.2" xref="S2.SS3.p2.9.m9.1.1.3.3.3.2.cmml"></mi><mo id="S2.SS3.p2.9.m9.1.1.3.3.3.1" xref="S2.SS3.p2.9.m9.1.1.3.3.3.1.cmml">≤</mo><mi id="S2.SS3.p2.9.m9.1.1.3.3.3.3" xref="S2.SS3.p2.9.m9.1.1.3.3.3.3.cmml">T</mi></mrow></msup></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.9.m9.1b"><apply id="S2.SS3.p2.9.m9.1.1.cmml" xref="S2.SS3.p2.9.m9.1.1"><ci id="S2.SS3.p2.9.m9.1.1.1.cmml" xref="S2.SS3.p2.9.m9.1.1.1">:</ci><ci id="S2.SS3.p2.9.m9.1.1.2.cmml" xref="S2.SS3.p2.9.m9.1.1.2">ℱ</ci><apply id="S2.SS3.p2.9.m9.1.1.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3"><csymbol cd="latexml" id="S2.SS3.p2.9.m9.1.1.3.1.cmml" xref="S2.SS3.p2.9.m9.1.1.3.1">maps-to</csymbol><apply id="S2.SS3.p2.9.m9.1.1.3.2.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2"><csymbol cd="ambiguous" id="S2.SS3.p2.9.m9.1.1.3.2.1.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2">superscript</csymbol><ci id="S2.SS3.p2.9.m9.1.1.3.2.2.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2.2">𝐴</ci><apply id="S2.SS3.p2.9.m9.1.1.3.2.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2.3"><csymbol cd="ambiguous" id="S2.SS3.p2.9.m9.1.1.3.2.3.1.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2.3">superscript</csymbol><ci id="S2.SS3.p2.9.m9.1.1.3.2.3.2.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2.3.2">𝑇</ci><ci id="S2.SS3.p2.9.m9.1.1.3.2.3.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3.2.3.3">′</ci></apply></apply><apply id="S2.SS3.p2.9.m9.1.1.3.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3"><csymbol cd="ambiguous" id="S2.SS3.p2.9.m9.1.1.3.3.1.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3">superscript</csymbol><ci id="S2.SS3.p2.9.m9.1.1.3.3.2.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3.2">𝐴</ci><apply id="S2.SS3.p2.9.m9.1.1.3.3.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3.3"><leq id="S2.SS3.p2.9.m9.1.1.3.3.3.1.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3.3.1"></leq><csymbol cd="latexml" id="S2.SS3.p2.9.m9.1.1.3.3.3.2.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3.3.2">absent</csymbol><ci id="S2.SS3.p2.9.m9.1.1.3.3.3.3.cmml" xref="S2.SS3.p2.9.m9.1.1.3.3.3.3">𝑇</ci></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.9.m9.1c">\mathscr{F}:A^{{}^{\prime}T}\mapsto A^{\leq T}</annotation></semantics></math> to resume the repeated labels and blanks. For example <math id="S2.SS3.p2.10.m10.1" class="ltx_math_unparsed" alttext="\mathscr{F}(1-22--333--)=123" display="inline"><semantics id="S2.SS3.p2.10.m10.1a"><mrow id="S2.SS3.p2.10.m10.1b"><mi class="ltx_font_mathscript" id="S2.SS3.p2.10.m10.1.1">ℱ</mi><mrow id="S2.SS3.p2.10.m10.1.2"><mo stretchy="false" id="S2.SS3.p2.10.m10.1.2.1">(</mo><mn id="S2.SS3.p2.10.m10.1.2.2">1</mn><mo id="S2.SS3.p2.10.m10.1.2.3">−</mo><mn id="S2.SS3.p2.10.m10.1.2.4">22</mn><mo rspace="0em" id="S2.SS3.p2.10.m10.1.2.5">−</mo><mo lspace="0em" id="S2.SS3.p2.10.m10.1.2.6">−</mo><mn id="S2.SS3.p2.10.m10.1.2.7">333</mn><mo rspace="0em" id="S2.SS3.p2.10.m10.1.2.8">−</mo><mo lspace="0em" rspace="0em" id="S2.SS3.p2.10.m10.1.2.9">−</mo><mo stretchy="false" id="S2.SS3.p2.10.m10.1.2.10">)</mo></mrow><mo id="S2.SS3.p2.10.m10.1.3">=</mo><mn id="S2.SS3.p2.10.m10.1.4">123</mn></mrow><annotation encoding="application/x-tex" id="S2.SS3.p2.10.m10.1c">\mathscr{F}(1-22--333--)=123</annotation></semantics></math>. Then, a conditional probability is defined as the sum of probabilities of all <math id="S2.SS3.p2.11.m11.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="S2.SS3.p2.11.m11.1a"><mi id="S2.SS3.p2.11.m11.1.1" xref="S2.SS3.p2.11.m11.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.11.m11.1b"><ci id="S2.SS3.p2.11.m11.1.1.cmml" xref="S2.SS3.p2.11.m11.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.11.m11.1c">\pi</annotation></semantics></math> which are mapped by <math id="S2.SS3.p2.12.m12.1" class="ltx_Math" alttext="\mathscr{F}" display="inline"><semantics id="S2.SS3.p2.12.m12.1a"><mi class="ltx_font_mathscript" id="S2.SS3.p2.12.m12.1.1" xref="S2.SS3.p2.12.m12.1.1.cmml">ℱ</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.12.m12.1b"><ci id="S2.SS3.p2.12.m12.1.1.cmml" xref="S2.SS3.p2.12.m12.1.1">ℱ</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.12.m12.1c">\mathscr{F}</annotation></semantics></math> onto <math id="S2.SS3.p2.13.m13.1" class="ltx_Math" alttext="I" display="inline"><semantics id="S2.SS3.p2.13.m13.1a"><mi id="S2.SS3.p2.13.m13.1.1" xref="S2.SS3.p2.13.m13.1.1.cmml">I</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p2.13.m13.1b"><ci id="S2.SS3.p2.13.m13.1.1.cmml" xref="S2.SS3.p2.13.m13.1.1">𝐼</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p2.13.m13.1c">I</annotation></semantics></math>:</p>
+</div>
+<div id="S2.SS3.p3" class="ltx_para">
+<table id="S2.E1" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S2.E1.m1.3" class="ltx_Math" alttext="p(I|y)=\sum_{\pi\in\mathscr{F}^{-1}(I)}p(\pi|y)" display="block"><semantics id="S2.E1.m1.3a"><mrow id="S2.E1.m1.3.3" xref="S2.E1.m1.3.3.cmml"><mrow id="S2.E1.m1.2.2.1" xref="S2.E1.m1.2.2.1.cmml"><mi id="S2.E1.m1.2.2.1.3" xref="S2.E1.m1.2.2.1.3.cmml">p</mi><mo lspace="0em" rspace="0em" id="S2.E1.m1.2.2.1.2" xref="S2.E1.m1.2.2.1.2.cmml">​</mo><mrow id="S2.E1.m1.2.2.1.1.1" xref="S2.E1.m1.2.2.1.1.1.1.cmml"><mo stretchy="false" id="S2.E1.m1.2.2.1.1.1.2" xref="S2.E1.m1.2.2.1.1.1.1.cmml">(</mo><mrow id="S2.E1.m1.2.2.1.1.1.1" xref="S2.E1.m1.2.2.1.1.1.1.cmml"><mi id="S2.E1.m1.2.2.1.1.1.1.2" xref="S2.E1.m1.2.2.1.1.1.1.2.cmml">I</mi><mo fence="false" id="S2.E1.m1.2.2.1.1.1.1.1" xref="S2.E1.m1.2.2.1.1.1.1.1.cmml">|</mo><mi id="S2.E1.m1.2.2.1.1.1.1.3" xref="S2.E1.m1.2.2.1.1.1.1.3.cmml">y</mi></mrow><mo stretchy="false" id="S2.E1.m1.2.2.1.1.1.3" xref="S2.E1.m1.2.2.1.1.1.1.cmml">)</mo></mrow></mrow><mo rspace="0.111em" id="S2.E1.m1.3.3.3" xref="S2.E1.m1.3.3.3.cmml">=</mo><mrow id="S2.E1.m1.3.3.2" xref="S2.E1.m1.3.3.2.cmml"><munder id="S2.E1.m1.3.3.2.2" xref="S2.E1.m1.3.3.2.2.cmml"><mo movablelimits="false" id="S2.E1.m1.3.3.2.2.2" xref="S2.E1.m1.3.3.2.2.2.cmml">∑</mo><mrow id="S2.E1.m1.1.1.1" xref="S2.E1.m1.1.1.1.cmml"><mi id="S2.E1.m1.1.1.1.3" xref="S2.E1.m1.1.1.1.3.cmml">π</mi><mo id="S2.E1.m1.1.1.1.2" xref="S2.E1.m1.1.1.1.2.cmml">∈</mo><mrow id="S2.E1.m1.1.1.1.4" xref="S2.E1.m1.1.1.1.4.cmml"><msup id="S2.E1.m1.1.1.1.4.2" xref="S2.E1.m1.1.1.1.4.2.cmml"><mi class="ltx_font_mathscript" id="S2.E1.m1.1.1.1.4.2.2" xref="S2.E1.m1.1.1.1.4.2.2.cmml">ℱ</mi><mrow id="S2.E1.m1.1.1.1.4.2.3" xref="S2.E1.m1.1.1.1.4.2.3.cmml"><mo id="S2.E1.m1.1.1.1.4.2.3a" xref="S2.E1.m1.1.1.1.4.2.3.cmml">−</mo><mn id="S2.E1.m1.1.1.1.4.2.3.2" xref="S2.E1.m1.1.1.1.4.2.3.2.cmml">1</mn></mrow></msup><mo lspace="0em" rspace="0em" id="S2.E1.m1.1.1.1.4.1" xref="S2.E1.m1.1.1.1.4.1.cmml">​</mo><mrow id="S2.E1.m1.1.1.1.4.3.2" xref="S2.E1.m1.1.1.1.4.cmml"><mo stretchy="false" id="S2.E1.m1.1.1.1.4.3.2.1" xref="S2.E1.m1.1.1.1.4.cmml">(</mo><mi id="S2.E1.m1.1.1.1.1" xref="S2.E1.m1.1.1.1.1.cmml">I</mi><mo stretchy="false" id="S2.E1.m1.1.1.1.4.3.2.2" xref="S2.E1.m1.1.1.1.4.cmml">)</mo></mrow></mrow></mrow></munder><mrow id="S2.E1.m1.3.3.2.1" xref="S2.E1.m1.3.3.2.1.cmml"><mi id="S2.E1.m1.3.3.2.1.3" xref="S2.E1.m1.3.3.2.1.3.cmml">p</mi><mo lspace="0em" rspace="0em" id="S2.E1.m1.3.3.2.1.2" xref="S2.E1.m1.3.3.2.1.2.cmml">​</mo><mrow id="S2.E1.m1.3.3.2.1.1.1" xref="S2.E1.m1.3.3.2.1.1.1.1.cmml"><mo stretchy="false" id="S2.E1.m1.3.3.2.1.1.1.2" xref="S2.E1.m1.3.3.2.1.1.1.1.cmml">(</mo><mrow id="S2.E1.m1.3.3.2.1.1.1.1" xref="S2.E1.m1.3.3.2.1.1.1.1.cmml"><mi id="S2.E1.m1.3.3.2.1.1.1.1.2" xref="S2.E1.m1.3.3.2.1.1.1.1.2.cmml">π</mi><mo fence="false" id="S2.E1.m1.3.3.2.1.1.1.1.1" xref="S2.E1.m1.3.3.2.1.1.1.1.1.cmml">|</mo><mi id="S2.E1.m1.3.3.2.1.1.1.1.3" xref="S2.E1.m1.3.3.2.1.1.1.1.3.cmml">y</mi></mrow><mo stretchy="false" id="S2.E1.m1.3.3.2.1.1.1.3" xref="S2.E1.m1.3.3.2.1.1.1.1.cmml">)</mo></mrow></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.E1.m1.3b"><apply id="S2.E1.m1.3.3.cmml" xref="S2.E1.m1.3.3"><eq id="S2.E1.m1.3.3.3.cmml" xref="S2.E1.m1.3.3.3"></eq><apply id="S2.E1.m1.2.2.1.cmml" xref="S2.E1.m1.2.2.1"><times id="S2.E1.m1.2.2.1.2.cmml" xref="S2.E1.m1.2.2.1.2"></times><ci id="S2.E1.m1.2.2.1.3.cmml" xref="S2.E1.m1.2.2.1.3">𝑝</ci><apply id="S2.E1.m1.2.2.1.1.1.1.cmml" xref="S2.E1.m1.2.2.1.1.1"><csymbol cd="latexml" id="S2.E1.m1.2.2.1.1.1.1.1.cmml" xref="S2.E1.m1.2.2.1.1.1.1.1">conditional</csymbol><ci id="S2.E1.m1.2.2.1.1.1.1.2.cmml" xref="S2.E1.m1.2.2.1.1.1.1.2">𝐼</ci><ci id="S2.E1.m1.2.2.1.1.1.1.3.cmml" xref="S2.E1.m1.2.2.1.1.1.1.3">𝑦</ci></apply></apply><apply id="S2.E1.m1.3.3.2.cmml" xref="S2.E1.m1.3.3.2"><apply id="S2.E1.m1.3.3.2.2.cmml" xref="S2.E1.m1.3.3.2.2"><csymbol cd="ambiguous" id="S2.E1.m1.3.3.2.2.1.cmml" xref="S2.E1.m1.3.3.2.2">subscript</csymbol><sum id="S2.E1.m1.3.3.2.2.2.cmml" xref="S2.E1.m1.3.3.2.2.2"></sum><apply id="S2.E1.m1.1.1.1.cmml" xref="S2.E1.m1.1.1.1"><in id="S2.E1.m1.1.1.1.2.cmml" xref="S2.E1.m1.1.1.1.2"></in><ci id="S2.E1.m1.1.1.1.3.cmml" xref="S2.E1.m1.1.1.1.3">𝜋</ci><apply id="S2.E1.m1.1.1.1.4.cmml" xref="S2.E1.m1.1.1.1.4"><times id="S2.E1.m1.1.1.1.4.1.cmml" xref="S2.E1.m1.1.1.1.4.1"></times><apply id="S2.E1.m1.1.1.1.4.2.cmml" xref="S2.E1.m1.1.1.1.4.2"><csymbol cd="ambiguous" id="S2.E1.m1.1.1.1.4.2.1.cmml" xref="S2.E1.m1.1.1.1.4.2">superscript</csymbol><ci id="S2.E1.m1.1.1.1.4.2.2.cmml" xref="S2.E1.m1.1.1.1.4.2.2">ℱ</ci><apply id="S2.E1.m1.1.1.1.4.2.3.cmml" xref="S2.E1.m1.1.1.1.4.2.3"><minus id="S2.E1.m1.1.1.1.4.2.3.1.cmml" xref="S2.E1.m1.1.1.1.4.2.3"></minus><cn type="integer" id="S2.E1.m1.1.1.1.4.2.3.2.cmml" xref="S2.E1.m1.1.1.1.4.2.3.2">1</cn></apply></apply><ci id="S2.E1.m1.1.1.1.1.cmml" xref="S2.E1.m1.1.1.1.1">𝐼</ci></apply></apply></apply><apply id="S2.E1.m1.3.3.2.1.cmml" xref="S2.E1.m1.3.3.2.1"><times id="S2.E1.m1.3.3.2.1.2.cmml" xref="S2.E1.m1.3.3.2.1.2"></times><ci id="S2.E1.m1.3.3.2.1.3.cmml" xref="S2.E1.m1.3.3.2.1.3">𝑝</ci><apply id="S2.E1.m1.3.3.2.1.1.1.1.cmml" xref="S2.E1.m1.3.3.2.1.1.1"><csymbol cd="latexml" id="S2.E1.m1.3.3.2.1.1.1.1.1.cmml" xref="S2.E1.m1.3.3.2.1.1.1.1.1">conditional</csymbol><ci id="S2.E1.m1.3.3.2.1.1.1.1.2.cmml" xref="S2.E1.m1.3.3.2.1.1.1.1.2">𝜋</ci><ci id="S2.E1.m1.3.3.2.1.1.1.1.3.cmml" xref="S2.E1.m1.3.3.2.1.1.1.1.3">𝑦</ci></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.E1.m1.3c">p(I|y)=\sum_{\pi\in\mathscr{F}^{-1}(I)}p(\pi|y)</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(1)</span></td>
+</tr></tbody>
+</table>
+<p id="S2.SS3.p3.1" class="ltx_p">where the conditional probability of <math id="S2.SS3.p3.1.m1.1" class="ltx_Math" alttext="\pi" display="inline"><semantics id="S2.SS3.p3.1.m1.1a"><mi id="S2.SS3.p3.1.m1.1.1" xref="S2.SS3.p3.1.m1.1.1.cmml">π</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p3.1.m1.1b"><ci id="S2.SS3.p3.1.m1.1.1.cmml" xref="S2.SS3.p3.1.m1.1.1">𝜋</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p3.1.m1.1c">\pi</annotation></semantics></math> is defined as:</p>
+</div>
+<div id="S2.SS3.p4" class="ltx_para">
+<table id="S2.E2" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S2.E2.m1.1" class="ltx_Math" alttext="p(\pi|y)=\prod_{t=1}^{T}{y_{\pi_{t}}^{t}}" display="block"><semantics id="S2.E2.m1.1a"><mrow id="S2.E2.m1.1.1" xref="S2.E2.m1.1.1.cmml"><mrow id="S2.E2.m1.1.1.1" xref="S2.E2.m1.1.1.1.cmml"><mi id="S2.E2.m1.1.1.1.3" xref="S2.E2.m1.1.1.1.3.cmml">p</mi><mo lspace="0em" rspace="0em" id="S2.E2.m1.1.1.1.2" xref="S2.E2.m1.1.1.1.2.cmml">​</mo><mrow id="S2.E2.m1.1.1.1.1.1" xref="S2.E2.m1.1.1.1.1.1.1.cmml"><mo stretchy="false" id="S2.E2.m1.1.1.1.1.1.2" xref="S2.E2.m1.1.1.1.1.1.1.cmml">(</mo><mrow id="S2.E2.m1.1.1.1.1.1.1" xref="S2.E2.m1.1.1.1.1.1.1.cmml"><mi id="S2.E2.m1.1.1.1.1.1.1.2" xref="S2.E2.m1.1.1.1.1.1.1.2.cmml">π</mi><mo fence="false" id="S2.E2.m1.1.1.1.1.1.1.1" xref="S2.E2.m1.1.1.1.1.1.1.1.cmml">|</mo><mi id="S2.E2.m1.1.1.1.1.1.1.3" xref="S2.E2.m1.1.1.1.1.1.1.3.cmml">y</mi></mrow><mo stretchy="false" id="S2.E2.m1.1.1.1.1.1.3" xref="S2.E2.m1.1.1.1.1.1.1.cmml">)</mo></mrow></mrow><mo rspace="0.111em" id="S2.E2.m1.1.1.2" xref="S2.E2.m1.1.1.2.cmml">=</mo><mrow id="S2.E2.m1.1.1.3" xref="S2.E2.m1.1.1.3.cmml"><munderover id="S2.E2.m1.1.1.3.1" xref="S2.E2.m1.1.1.3.1.cmml"><mo movablelimits="false" id="S2.E2.m1.1.1.3.1.2.2" xref="S2.E2.m1.1.1.3.1.2.2.cmml">∏</mo><mrow id="S2.E2.m1.1.1.3.1.2.3" xref="S2.E2.m1.1.1.3.1.2.3.cmml"><mi id="S2.E2.m1.1.1.3.1.2.3.2" xref="S2.E2.m1.1.1.3.1.2.3.2.cmml">t</mi><mo id="S2.E2.m1.1.1.3.1.2.3.1" xref="S2.E2.m1.1.1.3.1.2.3.1.cmml">=</mo><mn id="S2.E2.m1.1.1.3.1.2.3.3" xref="S2.E2.m1.1.1.3.1.2.3.3.cmml">1</mn></mrow><mi id="S2.E2.m1.1.1.3.1.3" xref="S2.E2.m1.1.1.3.1.3.cmml">T</mi></munderover><msubsup id="S2.E2.m1.1.1.3.2" xref="S2.E2.m1.1.1.3.2.cmml"><mi id="S2.E2.m1.1.1.3.2.2.2" xref="S2.E2.m1.1.1.3.2.2.2.cmml">y</mi><msub id="S2.E2.m1.1.1.3.2.2.3" xref="S2.E2.m1.1.1.3.2.2.3.cmml"><mi id="S2.E2.m1.1.1.3.2.2.3.2" xref="S2.E2.m1.1.1.3.2.2.3.2.cmml">π</mi><mi id="S2.E2.m1.1.1.3.2.2.3.3" xref="S2.E2.m1.1.1.3.2.2.3.3.cmml">t</mi></msub><mi id="S2.E2.m1.1.1.3.2.3" xref="S2.E2.m1.1.1.3.2.3.cmml">t</mi></msubsup></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.E2.m1.1b"><apply id="S2.E2.m1.1.1.cmml" xref="S2.E2.m1.1.1"><eq id="S2.E2.m1.1.1.2.cmml" xref="S2.E2.m1.1.1.2"></eq><apply id="S2.E2.m1.1.1.1.cmml" xref="S2.E2.m1.1.1.1"><times id="S2.E2.m1.1.1.1.2.cmml" xref="S2.E2.m1.1.1.1.2"></times><ci id="S2.E2.m1.1.1.1.3.cmml" xref="S2.E2.m1.1.1.1.3">𝑝</ci><apply id="S2.E2.m1.1.1.1.1.1.1.cmml" xref="S2.E2.m1.1.1.1.1.1"><csymbol cd="latexml" id="S2.E2.m1.1.1.1.1.1.1.1.cmml" xref="S2.E2.m1.1.1.1.1.1.1.1">conditional</csymbol><ci id="S2.E2.m1.1.1.1.1.1.1.2.cmml" xref="S2.E2.m1.1.1.1.1.1.1.2">𝜋</ci><ci id="S2.E2.m1.1.1.1.1.1.1.3.cmml" xref="S2.E2.m1.1.1.1.1.1.1.3">𝑦</ci></apply></apply><apply id="S2.E2.m1.1.1.3.cmml" xref="S2.E2.m1.1.1.3"><apply id="S2.E2.m1.1.1.3.1.cmml" xref="S2.E2.m1.1.1.3.1"><csymbol cd="ambiguous" id="S2.E2.m1.1.1.3.1.1.cmml" xref="S2.E2.m1.1.1.3.1">superscript</csymbol><apply id="S2.E2.m1.1.1.3.1.2.cmml" xref="S2.E2.m1.1.1.3.1"><csymbol cd="ambiguous" id="S2.E2.m1.1.1.3.1.2.1.cmml" xref="S2.E2.m1.1.1.3.1">subscript</csymbol><csymbol cd="latexml" id="S2.E2.m1.1.1.3.1.2.2.cmml" xref="S2.E2.m1.1.1.3.1.2.2">product</csymbol><apply id="S2.E2.m1.1.1.3.1.2.3.cmml" xref="S2.E2.m1.1.1.3.1.2.3"><eq id="S2.E2.m1.1.1.3.1.2.3.1.cmml" xref="S2.E2.m1.1.1.3.1.2.3.1"></eq><ci id="S2.E2.m1.1.1.3.1.2.3.2.cmml" xref="S2.E2.m1.1.1.3.1.2.3.2">𝑡</ci><cn type="integer" id="S2.E2.m1.1.1.3.1.2.3.3.cmml" xref="S2.E2.m1.1.1.3.1.2.3.3">1</cn></apply></apply><ci id="S2.E2.m1.1.1.3.1.3.cmml" xref="S2.E2.m1.1.1.3.1.3">𝑇</ci></apply><apply id="S2.E2.m1.1.1.3.2.cmml" xref="S2.E2.m1.1.1.3.2"><csymbol cd="ambiguous" id="S2.E2.m1.1.1.3.2.1.cmml" xref="S2.E2.m1.1.1.3.2">superscript</csymbol><apply id="S2.E2.m1.1.1.3.2.2.cmml" xref="S2.E2.m1.1.1.3.2"><csymbol cd="ambiguous" id="S2.E2.m1.1.1.3.2.2.1.cmml" xref="S2.E2.m1.1.1.3.2">subscript</csymbol><ci id="S2.E2.m1.1.1.3.2.2.2.cmml" xref="S2.E2.m1.1.1.3.2.2.2">𝑦</ci><apply id="S2.E2.m1.1.1.3.2.2.3.cmml" xref="S2.E2.m1.1.1.3.2.2.3"><csymbol cd="ambiguous" id="S2.E2.m1.1.1.3.2.2.3.1.cmml" xref="S2.E2.m1.1.1.3.2.2.3">subscript</csymbol><ci id="S2.E2.m1.1.1.3.2.2.3.2.cmml" xref="S2.E2.m1.1.1.3.2.2.3.2">𝜋</ci><ci id="S2.E2.m1.1.1.3.2.2.3.3.cmml" xref="S2.E2.m1.1.1.3.2.2.3.3">𝑡</ci></apply></apply><ci id="S2.E2.m1.1.1.3.2.3.cmml" xref="S2.E2.m1.1.1.3.2.3">𝑡</ci></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.E2.m1.1c">p(\pi|y)=\prod_{t=1}^{T}{y_{\pi_{t}}^{t}}</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(2)</span></td>
+</tr></tbody>
+</table>
+<p id="S2.SS3.p4.3" class="ltx_p"><math id="S2.SS3.p4.1.m1.1" class="ltx_Math" alttext="{{y_{\pi_{t}}^{t}}}" display="inline"><semantics id="S2.SS3.p4.1.m1.1a"><msubsup id="S2.SS3.p4.1.m1.1.1" xref="S2.SS3.p4.1.m1.1.1.cmml"><mi id="S2.SS3.p4.1.m1.1.1.2.2" xref="S2.SS3.p4.1.m1.1.1.2.2.cmml">y</mi><msub id="S2.SS3.p4.1.m1.1.1.2.3" xref="S2.SS3.p4.1.m1.1.1.2.3.cmml"><mi id="S2.SS3.p4.1.m1.1.1.2.3.2" xref="S2.SS3.p4.1.m1.1.1.2.3.2.cmml">π</mi><mi id="S2.SS3.p4.1.m1.1.1.2.3.3" xref="S2.SS3.p4.1.m1.1.1.2.3.3.cmml">t</mi></msub><mi id="S2.SS3.p4.1.m1.1.1.3" xref="S2.SS3.p4.1.m1.1.1.3.cmml">t</mi></msubsup><annotation-xml encoding="MathML-Content" id="S2.SS3.p4.1.m1.1b"><apply id="S2.SS3.p4.1.m1.1.1.cmml" xref="S2.SS3.p4.1.m1.1.1"><csymbol cd="ambiguous" id="S2.SS3.p4.1.m1.1.1.1.cmml" xref="S2.SS3.p4.1.m1.1.1">superscript</csymbol><apply id="S2.SS3.p4.1.m1.1.1.2.cmml" xref="S2.SS3.p4.1.m1.1.1"><csymbol cd="ambiguous" id="S2.SS3.p4.1.m1.1.1.2.1.cmml" xref="S2.SS3.p4.1.m1.1.1">subscript</csymbol><ci id="S2.SS3.p4.1.m1.1.1.2.2.cmml" xref="S2.SS3.p4.1.m1.1.1.2.2">𝑦</ci><apply id="S2.SS3.p4.1.m1.1.1.2.3.cmml" xref="S2.SS3.p4.1.m1.1.1.2.3"><csymbol cd="ambiguous" id="S2.SS3.p4.1.m1.1.1.2.3.1.cmml" xref="S2.SS3.p4.1.m1.1.1.2.3">subscript</csymbol><ci id="S2.SS3.p4.1.m1.1.1.2.3.2.cmml" xref="S2.SS3.p4.1.m1.1.1.2.3.2">𝜋</ci><ci id="S2.SS3.p4.1.m1.1.1.2.3.3.cmml" xref="S2.SS3.p4.1.m1.1.1.2.3.3">𝑡</ci></apply></apply><ci id="S2.SS3.p4.1.m1.1.1.3.cmml" xref="S2.SS3.p4.1.m1.1.1.3">𝑡</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p4.1.m1.1c">{{y_{\pi_{t}}^{t}}}</annotation></semantics></math>is the probability of having label <math id="S2.SS3.p4.2.m2.1" class="ltx_Math" alttext="\pi_{t}" display="inline"><semantics id="S2.SS3.p4.2.m2.1a"><msub id="S2.SS3.p4.2.m2.1.1" xref="S2.SS3.p4.2.m2.1.1.cmml"><mi id="S2.SS3.p4.2.m2.1.1.2" xref="S2.SS3.p4.2.m2.1.1.2.cmml">π</mi><mi id="S2.SS3.p4.2.m2.1.1.3" xref="S2.SS3.p4.2.m2.1.1.3.cmml">t</mi></msub><annotation-xml encoding="MathML-Content" id="S2.SS3.p4.2.m2.1b"><apply id="S2.SS3.p4.2.m2.1.1.cmml" xref="S2.SS3.p4.2.m2.1.1"><csymbol cd="ambiguous" id="S2.SS3.p4.2.m2.1.1.1.cmml" xref="S2.SS3.p4.2.m2.1.1">subscript</csymbol><ci id="S2.SS3.p4.2.m2.1.1.2.cmml" xref="S2.SS3.p4.2.m2.1.1.2">𝜋</ci><ci id="S2.SS3.p4.2.m2.1.1.3.cmml" xref="S2.SS3.p4.2.m2.1.1.3">𝑡</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p4.2.m2.1c">\pi_{t}</annotation></semantics></math> at timestep <math id="S2.SS3.p4.3.m3.1" class="ltx_Math" alttext="t" display="inline"><semantics id="S2.SS3.p4.3.m3.1a"><mi id="S2.SS3.p4.3.m3.1.1" xref="S2.SS3.p4.3.m3.1.1.cmml">t</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p4.3.m3.1b"><ci id="S2.SS3.p4.3.m3.1.1.cmml" xref="S2.SS3.p4.3.m3.1.1">𝑡</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p4.3.m3.1c">t</annotation></semantics></math>. Directly computing Eq.<a href="#S2.E1" title="In 2.3 Connectionist temporal classification ‣ 2 The Proposed Architecture ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> is not feasible. In practice, Eq.<a href="#S2.E1" title="In 2.3 Connectionist temporal classification ‣ 2 The Proposed Architecture ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> is usually calculated using the forward-backward algorithm.</p>
+</div>
+<div id="S2.SS3.p5" class="ltx_para">
+<p id="S2.SS3.p5.5" class="ltx_p">Donate the training dataset by <math id="S2.SS3.p5.1.m1.2" class="ltx_Math" alttext="S=({\bm{X},\bm{I}})" display="inline"><semantics id="S2.SS3.p5.1.m1.2a"><mrow id="S2.SS3.p5.1.m1.2.3" xref="S2.SS3.p5.1.m1.2.3.cmml"><mi id="S2.SS3.p5.1.m1.2.3.2" xref="S2.SS3.p5.1.m1.2.3.2.cmml">S</mi><mo id="S2.SS3.p5.1.m1.2.3.1" xref="S2.SS3.p5.1.m1.2.3.1.cmml">=</mo><mrow id="S2.SS3.p5.1.m1.2.3.3.2" xref="S2.SS3.p5.1.m1.2.3.3.1.cmml"><mo stretchy="false" id="S2.SS3.p5.1.m1.2.3.3.2.1" xref="S2.SS3.p5.1.m1.2.3.3.1.cmml">(</mo><mi id="S2.SS3.p5.1.m1.1.1" xref="S2.SS3.p5.1.m1.1.1.cmml">𝑿</mi><mo id="S2.SS3.p5.1.m1.2.3.3.2.2" xref="S2.SS3.p5.1.m1.2.3.3.1.cmml">,</mo><mi id="S2.SS3.p5.1.m1.2.2" xref="S2.SS3.p5.1.m1.2.2.cmml">𝑰</mi><mo stretchy="false" id="S2.SS3.p5.1.m1.2.3.3.2.3" xref="S2.SS3.p5.1.m1.2.3.3.1.cmml">)</mo></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.SS3.p5.1.m1.2b"><apply id="S2.SS3.p5.1.m1.2.3.cmml" xref="S2.SS3.p5.1.m1.2.3"><eq id="S2.SS3.p5.1.m1.2.3.1.cmml" xref="S2.SS3.p5.1.m1.2.3.1"></eq><ci id="S2.SS3.p5.1.m1.2.3.2.cmml" xref="S2.SS3.p5.1.m1.2.3.2">𝑆</ci><interval closure="open" id="S2.SS3.p5.1.m1.2.3.3.1.cmml" xref="S2.SS3.p5.1.m1.2.3.3.2"><ci id="S2.SS3.p5.1.m1.1.1.cmml" xref="S2.SS3.p5.1.m1.1.1">𝑿</ci><ci id="S2.SS3.p5.1.m1.2.2.cmml" xref="S2.SS3.p5.1.m1.2.2">𝑰</ci></interval></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p5.1.m1.2c">S=({\bm{X},\bm{I}})</annotation></semantics></math>, where <math id="S2.SS3.p5.2.m2.1" class="ltx_Math" alttext="X" display="inline"><semantics id="S2.SS3.p5.2.m2.1a"><mi id="S2.SS3.p5.2.m2.1.1" xref="S2.SS3.p5.2.m2.1.1.cmml">X</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p5.2.m2.1b"><ci id="S2.SS3.p5.2.m2.1.1.cmml" xref="S2.SS3.p5.2.m2.1.1">𝑋</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p5.2.m2.1c">X</annotation></semantics></math> is the training image and <math id="S2.SS3.p5.3.m3.1" class="ltx_Math" alttext="I" display="inline"><semantics id="S2.SS3.p5.3.m3.1a"><mi id="S2.SS3.p5.3.m3.1.1" xref="S2.SS3.p5.3.m3.1.1.cmml">I</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p5.3.m3.1b"><ci id="S2.SS3.p5.3.m3.1.1.cmml" xref="S2.SS3.p5.3.m3.1.1">𝐼</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p5.3.m3.1c">I</annotation></semantics></math> is the ground truth label sequence. The CTC object function <math id="S2.SS3.p5.4.m4.1" class="ltx_Math" alttext="\mathscr{O}(S)" display="inline"><semantics id="S2.SS3.p5.4.m4.1a"><mrow id="S2.SS3.p5.4.m4.1.2" xref="S2.SS3.p5.4.m4.1.2.cmml"><mi class="ltx_font_mathscript" id="S2.SS3.p5.4.m4.1.2.2" xref="S2.SS3.p5.4.m4.1.2.2.cmml">𝒪</mi><mo lspace="0em" rspace="0em" id="S2.SS3.p5.4.m4.1.2.1" xref="S2.SS3.p5.4.m4.1.2.1.cmml">​</mo><mrow id="S2.SS3.p5.4.m4.1.2.3.2" xref="S2.SS3.p5.4.m4.1.2.cmml"><mo stretchy="false" id="S2.SS3.p5.4.m4.1.2.3.2.1" xref="S2.SS3.p5.4.m4.1.2.cmml">(</mo><mi id="S2.SS3.p5.4.m4.1.1" xref="S2.SS3.p5.4.m4.1.1.cmml">S</mi><mo stretchy="false" id="S2.SS3.p5.4.m4.1.2.3.2.2" xref="S2.SS3.p5.4.m4.1.2.cmml">)</mo></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.SS3.p5.4.m4.1b"><apply id="S2.SS3.p5.4.m4.1.2.cmml" xref="S2.SS3.p5.4.m4.1.2"><times id="S2.SS3.p5.4.m4.1.2.1.cmml" xref="S2.SS3.p5.4.m4.1.2.1"></times><ci id="S2.SS3.p5.4.m4.1.2.2.cmml" xref="S2.SS3.p5.4.m4.1.2.2">𝒪</ci><ci id="S2.SS3.p5.4.m4.1.1.cmml" xref="S2.SS3.p5.4.m4.1.1">𝑆</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p5.4.m4.1c">\mathscr{O}(S)</annotation></semantics></math> is defined as the negative log probability of ground truth all the training examples in training set <math id="S2.SS3.p5.5.m5.1" class="ltx_Math" alttext="S" display="inline"><semantics id="S2.SS3.p5.5.m5.1a"><mi id="S2.SS3.p5.5.m5.1.1" xref="S2.SS3.p5.5.m5.1.1.cmml">S</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p5.5.m5.1b"><ci id="S2.SS3.p5.5.m5.1.1.cmml" xref="S2.SS3.p5.5.m5.1.1">𝑆</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p5.5.m5.1c">S</annotation></semantics></math>,</p>
+</div>
+<div id="S2.SS3.p6" class="ltx_para">
+<table id="S2.E3" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S2.E3.m1.4" class="ltx_Math" alttext="\mathscr{O}(S)=-\sum_{(x,i)\in{S}}\log p(I|y)" display="block"><semantics id="S2.E3.m1.4a"><mrow id="S2.E3.m1.4.4" xref="S2.E3.m1.4.4.cmml"><mrow id="S2.E3.m1.4.4.3" xref="S2.E3.m1.4.4.3.cmml"><mi class="ltx_font_mathscript" id="S2.E3.m1.4.4.3.2" xref="S2.E3.m1.4.4.3.2.cmml">𝒪</mi><mo lspace="0em" rspace="0em" id="S2.E3.m1.4.4.3.1" xref="S2.E3.m1.4.4.3.1.cmml">​</mo><mrow id="S2.E3.m1.4.4.3.3.2" xref="S2.E3.m1.4.4.3.cmml"><mo stretchy="false" id="S2.E3.m1.4.4.3.3.2.1" xref="S2.E3.m1.4.4.3.cmml">(</mo><mi id="S2.E3.m1.3.3" xref="S2.E3.m1.3.3.cmml">S</mi><mo stretchy="false" id="S2.E3.m1.4.4.3.3.2.2" xref="S2.E3.m1.4.4.3.cmml">)</mo></mrow></mrow><mo id="S2.E3.m1.4.4.2" xref="S2.E3.m1.4.4.2.cmml">=</mo><mrow id="S2.E3.m1.4.4.1" xref="S2.E3.m1.4.4.1.cmml"><mo id="S2.E3.m1.4.4.1a" xref="S2.E3.m1.4.4.1.cmml">−</mo><mrow id="S2.E3.m1.4.4.1.1" xref="S2.E3.m1.4.4.1.1.cmml"><munder id="S2.E3.m1.4.4.1.1.2" xref="S2.E3.m1.4.4.1.1.2.cmml"><mo movablelimits="false" id="S2.E3.m1.4.4.1.1.2.2" xref="S2.E3.m1.4.4.1.1.2.2.cmml">∑</mo><mrow id="S2.E3.m1.2.2.2" xref="S2.E3.m1.2.2.2.cmml"><mrow id="S2.E3.m1.2.2.2.4.2" xref="S2.E3.m1.2.2.2.4.1.cmml"><mo stretchy="false" id="S2.E3.m1.2.2.2.4.2.1" xref="S2.E3.m1.2.2.2.4.1.cmml">(</mo><mi id="S2.E3.m1.1.1.1.1" xref="S2.E3.m1.1.1.1.1.cmml">x</mi><mo id="S2.E3.m1.2.2.2.4.2.2" xref="S2.E3.m1.2.2.2.4.1.cmml">,</mo><mi id="S2.E3.m1.2.2.2.2" xref="S2.E3.m1.2.2.2.2.cmml">i</mi><mo stretchy="false" id="S2.E3.m1.2.2.2.4.2.3" xref="S2.E3.m1.2.2.2.4.1.cmml">)</mo></mrow><mo id="S2.E3.m1.2.2.2.3" xref="S2.E3.m1.2.2.2.3.cmml">∈</mo><mi id="S2.E3.m1.2.2.2.5" xref="S2.E3.m1.2.2.2.5.cmml">S</mi></mrow></munder><mrow id="S2.E3.m1.4.4.1.1.1" xref="S2.E3.m1.4.4.1.1.1.cmml"><mrow id="S2.E3.m1.4.4.1.1.1.3" xref="S2.E3.m1.4.4.1.1.1.3.cmml"><mi id="S2.E3.m1.4.4.1.1.1.3.1" xref="S2.E3.m1.4.4.1.1.1.3.1.cmml">log</mi><mo lspace="0.167em" id="S2.E3.m1.4.4.1.1.1.3a" xref="S2.E3.m1.4.4.1.1.1.3.cmml">⁡</mo><mi id="S2.E3.m1.4.4.1.1.1.3.2" xref="S2.E3.m1.4.4.1.1.1.3.2.cmml">p</mi></mrow><mo lspace="0em" rspace="0em" id="S2.E3.m1.4.4.1.1.1.2" xref="S2.E3.m1.4.4.1.1.1.2.cmml">​</mo><mrow id="S2.E3.m1.4.4.1.1.1.1.1" xref="S2.E3.m1.4.4.1.1.1.1.1.1.cmml"><mo stretchy="false" id="S2.E3.m1.4.4.1.1.1.1.1.2" xref="S2.E3.m1.4.4.1.1.1.1.1.1.cmml">(</mo><mrow id="S2.E3.m1.4.4.1.1.1.1.1.1" xref="S2.E3.m1.4.4.1.1.1.1.1.1.cmml"><mi id="S2.E3.m1.4.4.1.1.1.1.1.1.2" xref="S2.E3.m1.4.4.1.1.1.1.1.1.2.cmml">I</mi><mo fence="false" id="S2.E3.m1.4.4.1.1.1.1.1.1.1" xref="S2.E3.m1.4.4.1.1.1.1.1.1.1.cmml">|</mo><mi id="S2.E3.m1.4.4.1.1.1.1.1.1.3" xref="S2.E3.m1.4.4.1.1.1.1.1.1.3.cmml">y</mi></mrow><mo stretchy="false" id="S2.E3.m1.4.4.1.1.1.1.1.3" xref="S2.E3.m1.4.4.1.1.1.1.1.1.cmml">)</mo></mrow></mrow></mrow></mrow></mrow><annotation-xml encoding="MathML-Content" id="S2.E3.m1.4b"><apply id="S2.E3.m1.4.4.cmml" xref="S2.E3.m1.4.4"><eq id="S2.E3.m1.4.4.2.cmml" xref="S2.E3.m1.4.4.2"></eq><apply id="S2.E3.m1.4.4.3.cmml" xref="S2.E3.m1.4.4.3"><times id="S2.E3.m1.4.4.3.1.cmml" xref="S2.E3.m1.4.4.3.1"></times><ci id="S2.E3.m1.4.4.3.2.cmml" xref="S2.E3.m1.4.4.3.2">𝒪</ci><ci id="S2.E3.m1.3.3.cmml" xref="S2.E3.m1.3.3">𝑆</ci></apply><apply id="S2.E3.m1.4.4.1.cmml" xref="S2.E3.m1.4.4.1"><minus id="S2.E3.m1.4.4.1.2.cmml" xref="S2.E3.m1.4.4.1"></minus><apply id="S2.E3.m1.4.4.1.1.cmml" xref="S2.E3.m1.4.4.1.1"><apply id="S2.E3.m1.4.4.1.1.2.cmml" xref="S2.E3.m1.4.4.1.1.2"><csymbol cd="ambiguous" id="S2.E3.m1.4.4.1.1.2.1.cmml" xref="S2.E3.m1.4.4.1.1.2">subscript</csymbol><sum id="S2.E3.m1.4.4.1.1.2.2.cmml" xref="S2.E3.m1.4.4.1.1.2.2"></sum><apply id="S2.E3.m1.2.2.2.cmml" xref="S2.E3.m1.2.2.2"><in id="S2.E3.m1.2.2.2.3.cmml" xref="S2.E3.m1.2.2.2.3"></in><interval closure="open" id="S2.E3.m1.2.2.2.4.1.cmml" xref="S2.E3.m1.2.2.2.4.2"><ci id="S2.E3.m1.1.1.1.1.cmml" xref="S2.E3.m1.1.1.1.1">𝑥</ci><ci id="S2.E3.m1.2.2.2.2.cmml" xref="S2.E3.m1.2.2.2.2">𝑖</ci></interval><ci id="S2.E3.m1.2.2.2.5.cmml" xref="S2.E3.m1.2.2.2.5">𝑆</ci></apply></apply><apply id="S2.E3.m1.4.4.1.1.1.cmml" xref="S2.E3.m1.4.4.1.1.1"><times id="S2.E3.m1.4.4.1.1.1.2.cmml" xref="S2.E3.m1.4.4.1.1.1.2"></times><apply id="S2.E3.m1.4.4.1.1.1.3.cmml" xref="S2.E3.m1.4.4.1.1.1.3"><log id="S2.E3.m1.4.4.1.1.1.3.1.cmml" xref="S2.E3.m1.4.4.1.1.1.3.1"></log><ci id="S2.E3.m1.4.4.1.1.1.3.2.cmml" xref="S2.E3.m1.4.4.1.1.1.3.2">𝑝</ci></apply><apply id="S2.E3.m1.4.4.1.1.1.1.1.1.cmml" xref="S2.E3.m1.4.4.1.1.1.1.1"><csymbol cd="latexml" id="S2.E3.m1.4.4.1.1.1.1.1.1.1.cmml" xref="S2.E3.m1.4.4.1.1.1.1.1.1.1">conditional</csymbol><ci id="S2.E3.m1.4.4.1.1.1.1.1.1.2.cmml" xref="S2.E3.m1.4.4.1.1.1.1.1.1.2">𝐼</ci><ci id="S2.E3.m1.4.4.1.1.1.1.1.1.3.cmml" xref="S2.E3.m1.4.4.1.1.1.1.1.1.3">𝑦</ci></apply></apply></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.E3.m1.4c">\mathscr{O}(S)=-\sum_{(x,i)\in{S}}\log p(I|y)</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(3)</span></td>
+</tr></tbody>
+</table>
+<p id="S2.SS3.p6.2" class="ltx_p">where <math id="S2.SS3.p6.1.m1.1" class="ltx_Math" alttext="y" display="inline"><semantics id="S2.SS3.p6.1.m1.1a"><mi id="S2.SS3.p6.1.m1.1.1" xref="S2.SS3.p6.1.m1.1.1.cmml">y</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p6.1.m1.1b"><ci id="S2.SS3.p6.1.m1.1.1.cmml" xref="S2.SS3.p6.1.m1.1.1">𝑦</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p6.1.m1.1c">y</annotation></semantics></math> is the sequence produced by the recurrent layers from <math id="S2.SS3.p6.2.m2.1" class="ltx_Math" alttext="x" display="inline"><semantics id="S2.SS3.p6.2.m2.1a"><mi id="S2.SS3.p6.2.m2.1.1" xref="S2.SS3.p6.2.m2.1.1.cmml">x</mi><annotation-xml encoding="MathML-Content" id="S2.SS3.p6.2.m2.1b"><ci id="S2.SS3.p6.2.m2.1.1.cmml" xref="S2.SS3.p6.2.m2.1.1">𝑥</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS3.p6.2.m2.1c">x</annotation></semantics></math>. Therefore, the network can be end-to-end trained on pairs of images and sequences, without the procedure of manually labelling all individual components in training images.</p>
+</div>
+<figure id="S2.T1" class="ltx_table">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 1: </span> Network configuration summary. The first row is the top layer. k , s , p
+stand for kernel, stride and padding sizes respectively. The ‘reverse’ layer reverses the input. For example, a input of ‘reverse’ layer is <math id="S2.T1.3.m1.3" class="ltx_Math" alttext="x_{1},...,x_{n}" display="inline"><semantics id="S2.T1.3.m1.3b"><mrow id="S2.T1.3.m1.3.3.2" xref="S2.T1.3.m1.3.3.3.cmml"><msub id="S2.T1.3.m1.2.2.1.1" xref="S2.T1.3.m1.2.2.1.1.cmml"><mi id="S2.T1.3.m1.2.2.1.1.2" xref="S2.T1.3.m1.2.2.1.1.2.cmml">x</mi><mn id="S2.T1.3.m1.2.2.1.1.3" xref="S2.T1.3.m1.2.2.1.1.3.cmml">1</mn></msub><mo id="S2.T1.3.m1.3.3.2.3" xref="S2.T1.3.m1.3.3.3.cmml">,</mo><mi mathvariant="normal" id="S2.T1.3.m1.1.1" xref="S2.T1.3.m1.1.1.cmml">…</mi><mo id="S2.T1.3.m1.3.3.2.4" xref="S2.T1.3.m1.3.3.3.cmml">,</mo><msub id="S2.T1.3.m1.3.3.2.2" xref="S2.T1.3.m1.3.3.2.2.cmml"><mi id="S2.T1.3.m1.3.3.2.2.2" xref="S2.T1.3.m1.3.3.2.2.2.cmml">x</mi><mi id="S2.T1.3.m1.3.3.2.2.3" xref="S2.T1.3.m1.3.3.2.2.3.cmml">n</mi></msub></mrow><annotation-xml encoding="MathML-Content" id="S2.T1.3.m1.3c"><list id="S2.T1.3.m1.3.3.3.cmml" xref="S2.T1.3.m1.3.3.2"><apply id="S2.T1.3.m1.2.2.1.1.cmml" xref="S2.T1.3.m1.2.2.1.1"><csymbol cd="ambiguous" id="S2.T1.3.m1.2.2.1.1.1.cmml" xref="S2.T1.3.m1.2.2.1.1">subscript</csymbol><ci id="S2.T1.3.m1.2.2.1.1.2.cmml" xref="S2.T1.3.m1.2.2.1.1.2">𝑥</ci><cn type="integer" id="S2.T1.3.m1.2.2.1.1.3.cmml" xref="S2.T1.3.m1.2.2.1.1.3">1</cn></apply><ci id="S2.T1.3.m1.1.1.cmml" xref="S2.T1.3.m1.1.1">…</ci><apply id="S2.T1.3.m1.3.3.2.2.cmml" xref="S2.T1.3.m1.3.3.2.2"><csymbol cd="ambiguous" id="S2.T1.3.m1.3.3.2.2.1.cmml" xref="S2.T1.3.m1.3.3.2.2">subscript</csymbol><ci id="S2.T1.3.m1.3.3.2.2.2.cmml" xref="S2.T1.3.m1.3.3.2.2.2">𝑥</ci><ci id="S2.T1.3.m1.3.3.2.2.3.cmml" xref="S2.T1.3.m1.3.3.2.2.3">𝑛</ci></apply></list></annotation-xml><annotation encoding="application/x-tex" id="S2.T1.3.m1.3d">x_{1},...,x_{n}</annotation></semantics></math>, the corresponding output is <math id="S2.T1.4.m2.3" class="ltx_Math" alttext="x_{n},...,x_{1}" display="inline"><semantics id="S2.T1.4.m2.3b"><mrow id="S2.T1.4.m2.3.3.2" xref="S2.T1.4.m2.3.3.3.cmml"><msub id="S2.T1.4.m2.2.2.1.1" xref="S2.T1.4.m2.2.2.1.1.cmml"><mi id="S2.T1.4.m2.2.2.1.1.2" xref="S2.T1.4.m2.2.2.1.1.2.cmml">x</mi><mi id="S2.T1.4.m2.2.2.1.1.3" xref="S2.T1.4.m2.2.2.1.1.3.cmml">n</mi></msub><mo id="S2.T1.4.m2.3.3.2.3" xref="S2.T1.4.m2.3.3.3.cmml">,</mo><mi mathvariant="normal" id="S2.T1.4.m2.1.1" xref="S2.T1.4.m2.1.1.cmml">…</mi><mo id="S2.T1.4.m2.3.3.2.4" xref="S2.T1.4.m2.3.3.3.cmml">,</mo><msub id="S2.T1.4.m2.3.3.2.2" xref="S2.T1.4.m2.3.3.2.2.cmml"><mi id="S2.T1.4.m2.3.3.2.2.2" xref="S2.T1.4.m2.3.3.2.2.2.cmml">x</mi><mn id="S2.T1.4.m2.3.3.2.2.3" xref="S2.T1.4.m2.3.3.2.2.3.cmml">1</mn></msub></mrow><annotation-xml encoding="MathML-Content" id="S2.T1.4.m2.3c"><list id="S2.T1.4.m2.3.3.3.cmml" xref="S2.T1.4.m2.3.3.2"><apply id="S2.T1.4.m2.2.2.1.1.cmml" xref="S2.T1.4.m2.2.2.1.1"><csymbol cd="ambiguous" id="S2.T1.4.m2.2.2.1.1.1.cmml" xref="S2.T1.4.m2.2.2.1.1">subscript</csymbol><ci id="S2.T1.4.m2.2.2.1.1.2.cmml" xref="S2.T1.4.m2.2.2.1.1.2">𝑥</ci><ci id="S2.T1.4.m2.2.2.1.1.3.cmml" xref="S2.T1.4.m2.2.2.1.1.3">𝑛</ci></apply><ci id="S2.T1.4.m2.1.1.cmml" xref="S2.T1.4.m2.1.1">…</ci><apply id="S2.T1.4.m2.3.3.2.2.cmml" xref="S2.T1.4.m2.3.3.2.2"><csymbol cd="ambiguous" id="S2.T1.4.m2.3.3.2.2.1.cmml" xref="S2.T1.4.m2.3.3.2.2">subscript</csymbol><ci id="S2.T1.4.m2.3.3.2.2.2.cmml" xref="S2.T1.4.m2.3.3.2.2.2">𝑥</ci><cn type="integer" id="S2.T1.4.m2.3.3.2.2.3.cmml" xref="S2.T1.4.m2.3.3.2.2.3">1</cn></apply></list></annotation-xml><annotation encoding="application/x-tex" id="S2.T1.4.m2.3d">x_{n},...,x_{1}</annotation></semantics></math>.</figcaption>
+<table id="S2.T1.5" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S2.T1.5.1.1" class="ltx_tr">
+<th id="S2.T1.5.1.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Type</th>
+<th id="S2.T1.5.1.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_r ltx_border_t" colspan="2">Configuration</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S2.T1.5.2.1" class="ltx_tr">
+<th id="S2.T1.5.2.1.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">CTC</th>
+<td id="S2.T1.5.2.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">Calculate the loss and decode</td>
+</tr>
+<tr id="S2.T1.5.3.2" class="ltx_tr">
+<th id="S2.T1.5.3.2.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Elewise</th>
+<td id="S2.T1.5.3.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">Sum</td>
+</tr>
+<tr id="S2.T1.5.4.3" class="ltx_tr">
+<th id="S2.T1.5.4.3.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Reverse</th>
+<td id="S2.T1.5.4.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">Reverse features</td>
+<td id="S2.T1.5.4.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.5.4" class="ltx_tr">
+<th id="S2.T1.5.5.4.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">InnerProduct</th>
+<td id="S2.T1.5.5.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#units:11</td>
+<td id="S2.T1.5.5.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#units:11</td>
+</tr>
+<tr id="S2.T1.5.6.5" class="ltx_tr">
+<th id="S2.T1.5.6.5.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">InnerProduct</th>
+<td id="S2.T1.5.6.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#units:100</td>
+<td id="S2.T1.5.6.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#hunits:100</td>
+</tr>
+<tr id="S2.T1.5.7.6" class="ltx_tr">
+<th id="S2.T1.5.7.6.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">LSTM</th>
+<td id="S2.T1.5.7.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#hidden units:100</td>
+<td id="S2.T1.5.7.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#hidden units:100</td>
+</tr>
+<tr id="S2.T1.5.8.7" class="ltx_tr">
+<th id="S2.T1.5.8.7.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">LSTM</th>
+<td id="S2.T1.5.8.7.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#hidden units:100</td>
+<td id="S2.T1.5.8.7.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#hidden units:100</td>
+</tr>
+<tr id="S2.T1.5.9.8" class="ltx_tr">
+<th id="S2.T1.5.9.8.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Reverse</th>
+<td id="S2.T1.5.9.8.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">Reverse features</td>
+<td id="S2.T1.5.9.8.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.10.9" class="ltx_tr">
+<th id="S2.T1.5.10.9.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">permuted</th>
+<td id="S2.T1.5.10.9.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">permute the blob to fit lstm</td>
+</tr>
+<tr id="S2.T1.5.11.10" class="ltx_tr">
+<th id="S2.T1.5.11.10.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Eltwise</th>
+<td id="S2.T1.5.11.10.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">Sum</td>
+</tr>
+<tr id="S2.T1.5.12.11" class="ltx_tr">
+<th id="S2.T1.5.12.11.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.12.11.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:512, k3x3, s1x1, p1x1</td>
+<td id="S2.T1.5.12.11.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:512, k1x1, s2x2</td>
+</tr>
+<tr id="S2.T1.5.13.12" class="ltx_tr">
+<th id="S2.T1.5.13.12.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.13.12.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:512, k3x3, s2x2, p1x1</td>
+<td id="S2.T1.5.13.12.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.14.13" class="ltx_tr">
+<th id="S2.T1.5.14.13.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Eltwise</th>
+<td id="S2.T1.5.14.13.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">sum</td>
+</tr>
+<tr id="S2.T1.5.15.14" class="ltx_tr">
+<th id="S2.T1.5.15.14.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.15.14.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:256, k3x3, s1x1, p1x1</td>
+<td id="S2.T1.5.15.14.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:256, k1x1, s2x2</td>
+</tr>
+<tr id="S2.T1.5.16.15" class="ltx_tr">
+<th id="S2.T1.5.16.15.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.16.15.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:256, k3x3, s2x2, p1x1</td>
+<td id="S2.T1.5.16.15.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.17.16" class="ltx_tr">
+<th id="S2.T1.5.17.16.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Eltwise</th>
+<td id="S2.T1.5.17.16.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">Sum</td>
+</tr>
+<tr id="S2.T1.5.18.17" class="ltx_tr">
+<th id="S2.T1.5.18.17.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.18.17.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:128, k3x3, s1x1, p1x1</td>
+<td id="S2.T1.5.18.17.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:128, k1x1, s2x2</td>
+</tr>
+<tr id="S2.T1.5.19.18" class="ltx_tr">
+<th id="S2.T1.5.19.18.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.19.18.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:128, k3x3, s2x2, p1x1</td>
+<td id="S2.T1.5.19.18.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.20.19" class="ltx_tr">
+<th id="S2.T1.5.20.19.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Eltwise</th>
+<td id="S2.T1.5.20.19.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">Sum</td>
+</tr>
+<tr id="S2.T1.5.21.20" class="ltx_tr">
+<th id="S2.T1.5.21.20.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.21.20.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:64, k3x3, s1x1, p1x1</td>
+<td id="S2.T1.5.21.20.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.22.21" class="ltx_tr">
+<th id="S2.T1.5.22.21.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.22.21.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">#maps:64, k3x3, s1x1, p1x1</td>
+<td id="S2.T1.5.22.21.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">-</td>
+</tr>
+<tr id="S2.T1.5.23.22" class="ltx_tr">
+<th id="S2.T1.5.23.22.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">MaxPooling</th>
+<td id="S2.T1.5.23.22.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">k3x3, s1x1</td>
+</tr>
+<tr id="S2.T1.5.24.23" class="ltx_tr">
+<th id="S2.T1.5.24.23.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_l ltx_border_r ltx_border_t">Convolution</th>
+<td id="S2.T1.5.24.23.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2">#maps:64, k5x5, s1x1, p1x1</td>
+</tr>
+<tr id="S2.T1.5.25.24" class="ltx_tr">
+<th id="S2.T1.5.25.24.1" class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_b ltx_border_l ltx_border_r ltx_border_t">Input</th>
+<td id="S2.T1.5.25.24.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t" colspan="2">Input raw image</td>
+</tr>
+</tbody>
+</table>
+</figure>
+</section>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>Experiments</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">To evaluate the effectiveness of proposed model, we designed two experiments. One is to show the recognition performance on public datasets, the other is to verify the potential of our model for long digit strings recognition.</p>
+</div>
+<div id="S3.p2" class="ltx_para">
+<p id="S3.p2.1" class="ltx_p">The network configuration used in our experiments is described in Table <a href="#S2.T1" title="Table 1 ‣ 2.3 Connectionist temporal classification ‣ 2 The Proposed Architecture ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. The input images are resized to fixed size. The CNN part is derived from the residual network with necessary modifies. We reduce the kernel size to better suit for CTC decoding and remove the global pooling layer in ordinary ResNet. After deep convolutional layers, there is a bidirectional LSTM, each direction has two layers of LSTM.</p>
+</div>
+<div id="S3.p3" class="ltx_para">
+<p id="S3.p3.1" class="ltx_p">For implementation, by using the fundamental LSTM layer in Caffe and a custom reverse layer, we build the Bi-LSTM layer in C++ without combining them into a single Bi-LSTM layer. This proposed architecture contains deep convolutional layers and deep recurrent layers which are known to be hard to train. In practice the network is trained with ADADELTA, setting the essential parameter delta to <math id="S3.p3.1.m1.1" class="ltx_Math" alttext="10^{-6}" display="inline"><semantics id="S3.p3.1.m1.1a"><msup id="S3.p3.1.m1.1.1" xref="S3.p3.1.m1.1.1.cmml"><mn id="S3.p3.1.m1.1.1.2" xref="S3.p3.1.m1.1.1.2.cmml">10</mn><mrow id="S3.p3.1.m1.1.1.3" xref="S3.p3.1.m1.1.1.3.cmml"><mo id="S3.p3.1.m1.1.1.3a" xref="S3.p3.1.m1.1.1.3.cmml">−</mo><mn id="S3.p3.1.m1.1.1.3.2" xref="S3.p3.1.m1.1.1.3.2.cmml">6</mn></mrow></msup><annotation-xml encoding="MathML-Content" id="S3.p3.1.m1.1b"><apply id="S3.p3.1.m1.1.1.cmml" xref="S3.p3.1.m1.1.1"><csymbol cd="ambiguous" id="S3.p3.1.m1.1.1.1.cmml" xref="S3.p3.1.m1.1.1">superscript</csymbol><cn type="integer" id="S3.p3.1.m1.1.1.2.cmml" xref="S3.p3.1.m1.1.1.2">10</cn><apply id="S3.p3.1.m1.1.1.3.cmml" xref="S3.p3.1.m1.1.1.3"><minus id="S3.p3.1.m1.1.1.3.1.cmml" xref="S3.p3.1.m1.1.1.3"></minus><cn type="integer" id="S3.p3.1.m1.1.1.3.2.cmml" xref="S3.p3.1.m1.1.1.3.2">6</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.p3.1.m1.1c">10^{-6}</annotation></semantics></math>.</p>
+</div>
+<div id="S3.p4" class="ltx_para">
+<p id="S3.p4.1" class="ltx_p">Our experiments are performed on a DELL workstation. The CPU is Intel Xeon E5-1650 with 3.5GHz and the GPU is NVIDIA TITAN X. The software is the latest version of Caffe <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib9" title="" class="ltx_ref">9</a>]</cite> with cuDNN V5 accelerated on Ubuntu 14.04 LTS system. The average testing time is 3.5ms per image.</p>
+</div>
+<div id="S3.p5" class="ltx_para">
+<p id="S3.p5.1" class="ltx_p">We use a hard metric to evaluate our methods. We calculate the recognition rate, which is defined as the number of correctly recognized digit strings divided by the total number of strings. Because there are more than one digit label in a string, we consider one string being recognized correctly only if when all labels are recognized correctly.</p>
+</div>
+<figure id="S3.F1" class="ltx_figure">
+<div class="ltx_flex_figure">
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F1.sf1" class="ltx_figure ltx_figure_panel ltx_align_center"><img src="/html/1710.03112/assets/cvl.png" id="S3.F1.sf1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="479" height="50" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S3.F1.sf1.2.1.1" class="ltx_text" style="font-size:80%;">(a)</span> </span><span id="S3.F1.sf1.3.2" class="ltx_text" style="font-size:80%;">CVL HDS</span></figcaption>
+</figure>
+</div>
+<div class="ltx_flex_break"></div>
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F1.sf2" class="ltx_figure ltx_figure_panel ltx_align_center"><img src="/html/1710.03112/assets/oar.jpg" id="S3.F1.sf2.g1" class="ltx_graphics ltx_img_landscape" width="479" height="49" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure"><span id="S3.F1.sf2.2.1.1" class="ltx_text" style="font-size:80%;">(b)</span> </span><span id="S3.F1.sf2.3.2" class="ltx_text" style="font-size:80%;">CAR-A</span></figcaption>
+</figure>
+</div>
+<div class="ltx_flex_break"></div>
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F1.sf3" class="ltx_figure ltx_figure_panel ltx_align_center"><img src="/html/1710.03112/assets/obr.jpg" id="S3.F1.sf3.g1" class="ltx_graphics ltx_img_landscape" width="479" height="52" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure"><span id="S3.F1.sf3.2.1.1" class="ltx_text" style="font-size:80%;">(c)</span> </span><span id="S3.F1.sf3.3.2" class="ltx_text" style="font-size:80%;">CAR-B</span></figcaption>
+</figure>
+</div>
+<div class="ltx_flex_break"></div>
+<div class="ltx_flex_cell ltx_flex_size_1">
+<figure id="S3.F1.sf4" class="ltx_figure ltx_figure_panel ltx_align_center"><img src="/html/1710.03112/assets/captcha.png" id="S3.F1.sf4.g1" class="ltx_graphics ltx_img_landscape" width="479" height="44" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure"><span id="S3.F1.sf4.2.1.1" class="ltx_text" style="font-size:80%;">(d)</span> </span><span id="S3.F1.sf4.3.2" class="ltx_text" style="font-size:80%;">G-Captcha</span></figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Samples of the datasets used in our experiments.</figcaption>
+</figure>
+<section id="S3.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.1 </span>Datasets</h3>
+
+<div id="S3.SS1.p1" class="ltx_para">
+<p id="S3.SS1.p1.1" class="ltx_p">There are two public datasets used in our experiments. The first dataset, named as Computer Vision Lab Handwritten Digit String (CVL HDS), is collected from about 300 writers. The variability of writers brings high variability with respect to handwritten styles. The CVL HDS dataset has 7960 images, from which 1262 images for training and the other 6698 images for testing. Some examples are shown in Figure <a href="#S3.F1" title="Figure 1 ‣ 3 Experiments ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>(a) with different written styles.</p>
+</div>
+<figure id="S3.T2" class="ltx_table">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 2: </span> Distribution of the databases with respect to string length. </figcaption>
+<table id="S3.T2.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S3.T2.1.1.1" class="ltx_tr">
+<td id="S3.T2.1.1.1.1" class="ltx_td ltx_border_l ltx_border_r ltx_border_t"></td>
+<td id="S3.T2.1.1.1.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="4">training set</td>
+<td id="S3.T2.1.1.1.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="4">testing set</td>
+</tr>
+<tr id="S3.T2.1.2.2" class="ltx_tr">
+<td id="S3.T2.1.2.2.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">len</td>
+<td id="S3.T2.1.2.2.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CVL</td>
+<td id="S3.T2.1.2.2.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CAR-A</td>
+<td id="S3.T2.1.2.2.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CAR-B</td>
+<td id="S3.T2.1.2.2.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">G-Captcha</td>
+<td id="S3.T2.1.2.2.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CVL</td>
+<td id="S3.T2.1.2.2.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CAR-A</td>
+<td id="S3.T2.1.2.2.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">CAR-B</td>
+<td id="S3.T2.1.2.2.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">G-Captcha</td>
+</tr>
+<tr id="S3.T2.1.3.3" class="ltx_tr">
+<td id="S3.T2.1.3.3.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">below 7</td>
+<td id="S3.T2.1.3.3.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">883</td>
+<td id="S3.T2.1.3.3.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1978</td>
+<td id="S3.T2.1.3.3.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2862</td>
+<td id="S3.T2.1.3.3.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.3.3.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">4933</td>
+<td id="S3.T2.1.3.3.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">3686</td>
+<td id="S3.T2.1.3.3.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2767</td>
+<td id="S3.T2.1.3.3.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+</tr>
+<tr id="S3.T2.1.4.4" class="ltx_tr">
+<td id="S3.T2.1.4.4.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">7</td>
+<td id="S3.T2.1.4.4.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">379</td>
+<td id="S3.T2.1.4.4.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">29</td>
+<td id="S3.T2.1.4.4.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">137</td>
+<td id="S3.T2.1.4.4.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.4.4.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1765</td>
+<td id="S3.T2.1.4.4.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">87</td>
+<td id="S3.T2.1.4.4.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">157</td>
+<td id="S3.T2.1.4.4.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+</tr>
+<tr id="S3.T2.1.5.5" class="ltx_tr">
+<td id="S3.T2.1.5.5.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">8</td>
+<td id="S3.T2.1.5.5.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.5.5.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2</td>
+<td id="S3.T2.1.5.5.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1</td>
+<td id="S3.T2.1.5.5.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1500</td>
+<td id="S3.T2.1.5.5.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.5.5.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">11</td>
+<td id="S3.T2.1.5.5.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2</td>
+<td id="S3.T2.1.5.5.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2000</td>
+</tr>
+<tr id="S3.T2.1.6.6" class="ltx_tr">
+<td id="S3.T2.1.6.6.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">9</td>
+<td id="S3.T2.1.6.6.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1500</td>
+<td id="S3.T2.1.6.6.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.6.6.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2000</td>
+</tr>
+<tr id="S3.T2.1.7.7" class="ltx_tr">
+<td id="S3.T2.1.7.7.1" class="ltx_td ltx_align_center ltx_border_l ltx_border_r ltx_border_t">10</td>
+<td id="S3.T2.1.7.7.2" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.3" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.4" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.5" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">1500</td>
+<td id="S3.T2.1.7.7.6" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.7" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.8" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.7.7.9" class="ltx_td ltx_align_center ltx_border_r ltx_border_t">2000</td>
+</tr>
+<tr id="S3.T2.1.8.8" class="ltx_tr">
+<td id="S3.T2.1.8.8.1" class="ltx_td ltx_align_center ltx_border_b ltx_border_l ltx_border_r ltx_border_t">11</td>
+<td id="S3.T2.1.8.8.2" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.3" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.4" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.5" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">1500</td>
+<td id="S3.T2.1.8.8.6" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.7" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.8" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">0</td>
+<td id="S3.T2.1.8.8.9" class="ltx_td ltx_align_center ltx_border_b ltx_border_r ltx_border_t">2000</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S3.SS1.p2" class="ltx_para">
+<p id="S3.SS1.p2.1" class="ltx_p">The other dataset is ORAND-CAR, consisting of 11719 images obtained from the Courtesy Amount Recognition (CAR) field of real bank checks. The ORAND-CAR images come from two different sources with different characteristics. Considering the two different sources, ORAND-CAR is divided into two subsets, ORAND-CAR-A and ORAND-CAR-B, which are abbreviated to CAR-A and CAR-B.</p>
+</div>
+<div id="S3.SS1.p3" class="ltx_para">
+<p id="S3.SS1.p3.1" class="ltx_p">The CAR-A database consists of 2009 images for training and 3784 images for testing. The CAR-B database consists of 3000 training images and 2926 testing images. Some samples are shown in Figure <a href="#S3.F1" title="Figure 1 ‣ 3 Experiments ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>(b)-(c).</p>
+</div>
+<div id="S3.SS1.p4" class="ltx_para">
+<p id="S3.SS1.p4.1" class="ltx_p">String lengths of samples in these two datasets are mostly not larger than 7. For string recognition, the longer strings are the harder task is. So we create two captcha datasets by using a Python package named ‘captcha’<span id="footnote2" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">2</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">2</sup><span class="ltx_tag ltx_tag_note">2</span>https://pypi.python.org/pypi/captcha/0.1.1</span></span></span>. This package can generate arbitrary length captcha images with dirty background, and the styles of digits are varieties, which are similar to human handwriting.</p>
+</div>
+<div id="S3.SS1.p5" class="ltx_para">
+<p id="S3.SS1.p5.1" class="ltx_p">The generated captcha dataset is named G-Captcha, in which string length is extended to 11. The distribution of the four different datasets with respect to string length are show in table. <a href="#S3.T2" title="Table 2 ‣ 3.1 Datasets ‣ 3 Experiments ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>. With the Python package ‘captcha’, we can create arbitrary lengths of captcha images. This dataset contains 14,000 images, in which 6,000 for training and 8,000 for testing. The examples of G-Captcha are shown in Figure.<a href="#S3.F1" title="Figure 1 ‣ 3 Experiments ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>(d).</p>
+</div>
+</section>
+<section id="S3.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">3.2 </span>Results and analysis</h3>
+
+<div id="S3.SS2.p1" class="ltx_para">
+<p id="S3.SS2.p1.1" class="ltx_p">The experimental results are shown in table <a href="#S3.T3" title="Table 3 ‣ 3.2 Results and analysis ‣ 3 Experiments ‣ Handwritten digit string recognition by combination of residual network and RNN-CTC" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>. We can see that the proposed network achieves the state-of-the-art on both ORAND-CAR-A and ORAND-CAR-B with a huge advance. But it performs very bad on CVL HDS dataset. On the other side, traditional methods performed outstandingly. There are 300 writers that contribute to CVL HDS. For each writer, 26 different digit strings were collected. Only 10 kinds of strings occur in training set. For segmentation methods, this is not a problem because the total categories of numbers are ten. But for methods based on RNN-CTC, it gets into trouble due to the lack of sample diversity. The CRNN architecture <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib7" title="" class="ltx_ref">7</a>]</cite> which is also derived from RNN-CTC faces the same problem. The result on G-Captcha shows the strong ability of handling very long strings.</p>
+</div>
+<figure id="S3.T3" class="ltx_table">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 3: </span> Recognition rates of different models on the datasets described above. (The top five methods are proposed on the HDSRC 2014<cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite>, the following two are proposed in newest papers. Especially, last but one method uses the ORAND-CAR dataset as a whole.)</figcaption>
+<table id="S3.T3.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S3.T3.1.1.1" class="ltx_tr">
+<td id="S3.T3.1.1.1.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.1.1.1.1.1" class="ltx_p" style="width:71.1pt;">Methods</span>
+</span>
+</td>
+<td id="S3.T3.1.1.1.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.1.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.1.1.2.1.1" class="ltx_p" style="width:56.9pt;">CAR-A</span>
+</span>
+</td>
+<td id="S3.T3.1.1.1.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.1.1.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.1.1.3.1.1" class="ltx_p" style="width:56.9pt;">CAR-B</span>
+</span>
+</td>
+<td id="S3.T3.1.1.1.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.1.1.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.1.1.4.1.1" class="ltx_p" style="width:56.9pt;">CVL HDS</span>
+</span>
+</td>
+<td id="S3.T3.1.1.1.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.1.1.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.1.1.5.1.1" class="ltx_p" style="width:56.9pt;">G-Captcha</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.2.2" class="ltx_tr">
+<td id="S3.T3.1.2.2.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.2.2.1.1.1" class="ltx_p" style="width:71.1pt;">Tebessa I <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.2.2.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.2.2.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.2.2.2.1.1" class="ltx_p" style="width:56.9pt;">0.3705</span>
+</span>
+</td>
+<td id="S3.T3.1.2.2.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.2.2.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.2.2.3.1.1" class="ltx_p" style="width:56.9pt;">0.2662</span>
+</span>
+</td>
+<td id="S3.T3.1.2.2.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.2.2.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.2.2.4.1.1" class="ltx_p" style="width:56.9pt;">0.5930</span>
+</span>
+</td>
+<td id="S3.T3.1.2.2.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.2.2.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.2.2.5.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.3.3" class="ltx_tr">
+<td id="S3.T3.1.3.3.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.3.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.3.3.1.1.1" class="ltx_p" style="width:71.1pt;">Tebessa II <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.3.3.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.3.3.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.3.3.2.1.1" class="ltx_p" style="width:56.9pt;">0.3972</span>
+</span>
+</td>
+<td id="S3.T3.1.3.3.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.3.3.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.3.3.3.1.1" class="ltx_p" style="width:56.9pt;">0.2772</span>
+</span>
+</td>
+<td id="S3.T3.1.3.3.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.3.3.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.3.3.4.1.1" class="ltx_p" style="width:56.9pt;">0.6123</span>
+</span>
+</td>
+<td id="S3.T3.1.3.3.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.3.3.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.3.3.5.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.4.4" class="ltx_tr">
+<td id="S3.T3.1.4.4.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.4.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.4.4.1.1.1" class="ltx_p" style="width:71.1pt;">Singapore <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.4.4.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.4.4.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.4.4.2.1.1" class="ltx_p" style="width:56.9pt;">0.5230</span>
+</span>
+</td>
+<td id="S3.T3.1.4.4.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.4.4.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.4.4.3.1.1" class="ltx_p" style="width:56.9pt;">0.5930</span>
+</span>
+</td>
+<td id="S3.T3.1.4.4.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.4.4.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.4.4.4.1.1" class="ltx_p" style="width:56.9pt;">0.5040</span>
+</span>
+</td>
+<td id="S3.T3.1.4.4.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.4.4.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.4.4.5.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.5.5" class="ltx_tr">
+<td id="S3.T3.1.5.5.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.5.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.5.5.1.1.1" class="ltx_p" style="width:71.1pt;">Pernambuco <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.5.5.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.5.5.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.5.5.2.1.1" class="ltx_p" style="width:56.9pt;">0.7830</span>
+</span>
+</td>
+<td id="S3.T3.1.5.5.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.5.5.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.5.5.3.1.1" class="ltx_p" style="width:56.9pt;">0.7543</span>
+</span>
+</td>
+<td id="S3.T3.1.5.5.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.5.5.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.5.5.4.1.1" class="ltx_p" style="width:56.9pt;">0.5860</span>
+</span>
+</td>
+<td id="S3.T3.1.5.5.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.5.5.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.5.5.5.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.6.6" class="ltx_tr">
+<td id="S3.T3.1.6.6.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.6.6.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.6.6.1.1.1" class="ltx_p" style="width:71.1pt;">BeiJing <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.6.6.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.6.6.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.6.6.2.1.1" class="ltx_p" style="width:56.9pt;">0.8073</span>
+</span>
+</td>
+<td id="S3.T3.1.6.6.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.6.6.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.6.6.3.1.1" class="ltx_p" style="width:56.9pt;">0.7013</span>
+</span>
+</td>
+<td id="S3.T3.1.6.6.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.6.6.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.6.6.4.1.1" class="ltx_p" style="width:56.9pt;"><span id="S3.T3.1.6.6.4.1.1.1" class="ltx_text ltx_font_bold">0.8529</span></span>
+</span>
+</td>
+<td id="S3.T3.1.6.6.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.6.6.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.6.6.5.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.7.7" class="ltx_tr">
+<td id="S3.T3.1.7.7.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.7.7.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.7.7.1.1.1" class="ltx_p" style="width:71.1pt;">CRNN <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib7" title="" class="ltx_ref">7</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.7.7.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.7.7.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.7.7.2.1.1" class="ltx_p" style="width:56.9pt;">0.8801</span>
+</span>
+</td>
+<td id="S3.T3.1.7.7.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.7.7.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.7.7.3.1.1" class="ltx_p" style="width:56.9pt;">0.8979</span>
+</span>
+</td>
+<td id="S3.T3.1.7.7.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.7.7.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.7.7.4.1.1" class="ltx_p" style="width:56.9pt;">0.2601</span>
+</span>
+</td>
+<td id="S3.T3.1.7.7.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.7.7.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.7.7.5.1.1" class="ltx_p" style="width:56.9pt;">0.9312</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.8.8" class="ltx_tr">
+<td id="S3.T3.1.8.8.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.8.8.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.8.8.1.1.1" class="ltx_p" style="width:71.1pt;">Saabni <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite></span>
+</span>
+</td>
+<td id="S3.T3.1.8.8.2" class="ltx_td ltx_align_center ltx_align_top ltx_border_r ltx_border_t" colspan="2">0.8580</td>
+<td id="S3.T3.1.8.8.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.8.8.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.8.8.3.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+<td id="S3.T3.1.8.8.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r ltx_border_t">
+<span id="S3.T3.1.8.8.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.8.8.4.1.1" class="ltx_p" style="width:56.9pt;">-</span>
+</span>
+</td>
+</tr>
+<tr id="S3.T3.1.9.9" class="ltx_tr">
+<td id="S3.T3.1.9.9.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_b ltx_border_l ltx_border_r ltx_border_t">
+<span id="S3.T3.1.9.9.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.9.9.1.1.1" class="ltx_p" style="width:71.1pt;">Proposed</span>
+</span>
+</td>
+<td id="S3.T3.1.9.9.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_b ltx_border_r ltx_border_t">
+<span id="S3.T3.1.9.9.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.9.9.2.1.1" class="ltx_p" style="width:56.9pt;"><span id="S3.T3.1.9.9.2.1.1.1" class="ltx_text ltx_font_bold">0.8975</span></span>
+</span>
+</td>
+<td id="S3.T3.1.9.9.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_b ltx_border_r ltx_border_t">
+<span id="S3.T3.1.9.9.3.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.9.9.3.1.1" class="ltx_p" style="width:56.9pt;"><span id="S3.T3.1.9.9.3.1.1.1" class="ltx_text ltx_font_bold">0.9114</span></span>
+</span>
+</td>
+<td id="S3.T3.1.9.9.4" class="ltx_td ltx_align_justify ltx_align_top ltx_border_b ltx_border_r ltx_border_t">
+<span id="S3.T3.1.9.9.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.9.9.4.1.1" class="ltx_p" style="width:56.9pt;">0.2707</span>
+</span>
+</td>
+<td id="S3.T3.1.9.9.5" class="ltx_td ltx_align_justify ltx_align_top ltx_border_b ltx_border_r ltx_border_t">
+<span id="S3.T3.1.9.9.5.1" class="ltx_inline-block ltx_align_top">
+<span id="S3.T3.1.9.9.5.1.1" class="ltx_p" style="width:56.9pt;"><span id="S3.T3.1.9.9.5.1.1.1" class="ltx_text ltx_font_bold">0.9515</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S3.SS2.p2" class="ltx_para">
+<p id="S3.SS2.p2.1" class="ltx_p">The above experiments demonstrate that the proposed method can work well on handwritten digit string recognition. Apart from the shorter length strings in public datasets, it can recognize much longer strings. Although this method fails to handle CVL HDS, it is also an efficient approach to deal with digit string recognition, even if the string is long.</p>
+</div>
+</section>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>Conclusion and Future work</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.1" class="ltx_p">In this paper, we have presented a new model based on RNN-CTC architecture. Combined with ResNet, we archive the new arts on the handwritten digit string recognition benchmarks ORAND-CAR with a great improvement. The experiments on G-Capthca dataset, which consists of much longer string images, indicate our model is very competitive of handling long sequence labelling. But it gets into trouble when handling data like CVL HDS. It seems a common failing for such kind of method. In future, we will refine our model based on elaborate analysis the results in this paper, and exploit the potential on relative areas.</p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[1]</span>
+<span class="ltx_bibblock">
+M. Diem, S. Fiel, F. Kleber, R. Sablatnig, J. M. Saavedra, D. Contreras, J. M.
+Barrios, and L. S. Oliveira, “Icfhr 2014 competition on handwritten digit
+string recognition in challenging datasets (hdsrc 2014),” in <span id="bib.bib1.1.1" class="ltx_text ltx_font_italic">14th
+International Conference on Frontiers in Handwriting Recognition (ICFHR)</span>,
+pp. 779–784, 2014.
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[2]</span>
+<span class="ltx_bibblock">
+A. Gattal, Y. Chibani, and B. Hadjadji, “Segmentation and recognition system
+for unknown-length handwritten digit strings,” <span id="bib.bib2.1.1" class="ltx_text ltx_font_italic">Pattern Analysis and
+Applications</span>, vol. 20, no. 2, pp. 307–323, 2017.
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[3]</span>
+<span class="ltx_bibblock">
+R. Saabni, “Recognizing handwritten single digits and digit strings using deep
+architecture of neural networks,” in <span id="bib.bib3.1.1" class="ltx_text ltx_font_italic">the 3th International Conference
+on Artificial Intelligence and Pattern Recognition</span>, pp. 1–6, 2016.
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[4]</span>
+<span class="ltx_bibblock">
+A. Graves, S. Fernández, F. Gomez, and J. Schmidhuber, “Connectionist
+temporal classification: labelling unsegmented sequence data with recurrent
+neural networks,” in <span id="bib.bib4.1.1" class="ltx_text ltx_font_italic">the 23rd International Conference on Machine
+learning</span>, pp. 369–376, 2006.
+
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[5]</span>
+<span class="ltx_bibblock">
+R. Messina and J. Louradour, “Segmentation-free handwritten chinese text
+recognition with lstm-rnn,” in <span id="bib.bib5.1.1" class="ltx_text ltx_font_italic">13th IAPR International Conference on
+Document Analysis and Recognition</span>, pp. 171–175, 2015.
+
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[6]</span>
+<span class="ltx_bibblock">
+Q.-F. Wang, F. Yin, and C.-L. Liu, “Handwritten chinese text recognition by
+integrating multiple contexts,” <span id="bib.bib6.1.1" class="ltx_text ltx_font_italic">IEEE Transactions on Pattern Analysis
+and Machine Intelligence</span>, vol. 34, no. 8, pp. 1469–1481, 2012.
+
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[7]</span>
+<span class="ltx_bibblock">
+B. Shi, X. Bai, and C. Yao, “An end-to-end trainable neural network for
+image-based sequence recognition and its application to scene text
+recognition,” <span id="bib.bib7.1.1" class="ltx_text ltx_font_italic">IEEE Transactions on Pattern Analysis and Machine
+Intelligence</span>, DOI 10.1109/TPAMI.2016.2646371, 2016.
+
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[8]</span>
+<span class="ltx_bibblock">
+K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image
+recognition,” in <span id="bib.bib8.1.1" class="ltx_text ltx_font_italic">the 29th IEEE Conference on Computer Vision and
+Pattern Recognition</span>, pp. 770–778, 2016.
+
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[9]</span>
+<span class="ltx_bibblock">
+Y. Jia, E. Shelhamer, J. Donahue, S. Karayev, J. Long, R. Girshick,
+S. Guadarrama, and T. Darrell, “Caffe: Convolutional architecture for fast
+feature embedding,” <span id="bib.bib9.1.1" class="ltx_text ltx_font_italic">arXiv preprint arXiv:1408.5093</span>, 2014.
+
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[10]</span>
+<span class="ltx_bibblock">
+A. Krizhevsky, I. Sutskever, and G. E. Hinton, “Imagenet classification with
+deep convolutional neural networks,” in <span id="bib.bib10.1.1" class="ltx_text ltx_font_italic">Advances in neural information
+processing systems</span>, pp. 1097–1105, 2012.
+
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[11]</span>
+<span class="ltx_bibblock">
+C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan,
+V. Vanhoucke, and A. Rabinovich, “Going deeper with convolutions,” in <span id="bib.bib11.1.1" class="ltx_text ltx_font_italic">the 28th IEEE Conference on Computer Vision and Pattern Recognition</span>,
+pp. 1–9, 2015.
+
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[12]</span>
+<span class="ltx_bibblock">
+M. Lin, Q. Chen, and S. Yan, “Network in network,” <span id="bib.bib12.1.1" class="ltx_text ltx_font_italic">arXiv preprint
+arXiv:1312.4400</span>, 2014.
+
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[13]</span>
+<span class="ltx_bibblock">
+S. Hochreiter and J. Schmidhuber, “Long short-term memory,” <span id="bib.bib13.1.1" class="ltx_text ltx_font_italic">Neural
+computation</span>, vol. 9, no. 8, pp. 1735–1780, 1997.
+
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[14]</span>
+<span class="ltx_bibblock">
+A. Graves and J. Schmidhuber, “Framewise phoneme classification with
+bidirectional lstm and other neural network architectures,” <span id="bib.bib14.1.1" class="ltx_text ltx_font_italic">Neural
+Networks</span>, vol. 18, no. 5, pp. 602–610, 2005.
+
+</span>
+</li>
+</ul>
+</section>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.03111" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.03112" class="ar5iv-text-button ar5iv-severity-warning">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.03112">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.03112" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.03113" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Sun Mar  3 04:08:27 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

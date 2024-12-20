@@ -1,0 +1,213 @@
+
+% POSSIBLY MOVE TO INTRO
+  
+
+
+Wolfe's method is a combinatorial method for solving the minimum norm point problem over a polytope, $P = \conv(\ve{p_1}, \ve{p_2}, ..., \ve{p_n}) \subset \mathbb{R}^d$, introduced by P.~Wolfe in \cite{wolfe}. 
+The method iteratively solves this problem over a sequence of subsets of no more than $d+1$ affinely independent points from $\ve{p_1}, ..., \ve{p_n}$ and it checks to see if the solution to the subproblem is a solution to the problem over $P$ using the following lemma due to Wolfe. We call this \emph{Wolfe's criterion}.
+
+\begin{lemma}[Wolfe's criterion \cite{wolfe}]\label{lem:mnpcheck}\label{wolfec}
+Let $P = \conv(\ve{p_1}, \ve{p_2}, ..., \ve{p_n}) \subset \R^d$, then $\ve{x} \in P$ is the minimum norm point in $P$ if and only if 
+\ifnum\version=\stocversion
+$\ve{x}^T \ve{p_j} \ge \|\ve{x}\|_2^2$ for all  $j \in [n]$.
+\else
+\[
+\ve{x}^T \ve{p_j} \ge \|\ve{x}\|_2^2 \quad \text{for all} \quad j \in [n].
+\]
+\fi
+\end{lemma}
+
+Note that this tells us that if there exists a point $p_j$ so that $x^Tp_j < \enorms{x}$ then $x$ is not the minimum norm point in $P$.  
+We say that $p_j$ violates Wolfe's criterion and using this point should decrease the minimum norm point of the current subproblem.
+
+It should be observed that just as Wolfe's criterion is a rule to decide optimality over $\conv(P)$, one has a very similar
+rule for deciding optimality over the affine hull, $\aff(P)$. 
+\ifnum\version=\stocversion
+We state and prove this result below since we do not know of a reference.
+\fi
+
+%xxx move to prelims? Isnt this just WOLFES criterion as in the preliminaries already??
+%\begin{lemma}[Optimality condition for minimum norm point in affine hull]\label{lem:affineoptimality}
+%Let $P \subseteq \RR^d$ be a non-empty finite set of points. Then $x \in \aff P$ is the minimum norm point in $\aff P$ iff for all $p \in P$ we have $p^T x = \norms{x}$.
+%\end{lemma}
+
+\begin{lemma}[Wolfe's criterion for the affine hull]\label{lem:affineoptimality}
+Let $P = \{\ve{p_1},\ve{p_2},...,\ve{p_n}\} \subseteq \RR^d$ be a non-empty finite set of points. Then $\ve{x} \in \aff P$ is the minimum norm point in $\aff P$ iff for all $\ve{p_i} \in P$ we have $\ve{p_i}^T \ve{x} = \enorms{\ve{x}}$.
+\end{lemma}
+\begin{proof}
+($\Leftarrow$) Let $\ve{p}= \sum_{i=1}^n \rho_i \ve{p_i}$ with $\sum_{i=1}^n \rho_i = 1$ be an arbitrary point in $\aff P$ and suppose $\ve{p_i}^T \ve{x} = \enorms{\ve{x}}$ for $i=1,2,...,n$.  
+We have 
+\[
+\ve{p}^T \ve{x} = \underset{i=1}{\overset{n}{\sum}} \rho_i \ve{p_i}^T \ve{x} = \underset{i=1}{\overset{n}{\sum}}\rho_i\enorms{\ve{x}} = \enorms{\ve{x}}.
+\]
+Then $0 \le \enorms{\ve{p}-\ve{x}} = \enorms{\ve{p}} - 2\ve{p}^T \ve{x} + \enorms{\ve{x}} = \enorms{\ve{p}} - \enorms{\ve{x}}$ and so $\enorms{\ve{x}} \le \enorms{\ve{p}}$.
+
+($\Rightarrow$) Suppose $\ve{x} \in \aff P$ is the minimum norm point in $\aff P$.  Suppose that $\ve{x}^T(\ve{p_i} - \ve{x}) \not= 0$ for some $i \in [n]$.  First, consider the case when $\ve{x}^T(\ve{p_i} - \ve{x}) > 0$ and define $0 < \epsilon < \frac{2\ve{x}^T(\ve{p_i}-\ve{x})}{\enorms{\ve{p_i} - \ve{x}}}.$  Then we have 
+\[
+\enorms{(1+\epsilon)\ve{x} - \epsilon \ve{p_i}} = \enorms{x + \epsilon(x - p_i)} = \enorms{\ve{x}} - 2\epsilon \ve{x}^T(\ve{p_i}-\ve{x}) +\epsilon^2 \enorms{\ve{p_i}-\ve{x}} < \enorms{\ve{x}}
+\]  
+since $0 < \epsilon^2 \enorms{\ve p_i - \ve x} < 2\epsilon x^T(\ve p_i - \ve x)$.  This contradicts our assumption that $\ve{x}$ is the minimum norm point in $\aff P$.  The case when $\ve{x}^T(\ve{p_i} -\ve{x}) < 0$ is likewise proved by considering $\enorms{(1-\epsilon)\ve{x} + \epsilon \ve{p_i}}$ with $0< \epsilon < -\frac{2\ve{x}^T(\ve{p_i}-\ve{x})}{\enorms{\ve{p_i} - \ve{x}}}$.  Thus, we have that $\ve{x}^T(\ve{p_i} - \ve{x}) = 0$.
+\end{proof}
+
+We say a set of affinely independent points $S$ is a \emph{corral} if the affine minimizer of $S$ 
+%is the convex minimizer of $S$ and it 
+lies in the relative interior of $\conv{S}$.
+%\lnote{This is actually wrong, the "relative interior" part is missing}  
+Note that singletons are always corrals. 
+Carath{\'e}odory's theorem implies that the minimum norm point of $P$ will lie in the convex hull of some corral of points among $\ve{p_1},...,\ve{p_n}$.  
+The goal of Wolfe's method is to search for a corral containing the (unique) minimizing point.
+
+%\lnote{does uniqueness of optimal corral need to be discussed here?}
+The pseudo-code in Method \ref{alg:wolfe} below presents the iterations of Wolfe's method. It is worth noticing that some steps of the method can be implemented in more than one way and Wolfe proved that all of them lead to a correct algorithm (for example, the choice of the initial point in line \ref{initialrule}). We therefore use the word \emph{method} to encompass all these variations and we discuss specific choices when they are relevant to our analysis of the method.
+%\lnote{alg vs method}
+
+\begin{algorithm}
+\floatname{algorithm}{Method}
+\caption{Wolfe's Method \cite{wolfe}}\label{alg:wolfe}
+\begin{algorithmic}[1]
+\Procedure{Wolfe}{$\ve{p_1}, \ve{p_2}, ..., \ve{p_n}$}
+\State Initialize $\ve{x} = \ve{p_i}$ for some $i \in [n]$, initial corral $C = \{\ve{p_i}\}$, $I=\{i\}$, $\ve{\lambda} = \ve{e_i}$, $\ve{\alpha} = \ve{0}$.\label{initialrule}
+\While{$\ve{x} \not= \ve{0}$ and there exists $\ve{p_j}$ with $\ve{x}^T\ve{p_j} < \|\ve{x}\|_2^2$}\label{stoppingcriterion}
+\State Add $\ve{p_j}$ to the potential corral: $C = C \cup \{\ve{p_j}\}$, $I = I \cup \{j\}$. \label{addrule}
+\State Find the affine minimizer of $C$, $\ve{y} = \argmin_{\ve{y} \in \aff(C)} \|\ve{y}\|_2$, and the affine coefficients, $\alpha$.
+\While{$\ve{y}$ is not a strict convex combination of points in $C$; $\alpha_i \le 0$ for some $i \in I$}
+\State Find $\ve{z}$, closest point to $\ve{y}$ on $[\ve{x},\ve{y}] \cap \conv(C)$; $\ve{z} = \theta \ve{y} + (1-\theta)\ve{x}$,
+%\Statex\hspace{2cm}$\theta = \min_{i \in I : \alpha_i \le 0} \frac{\lambda_i}{\lambda_i - \alpha_i}$.
+$\theta = \min_{i \in I : \alpha_i \le 0} \frac{\lambda_i}{\lambda_i - \alpha_i}$.
+\State Select $\ve{p_i} \in \{\ve{p_j} \in C : \theta \alpha_j + (1-\theta)\lambda_j = 0\}$.
+\State Remove this point from $C$; $C = C - \{\ve{p_i}\}$, $I = I - \{i\}$, $\alpha_i = 0$, $\lambda_i = 0$.
+\State Update $\ve{x} = \ve{z}$ and the convex coefficients, $\lambda$, of $\ve{x}$ for $C$; solve $\ve{x} = \sum_{\ve{p_i} \in C} \lambda_i \ve{p_i}$ for $\lambda$.
+\State Find the affine minimizer of $C$, $\ve{y} = \argmin_{\ve{y} \in \aff(C)} \|\ve{y}\|_2$ and the affine coefficients, $\alpha$.
+\EndWhile
+\State Update $\ve{x} = \ve{y}$ and $\lambda = \alpha$.
+\EndWhile
+\State \textbf{Return} $\ve{x}$.
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+%\lnote{step 6 seems wrong. shouldn't it say strict and $\leq$? or something like that?}
+
+The subset of points being considered as the \emph{potential corral} is maintained in the set $C$.  Iterations of the outer-loop, where points are added to $C$, are called \emph{major cycles} and iterations of the inner-loop, where points are removed from $C$, are called \emph{minor cycles}.  
+The potential corral, $C$, is named so because at the beginning of a major cycle it is guaranteed to be a corral, while within the minor cycles it may or may not be a corral.  
+Intuitively, a major cycle of Wolfe's method inserts an \emph{improving point} 
+%\lnote{improving vs available?} \lnote{vertex or point? Not every point is a vertex of the input} 
+which violates %\lnote{violates?} 
+Wolfe's criterion ($\ve{p_j}$ so that $\ve{x}^T \ve{p_j} < \|\ve{x}\|_2^2$) into $C$, then the minor cycles remove points until $C$ is a corral, and this process is repeated until no points are improving and $C$ is guaranteed to be a corral containing the minimizer.
+%a minimizing corral of minimal size.
+
+It can be shown that this method terminates because the norm of the convex minimizer of the corrals visited monotonically decreases and thus, no corral is visited twice \cite{wolfe}. 
+\ifnum\version=\stocversion
+\else
+Like \cite{chakrabarty}, we sketch the argument in \cite{wolfe}.  
+One may see that the norm monotonically decreases by noting that the convex minimizer over the polytope may result from one of two updates to $\ve{x}$, either at the end of a major cycle or at the end of a minor cycle.  
+Let $C$ be the corral at the beginning of a major cycle (line 3 of Method \ref{alg:wolfe}) and let $\ve{x}$ be the current minimizer, then the affine minimizer $\ve{y}$ has norm strictly less than that of $\ve{x}$ by Lemma \ref{lem:affineoptimality}, uniqueness of the affine minimizer and the fact that $\ve{p_i}^T\ve{x} < \enorms{\ve{x}}$ where $\ve{p_i}$ is the added point.  
+Now, either $\ve{x}$ is updated to $\ve{y}$ or a minor cycle begins.  
+Let $S$ be the potential corral at the beginning of a minor cycle (line 6 of \ref{alg:wolfe}), let $\ve{x}$ be the current convex combination of points of $S$ and let $\ve{y}$ be the affine minimizer of $S$.  
+Note that $\ve{z}$ is a proper convex combination of $\ve{x}$ and $\ve{y}$ and since $\enorm{\ve{y}} < \enorm{\ve{x}}$, we have $\enorm{\ve{z}} < \enorm{\ve{x}}$.  
+Thus, we see that every update of $\ve{x}$ decreases its norm.  
+Note that the number of minor cycles within any major cycle is bounded by $d+1$, where $d$ is the dimension of the space.  
+Thus, the total number of iterations is bounded by the number of corrals visited multiplied by $d+1$.  
+\fi
+It is nevertheless not clear how the number of corrals grows, beyond the bound of $\sum_{i=1}^{d+1} \binom ni$.
+
+Within the method, there are two moments at which one may choose which points to add to the potential corral.  
+Observe that at line \ref{initialrule} of the pseudocode, one may choose which initial point to add to the potential corral.  
+In this paper we will only consider one \emph{initial rule}, which is to initialize with the point of minimum norm. 
+Observe that at line \ref{addrule} of the pseudocode, there are several potential choices of which point to add to the potential corral. 
+Two important examples of \emph{insertion rules} are, first, the \emph{minnorm rule} which dictates that one chooses, out of the improving points for the potential corral, to add the point $\ve{p_j}$ of minimum norm.  
+Second, the \emph{linopt rule} dictates that one chooses, out of the improving points for the potential corral, to add the point $\ve{p_j}$ minimizing $\ve{x}^T \ve{p_j}$. Notice that insertion rules are to Wolfe's method what \emph{pivot rules} are to the Simplex Method (see \cite{Terlaky+Shuzhong1993} for a summary). 
+\lnote{in view of my footnote later, a discussion of removal rule may be relevant here.}
+
+As with pivot rules, there are advantages and disadvantages of insertion rules. 
+For example, the minnorm rule has the advantage that its implementation only requires an initial ordering of the points, then in each iteration it need only to search for an improving point in order of increasing norm and to add the first found.  
+However, the linopt insertion rule has the advantage that, if the polytope is given in H-representation (intersection of halfspaces) rather than V-representation (convex hull of points), one may still perform Wolfe's method by using linear programming to find $\ve{p_j}$ minimizing $ \ve{x}^T \ve{p_j}$ over the polytope. 
+In other words, Wolfe's method does not need to have the list of vertices explicitly given, but suffices to have a linear programming oracle that provides the new vertex to be inserted.
+This feature of Wolfe's method means that each iteration can be implemented efficiently even for certain polyhedra having too many vertices and facets: specifically, over zonotopes (presented as a Minkowski sum of segments) \cite{fuji2006} and over the base polyhedron of a submodular function \cite{fujishige80}.
+
+\ifnum\version=\stocversion
+We present examples that show that the optimal choice of insertion rule depends on the input data. 
+In the full version \cite{1710.02608} (and appended at the end here) of this extended abstract we present a simple example where the minnorm rule outperforms the linopt rule.
+That is, the minnorm pivot rule is not in obvious disadvantage to the linopt rule.
+%Later in this paper we present a family of examples where the linopt rule far outperforms the minnorm rule, whose behavior is exponential on this family.
+In \cref{sec:explowerbound}, we present a family of examples where the minnorm rule takes exponential time, while we expect the linopt rule to take polynomial time in this family.
+\else
+Now we present examples that show that the optimal choice of insertion rule depends on the input data. 
+We first present a simple example where the minnorm rule outperforms the linopt rule.
+That is, the minnorm insertion rule is not in obvious disadvantage to the linopt rule.
+In \cref{sec:explowerbound}, we present a family of examples where the minnorm rule takes exponential time, while we expect the linopt rule to take polynomial time in this family.
+
+%add discussion of benefits of insertion rules
+
+% \ifnum\version=\stocversion
+% \begin{SCfigure}
+% \else
+% \begin{figure}[ht]
+% \fi
+\begin{myfigure}[ht]
+%	\begin{center}
+\centering
+		\includegraphics[width=.4\columnwidth]{figs/linoptexplain.png}
+%	\end{center}
+	\caption{The simplex $P = \conv\{\ve{p_1},\ve{p_2},\ve{p_3},\ve{p_4}\} \subset \mathbb{R}^3$ where $\ve{p_1} = (0.8,0.9,0), \ve{p_2} = (1.5,-0.5,0), \ve{p_3} = (-1,-1,2)$ and $\ve{p_4} = (-4,1.5,2)$.}
+	\label{ex:1}
+% \ifnum\version=\stocversion
+% \end{SCfigure}
+% \else
+% \end{figure}
+% \fi
+\end{myfigure}
+
+
+The first example shows that instances can have different performance depending on the choice of insertion rule.  Consider the simplex $P$ shown in Figure \ref{ex:1} (we present the coordinates of vertices in the figure's caption). We list the steps of Wolfe's method on $P$ for the minnorm and linopt insertion rules in Tables \ref{ex:1minnormsteps} and \ref{ex:1linoptsteps} and demonstrate a single step from each set of iterations in Figure \ref{ex:1steps}.  Each row lists major cycle and minor cycle iteration number, the vertices in the potential corral, and the value of $\ve{x}$ and $\ve{y}$ at the end of the iteration (before $\ve{x} = \ve{y}$ for major cycles).  Note that the vertex $\ve{p_4}$ is added to the potential corral twice with the linopt insertion rule, as evidenced in Table \ref{ex:1linoptsteps}.
+
+\begin{table}
+\centering
+\begin{small}
+\begin{tabular}{c c c c c}
+	\toprule
+	Major Cycle & Minor Cycle & $C$ & $\ve{x}$ & $\ve{y}$ \\ \midrule \midrule
+	0 & 0 & $\{\ve{p_1}\}$ & $\ve{p_1}$ & \\ \midrule
+	1 & 0 & $\{\ve{p_1},\ve{p_2}\}$ & $\ve{p_1}$ & $(1, 0.5,0)$ \\ \midrule
+	2 & 0 & $\{\ve{p_1},\ve{p_2},\ve{p_3}\}$ & $(1,0.5,0)$ & $(0.3980,0.199,0.5473)$ \\ \midrule
+	3 & 0 & $\{\ve{p_1},\ve{p_2},\ve{p_3},\ve{p_4}\}$ & $(0.3980,0.199,0.5473)$ & $(0,0,0)$ \\ \midrule
+	3 & 1 & $\{\ve{p_1},\ve{p_2},\ve{p_4}\}$ & $(0.2878,0.1439,0.3957)$ & $(0.1980,0.0990,0.4455)$ \\ \bottomrule
+\end{tabular}
+\caption{iterations for \emph{minnorm} insertion rule}
+\label{ex:1minnormsteps}
+\end{small}
+\end{table}
+
+\begin{table}
+\centering
+\begin{small}
+	\begin{tabular}{c c c c c}
+		\toprule
+		Major Cycle & Minor Cycle & $C$ & $\ve{x}$ & $\ve{y}$ \\ \midrule \midrule
+		0 & 0 & $\{\ve{p_1}\}$ & $\ve{p_1}$ & \\ \midrule
+		1 & 0 & $\{\ve{p_1},\ve{p_4}\}$ & $\ve{p_1}$ & $(0.2219,0.9723,0.2409)$ \\ \midrule
+		2 & 0 & $\{\ve{p_1}, \ve{p_4},\ve{p_3}\}$ & $(0.2219,0.9723,0.2409)$ & $(0.2848,0.3417,0.5810)$ \\ \midrule
+		2 & 1 & $\{\ve{p_1}, \ve{p_3}\}$ & $(0.2835, 0.3548,0.5739)$ & $(0.2774,0.3484,0.5807)$ \\ \midrule
+		3 & 0 & $\{\ve{p_1},\ve{p_3},\ve{p_2}\}$ & $(0.2774,0.3484,0.5807)$ & $(0.3980,0.199,0.5473)$ \\ \midrule
+		4 & 0 & $\{\ve{p_1},\ve{p_2},\ve{p_3},\ve{p_4}\}$ & $(0.3980,0.199,0.5473)$ & $(0,0,0)$ \\ \midrule
+		4 & 1 & $\{\ve{p_1},\ve{p_2},\ve{p_4}\}$ & $(0.2878,0.1439,0.3957)$ & $(0.1980,0.0990,0.4455)$ \\ \bottomrule
+	\end{tabular}
+	\caption{iterations for \emph{linopt} insertion rule}
+	\label{ex:1linoptsteps}
+\end{small}
+\end{table}
+
+\begin{figure}[ht]
+ \includegraphics[width=3in]{figs/linoptex10.png} \includegraphics[width=3in]{figs/linoptex20.png}
+ \caption{Left: Major cycle 1, minor cycle 0 for the linopt rule on $P$ illustrates the end of a major cycle; the affine minimizer $\ve{y_1} \in \text{relint}(\conv\{C\}) = \text{relint}(\conv\{\ve{p_1},\ve{p_4}\})$.  Right: Major cycle 2, minor cycle 0 for the linopt rule on $P$ illustrates the beginning of a minor cycle; the affine minimizer $\ve{y_2} \not\in \text{relint}(\conv\{C\}) = \text{relint}(\conv\{\ve{p_1},\ve{p_4},\ve{p_3}\})$ and the vertex $\ve{p_4}$ will be removed in the next minor cycle.}
+ \label{ex:1steps} 
+\end{figure}
+
+%add linopt example with difference in behavior between linopt and minnorm rule
+\fi
+
+Currently, there are examples of exponential behavior for the simplex method for all known deterministic pivot rules. 
+It is our aim to provide the same for insertion rules on Wolfe's method.
+In the next subsection we will present the first  exponential-time example using the minnorm insertion rule.
+
+

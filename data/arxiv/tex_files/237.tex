@@ -1,0 +1,519 @@
+
+\chapter{Introduction}
+\label{chap:introduction}
+
+In this thesis we study the interplay between dependent types and computational effects, 
+two important areas of modern programming language research. 
+
+On the one hand, \emph{dependent types} underlie modern proof assistants such as Coq~\cite{Coq:Manual}, and  programming languages such as Agda~\cite{Norell:Thesis}, Idris~\cite{Brady:Idris}, and F*~\cite{Swamy:FStar}. In particular, dependent types provide a lightweight and modular means to formally specify and verify properties of programs using their types. These specifications can vary from being as simple as requiring the divisor in the division function to be non-zero, to as complex as specifying the correctness of compilers of industrial-strength languages~\cite{CompCert}.
+
+\index{ I@$I/O$ (input/output)}
+On the other hand, \emph{computational effects}, such as exceptions, nondeterminism, state, interactive I/O, etc., are an integral part of all widely used programming languages, ranging from imperative languages, such as C~\cite{Kernighan:CLanguage}, to functional languages, such as ML~\cite{ML:Standard} and Haskell~\cite{Marlow:HaskellReport}. While some computational effects can be \emph{represented} in languages that do not support them off the shelf, e.g., stateful programs can be naturally encoded as functions $\State \to A \times \State$, having \emph{primitive support} for computational effects such as state means that compilers can perform effect-dependent optimisations (e.g., see~\cite{Kammar:Thesis}) which can lead to programs being executed more efficiently.
+
+Consequently, if dependently typed languages are to truly live up to their promise of providing a lightweight means for integrating formal verification and practical (functional) programming, we must first understand how to correctly account for computational effects in this setting.
+At the moment, the level of support for them varies greatly in existing languages. 
+For example, Agda does not offer any principled support except for a very basic foreign function interface to Haskell; Idris represents computational effects using a domain specific language that is elaborated to the underlying pure language; and F* includes primitive support for state and exceptions via extraction to OCaml, and allows some other effects to be represented using monads defined in a simply typed definition language.
+%
+As a testament to the benefits of including computational effects primitively in the design of dependently typed languages, F*, with its support to program with and reason about primitively supported effects such as state, has a central role in Microsoft's Everest project~\cite{Everest:Project} that aims to deliver a high-performance, standards-compliant, verified implementation of the full HTTPS ecosystem.
+
+While the Everest project demonstrates the potentially groundbreaking impact that effectful dependently typed programming languages could have in the years to come, the intersection of these two fields still lacks a general and exhaustive treatment. This is in stark contrast to our rigorous understanding of computational effects in the simply typed setting.
+%
+We address this shortcoming by providing a comprehensive language-based, category-theoretic, and algebraic treatment of the combination of dependent types and computational effects. 
+Our goal is to establish the following claim: 
+
+\vspace{0.2cm}
+
+\begin{displayquote}
+\textit{Dependent types and computational effects admit a natural combination.}
+\end{displayquote}
+
+
+
+It is worth noting that compared to the kinds of computational effects supported by languages such as Idris and F*, we take a step back and investigate more foundational questions in the design and semantics of effectful dependently typed languages, leaving questions about a general treatment of more expressive type-and-effect systems (such as the ones used in Idris and F*) for future work---see Sections~\ref{sect:fibredparametrisedeffects} and~\ref{sect:fibDijkstramonads}.
+
+\section{Two guiding questions}
+\label{sect:twoguidingquestions}
+
+That the above claim is non-trivial was already recognised by Moggi~\cite{Moggi:NotionsofComputationandMonads}. In this thesis we identify two key questions that one needs to answer in order to provide a general treatment of the combination of dependent types and computational effects: 
+%
+\begin{itemize}
+\item Should one allow effectful computations to appear in types?
+\item How should one treat type-dependency in sequential composition?
+\end{itemize}
+We discuss both of these questions and some possible answers to them in detail below, separately highlighting the answers that form the basis of the effectful dependently typed language we develop in this thesis, and its denotational semantics. For both questions, our choice of answers is based on being able to maximally reuse and naturally combine respective existing work on dependent types and computational effects.
+
+We assume that the reader has basic knowledge of both dependent types and computational effects. For a good overview of dependent types and their denotational semantics, we suggest~\cite{Hofmann:SyntaxAndSemantics,Jacobs:Book,Streicher:Semantics}. 
+For computational effects, there are a variety of sources one can consult, ranging from the seminal monad-based work of Moggi~\cite{Moggi:ComputationalLambdaCalculus,Moggi:NotionsofComputationandMonads}, to the more  recent adjunction-based work of Levy~\cite{Levy:CBPV}, to the algebraic treatment pioneered by Plotkin and Power~\cite{Plotkin:SemanticsForAlgOperations,Plotkin:NotionsOfComputation}. For functional programmers, a good overview of the algebraic treatment and a source of further references is Pretnar's tutorial~\cite{Pretnar:Tutorial}. 
+We give a short overview of these three approaches 
+in Section~\ref{sect:modelsofeffects}.
+
+\subsection*{Should one allow effectful computations to appear in types?}
+
+To make the first question more concrete, let us consider the prototypical example of a dependent type, namely, the type of vectors 
+of values from some type $A$, written $\mathsf{Vec}~A~M$, where $M$ is a term of type $\mathsf{Nat}$. We can then rephrase the question as follows:
+\begin{itemize}
+\item Should one allow $M$ to raise an effect in $\mathsf{Vec}~A~M$, e.g., perform I/O?
+\end{itemize}
+
+In practice, the answer to this question depends on the kinds of computational effects one considers. In particular, it depends on whether we can expect to evaluate a closed $M$ to a natural number at compile-time, which is crucial to typecheck the constructors of $\mathsf{Vec}~A~M$ and to compare two such types for equality.
+
+For computational effects that do not involve interaction with the runtime environment, $M$ does not need to be restricted. For example, such effects include local names~\cite{Pitts:NominalMLTT,Cheney:DepNomTypeTheory} and  recursion~\cite{Casinghino:CombiningProofs}. While $M$ might diverge in the latter case, making typechecking undecidable, it is important that its evaluation does not get stuck because of, for example, the need to perform I/O. On the other hand, if one wants to accommodate a wide range of different computational effects, including both local names and I/O, $M$ should be restricted to a value so as to guarantee that it evaluates to a natural number during typechecking.
+Furthermore, while there exists semantics for these two specific computational effects (see~\cite{Pitts:NominalMLTT} and~\cite{Palmgren:DomainInterpretation}, respectively), we do not know of a denotational semantics that would account for type-dependency on an unrestricted $M$. 
+
+It is worthwhile to note that the problem with general $M$ only arises when one takes a coarse-grained language, such as Moggi's computational $\lambda$-calculus~\cite{Moggi:ComputationalLambdaCalculus}, as a basis for building an effectful dependently typed language. In particular, in such languages neither the types nor the typing judgements contain information about whether and which computational effects a term might perform. As a result, a closed term of type $\mathsf{Nat}$ can ``surprisingly" perform I/O or raise an exception, instead of evaluating to a natural number. While this style of programming is convenient in many situations, it contradicts the spirit of dependently typed programming, namely, that types ought to be as precise descriptions of program properties  as possible. For example, when pattern-matching on a vector of type $\mathsf{Vec}~A~5$, 
+the typechecker can readily use the knowledge that this vector must be exactly of length $5$. 
+Thus, when combining dependent types and computational effects, one naturally expects similar precision to also apply to the types of effectful computations, i.e., we had better not be able to assign just the type $\mathsf{Nat}$ to a program that can potentially perform I/O or raise an exception. 
+
+\vspace{0.25cm}
+
+\noindent
+\textbf{Our solution:} Guided by the above discussion, we allow types to depend only on values in order to support a wide range of computational effects. While this decision might seem limiting at first, we recover the ability to depend on effectful computations via thunks and handlers (see Section~\ref{section:usinghandlersforreasoning} for examples of this). 
+To ensure that types depend only on values, we make a clear distinction between value types $A$ and computation types $\ul{C}$, and between value terms $V$ and computation terms $M$, as is done in simply typed effectful languages such as Levy's Call-By-Push-Value (CBPV)~\cite{Levy:CBPV}, 
+\index{ CBPV@CBPV (Call-By-Push-Value)}
+and Egger, M{\o}gelberg, and Simpson's Enriched Effect Calculus (EEC)~\cite{Egger:EnrichedEffectCalculus}. 
+\index{ EEC@EEC (Enriched Effect Calculus)}
+
+Specifically, the well-formed types of the effectful dependently typed language we develop in this thesis are defined using judgements $\lj \Gamma A$ and $\lj \Gamma \ul{C}$, where the variables in contexts $\Gamma$ are required to range exclusively over value types. 
+As a result,
+our language lends itself to a very natural denotational semantics that combines standard category-theoretic models of dependent types 
+and the corresponding generalisation of standard adjunction-based models of computational effects.
+
+
+It is worth noting that we could have chosen other effectful simply typed languages as the basis of our effectful dependently typed language, such as Moggi's monadic metalanguage~\cite{Moggi:NotionsofComputationandMonads} or Levy's fine-grain call-by-value language~\cite[Appendix~A.3.2]{Levy:CBPV}. Each of these languages distinguishes between effect-free values and possibly effectful computations. The former does so by assigning effectful computations monadic types $TA$, while the latter makes this distinction already in the grammar of terms. However, as we next discuss, by basing our work in this thesis on CBPV and EEC, we are able to give a more uniform treatment of type-dependency in sequential composition.
+
+\subsection*{How should one treat type-dependency in sequential composition?}
+
+In order to make the above question more concrete, we recall the typing rule for the \linebreak 
+
+\pagebreak
+\noindent
+sequential composition of effectful computations from CBPV:
+\vspace{0.15cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {\ul{C}}}
+{
+\cj \Gamma M FA
+\quad
+\cj {\Gamma, x \!:\! A} N \ul{C}
+}
+\vspace{-0.1cm}
+\]
+%
+It is important to observe that in the dependently typed setting, this typing rule is no longer correct because the second premise allows the value variable $x$ to appear freely in $\ul{C}$, meaning that $x$ can also appear free in the conclusion where it ought to be bound.
+Based on this observation, we rephrase our second guiding question as follows:
+\begin{itemize}
+\item How should one fix this typing rule for sequential composition so that the value variable $x$ would not appear free in its conclusion?
+\end{itemize}
+
+As already suggested by Levy~\cite[Section~12.4.1]{Levy:CBPV}, the most straightforward solution to this problem would be to not allow the variable $x$ to appear free in the computation type $\ul{C}$, i.e., require that $\ul{C}$ is well-formed in $\Gamma$ and change the typing rule to
+%
+\vspace{-0.05cm}
+\[
+\mkrulelabel
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {\ul{C}}}
+{
+\cj \Gamma M FA
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, x \!:\! A} N \ul{C}
+}
+{(*)}
+\vspace{-0.05cm}
+\]
+On the one hand, this solution would have two important advantages: i) it solves the above-mentioned problem with minimal changes; and ii) sequential composition typed using this rule can be given a  denotational semantics using split fibred adjunctions, naturally generalising the semantics of CBPV's simply typed sequential composition. On the other hand, this solution can be somewhat restrictive in some situations. For example, when $M$ involves opening a file and the return values of $M$ model whether the file was opened successfully or not, the computation type $\ul{C}$ and the computation terms  allowed to inhabit it could  crucially depend on the return values of $M$. For instance, if the given file was not opened successfully in $M$, we might want to use dependency on the variable $x$ in $\ul{C}$ to prohibit reading from and writing to the given file in $N$. 
+
+
+
+
+In recent unpublished manu\-scripts~\cite{Vakar:EffectfulDepTypes,Vakar:FrameworkForDepEffs}, V{\'{a}}k{\'{a}}r has proposed an alternative solution in which $\ul{C}$ is allowed to depend on thunks of computations. In particular, V{\'{a}}k{\'{a}}r studies a dependently typed CBPV in which sequential composition is typed as
+\vspace{-0.05cm}
+\[
+\mkrule
+{\cj {\Gamma_1, \Gamma_2[\thunk M/y]} {\doto {M} {x \!:\! A} {} {N}} {\ul{C}[\thunk M/y]}}
+{
+\begin{array}{c}
+\cj {\Gamma_1} M {FA}
+\quad
+\lj {\Gamma_1, y \!:\! U\!FA, \Gamma_2} {\ul{C}}
+\\[-0.5mm]
+\cj {\Gamma_1, x \!:\! A, \Gamma_2[\thunk\! (\return x)/y]} {N} {\ul{C}[\thunk\! (\return x)/y]}
+\end{array}
+}
+\vspace{-0.1cm}
+\]
+However, while this rule solves the above-mentioned problem with the typing rule of sequential composition, its thunks-based type-dependency introduces new problems in the presence of algebraic effects. We discuss these problems further in Section~\ref{sect:relatedwork}.
+
+
+
+Finally, if we would have chosen Moggi's monadic metalanguage as the basis of our  language, instead of CBPV and EEC, we would have had the option to simply use the standard (value) $\Sigma$-type to fix the typing rule of sequential composition. In particular, given two terms $\cj \Gamma M TA$ and $\cj {\Gamma, x \!:\! A} N TB$, we could have considered ``closing-off" the type of the sequential composition of $M$ and $N$ as $T(\Sigma\, x \!:\! A.\, B)$.
+%
+However, it is not immediate whether this proposed use of the $\Sigma$-type is the right solution to this problem, 
+e.g., why not use $\Sigma\, x \!:\! A.\, TB$, or why use the $\Sigma$-type in the first place? 
+
+\vspace{0.25cm}
+
+\noindent
+\textbf{Our solution:}
+%
+Guided by the above discussion, we choose to use the restricted rule $(*)$ to type sequential composition for the reasons listed earlier, namely, because it solves the above-mentioned problem with minimal changes and the resulting language lends itself to a denotational semantics that naturally generalises that of simply typed CBPV.
+We overcome the restrictive nature of this rule (see earlier discussion) by ``closing-off" $\ul{C}$ using a $\Sigma$-type.
+%
+However, as $\ul{C}$ is a computation type, we cannot use the standard (value) $\Sigma$-type from Martin-L\"{o}f's type theory (MLTT)~\cite{MartinLof:IntuitionisticTT}. 
+\index{ M@MLTT (Martin-L\"{o}f's type theory)}
+Instead, we introduce a computational variant of it, written $\Sigma\, x \!:\! A .\, \ul{C}$, to complement the typing rule $(*)$. 
+In particular, by combing the typing rule $(*)$ with the computational $\Sigma$-type, we can derive
+\vspace{-0.1cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} {\langle x , N \rangle}} {\Sigma\, x \!:\! A .\, \ul{C}}}
+{
+\quad
+\cj \Gamma M FA
+\quad
+\lj \Gamma {\Sigma\, x \!:\! A .\, \ul{C}}
+\quad
+\mkrule
+{\cj {\Gamma, x \!:\! A} {\langle x , N \rangle} {\Sigma\, x \!:\! A .\, \ul{C}}}
+{
+\mkrule
+{\cj {\Gamma, x \!:\! A} x A}
+{}
+\quad
+\cj {\Gamma, x \!:\! A} N \ul{C}
+}
+}
+\]
+where the type of $N$ is allowed to depend on the values returned by $M$, but we ``close it off" using the introduction form for $\Sigma\, x \!:\! A .\, \ul{C}$, given by computational pairing, before concluding the derivation by applying the typing rule $(*)$ for sequential composition. 
+
+Our use of the computational $\Sigma$-type is inspired by the algebraic treatment of computational effects in which computational effects are specified using equational theories, whose algebras then model computation types.
+To explain this further, let us consider the effect of accessing read-only memory that stores a single bit. Following~\cite{Staton:Instances}, this effect can be represented using a binary operation $?$ and the equations:
+\vspace{-0.45cm}
+\[
+M ~?~ M = M
+\qquad
+(M_1 ~?~ M_2) ~?~ (N_1 ~?~ N_2) = M_1 ~?~ N_2
+\]
+The idea is that $M ~?~ N$ is a computation that first reads the bit in the store and then continues by following either $M$ or $N$, depending on whether the bit was $0$ or $1$.
+
+Next, let us consider the following program: 
+\[
+\doto {((\return 4) ~ ? ~ (\return 2))} {x \!:\! \Nat} {} {N}
+\]
+When we examine how this program would evaluate, assuming that $\cj {x \!:\! \Nat} {N} {\ul{C}}$ and $\lj {x \!:\! \Nat} \ul{C}$, we see that after reading the bit in the store, we continue either by evaluating $N[4/x]$, that has type $\ul{C}[4/x]$, \emph{or} by evaluating $N[2/x]$, that has type $\ul{C}[2/x]$, leading us to naturally conclude that the whole program denotes an element of the coproduct of algebras denoted by $\ul{C}[4/x]$ and $\ul{C}[2/x]$. The elements of this coproduct are equivalence classes of binary computation trees whose leaves are given by elements of the algebras denoted by $\ul{C}[4/x]$ and $\ul{C}[2/x]$. For example, the given program denotes the tree
+\[
+\xymatrix@C=0.75em@R=2.5em@M=0.25em{
+& ? \ar@{-}[dl] \ar@{-}[dr] &
+\\
+N[4/x] & & N[2/x]
+}
+\]
+
+As the same pattern also reoccurs with computational effects other than reading a bit and dependency on arbitrary value types, we introduce the computational $\Sigma$-type as a uniform means to account for general type-dependency in sequential composition.
+In particular, if $\lj {x \!:\! A} \ul{C}$ denotes an $A$-indexed family of algebras, then the computational $\Sigma$-type $\Sigma\, x \!:\! A .\, \ul{C}$ denotes an $A$-indexed coproduct of algebras $\ul{C}[a_i/x]$.
+%
+However, as already demonstrated in the above derivation of ${\doto M {x \!:\! A} {} {\langle x , N \rangle}}$, we separate concerns by not making the computational $\Sigma$-type part of the typing rule for sequential composition, but instead equip it with its own introduction and elimination forms, given by pairing and pattern-matching, analogously to the (value) $\Sigma$-type from MLTT.
+
+
+This general treatment also justifies our earlier proposal of using the (value) $\Sigma$-type to ``close-off"  free variables to type sequential composition in a dependently typed version of Moggi's monadic metalanguage. In particular, based on the above discussion, an embedding of Moggi's monadic metalanguage in ours by taking $TA \defeq U\!FA$, and a computation type isomorphism $\Gamma \vdash F(\Sigma\, x \!:\! A .\, B) \cong \Sigma\, x \!:\! A .\, FB$ provable in our language, we get that the canonical treatment of type-dependency in sequential composition for Moggi's metalanguage amounts to using the following derivable typing rule:
+\vspace{0.25cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} {(\doto {N} {y \!:\! B} {} {\return \langle x , y \rangle}})} {T(\Sigma\, x \!:\! A.\, B)}}
+{
+\cj \Gamma M TA
+\quad
+\cj {\Gamma, x \!:\! A} N TB
+}
+\vspace{-0.1cm}
+\]
+
+The above discussion also shows us why using $\Sigma\, x \!:\! A.\, TB$ to type sequential composition in a dependently typed version of Moggi's monadic metalanguage would not have the desired effect. In particular, if $\Sigma\, x \!:\! A.\, TB$ were used to type the sequential composition of ${\cj \Gamma M TA}$ and ${\cj {\Gamma, x \!:\! A} N TB}$, then $M$ would need to return the same exact value of type $A$ in each of its branches. From an algebraic perspective, if $B$ denotes an $A$-indexed family of sets, then ${\Sigma\, x \!:\! A.\, TB}$ would denote an $A$-indexed coproduct of sets of computation trees, where each tree in an $a$'th component of this coproduct would have all its leaves given by elements of the set denoted by $B[a/x]$. 
+As a result, the example program ${\doto {((\return 4) ~ ? ~ (\return 2))} {x \!:\! \Nat} {} {N}}$, where now \linebreak ${\cj {x \!:\! \Nat} N TB}$, 
+could not be modelled as an element of the set denoted by $\Sigma\, x \!:\! \Nat.\, TB$. 
+
+While useful for providing a general treatment of type-dependency in sequential composition, we note that we have yet to find interesting examples involving computation types $\Sigma\, x \!:\! A .\, \ul{C}$ where $\ul{C}$ would not be of the form $FB$. In particular, a natural implementation of the dependently typed parsing example we alluded to in~\cite{Ahman:FibredEffects} also turns out to only require types of the form $FB$ (and $\Sigma\, x \!:\! A .\, FB$), e.g., as sketched in Appendix~\ref{chap:appendixC1}  using a shallow embedding of Moggi's monadic metalanguage in Agda~\cite{Norell:Thesis}.
+However, we would like to draw the reader's attention to that in the context of more expressive typing disciplines than considered in this thesis, the combination of the computational $\Sigma$-type and computation types of the form $F_W B$ (where $F$ is now indexed by a value term $W$) can give rise to interesting consequences, e.g., as discussed in Section~\ref{sect:fibredparametrisedeffects}.
+
+\section{Contributions}
+\label{sect:contributions}
+
+The main contributions of this thesis are:
+
+\begin{itemize}
+\item An \emph{effectful dependently typed language}, called eMLTT, that naturally combines intensional MLTT 
+with general computational effects, based on a clear separation between values and computations. The most notable feature of eMLTT is the computational $\Sigma$-type that provides a uniform treatment of type-dependency in the sequential composition of effectful computations.
+\item A \emph{class of category-theoretic models}, called fibred adjunction models, with respect to which eMLTT is both sound and complete. These models naturally combine standard category-theoretic models of dependent types (split closed comprehension categories) and computational effects (adjunctions). Further, they
+\begin{itemize}
+\item provide evidence that one can keep using monads and adjunctions to model computational effects in the dependently typed setting;
+\item demonstrate that computational $\Pi$- and $\Sigma$-types can be modelled analogously to their value counterparts, as adjoints to weakening functors; and 
+\item provide a category-theoretically natural axiomatisation of structures needed for modelling type-dependency in the elimination forms of value types. 
+\end{itemize}
+\item A \emph{collection of natural examples} of fibred adjunction models, based on
+\begin{itemize}
+\item simple fibrations and models of EEC (i.e., enriched adjunctions);  
+\item the families of sets fibration and lifting of adjunctions; 
+\item the Eilenberg-Moore resolutions of split fibred monads, where we 
+give sufficient conditions for the Eilenberg-Moore fibration to support computational $\Pi$- and $\Sigma$-types, generalising known results about the existence of products and coproducts in the Eilenberg-Moore category of a monad; and
+\item the fibration of continuous families of $\omega$-complete partial orders and lifting of $\CPO$-enriched adjunctions, so as to accommodate general recursion.
+\end{itemize}
+\item An extension of eMLTT with \emph{algebraic effects} and their \emph{handlers}, including
+\begin{itemize}
+\item a notion of fibred effect theory that allows computational effects to be specified using dependently typed operation symbols (and equations), enabling one to capture precise notions of computation, such as state with location-dependent store types and dependently typed update monads;
+\item an observation that naively following the literature and defining handlers at the term level leads to unsound program equivalences becoming derivable in languages involving a notion of homomorphism, such as eMLTT;
+\item a novel computation type, called the user-defined algebra type, that pairs a value type (the carrier) to a family of value terms (the operations), allowing us to safely extend eMLTT with handlers of fibred algebraic effects;
+\item a demonstration that the conventional term-level presentation of handlers can be routinely derived from our type-based treatment; and
+\item a proof that this extended language can be soundly interpreted in a fibred adjunction model based on the families of sets fibration and models of a countable Lawvere theory we derive from the given fibred effect theory.
+\end{itemize}
+\item A demonstration that our type-based treatment of handlers provides a useful mechanism for \emph{reasoning about effectful computations}, e.g., allowing us to 
+\begin{itemize}
+\item lift predicates given on return values to predicates on computations; 
+\item define Dijkstra's weakest precondition predicate transformers; and 
+\item specify detailed patterns of allowed (I/O-)effects in computations. 
+\end{itemize}
+\end{itemize}
+
+
+\section{Organisation}
+
+\noindent
+\textbf{Chapter~\ref{chap:introduction}} is this introduction which also includes an overview of related work.
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:preliminaries}} recalls some preliminaries of category-theoretic models of computational effects and dependent types that are needed to understand the rest of the thesis.
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:syntax}} introduces and studies our effectful dependently typed language eMLTT.
+
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:fibadjmodels}} defines and studies fibred adjunction models, including various examples.
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:interpretation}} defines and studies the interpretation of eMLTT in fibred adjunction models. 
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:fibalgeffects}} extends eMLTT with fibred algebraic effects.
+
+
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:handlers}} extends eMLTT with handlers of fibred algebraic effects.
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Chapter~\ref{chap:conclusions}} concludes the thesis and discusses some possible future work directions.
+
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Appendix~\ref{chap:appendixC1}} presents an example of dependently typed monadic parsing.
+
+\vspace{0.05cm}
+
+\noindent
+\textbf{Appendices~\ref{chap:appendixC4},~\ref{chap:appendixC5}}, and\textbf{~\ref{chap:appendixC6}} contain detailed proofs of results in Chapters~\ref{chap:fibadjmodels},~\ref{chap:interpretation}, and~\ref{chap:fibalgeffects}.
+
+
+\section{Related work}
+\label{sect:relatedwork}
+
+In this section we give an overview of existing work on combining dependent types and computational effects. In particular, these works either 
+\begin{itemize}
+\item develop new dependently typed languages in which computational effects are included primitively in the design of the language; or 
+\item use domain specific languages to represent computational effects in existing dependently typed languages.
+\end{itemize}
+
+Compared to our treatment of the combination of dependent types and computational effects, all these languages lack ingredients needed for a general theory, e.g., the foundations are often not settled; the available effects may be limited; or they may lack a systematic treatment of (equational) effect specification. However, it is also important to note that by being more specialised than eMLTT, and focussed on specific computational effects and effect-typing disciplines, some of these languages support more sophisticated types for effectful computations than eMLTT (see below). 
+
+\subsubsection*{Dependently typed CBPV}
+
+A dependently typed CBPV was already briefly discussed as a potential future work direction in Levy's original work~\cite[Section~12.4.1]{Levy:CBPV}. In particular, similarly to us, Levy recognises that one cannot use CBPV's typing rule for sequential composition in the dependently typed setting. 
+To solve this problem, Levy suggests the same solution that we have adopted in eMLTT, i.e., to type sequential composition as follows:
+\vspace{0.2cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {\ul{C}}}
+{
+\cj \Gamma M FA
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, x \!:\! A} N \ul{C}
+}
+\vspace{-0.1cm}
+\]
+However, Levy does not investigate this dependently typed version of CBPV further. In particular, he does not consider the computational $\Sigma$-type or any other means to overcome the restrictive nature of this typing rule. 
+On the other hand, he highlights an important drawback of allowing type-dependency only on values and typing sequential composition using this rule. Namely, there is no obvious translation from a dependently typed $\lambda$-calculus into this version of CBPV, in contrast to the simply typed setting where there exists two canonical translations (call-by-value and call-by-name).
+
+The closest work to ours 
+appears in recent unpublished manu\-scripts by V{\'{a}}k{\'{a}}r~\cite{Vakar:EffectfulDepTypes,Vakar:FrameworkForDepEffs}, which appeared independently of the author's paper~\cite{Ahman:FibredEffects} that large parts of this thesis are based on. In particular, V{\'{a}}k{\'{a}}r develops a dependently typed version of CBPV, gives it a denotational semantics based on indexed categories and indexed adjunctions between them, and an abstract machine based operational semantics. Compared to eMLTT, V{\'{a}}k{\'{a}}r's language lacks the computational $\Sigma$-type, he only considers algebraic operations whose possible continuations are listed explicitly, and he does not provide any treatment of handlers in the dependently typed setting. 
+On the other hand, V{\'{a}}k{\'{a}}r fixes the typing rule for sequential composition differently from us and Levy, by
+\[
+\mkrule
+{\cj {\Gamma_1, \Gamma_2[\thunk M/y]} {\doto {M} {x \!:\! A} {} {N}} {\ul{C}[\thunk M/y]}}
+{
+\begin{array}{c}
+\cj {\Gamma_1} M {FA}
+\quad
+\lj {\Gamma_1, y \!:\! U\!FA, \Gamma_2} {\ul{C}}
+\\
+\cj {\Gamma_1, x \!:\! A, \Gamma_2[\thunk\! (\return x)/y]} {N} {\ul{C}[\thunk\! (\return x)/y]}
+\end{array}
+}
+\]
+
+However, while this typing rule enables V{\'{a}}k{\'{a}}r to define call-by-value and call-by-name translations from a dependently typed $\lambda$-calculus into his language, he observes that not all computationally natural monads support this typing rule for sequential composition, when considering  liftings of their Eilenberg-Moore resolutions to families of sets. For example, while the exceptions monad supports this typing rule, the standard monads for reading, writing, state, and continuations fail to do so. Significant problems also arise in the presence of algebraic effects due to the thunks-based type-dependency in his proposed typing rule for sequential composition. For example, in order to prove that the subject reduction property holds of his language in the presence of algebraic effects that involve equations, such as nondeterminism and state, V{\'{a}}k{\'{a}}r needed to further 
+extend his language with the following
+typing rules (for all algebraic operations)\footnote{In other words, without these additional typing rules for algebraic operations, one would be unable to assign a single canonical computation type to the left- and right-hand sides of definitional algebraicity equations of the form $\doto {\algop(M_1, \ldots, M_n)} {x \!:\! A} {} {N} = \algop(\doto {M_1} {x \!:\! A} {} {N}, \ldots, \doto {M_n} {x \!:\! A} {} {N})$.}:
+\vspace{-0.1cm}
+\[
+\mkrule
+{\cj \Gamma {M} {\ul{C}[\thunk\! (\algop(M_1, \ldots, M_n))/x]}}
+{\cj \Gamma {M} {\ul{C}[\thunk M_i/x]}}
+\]
+%
+It is however not immediate if and how these typing rules could be adapted to general algebraic operations that involve variable bindings, such as the ones we use to extend eMLTT in Chapters~\ref{chap:fibalgeffects} and~\ref{chap:handlers}. 
+%
+In summary, we conjecture that in order to make V{\'{a}}k{\'{a}}r's proposed approach work in general, the computation type $\ul{C}$ should be allowed to depend directly on computations of type $FA$ rather than their thunks. We discuss some possibilities for extending eMLTT with this kind of type-dependency in Section~\ref{sect:typedependencyonfeffects}.
+
+
+\subsubsection*{Linear dependent types}
+
+While not directly addressing the combination of dependent types and computational effects, the recent works of Krishnaswami et al.~\cite{Krishnaswami:LinearDependentTypes} and V{\'{a}}k{\'{a}}r~\cite{Vakar:LinearLF} on integrating dependent and linear types have many features in common with our work. In particular, they develop languages that contain both intuitionistic and linear fragments,  based on adjunction models of linear logic, with both kinds of types allowed to depend only on intuitionistic variables. Compared to eMLTT, where the contexts of (linear) computation variables contain exactly one variable, the contexts of linear variables in their work can contain arbitrary number of variables, which can be used in any order.
+%
+Further, while the type of homomorphisms between computation types (the \emph{homomorphic function type} $\ul{C} \multimap \ul{D}$) has to be treated as a value type in eMLTT, so as to be able to capture a wide range of computational effects, the adjunctions used to model linear logic enable them to treat the corresponding type of linear functions as a linear type. 
+Krishnaswami et al.~also investigate extending their language with computational effects via a state monad on the linear types, allowing them to support state with strong (type-changing) updates and to  encode the effectful primitives of Hoare Type Theory.
+
+\subsubsection*{Hoare Type Theory}
+
+Hoare Type Theory (HTT)~\cite{Nanevski:HTT} was developed by Nanevski et al.~to allow programmers to specify and verify stateful computations in a dependently typed setting using the Hoare type $\{P\} x \!:\! A \{Q\}$, where $P$ and $Q$ are logical pre- and postcondition formulae over the heap, and $A$ is the type of values returned by a computation of this type. 
+The resulting language is a dependently typed version of Moggi's monadic metalanguage, with the ordinary monad replaced by the Hoare type, and with the typing rules of relevant terms adapted accordingly.
+%
+HTT resolves the problem with type-dependency in sequential composition by restricting the free variables in the return type, and by using existential quantification to ``close-off" the free variable in the logical formulae. In particular, using idealised syntax, HTT's typing rule for sequential composition is
+\vspace{0.15cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {\{P\} y \!:\! B \{\exists\, x \!:\! A .\, R\}}}
+{
+\cj \Gamma M \{P\} x \!:\! A \{Q\}
+\quad
+\lj \Gamma B
+\quad
+\cj {\Gamma, x \!:\! A} N \{Q\} y \!:\! B \{R\}
+}
+\vspace{-0.1cm}
+\]
+HTT has been given both an abstract machine based operational semantics~\cite{Nanevski:HTT} and a realisability based denotational semantics~\cite{Petersen:HTT}. The latter is organised using a split fibration of uniform families of chain-complete partial equivalence relations, a split comprehension category of uniform families of assemblies, and a split fibred reflection between them, based on Jacobs's fibrational models of higher-order dependent predicate logic and full higher-order dependent type theory, see~\cite[Sections~11.2 and~11.6]{Jacobs:Book}.
+
+\subsubsection*{F*}
+
+Swamy et al.'s F*~\cite{Swamy:FStar} is a closely related language to HTT.
+As well as state, F* supports other computational effects such as exceptions and divergence, and their combinations, organised in a lattice of effects.
+Compared to the pre- and postconditions based reasoning in HTT, F* instead uses weakest precondition predicate transformers, structured as Dijkstra monads $T\, A\,\, w\!p$, to reason about the behaviour of effectful computations. Here, $A$ is the type of values returned by a computation of this type and $w\!p$ is the weakest precondition transformer. % for a given computational effect. 
+For example, for the state effect one has
+\[
+w\!p : (A \to \State \to \mathsf{Type}) \to \State \to \mathsf{Type}
+\]
+Namely, $w\!p$ transforms a type-theoretic predicate on return values and final states to a predicate on  initial states. Specifically, in a total correctness setting, being able to assign the type $T\, A\,\, w\!p$ to a stateful computation $M$ guarantees that if $M$ is executed in a state $V_S$ that satisfies $w\!p\,\, V_{\!Q}\,\, V_{\!S}$ (for some postcondition $V_{\!Q}$), then the execution of $M$ produces a value $V$ and a state $V'_{\!S}$ that satisfy $V_{\!Q}\,\, V\,\, V'_{S}$.
+In a recent joint work by the author and Hri{\c t}cu et al.~\cite{Ahman:DM4Free}, F* has been extended with a means for representing computational effects and their combinations using monads defined in a simply typed definition language, with the corresponding predicate transformers and Dijkstra monads derived automatically using a selective CPS-transformation; this includes global state, exceptions, and continuations, but currently excludes I/O and probability.
+
+F* resolves the problem with type-dependency in sequential composition by restricting the free variables in the return type, and by using the monad structure of the weakest precondition predicate transformers. In particular, using idealised syntax, F* includes the following typing rule for sequential composition: 
+\vspace{0.15cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {T~A~(\doto {w\!p_1} {x \!:\! A} {} {w\!p_2})}}
+{
+\cj \Gamma M T~A~w\!p_1
+\quad
+\lj \Gamma B
+\quad
+\cj {\Gamma, x \!:\! A} N T~B~w\!p_2
+}
+\vspace{-0.1cm}
+\]
+While F* has been equipped with an operational semantics, a (category-theoretic) denotational semantics and a general algebraic account of it remain open problems. 
+Finally, it is worth noting that while the treatment of computational effects in F* is based on weakest precondition predicate transformers, its end users are usually presented with a HTT-style programming interface that uses pre- and postconditions.
+
+\subsubsection*{Dependent types and local names}
+
+Pitts et al.~\cite{Pitts:NominalMLTT} and Cheney~\cite{Cheney:DepNomTypeTheory} have successfully combined dependent types with another important notion of computation, namely, local names.
+A significant difference between these works and eMLTT, and the languages described above, is that the languages developed Pitts et al.~and Cheney do not include a distinct layer of effectful computations, i.e., return and sequential composition. 
+As a result, types can depend directly on terms that contain name abstractions and concretion.
+This is possible because local names, when considered as a computational effect, do not require interaction with the runtime environment, and so a closed term of type $A$ will always evaluate to a value of type $A$ in these languages during typechecking.
+Pitts et al.~show how to define a sound interpretation of their language in a category with families (CwF, see~\cite{Hofmann:SyntaxAndSemantics}) of nominal sets.
+Meanwhile, Cheney develops a sound and complete normalisation algorithm for the equational theory of his language. 
+
+A somewhat different approach to combining dependent types with local names has been taken by Sch\"{o}pp and Stark~\cite{Schopp:DTTWithNames} (also~\cite{Schopp:Thesis}) who extend an extensional MLTT with ideas from the logic of bunched implications~\cite{Pym:BunchedImplications}. In particular, they derive the operations for local names, such as name abstraction, from a central notion of freshness that they formalise using monoidal versions of $\Sigma$- and $\Pi$-types. Similarly to the work of both Pitts et al.~and Cheney, the resulting language does not include a distinct layer of effectful computations. Sch\"{o}pp and Stark  give their language a denotational semantics based on split closed comprehension categories that have affine monoidal bases, and that additionally support monoidal versions of split dependent sums and products.
+
+\subsubsection*{Dependent types and general recursion}
+
+Casinghino et al.~\cite{Casinghino:CombiningProofs} have studied combining dependent types with another important computational effect, namely, general recursion and the possibility of divergence. 
+While their language also does not include combinators for returning values and sequential composition, similarly to the work on local names discussed earlier, their language includes separate typing judgements to distinguish between code that is guaranteed to terminate (used for logical reasoning) and code that can potentially diverge (used for programming). 
+Casinghino et al.~equip their language with an operational semantics but they do not investigate a corresponding denotational semantics. 
+ 
+A domain-theoretic denotational semantics has been developed by Palmgren and Stoltenberg-Hansen~\cite{Palmgren:DomainInterpretation} for intensional MLTT that supports recursion via an iteration type $\Omega$. In contrast to Casinghino et al.'s work, this variant of MLTT  does not distinguish between terminating and diverging code. As a result, it is inconsistent as a logic because all its types are inhabited, including the empty type $0$.
+% 
+In comparison, when we extend eMLTT with general recursion in Section~\ref{sect:continuousfamilies}, 
+we take care to ensure that recursion can only be used in computation terms, thus ensuring that the pure fragment of eMLTT can be used to reason about programs. This is similar to the distinction between terminating and possibly diverging code in Casinghino et al.'s work.
+
+It is worth noting that Agda~\cite{Norell:Thesis}, Idris~\cite{Brady:Idris}, and F* also support general recursion. 
+While the first two use syntactic termination checkers to ensure the totality of general recursive definitions and therefore the consistency of logical reasoning, F* supports a semantic termination check based on a well-founded partial order on its terms. 
+
+
+\subsubsection*{Representing computational effects using interaction structures}
+
+Regarding the use of domain specific languages to represent computational effects in existing dependently typed languages, a general treatment has been developed by Hancock and Setzer~\cite{Hancock:InteractivePrograms}, who embed Moggi's monadic metalanguage in type theory. They achieve generality by specifying computational effects using interaction structures; these are an abstract representation of single-sorted signatures, also known in the literature under the name of containers~\cite{Abbott:Containers}. The corresponding monad is then generated freely on the polynomial endofunctor induced by the given interaction structure. 
+%
+It is worth noting that while this work is general enough to capture all single-sorted signatures, it does not support the equational specification of computational effects.
+
+\subsubsection*{Representing effects using monads on indexed sets and parameterised monads}
+
+We conclude our overview of related work by discussing the work of McBride~\cite{McBride:Kleisli} and Brady~\cite{Brady:Effects}, who also use existing languages to monadically represent computational effects. Compared to Hancock and Setzer's work, McBride and Brady also support sophisticated effect-typing disciplines to specify and verify properties of effectful programs, e.g., that one can read from a file only after it has been opened. McBride's representation of computational effects and the corresponding effect-typing is based on monads on indexed sets, using a custom version of Haskell as the underlying language. 
+%
+Brady, on the other hand, uses a natural dependently typed generalisation of Atkey's parameterised monads (see Section~\ref{sect:fibredparametrisedeffects}) to represent computational effects in Idris, and to use pre- and postconditions to track the ``worlds" of computation, e.g., whether a file is open or closed. For example, the type of the function representing sequential composition in Brady's work can be described using the following rule:
+\vspace{0.15cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {} N} {T_{W1,W3}~B}}
+{
+\cj \Gamma M T_{W1,W2}~A
+\quad
+\lj \Gamma B
+\quad
+\vj \Gamma {W_3} {\mathsf{World}}
+\quad
+\cj {\Gamma, x \!:\! A} N T_{W2,W3}~B
+}
+\vspace{-0.1cm}
+\]
+
+More recently, Brady has extended his (dependently typed parameterised) monads with additional type-dependency~\cite{Brady:ResourceDependentEffects}, by allowing the postcondition worlds to depend on return values, thus alleviating the limitation that $W_2$ is not allowed to depend on the return values of $M$ (via $x$) in the above typing of sequential composition. 
+%
+However, as part of our exploratory investigations into extending eMLTT with dependently typed effect typing, we observed that there does not seem to be a category-theoretically natural axiomatisation of the corresponding adjunctions. Instead, our preliminary work has shown that this more dependently typed version of Brady's monad turns out to be simply the composite of the less dependently typed parameterised adjoints and our computational $\Sigma$-type. We discuss this observation in more detail in Section~\ref{sect:fibredparametrisedeffects}.
+
+
+
+
+
+
+
+
+
+
+

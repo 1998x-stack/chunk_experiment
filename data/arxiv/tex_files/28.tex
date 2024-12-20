@@ -1,0 +1,594 @@
+%We perform numerical experiments on 65 large-scale ($1000\le n \le 10000$)
+%{\small CUTE}st~\cite{GouOT03} test problems, made up of all the test problems
+%in~\cite{BurdakovLMTR16} plus an additional three ({\small FMINSURF},
+%{\small PENALTY2}, and {\small TESTQUAD}~\cite{GouOT03}) since at least one of the methods
+%in the experiments detailed below converged on one of these three
+%problems.  
+We performed numerical experiments using a Dell Precision T1700 machine with an Intel i5-4590 {\small CPU} at $3.30${\small GH}z X4 and 8{\small GB RAM} using {\small MATLAB} 2014a.
+The test set consisted of 
+ 65 large-scale ($1000\le n \le 10000$)
+{\small CUTE}st~\cite{GouOT03} test problems, made up of all the test problems
+in~\cite{BurdakovLMTR16} plus an additional three ({\small FMINSURF},
+{\small PENALTY2}, and {\small TESTQUAD}~\cite{GouOT03}) since at least one of the methods
+in the experiments detailed below converged on one of these three
+problems.  
+The same trust-region method and default parameters as
+in~\cite[Algorithm 1]{BurdakovLMTR16} were used for the outer iteration.
+At most five quasi-Newton pairs $\{ s_k, y_k \}$ were stored,
+i.e., $m = 5$.
+The relative stopping criterion was 
+$$ \left\| \vec{g}_k \right\|_2 \le \epsilon \max \left( 1,
+  \left\| \vec{x}_k \right\|_2 \right), $$ 
+with $\epsilon=10^{-10}$.  The
+initial step, $p_0$, was determined by a backtracking line-search along the
+normalized steepest descent direction.  
+To compute the partial eigendecomposition of $B_k$, we used the {\small QR} factorization
+instead of the {\small SVD} because the  {\small QR} version outperformed the {\small SVD} 
+version in numerical experiments not presented here.
+The rank of $ \vec{\Psi}_k $ was
+estimated by the number of positive diagonal elements in the diagonal
+matrix of the $\text{LDL}^{\text{T}}$ decomposition (or eigendecomposition
+of $ \vec{\Psi}^T_k \vec{\Psi}_k $) that are larger than the threshold $
+\epsilon_r = (10^{-7})^2 $. (Note that the columns of $\Psi_k$
+are normalized.). We used the value $c_3 = 10^{-8}$ in \eqref{bound_sy}
+for testing whether to accept a new quasi-Newton pair.
+
+We provide performance profiles (see \cite{DolanMore02}) for the number of
+iterations (\texttt{iter}) where the trust-region step is 
+accepted
+and the average time (\texttt{time}) for each
+solver on the test set of problems.  The performance metric, $ \rho $, for
+the 65 problems is defined by
+	\begin{equation*}
+		\rho_s(\tau) = \frac{\text{card}\left\{ p : \pi_{p,s} \le \tau \right\}}{65} \quad \text{and} \quad \pi_{p,s} = \frac{t_{p,s}}{ \underset{1\le i \le S}{\text{ min } t_{p,i}} },
+	\end{equation*} 
+	where $ t_{p,s}$ is the ``output'' (i.e., time or iterations) of
+        ``solver'' $s$ on problem $p$. Here $ S $ denotes the total number of solvers for a given comparison. This metric measures
+        the proportion of how close a given solver is to the best
+        result.  We observe as in \cite{BurdakovLMTR16} that the first runs
+        significantly differ in time from the remaining runs, and thus, we
+        ran each algorithm ten times on each problem, reporting the average
+        of the final eight runs.
+
+\bigskip
+
+In this section, we present the following six types of experiments involving {\small LMTR}:
+\newline
+
+
+\begin{enumerate}
+\item A comparison of results for different values of $\gamma_k^{\perp}(c,\lambda)$. 
+\item Two versions of computing the full quasi-Newton trial step %(see Section 3.4)
+ are compared. One version uses the dense initialization to
+    compute $p_u^*$ as described in Section 3.4 (see (\ref{eqn-pstar2})); the other uses the conventional
+    initialization, i.e., $p_u^*$ is computed as
+    $p_u^*=B_k^{-1}g_k$. 
+    %In the both cases, the dense initialization is
+    %used for computing trial steps obtained from explicitly solving
+    %the trust-region subproblem (Section 3.2) when the full
+    %quasi-Newton trial step is not accepted.
+    When the full quasi-Newton trial step is not accepted in any of the versions, the dense initialization is used for computing trial step by explicitly solving the trust-region subproblem (Section 3.2).
+%\item A comparison of alternative ways of computing the partial eigendecomposition (Section 2.2), namely, those based on {\small QR} and {\small SVD} factorizations.
+\item A comparison of {\small LMTR} together with a
+dense initialization and the line search {\small L-BFGS} method
+with the conventional initialization.
+\item A comparison of {\small LMTR} 
+with a
+dense initialization and 
+{\small L-BFGS-TR}~\cite{BurdakovLMTR16},
+which computes a scaled quasi-Newton direction that lies inside a trust
+region.  This method can be viewed as a hybrid line search and trust-region
+algorithm.
+\item A comparison of the dense and conventional initializations.
+\end{enumerate}
+
+\medskip 
+
+In the experiments below, the dense initial matrix $\widehat{B}_0$
+corresponding to $\gamma_k^{\perp}(c,\lambda)$ given in \eqref{eqn-gammaperp1}
+will be denoted by
+$$
+	\widehat{B}_0(c,\lambda) 
+	\defined
+	\gamma_k P_{\parallel}P_{\parallel}^T + 
+	\gamma_k^{\perp}(c,\lambda) P_{\perp}P_{\perp}^T.
+$$
+Using this notation, the conventional initialization $B_0(\gamma_k)$
+can be written as $\widehat{B}_0(1,0)$.
+
+\medskip
+
+\noindent
+{\bf Experiment 1.}
+In this experiment, we consider various scalings of a proposed $ \gamma^{\perp}_{k} $ using
+{\small LMTR}.  
+As argued in Section \ref{subsec:gammaperp},  it is reasonable
+to choose $\gamma_k^\perp$ to be large and positive; in particular, 
+$\gamma_k^\perp\ge\gamma_k$.  Thus, we 
+consider the parametrized family of choices $\gamma_k^{\perp} \defined \gamma_k^{\perp}(c,\lambda)$
+given in \eqref{eqn-gammaperp1}.
+	These choices correspond
+        to conservative strategies for computing steps in the space spanned
+        by $ \vec{P}_{\perp} $ (see the discussion in Section \ref{subsec:gammaperp}).
+Moreover, these can also be viewed as conservative strategies since
+the trial step computed using $B_0$ will always be larger in Euclidean
+norm than the trial step computed using $\widehat{B}_0$ using (\ref{eqn-gammaperp1}).
+To see this, note that in the parallel subspace the solutions will
+be identical using both initializations since the solution $v_\parallel^*$ does
+not depend on $\gamma_k^\perp$ (see (\ref{eqn:solution_vparallel})); in contrast,
+in the orthogonal subspace, $\|v_\perp^*\|$ inversely depends on $\gamma_k^\perp$
+(see (\ref{eq:subsolnperp2}) and (\ref{eq:subsolnbeta2})).
+
+\medskip
+
+We report results using different
+values of $c$ and $\lambda$ for $\gamma^\perp_k(c,\lambda)$ 
+on two sets of tests.  
+On the first set of tests, 
+the dense initialization was used for the entire {\small LMTR} algoirthm.
+However, for the second set of tests, 
+the dense initialization was not used for the computation
+of the unconstrained minimizer $p_u^*$;  
+that is,  {\small LMTR} was run
+using $B_k$ (initialized with $B_0=\gamma_k I$ where $\gamma_k$ is given in
+(\ref{eqn-B0-usual})) for the computation of the unconstrained minimizer
+$p_u^*=-B_k^{-1}g_k$.  However, if the unconstrained minimizer was not
+taken to be the approximate solution of the subproblem, $\widehat{B}_k$
+with the dense initialization was used for computing the constrained minimizer
+with respect to the shape-changing norm (see line 8 in Algorithm 1)
+%the
+%shape-changing component 
+%of the algorithm 
+with
+$\gamma_k^{\perp}$ defined as in \eqref{eqn-gammaperp1}.
+The values of $c$ and $\lambda$ chosen for Experiment 1 are found in Table \ref{table:gammaperp-JE}.
+(See Section~\ref{sec-algorithm} for details on the {\small LMTR} algorithm.)
+
+\begin{table} \label{table:gammaperp-JE}
+\caption{Values for $\gamma_k^{\perp}$ used in Experiment 1.}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ccl}
+\hline
+\multicolumn{2}{c}{Parameters} \\
+\cline{1-2}
+$c$ & $\lambda$ & $\gamma_k^{\perp}$  \\  
+\hline
+$1$ & $1$ & $\gamma_k^{\max}$  \\
+$2$ & $1$ & $2\gamma_k^{\max}$ \\
+ $1$ & $\frac{1}{2}$ & $\frac{1}{2} \gamma_k^{\max} +  \frac{1}{2}\gamma_k$ \\
+$1$ & $\frac{1}{4}$ & $\frac{1}{4}\gamma_k^{\max} + \frac{3}{4} \gamma_k$  \\ 
+\hline
+\end{tabular}
+\end{table}
+
+
+Figure~\ref{fig:1B} displays the
+performance profiles 
+using  the chosen values of $c$ and $\lambda$ to define $\gamma_k^{\perp}$ 
+in the case when the
+dense initialization was used for both the computation
+of the unconstrained minimizer $p_u^*$ (line 10 of Algorithm 1) as well as for the
+constrained minimizer with respect to the shape-changing norm (line 8 of Algorithm 1),
+%shape-changing component 
+%of the algorithm, 
+which is denoted in the legend of plots in
+Figure~\ref{fig:1B} by the use of an asterisk $ (*)$.
+The results of Figure~\ref{fig:1B} suggest the choice
+of $c=1$ and $\lambda=\frac{1}{2}$ outperform the other
+chosen combinations for $c$ and $\lambda$.
+In experiments not reported here, 
+larger values of $c$ did not appear to improve performance; for $c<1$,
+performance deteriorated.
+Moreover, other choices for 
+$\lambda$, such as $ \lambda=\frac{3}{4}$, did not improve results
+beyond the choice of $\lambda=\frac{1}{2}$.
+
+	\begin{figure*}[h!]
+				\begin{minipage}{0.48\textwidth}
+					\includegraphics[width=\textwidth]{iter_ex1_b_9_11_17}
+				\end{minipage}
+				\hfill
+				\begin{minipage}{0.48\textwidth}
+							\includegraphics[width=\textwidth]{time_ex1_b_9_11_17}
+				\end{minipage}
+				\caption{
+Performance profiles comparing \texttt{iter} (left) and \texttt{time} (right)  
+for the different values of $\gamma_k^\perp$
+given in Table~\ref{table:gammaperp-JE}. 
+In the legend, $\widehat{B}_0(c,\lambda)$ denotes the results from 
+using the dense initialization
+with the given values for $c$ and $\lambda$ to define $\gamma_k^\perp$.
+In this experiment, the dense initialization
+was used for all aspects  
+of the algorithm.}
+			\label{fig:1B}       
+	\end{figure*}
+
+Figure~\ref{fig:1A} reports the 
+performance profiles for 
+using the chosen values of $c$ and $\lambda$ to define $\gamma_k^{\perp}$ 
+in the case when 
+the dense initialization 
+was only used for the
+computation of the constrained minimizer (line 8 of Algorithm 1)
+%shape-changing component 
+--denoted in the legend of plots in
+Figure~\ref{fig:1A} by the absence of an asterisk $ (*)$.
+In this test, the combination of
+$c=1$ and $\lambda=1$  as well as 
+$c=1$ and $\lambda=\frac{1}{2}$
+appear to slightly outperform
+the other two choices for  $\gamma^\perp_k$ in terms of both
+then number of iterations and the total computational time.
+Based on the results in Figure~\ref{fig:1A}, 
+we do not see a reason to prefer either
+combination $c=1$ and $\lambda=1$ or
+$c=1$ and $\lambda=\frac{1}{2}$
+over the other.
+
+Note that for the {\small CUTE}st problems, the full quasi-Newton trial step is accepted
+as the solution to the subproblem
+on the overwhelming
+majority of problems. Thus, if the scaling $\gamma_k^\perp$ is
+used only when the full trial step is rejected, it has less of an affect
+on the overall performance of the algorithm; i.e., the algorithm is less
+sensitive to the choice of $\gamma_k^\perp$.  For this reason, it is not
+surprising that the performance profiles in Figure~\ref{fig:1A}
+for the different values
+of $\gamma_k^\perp$ are more indistinguishable than those in
+Figure~\ref{fig:1B}. 
+
+Finally, similar to the results in the case when the dense initialization
+was used for the entire algorithm (Figure~\ref{fig:1B}), other values of
+$c$ and $\lambda$ did not significantly improve the performance
+provided by $c=1$ and $\lambda=\frac{1}{2}$.
+
+	\begin{figure*}[h!]
+				\begin{minipage}{0.48\textwidth}
+					\includegraphics[width=\textwidth]{iter_ex1_a_9_11_17}
+				\end{minipage}
+				\hfill
+				\begin{minipage}{0.48\textwidth}
+							\includegraphics[width=\textwidth]{time_ex1_a_9_11_17}
+				\end{minipage}
+				\caption{
+Performance profiles comparing \texttt{iter} (left) and \texttt{time} (right)  
+for the different values of $\gamma_k^\perp$
+given in Table~\ref{table:gammaperp-JE}. 
+In the legend, $\widehat{B}_0(c,\lambda)$ denotes the results from 
+using the dense initialization
+with the given values for $c$ and $\lambda$ to define $\gamma_k^\perp$.
+ In this experiment, the dense initialization
+was only used for the computation of the constrained minimizer (line 8 of Algorithm 1).}
+			\label{fig:1A}       
+	\end{figure*}
+		
+
+
+	
+\bigskip
+\noindent
+{\bf Experiment 2.} This experiment was designed to test whether
+it is advantageous to use the dense initialization for all aspects of the
+{\small LMTR} algorithm or just for the computation of the constrained minimizer (line 8 of Algorithm 1).
+For any given trust-region subproblem, using the dense initialization for computing the unconstrained minimizer is computationally
+more expensive than using a diagonal initialization; however, it is possible
+that extra computational time associated with using the dense initialization for all
+aspects of the {\small LMTR} algorithm may yield
+a more overall efficient solver.
+For these tests, we compare the top performer 
+in the case when the dense initialization
+is used for all aspects of {\small LMTR}, 
+i.e., $(\gamma_k^{\perp}(1,\frac{1}{2}))$, to one of the top performers in
+  the case when the dense initialization is used only for the
+computation of the constrained minimizer (line 8 of Algorithm 1),
+  i.e., $(\gamma_k^{\perp}(1,1))$.
+
+	\begin{figure*}[h!]
+				\begin{minipage}{0.48\textwidth}
+					\includegraphics[width=\textwidth]{iter_ex2_9_11_17}
+				\end{minipage}
+				\hfill
+				\begin{minipage}{0.48\textwidth}
+							\includegraphics[width=\textwidth]{time_ex2_9_11_17}
+				\end{minipage}
+				\caption{
+Performance profiles of \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 2.  
+In the legend, 
+the asterisk after
+$\widehat{B}_0(1,\frac{1}{2})^*$
+ signifies that the dense initialization 
+was used for all aspects of the {\small LMTR} algorithm;
+without the asterisk,
+$\widehat{B}_0(1,1)$
+signifies the test where the dense initialization 
+is used only for the computation of the constrained minimizer (line 8 of Algorithm 1).
+}
+			\label{fig:2}       
+	\end{figure*}
+
+The performance profiles comparing
+the results of this experiment
+are presented in Figure \ref{fig:2}.   
+        These results suggest that using the dense initialization
+        with 
+        $\gamma_k^{\perp}(1,\frac{1}{2})$
+	for all aspects of
+	the {\small LMTR} algorithm is more efficient than using dense
+	initializations only for the computation of the constrained minimizer (line 8 of Algorithm 1).
+	In other words, even though using dense initial matrices for the computation of the
+        unconstrained minimizer imposes 
+        an additional computational burden,
+        it generates steps that expedite the convergence of the overall trust-region method.
+
+%\bigskip
+%\noindent {\bf Experiment 3.}  As noted in Section~\ref{subsec:eigen}, a
+%partial {\small SVD} may be used in place of a partial {\small QR}
+%decomposition to derive alternative formulas for computing products with
+%$P_\parallel$.  Specifically, if the {\small SVD} of $\Psi_k^T\Psi_k$ is
+%given by $ \vec{U}\vec{\Sigma}^2 \vec{U}^T $ and the {\small SVD} of
+%$\vec{\Sigma} \vec{U}^T \vec{M}^{-1}_k \vec{U} \vec{\Sigma}$ is given by
+%$\vec{G} \hat{\vec{\Lambda}} \vec{G}^T$, then $P_\parallel$ can be written
+%as follows:
+%\begin{equation}\label{eq:svd-burdakov}
+%        \vec{P}_{\parallel} = \vec{\Psi}_k \vec{U} \vec{\Sigma}^{-1} \vec{G}.
+%\end{equation}
+%
+%Alternatively, in~\cite{Lu92}, $P_\parallel$ is written as
+%\begin{equation}
+%        \label{eq:svd-lu}
+%     P_\parallel = \vec{\Psi}_k \vec{M}^{-1}_k \vec{U} \vec{\Sigma} \vec{G} \hat{\vec{\Lambda}}^{-1}.
+%\end{equation}
+%Note that both of the required {\small SVD} computations for this approach involve $r\times
+%r$ matrices, where $r\le 2m\ll n$.
+%
+%
+%For this experiment, we consider {\small LMTR} with the dense initialization
+%	$\widehat{B}_0(1,\frac{1}{2})^*$ used for all aspects of
+%	the algorithm (i.e., the top performer in Experiment 2).  We compare an
+%	implementation of this method using the {\small QR} decomposition to
+%	compute products with $P_\parallel$ to the two {\small SVD}-based methods.
+%	 The results of this experiment given
+%in Figure \ref{fig:compsvd} suggest that 
+%the {\small QR} decomposition outperforms the two {\small SVD} decompositions
+%in terms of both
+%the number of iterations and time.  (Note that the {\small QR} factorization
+%was used for both Experiments 1 and 2.)
+%  \begin{figure*}[h!]
+%                        \begin{minipage}{0.48\textwidth}
+%                                \includegraphics[width=\textwidth]{iter_ex3_i_10_3_17}
+%                                
+%                        \end{minipage}
+%                        \hfill
+%                        \begin{minipage}{0.48\textwidth}
+%                                                \includegraphics[width=\textwidth]{time_ex3_i_10_3_17}
+%                                
+%                        \end{minipage}
+%                        \caption{Performance profiles of 
+%                        \texttt{iter} (left) and
+%\texttt{time} (right) for Experiment 3
+%                        comparing three formulas for computing
+%                        products with $\vec{P}_{\parallel} $.  In the
+%                        legend, {\normalfont "QR"} denotes results
+%                        using (\ref{eqn-pparallel}), {\normalfont "SVD
+%                        I"} denotes results using (\ref{eq:svd-burdakov}),
+%                        and {\normalfont "SVD II"} denotes results
+%                        using (\ref{eq:svd-lu}).
+%These results used
+%the dense initialization with $\gamma_k^\perp(1,\frac{1}{2})$.}
+%                \label{fig:compsvd}       
+%                \end{figure*}
+
+
+\bigskip
+\noindent
+{\bf Experiment 3.}  In this experiment, we compare the performance of the
+dense initialization
+$\gamma_k^{\perp}(1,0.5)$
+to that of the line-search {\small L-BFGS} algorithm.
+ For this comparison, we used the publicly-available {\small MATLAB}                
+wrapper~\cite{BeckerLbfgs} for the {\small FORTRAN} {\small L-BFGS-B} code     
+developed by Nocedal et al.~\cite{ZhuByrdNocedal97}.  The initialization for {\small L-BFGS-B} is $B_0=\gamma_kI$ where             
+$\gamma_k$ is given by (\ref{eqn-B0-usual}).           
+To make the stopping criterion equivalent to that of {\small L-BFGS-B},
+we modified the stopping criterion of our solver         
+to~\cite{ZhuByrdNocedal97}:                                                   
+      \begin{equation*}                                                       
+               \left\| \vec{g}_k \right\|_{\infty} \le \epsilon.              
+       \end{equation*}                                                         
+The dense initialization was used for all aspects of {\small LMTR}.
+         
+         The performance profiles for this experiment is given in Figure~\ref{fig:exp5}.
+         On this test set, the dense initialization outperforms {\small L-BFGS-B}
+         in terms of both the number of iterations and the total computational time.
+         
+
+  \begin{figure*}[h!]
+                        \begin{minipage}{0.48\textwidth}
+                                \includegraphics[width=\textwidth]{iter_ex5_9_11_17}
+                                
+                        \end{minipage}
+                        \hfill
+                        \begin{minipage}{0.48\textwidth}
+                                                \includegraphics[width=\textwidth]{time_ex5_9_11_17}
+                                                
+                        \end{minipage}
+                        \caption{Performance profiles of 
+                        \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 3 comparing LMTR with the dense initialization
+with
+$\gamma_k^{\perp}(1,\frac{1}{2})$
+ to {\small L-BFGS-B}.}
+                \label{fig:exp5}       
+                \end{figure*}
+
+
+
+
+\bigskip
+\noindent
+{\bf Experiment 4.} In this experiment, we compare {\small LMTR} with
+a dense initialization to {\small L-BFGS-TR}~\cite{BurdakovLMTR16},
+which computes 
+an \LBFGS{} trial step whose length is bounded by a
+trust-region radius.  This method can be viewed as a hybrid \LBFGS{}
+line search and trust-region algorithm 
+because it uses a standard trust-region framework (as {\small LMTR}) but computes
+a trial point by minimizing the quadratic model in the trust region
+along the \LBFGS{} direction.
+In~\cite{BurdakovLMTR16}, it was determined that this algorithm
+outperforms two other versions of \LBFGS{} that use a Wolfe line search.
+(For further details, see~\cite{BurdakovLMTR16}.)
+
+  \begin{figure*}[h!]
+                        \begin{minipage}{0.48\textwidth}
+                                \includegraphics[width=\textwidth]{iter_ex6_9_11_17}
+                                
+                        \end{minipage}
+                        \hfill
+                        \begin{minipage}{0.48\textwidth}
+                                                \includegraphics[width=\textwidth]{time_ex6_9_11_17}
+                                
+                        \end{minipage}
+                        \caption{Performance profiles of 
+                        \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 4
+                        comparing  LMTR with the dense initialization
+with 
+$\gamma_k^{\perp}(1,\frac{1}{2})$
+ to L-BFGS-TR.}
+     
+                \label{fig:exp6}       
+                \end{figure*}
+                
+Figure~\ref{fig:exp6} displays the performance profiles associated with this experiment on
+the entire set of test problems.  For this experiment, the dense initialization 
+with $\gamma_k^{\perp}(1,\frac{1}{2})$ was used
+in all aspects of the {\small LMTR} algorithm.
+In terms of total number of iterations, {\small LMTR} with the dense initialization
+outperformed {\small L-BFGS-TR}; however, {\small L-BFGS-TR} appears to have
+outperformed {\small LMTR} with the dense initialization in computational time.
+
+
+Figure~\ref{fig:exp6} (left) indicates that the quality of the trial
+  points produced by solving the trust-region subproblem exactly using
+  {\small LMTR} with the dense initialization is generally better than in
+  the case of the line search applied to the \LBFGS{} direction.
+ However, Figure~\ref{fig:exp6} (right) shows that {\small LMTR} with the dense
+initialization requires more computational effort than {\small L-BFGS-TR}.
+  For the
+{\small CUTE}st set of test problems, {\small L-BFGS-TR} does not need to
+perform a line search for the majority of iterations; 
+that is, the full quasi-Newton trial step is accepted in a majority of the
+iterations.  Therefore, we also compared the two algorithms on a subset of the
+most difficult test problems--namely, those for which an \emph{active} line
+search is needed to be performed by {\small L-BFGS-TR}.  To this end, we
+select, as in~\cite{BurdakovLMTR16}, those of the {\small CUTE}st problems
+in which the full \LBFGS{} (i.e., the step size of one)
+was rejected in
+at least 30\% of the iterations.  The number of problems in this subset
+is 14.
+The performance profiles associated with this reduced test set are in
+Figure~\ref{fig:exp6-sel}.  On this smaller test set, {\small LMTR} outperforms
+{\small L-BFGS-TR} both in terms of total number of iterations and computational time.
+
+Finally, Figures~\ref{fig:exp6} and~\ref{fig:exp6-sel} suggest that when function
+and gradient evaluations are expensive (e.g., simulation-based applications), {\small
+LMTR} together with the dense initialization
+is expected to be more efficient than {\small L-BFGS-TR}
+since both on both test sets {\small LMTR} with
+the dense initialization requires fewer overall iterations.  Moreover, Figure~\ref{fig:exp6-sel}
+suggests that on problems where
+the \LBFGS{} search direction 
+often does not provide sufficient decrease of the objective function, {\small LMTR} with the 
+dense initialization is expected to perform better.
+
+ 
+ \begin{figure*}[h!]
+                        \begin{minipage}{0.48\textwidth}
+                                \includegraphics[width=\textwidth]{iter_ex6_9_11_17_sel}
+                                
+                        \end{minipage}
+                        \hfill
+                        \begin{minipage}{0.48\textwidth}
+                                                \includegraphics[width=\textwidth]{time_ex6_9_11_17_sel}
+                                
+                        \end{minipage}
+                        \caption{Performance profiles of 
+                        \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 4
+                        comparing  LMTR with the dense initialization
+with 
+$\gamma_k^{\perp}(1,\frac{1}{2})$
+ to L-BFGS-TR
+on the subset of 14 problems for which L-BFGS-TR implements a line search more than $30\% $  of the iterations.}
+                \label{fig:exp6-sel}       
+                \end{figure*}
+
+\bigskip
+\noindent
+{\bf Experiment 5.}  In this experiment, we compare the results of {\small LMTR} using the 
+dense initialization to that of {\small LMTR} using the conventional diagonal initialization $B_0=\gamma_k I$ where $\gamma_k$ is given by  (\ref{eqn-diagInit}).  The dense initialization selected
+was chosen to be the top performer from Experiment 2 (i.e.,
+$\gamma_k^{\perp}(1,\frac{1}{2})$).
+%and the {\small QR} factorization
+%was used to compute products with $P_\parallel$.
+
+  \begin{figure*}[h!]
+                        \begin{minipage}{0.48\textwidth}
+                                \includegraphics[width=\textwidth]{iter_ex4_9_11_17}
+                                
+                        \end{minipage}
+                        \hfill
+                        \begin{minipage}{0.48\textwidth}
+                                                \includegraphics[width=\textwidth]{time_ex4_9_11_17}
+                                                
+                        \end{minipage}
+                        \caption{Performance profiles of 
+                        \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 5 comparing LMTR with the dense initialization
+with
+$\gamma_k^{\perp}(1,\frac{1}{2})$
+ to LMTR with the conventional initialization.}
+                \label{fig:compinitial}      
+\end{figure*}
+
+  \begin{figure*}[h!]
+                        \begin{minipage}{0.48\textwidth}
+                                \includegraphics[width=\textwidth]{iter_ex4_i_10_sel}
+
+                        \end{minipage}
+                        \hfill
+                        \begin{minipage}{0.48\textwidth}
+                                                \includegraphics[width=\textwidth]{time_ex4_i_10_sel}
+                        \end{minipage}
+                        \caption{Performance profiles of 
+                        \texttt{iter} (left) and
+\texttt{time} (right) for Experiment 5 comparing LMTR with the dense initialization
+with
+$\gamma_k^{\perp}(1,\frac{1}{2})$
+ to LMTR with the conventional initialization
+on the subset of 14 problems in which the unconstrained minimizer is rejected at  $30\% $  of the iterations.}
+                \label{fig:compinitial_sel}       
+\end{figure*}
+
+
+From Figure~\ref{fig:compinitial}, the dense initialization with
+$\gamma_k^{\perp}(1,\frac{1}{2})$ outperforms the conventional
+initialization for
+{\small LMTR} in terms of iteration count; however, it is unclear
+  whether the algorithm benefits from the dense initialization in terms of
+  computational time.  The reason for this is that the dense initialization
+  is being used for all aspects of the {\small LMTR} algorithm; in
+  particular, it is being used to compute the full quasi-Newton step
+  $p_u^*$ (see the discussion in Experiment 1), which is typically accepted
+  most iterations on the {\small CUTE}st test set.  Therefore, as in Experiment 5, we
+  compared {\small LMTR} with the dense initialization and the conventional
+  initialization on the subset of 14 problems in which the unconstrained
+  minimizer is rejected at least 30\% of the iterations.  The performance
+  profiles associated with this reduced set of problems are found in
+  Figure~\ref{fig:compinitial_sel}.  The results from this experiment
+  clearly indicate that on these more difficult problems the dense
+  initialization outperforms the conventional initialization in both
+  iteration count and computational time.  

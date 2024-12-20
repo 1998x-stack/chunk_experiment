@@ -1,0 +1,67 @@
+\section{Computational complexity analysis of the SWR-DDM solver for $N$-body equation}\label{APXC}
+\noindent In this appendix, we analyze the computational complexity of the SWR method for both the time independent and time dependent cases. An obvious consequence of the use of a SWR$/$FCI method with orbital basis functions, is that the number of degrees of freedom (dof) is expected to be much smaller compared to finite difference$/$volume methods (FDM$/$FVM) or low degree finite element methods (FEM). For instance, in a subdomain $\Omega_i$, a cell center FVM ($Q_0$) consists of choosing the basis functions as $\big\{{\bf 1}_{V^i_j}({\bf x}_1,\cdots,{\bf x}_N)/|V^i_j|\big\}_{1\leq j\leq N_i}$ with finite volumes $V^i_j$, such that $\cup_{j=1}^{N_i}V_j^i=\tau_h(\Omega_i)$. That is:
+\begin{eqnarray*}
+\psi_i^{(k)}({\bf x}_1,\cdots,{\bf x}_N,t) = \sum_{j=1}^{N_i}\cfrac{1}{|V^i_j|}_j{\bf 1}_{V_j^i}c^i_j(t), \, ({\bf x}_1,\cdots,{\bf x}_N) \in \Omega_i.
+\end{eqnarray*}
+Although these $Q_0$-basis functions are very simple, and that the corresponding matrices are sparse, in order to get a precise description of the wavefunction a ``very'' large number $N_i$ on $\Omega_i$, of finite volumes is necessary.  Slater's orbitals $\big\{v_j^i\big\}_{1\leq j\leq K_i}$, defined above, would typically contain a very large number of finite volumes $V_j^i$ ($N_i \gg K_i$). The consequence is that, although FVM-linear systems are much sparser than Galerkin-FCI systems, they are also of much higher dimension.\\
+Below, we study the overall computational complexity (CC) and the scalability of the of the SWR-DDM in $d$-dimension and for $N$ particles. The analysis will be provided for both the stationary and unstationary $N$-body Schr\"odinger equations. \\
+\\
+\noindent{\bf Computational complexity and scalability for the time-independent $N$-body equation.} From now on, we assume that the computational domain is decomposed in $L^{dN}$-subdomains, $\{\Omega_{p}\}_{1\leq p \leq L^{dN}}$, and that $K_{p}$ (resp. $\mathcal{K}_p$) with $1 \leq p \leq L^{dN}$, local basis functions are selected (resp. the number of degrees of freedom) per subdomain. We denote by $K_{\textrm{Tot}}:=\sum_{p=1}^{dN} K_{p}$ (resp. $\mathcal{K}_{\textrm{Tot}}:=\sum_{p=1}^{dN} \mathcal{K}_{p}$) the total number of local basis functions (resp. degrees of freedom). In the following, we will assume for simplicity that there is a fixed number of local basis functions per subdomain, that is $\mathcal{K}_{p} \approx \mathcal{K}_{\textrm{Tot}}/L^{dN}$, for any $1 \leq p \leq L^{dN}$. Instead of dealing with a full discrete Hamiltonian in $M_{\mathcal{K}_{\textrm{Tot}}}(\R)$, we then rather deal with $L^{dN}$ local discrete Hamiltonians in $M_{\mathcal{K}_{\textrm{Tot}}/L^{dN}}(\R)$. The very first step then consists of constructing the local basis functions, then of the $L^{dN}$ local Hamiltonians, which is pleasingly parallel (perfect distribution of the integral computations). We focus on the complexity and scalability for computing the eigenenergies from these (local or global) discrete Hamiltonians. \\
+\\
+%\noindent{\it Direct-DDM-FCI method.} The full sparse-block discrete Hamiltonian belongs to $M_{\mathcal{K}_{\textrm{Tot}}}(\R)$. The computational complexity CC$^{\textrm{S}}_{\textrm{D-DDM}}$, for computing the smallest eigenvalue with a Krylov-type method is given by
+%\begin{eqnarray}\label{CC1} 
+%\textrm{CC}^{\textrm{(S)}}_{\textrm{D-DDM}} = \mathcal{O}\big(\mathcal{K}_{\tex%trm{Tot}}^{\alpha^{(S)}}\big)
+%\end{eqnarray}
+% with $1< \alpha^{(S)} < 3$. The index $(S)$ refers to the stationary case. The value of $\alpha^{(S)}$ is dependent on the sparsity, the linear system (as inverse iterations are required for the smallest eigenvalues) and eigenvalue problem preconditioners, as well as the spectral distribution of the discrete Hamiltonian. The parallel computation of the eigenvalue (and necessary linear system) solvers is basically based on the matrix-vector product parallelization ({\tt TBD}). \\
+%\\
+ We then recall the main ingredients necessary to study the computational complexity analysis of the SWR method presented in Section \ref{SWR} for solving the time-independent Schr\"odinger equation using the NGF-method. We have decomposed the spatial domain $\Omega \subset \R^{dN}$ in $L^{dN}$ subdomains and solve an imaginary-time-dependent Schr\"odinger equation (or real-time normalized heat equation) on each subdomain. At a given Schwarz iteration $k \in \N$, we denote by $T^{(k)}_{p}$ (resp. $n_{p}^{(k)}$) the imaginary convergence time (resp. number of time iterations to converge) for the NGF-method in the subdomain $\Omega_{p}$, where $1\leq p \leq L^{dN}$. In addition, each imaginary time iteration requires $\mathcal{O}(\mathcal{K}_{p}^{\beta^{\textrm{(S)}}_p})$ operations, where $1 < \beta^{\textrm{(S)}}_p <  3$ (due to sparse linear system solver). The index $(\textrm{S})$ refers to the stationary Schr\"odinger equation. We denote by $k^{\textrm{(cvg)}}$, the total number of Schwarz iterations to reach convergence, as described in Section \ref{SWR}. Notice that $k^{\textrm{(cvg)}}$ is  strongly dependent on the type of transmission conditions \cite{lorin-TBS2}. We get
+\begin{prop} 
+The computational complexity CC$^{\textrm{\textrm{(S)}}}_{\textrm{SWR}}$ of the overall SWR-DDM method describe in Subsection \ref{SWR2} for solving the Schr\"odinger equation in the stationary case is given by
+\begin{eqnarray}\label{CC2} 
+\textrm{CC}^{\textrm{(S)}}_{\textrm{SWR}} = \mathcal{O}\Big(\sum_{k=1}^{k^{\textrm{(cvg)}}}\sum_{p=1}^{L^{dN}}n_{p}^{(k)}\mathcal{K}_p^{\beta^{\textrm{(S)}}_p}\Big).
+\end{eqnarray}
+Assuming that $\beta^{\textrm{(S)}}_p$, (resp. $n_{p}^{(k)}$) is $p$-independent (that is subdomain independent),  and then denoted $\beta^{\textrm{(S)}}$ (resp. $N^{(k)}$), we have
+\begin{eqnarray*}
+\textrm{CC}^{\textrm{(S)}}_{\textrm{SWR}} = \mathcal{O}\Big(\cfrac{\mathcal{K}_{\textrm{Tot}}^{\beta^{\textrm{(S)}}}}{L^{dN(\beta^{\textrm{(S)}}-1)}}\sum_{k=1}^{k^{\textrm{(cvg)}}} N^{(k)}\Big).
+\end{eqnarray*}
+\end{prop}
+Thus
+\begin{itemize}
+\item assuming that the algorithm is implemented on a $P$-core machine, each core will deal with $\approx L^{dN}/P$ subdomains. The message passing load is dependent on the type of transmission conditions, but typically for classical or Robin SWR the communication load will be very light. As a consequence an efficiency ($T/PT_P$) close to $1$ is expected.
+\item we are dealing with $L^{dN}$ linear systems with approximatly $\mathcal{K}_{\textrm{Tot}}/L^{dN}$ degrees of freedom (instead of a unique large system of $\mathcal{K}_{\textrm{Tot}}$ degrees of freedom if a huge discrete Hamiltonian was considered). As $\beta^{\textrm{(S)}}$ is strictly greater than $1$, we benefit from a scaling effect. 
+\end{itemize}
+The SWR-DDM approach will be attractive in the starionary case, if typically
+%\begin{eqnarray*}
+%\mathcal{K}_{\textrm{Tot}}^{\beta^{\textrm{(S)}}} \sum_{k=1}^{k^{\textrm{(cvg)}}} N^{(k)}/L^{dN(\beta^{\textrm{(S)}}-1)} \ll \mathcal{K}_{\t%extrm{Tot}}^{\beta^{\textrm{(S)}}}.
+%\end{eqnarray*}
+\begin{eqnarray*}
+\sum_{k=1}^{k^{\textrm{(cvg)}}} N^{(k)} \ll L^{dN(\beta^{\textrm{(S)}}-1)}
+\end{eqnarray*}
+In order to satisfy this condition i) an implicit solver for the heat equation will allow for a faster convergence (the bigger the time step, the smaller $N^{(k)}$) of the NGF method, appropriate transmission conditions will allow for a minimization of $k^{\textrm{(cvg)}}$.\\
+\\
+\noindent{\bf Computational complexity and scalability for the time-dependent $N$-body equation.} Thanks to the SWR approach and as in the stationary case, the computation of the time-dependent equation, does not involve a full discrete Hamiltonian in $M_{\mathcal{K}_{\textrm{Tot}}}(\C)$, but rather $L^{dN}$ discrete local Hamiltonians in $M_{\mathcal{K}_{\textrm{Tot}}/L^{dN}}(\C)$. Notice that if we use the same Gaussian basis functions in each subdomain, the local potential-free Hamiltonians are identical in each subdomain, and has to be performed only once. The contribution from the interaction potential and laser field in the local Hamitonians, are however subdomain-dependent, but are diagonal operators. We assume that the TDSE is computed from time $0$ to $T>0$. An implicit scheme ($L^2$-norm preserving) is implemented, which necessitates the numerical solution at each time iteration of a sparse linear system. We denote by $n_T$ the total number of time iterations to reach $T$, which will be assumed to be the same for both methods. We deduce that
+\begin{prop}
+The computational complexity $\textrm{CC}^{\textrm{(NS)}}_{\textrm{SWR}}$ of the overall SWR-DDM method describe in Subsection \ref{SWR1} for solving the Schr\"odinger equation in the time dependent case is given by:
+%\noindent{\it Direct-DDM-FCI method.} It is easy to show that in the time-depen%dent case the CC, $\textrm{CC}^{\textrm{(NS)}}_{\textrm{D-DDM}}$ is given by
+%\begin{eqnarray}\label{CC3} 
+%\textrm{CC}^{\textrm{(NS)}}_{\textrm{D-DDM}} = \mathcal{O}\big(n_T\mathcal{\mat%hcal{K}_{\textrm{Tot}}}^{\alpha^{(NS)}}\big)
+%\end{eqnarray}
+% with $1< \alpha^{(NS)} < \alpha^{\textrm{(S)}}<  3$. The index $(NS)$ refers to the non-stationary case.
+%\\
+%\\
+%\noindent{\it Schwarz Waveform Relaxation method.} 
+\begin{eqnarray}\label{CC4} 
+\textrm{CC}^{\textrm{(NS)}}_{\textrm{SWR}} = \mathcal{O}\big(n_Tk^{\textrm{(cvg)}}\sum_{p=1}^{L^{dN}}\mathcal{K}_p^{\beta^{\textrm{(NS)}}_p}\big).
+\end{eqnarray}
+with $1< \beta_p^{\textrm{(NS)}} <  3$, where the index $\textrm{(NS)}$ refers to the non-stationary case. Assuming that the $\beta^{\textrm{(NS)}}_p$  is $p$-independent (that is subdomain independent),  and denoted $\beta^{\textrm{(NS)}}$, we get
+\begin{eqnarray*}
+\textrm{CC}^{\textrm{(NS)}}_{\textrm{SWR}} = \mathcal{O}\Big(n_Tk^{\textrm{(cvg)}}\cfrac{\mathcal{K}_{\textrm{Tot}}^{\beta^{\textrm{(NS)}}}}{L^{dN(\beta^{\textrm{(NS)}}-1)}}\Big).
+\end{eqnarray*}
+\end{prop}
+The SWR-DDM will then be attractive in the non-stationary case, if 
+%\begin{eqnarray*}
+%k^{\textrm{(cvg)}}\mathcal{K}_{\textrm{Tot}}^{\beta^{\textrm{(NS)}}}/L^{dN(\beta^{\textrm{(NS)}}-1)} \ll \mathcal{K}_{\textrm{Tot}}^{\beta^{%\textrm{(NS)}}} \,.
+%\end{eqnarray*}
+\begin{eqnarray*}
+k^{\textrm{(cvg)}} \ll L^{dN(\beta^{\textrm{(NS)}}-1)} \, .
+\end{eqnarray*}

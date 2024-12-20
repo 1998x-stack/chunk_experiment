@@ -1,0 +1,334 @@
+
+\section{Congestion Control: An Adapted SFA Policy \label{sec:congestion_control}}
+
+In this section, we describe an online congestion control policy,
+and analyze its performance in terms of explicit bounds on the flow
+waiting time, as stated in Theorem \ref{thm:congestion} in Section
+\ref{sec:results}. We start by describing the 
+store-and-forward allocation policy (SFA) that is introduced in \cite{proutiere_thesis}
+and analyzed in generality in \cite{bonald2003insensitive}. We describe
+its performance in Section \ref{subsec:SFA}. 
+Section \ref{subsec:congestion_control} details our congestion control 
+policy, which is an adaptation of the SFA policy.
+
+\subsection{Store-and-Forward Allocation (SFA) Policy\label{subsec:SFA}}
+
+We consider a bandwidth-sharing networking operating in continuous
+time. A specific allocation policy of interest is the store-and-forward
+allocation (SFA) policy. 
+
+\medskip
+\noindent\textbf{Model. }Consider a continuous-time network with a set $\text{\ensuremath{\mathcal{L}}}$
+of resources. Suppose that each resource $l\in\mathcal{\mathcal{L}}$
+has a capacity $C_{l}>0.$ Let $\mathcal{J}$ be the set of routes.
+Suppose that $|\mathcal{L}|=L$ and $|\mathcal{J}|=J$.
+Assume that a unit volume of flow on route $j$ consumes an amount
+$B_{lj}\geq0$ of resource $l$ for each $l\in\mathcal{L}, $ where
+$B_{lj}>0$ if $l\in j$, and $B_{lj}=0$ otherwise. The simplest
+case is where $B_{lj}\in\{0,1\},$ i.e., the matrix $B=(B_{lj},\;l\in\mathcal{L},\;j\in\mathcal{J})\in\Real_{+}^{L\times J}$
+is a $0$-$1$ incidence matrix. We denote by $\mathcal{\mathcal{K}}$
+the set of all resource-route pairs $(l,j)$ such that route $j$
+uses resource $l$, i.e., $\mathcal{K}=\left\{ (l,j):\;B_{lj}>0\right\} $;
+assume that $|\mathcal{K}|=K.$
+
+Flows arrive to route $j$ as a Poisson process of rate $\lambda_i$. For a flow of size
+$x$ on route~$j$ arriving at time $t_{\text{start}},$ its completion
+time $t_{\text{end}}$ satisfies 
+\[
+x=\int_{t_{\text{start}}}^{t_{\text{end}}}c(t)dt,
+\]
+where $c(t)$ is the bandwidth allocated to this flow on each link
+of route $j$ at time $t.$ The size of each flow on route $j$ is
+independent with distribution equal to a random variable $X_{j}$
+with finite mean. Let $\mu_{j}=(\E[X_{j}])^{-1},$ and $\alpha_{j}=\frac{\lambda_{j}}{\mu_{j}}$
+be the traffic intensity on route $j.$
+
+Let $N_{j}(t)$ record the number of flows on route $j$ at time $t,$
+and let $\N(t)=(N_{1}(t),N_{2}(t),\ldots,N_{J}(t)).$ Since the service
+requirement follows a general distribution, the queue length process
+$\N(t)$ itself is not Markovian. Nevertheless, by augmenting the
+queue-size vector $\N(t)$ with the residual workloads of the set
+of flows on each route, we can construct a Markov description of the
+system, denoted by a process $\Z(t).$ On average, $\alpha_{j}$
+units of work arrive at route~$j$ per unit time. Therefore, a necessary
+condition for the Markov process $\Z(t)$ to be positive recurrent
+is that 
+\[
+\sum_{j:\;l\in j}B_{lj}\alpha_{j}<C_{l},\quad\forall l\in\mathcal{L}.
+\]
+An arrival rate vector $\blambda=(\lambda_{j}:j\in\mathcal{J})$ is
+said to be admissible if it satisfies the above condition. Given
+an admissible arrival rate vector $\blambda,$ we can define the load
+on resource $l$ as 
+\[
+g_{l}(\blambda)=\left(\sum_{j:\;j\in l}B_{lj}\alpha_{j}\right)/C_{l}.
+\]
+
+We focus on allocation polices such that the total bandwidth allocated
+to each route only depends on the current queue-size vector $\n=(n_{j}:\;j\in\mathcal{J})\in\Int_{+}^{J},$ which represents
+the number of flows on each route. We consider
+a processor-sharing policy, i.e., the total bandwidth $\phi_{j}$
+allocated to route $j$ is equally shared between all $n_{j}$ flows.
+The bandwidth vector $\mathbf{\bphi}(\n)=(\phi_{1}(\n),\ldots,\phi_{J}(\n))$
+must satisfy the capacity constraints
+\begin{equation}
+\sum_{j:\;j\in l}B_{lj}\phi_{j}(\n)\leq C_{l},\qquad\forall l\in\mathcal{L}.\label{eq:capacity_constraint}
+\end{equation}
+
+\smallskip
+\noindent\textbf{Store-and-Forward Allocation (SFA) policy. }The SFA policy
+was first considered by Massouli\'{e} (see page 63, Section 3.4.1 in~\cite{proutiere_thesis}) and
+later analyzed in the thesis of Prouti\`{e}re \cite{proutiere_thesis}.
+It was shown by Bonald and Prouti\`{e}re \cite{bonald2003insensitive}
+that the stationary distribution induced by this policy has a product
+form and is insensitive for phase-type service distributions. Later
+Zachary established its insensitivity for general service distributions
+\cite{zachary2007insensitivity}. Walton \cite{walton2009fairness}
+and Kelly et al.\ \cite{kelly2009resource} discussed the relation
+between the SFA policy, the proportionally fair allocation and multiclass
+queueing networks. Due to the insensitivity property of SFA, the invariant
+measure of the process $\N(t)$ only depends on the parameters $\blambda$
+and $\boldsymbol{\mu}.$ 
+
+We introduce some additional notation to describe this policy. Given
+the vector $\n=(n_{j}:\;j\in\mathcal{J})\in\Int_{+}^{J},$ which represents
+the number of flows on each route, we define the set 
+\begin{align*}
+U(\n) & =\left\{ \m=(m_{lj}:\;(l,j)\in\mathcal{K})\in\Int_{+}^{K}:\;n_{j}=\sum_{l:\;l\in j}m_{lj},\;\forall j\in\mathcal{J}\right\} .
+\end{align*}
+With a slight abuse of notation, for each $\m\in\Int_{+}^{K},$ we
+define $m_{l}:=\sum_{j:\;l\in j}m_{lj}$ for all $l\in\mathcal{L}.$
+We also define quantity
+\[
+{m_{l} \choose m_{lj}:\;j\ni l}=\frac{m_{l}!}{\prod_{j:\;l\in j}(m_{lj}!)}.
+\]
+ For $\n\in\Int_{+}^{J},$ let
+\[
+\Phi(\n)=\sum_{\m\in U(\n)}\prod_{l\in\mathcal{L}}\left({m_{l} \choose m_{lj}:\;j\ni l}\prod_{j:\;l\in j}\left(\frac{B_{lj}}{C_{l}}\right)^{m_{lj}}\right).
+\]
+ We set $\Phi(\n)=0$ if at least one of the components of $\n$ is
+negative. 
+
+The SFA policy assigns rates according to the function $\bphi:\Int_{+}^{J}\rightarrow\Real_{+}^{J},$
+such that for any $\n\in\Int_{+}^{J},$ $\bphi(\n)=(\phi_{j}(\n))_{j=1}^{J},$
+with 
+\[
+\phi_{j}(\n) = \frac{\Phi(\n-\e_{j})}{\Phi(\n)},
+\]
+ where $\e_{j}$ is the $j$-th unit vector in $\Int_{+}^{J}.$
+
+\smallskip
+
+The SFA policy described above has been shown to be feasible, i.e.,
+$\bphi$ satisfies condition (\ref{eq:capacity_constraint}) \cite[Corollary 2]{kelly2009resource},
+\cite[Lemma 4.1]{walton2009fairness}. Moreover, prior work has established
+that the bandwidth-sharing network operating under the SFA policy
+has a product-form invariant measure for the number of waiting
+flows \cite{bonald2003insensitive,walton2009fairness,kelly2009resource,zachary2007insensitivity}, and the measure is insensitive to the flow size distributions~\cite{zachary2007insensitivity,walton2009fairness}. The above work is summarized in the following theorem~\cite[Theorem 4.1]{shah2014SFA}.
+\begin{thm}
+\label{thm:SFA} Consider a bandwidth-sharing network operating under
+the SFA policy described above. If
+\[
+\sum_{j:\;l\in j}B_{lj}\alpha_{j}<C_{l},\quad\forall l\in\mathcal{L},
+\]
+then the Markov process $\Z(t)$ is positive
+recurrent, and $\N(t)$ has a unique stationary distribution $\bpi$ given by
+\[
+\bpi(\n)=\frac{\Phi(\n)}{\Phi}\prod_{j\in\mathcal{J}}\alpha_{j}^{n_{j}},\;\n\in\Int_{+}^{J}, \label{eq:SFA_distribution}
+\]
+ where 
+\[
+\Phi=\prod_{l\in\mathcal{L}}\left(\frac{C_{l}}{C_{l}-\sum_{j:\;l\in j}B_{lj}\alpha_{j}}\right).
+\]
+
+\end{thm}
+By using Theorem \ref{thm:SFA} (also see \cite[Propositions 4.2 and 4.3]{shah2014SFA}),
+an explicit expression can be obtained for $\E[N_{j}],$  the expected number of flows on each route.
+\begin{prop}
+\label{prop:delay_BN}Consider a bandwidth-sharing network operating
+under the SFA policy, with the arrival rate vector $\blambda$ satisfying
+$$\sum_{j:\;l\in j}B_{lj}\alpha_j<C_{l},\;\forall l\in\mathcal{L}.$$
+For each $l\in\mathcal{L},$ let $g_{l}=\left(\sum_{j:\;l\in j}B_{lj}\alpha_j\right)/C_{l}.$
+Then $\N(t)$ has a unique stationary distribution. In particular,
+for each $j\in\mathcal{J},$ 
+\[
+\E[N_{j}]=\sum_{l:\;l\in j}\frac{B_{lj}\alpha_j}{C_{l}}\frac{1}{1-g_{l}}.
+\]
+\end{prop}
+
+\begin{proof}
+	Define a measure $\tilde{\bpi}$ on $\Int_{+}^{K}$ as follows \cite[ Proposition 4.2 ]{shah2014SFA}:
+	for each $\m\in\Int_{+}^{K},$
+	\[
+	\tilde{\bpi}(\m)=\frac{1}{\Phi}\prod_{l=1}^{L}\left({m_{l} \choose m_{lj}:\;j\ni l}\prod_{j:\;l\in j}\left(\frac{B_{lj}\alpha_{j}}{C_{l}}\right)^{m_{lj}}\right).
+	\]
+	It has been shown that $\tilde{\bpi}$ is the stationary distribution
+	for a multi-class network with processor sharing queues \cite[Proposition 1]{kelly2009resource}, \cite[Proposition 2.1]{walton2009fairness}.
+	Note that the marginal distribution of each queue in equilibrium is
+	the same as if the queue were operating in isolation. To be precise,
+	for each queue $l,$ the queue size is distributed as if the queue has Poisson
+	arrival process of rate $g_{l}.$ Hence the size of queue $l,$ denoted
+	by $M_{l},$ satisfies $\E_{\tilde{\bpi}}[M_{l}]=\frac{g_{l}}{1-g_{l}}.$ Let $M_{lj}$
+	be the number of class $j$ customers at queue $l.$ Then by Theorem
+	3.10 in \cite{kelly1979reversibility}, we have
+	\begin{equation}
+	\E_{\tilde{\bpi}}[M_{lj}]=\frac{B_{lj}\alpha_{j}}{\sum_{i:\;l\in i}B_{li}\alpha_{i}}\E_{\tilde{\bpi}}[M_{l}]=\frac{B_{lj}\alpha_{j}}{C_{l}}\frac{1}{1-g_{l}}.\label{eq:Exp_Mlj}
+	\end{equation}
+	
+	
+	Given the above expressions of $\tilde{\bpi}$ and $\bpi$, we can show that $\bpi(\n)=\sum_{\m\in U(\n)}\tilde{\bpi}(\m),$ $\forall\n\in\Int_{+}^{J}$.
+	This fact has been shown by Bonald and Prouti\`{e}re \cite{bonald2004performance}
+	and Walton \cite{walton2009fairness}. Hence we have 
+	\begin{align*}
+	\E_{\bpi}[N_{j}] & =\sum_{k=0}^{\infty}k\left(\sum_{\n\in\Int_{+}^{J}:n_{j}=k}\bpi(\n)\right)=\sum_{k=0}^{\infty}k\left(\sum_{\n\in\Int_{+}^{J}:n_{j}=k}\sum_{\m\in U(\n)}\tilde{\bpi}(\m)\right)\\
+	& =\sum_{k=0}^{\infty}k\left(\sum_{\m\in\Int_{+}^{K}}\Indicator(\sum_{l:\;l\in j}m_{lj}=k)\tilde{\bpi}(\m)\right)\\
+	& =\E_{\tilde{\bpi}} \Big[ \sum_{l:\;l\in j}M_{lj} \Big] \\
+	& =\sum_{l:\;l\in j}\frac{B_{lj}\alpha_{j}}{C_{l}}\frac{1}{1-g_{l}}
+	\end{align*}
+	as desired.
+\end{proof}
+
+We now consider the departure processes of the bandwidth-sharing network. It is a known result that the bandwidth sharing network with the SFA policy is reversible, as summarized in the proposition below. This fact has been observed by Prouti\`{e}re~\cite{proutiere_thesis}, 
+Bonald and Prouti\`{e}re~\cite{bonald2004performance}, and Walton~\cite{walton2009fairness}. 
+Note that Lemma~\ref{lem:poisson} follows immediately from the reversibility property of the network and the fact that flows of each type arrive according to a Poisson process.
+\begin{prop}[Proposition 4.2 in~\cite{walton2009fairness}] \label{prop:reversibility} 
+Consider a bandwidth sharing network operating under SFA. If $\sum_{j:\;l\in j}B_{lj}\alpha_{j}<C_{l},\;\forall l\in\mathcal{L},$ then the network is reversible.
+\end{prop}
+
+
+\subsection{An SFA-based Congestion Control Scheme\label{subsec:congestion_control}}
+
+We now describe a congestion control scheme for a general acyclic
+network. As mentioned earlier, every \emph{exogenous} flow is pushed to the corresponding external buffer upon arrival. The internal buffers store flows that are either transmitted from other nodes or
+moved from the external buffers. We want to emphasize that
+only packets present in the internal queues are eligible
+for scheduling. The congestion control mechanism determines the time
+at which each external flow should be admitted into the network for
+transmission, i.e., when a flow is removed from the external buffer
+and pushed into the respective source internal buffer.  
+
+The key idea of our congestion control policy is as follows. Consider
+the network model described in Section \ref{sec:Model-and-Notation},
+denoted by $\mathcal{N}$. Let $A$ be an $N\times J$ matrix where
+\[
+A_{nj}=\begin{cases}
+1, & \text{if route \ensuremath{j} passes through node \ensuremath{n}}\\
+0, & \text{otherwise.}
+\end{cases}
+\]
+The corresponding admissible region $\Lambda$ given by (\ref{eq:capacity})
+can be equivalently written as 
+\[
+\Lambda=\left\{ \blambda\in\Real_{+}^{J|\mathcal{X}|}:\;A\balpha<\boldsymbol{1}\right\} ,
+\]
+ where \emph{$\balpha=(\alpha_{j},\;j\in\mathcal{J})$ }with\emph{
+$\alpha_{j}:=\sum_{x\in\mathcal{X}}\;x\lambda_{j,x},$ }and $\boldsymbol{1}$
+is an $N$-dim vector with all elements equal to one. 
+
+Now consider a virtual bandwidth-sharing network, denoted by \textbf{$\mathcal{N}_{B}$},\textbf{
+}with $J$ routes which have a one-to-one correspondence with the
+$J$ routes in $\mathcal{N}$. The network $\mathcal{N}_{B}$ has
+$N$ resources, each with unit capacity. The resource-route relation
+is determined precisely by the matrix $A.$ Observe that each resource
+in $\mathcal{N}_{B}$ corresponds to a node in $\mathcal{N}.$ Assume
+that the exogenous arrival traffic of \textbf{$\mathcal{N}_{B}$ }is
+identical to that of $\mathcal{N}$. That is, each flow arrives at
+the same route of $\mathcal{N}$\textbf{ }and\textbf{ $\mathcal{N}_{B}$
+}at the same time. \textbf{$\mathcal{N}_{B}$ }will operate under
+the insensitive SFA policy described in Section \ref{subsec:SFA}. 
+
+\smallskip
+
+\noindent\textbf{Emulation scheme} $E$. Flows arriving at $\mathcal{N}$ will
+be admitted into the network for scheduling in the following way.
+For a flow $f$ arriving at its source node $v_{s}$ at time $t_{f}$,
+let $\delta_{f}$ denote its departure time from \textbf{$\mathcal{N}_{B}$}.
+In the network $\mathcal{N},$ this flow will be moved from the external buffer to the internal queue of node $v_{s}$ at time $\delta_{f}.$
+Then all packets of this flow will simultaneously become eligible
+for scheduling. Conceptually, all flows will be first fed into the
+virtual network \textbf{$\mathcal{N}_{B}$ }before being admitted
+to the internal network for transmission. 
+
+\smallskip
+This completes the description of the congestion control policy. Observe that the centralized controller simulates the virtual network $\mathcal{N}_{B}$ with the SFA policy in parallel, and tracks the departure processes of flows in $\mathcal{N}_{B}$ to make congestion control decisions for $\mathcal{N}$. According to the above emulation scheme $E$, we have the following lemma.
+\begin{lem}
+\label{lem:delay_flow_congestion}Let $D_{B}$ denote the delay of
+a flow $f$ in $\mathcal{N}_{B},$ and $D_{W}$ be the amount of time
+the flow spends at the external buffer in $\mathcal{N}$. Then
+$D_{W}=D_{B}$ surely. 
+\end{lem}
+
+
+
+For each flow type $(j,x)\in\mathcal{T},$ let $D_{B}^{(j,x)} (\blambda)$ denote
+the sample mean of the delays over all type-$(j,x)$ flows in the bandwidth
+sharing network $\mathcal{N}_{B}.$ That is, $D_{B}^{(j,x)} (\blambda) := \limsup_{k\rightarrow\infty}\frac{1}{k}\sum_{i=1}^{k}D_{B}^{(j,x),i} (\blambda),$
+where $D_{B}^{(j,x),i} (\blambda)$ is the delay of the $i$-th type-$(j,x)$
+flow. From Theorem~\ref{thm:SFA} and Proposition~\ref{prop:delay_BN}, we readily deduce the following
+result.
+
+\begin{prop}
+\label{prop:delay_SFA}In the network $\mathcal{\mathcal{N}}_{B},$
+we have 
+
+\[
+D_{B}^{(j,x)} (\blambda)=\sum_{v:v\in j}\frac{x}{1-f_{v}},\quad\text{with probability \ensuremath{1.}}
+\]
+\end{prop}
+
+\begin{proof}
+ Recall that in the network $\mathcal{N}_{B},$ flows arriving on each route are
+further classified by the size. Each type-$(j,x)$ flow
+requests $x$ amount of service, deterministically. It is not difficult to see that properties of the bandwidth-sharing network stated in Section~\ref{subsec:SFA} still hold with the refined classification. We denote by $N_{j,x}(t)$
+the number of type-$(j,x)$ flows at time $t.$ A Markovian description
+of the system is given by a process $\Z(t)$, whose state contains the queue-size
+vector $\N(t)=(N_{j,x}(t),j\in\mathcal{J},x\in\mathcal{X})$ and the residual workloads of the set of flows
+on each route. 
+
+By construction, each resource $v$ in the network $\mathcal{N}_{B}$ corresponds to
+a node $v$ in the network $\mathcal{N},$ with unit capacity. The load $ g_v $ on the resource
+$v$ of $ \mathcal{N}_{B} $ and the load $ f_v $ on node $ v $ of $ \mathcal{N} $ satisfy the relationship 
+\[
+g_{v}=\sum_{v:v\in j}A_{vj}\alpha_{j}=f_{v}.
+\]
+As $\blambda\in\Lambda,$ $f_{v}<1$ for each $v\in\mathcal{V}.$
+By Theorem \ref{thm:SFA}, the Markov process $\Z(t)$ is positive
+recurrent, and $\N(t)$ has a unique stationary distribution. Let $N_{j,x}$
+denote the number of type-$(j,x)$ flow in the bandwidth sharing network
+$\mathcal{N}_{B}$, in equilibrium. Following the same argument as
+in the proof of Proposition \ref{prop:delay_BN}, we have 
+\[
+\E[N_{j,x}]=\sum_{v:\;v\in j}\frac{x\lambda_{j,x}}{1-f_{v}}.
+\]
+
+Consider the delay of a type-$(j,x)$ flow in equilibrium, denoted
+by $\bar{D}_{B}^{(j,x)} (\blambda)$. By applying Little's Law to the stationary
+system concerning only type-$(j,x)$ flows, we can obtain 
+\[
+\E[\bar{D}_{B}^{(j,x)} (\blambda)]=\frac{\E[N_{j,x}]}{\lambda_{j,x}}=\sum_{v:\;v\in j}\frac{x}{1-f_{v}}.
+\]
+
+
+By the ergodicity of the network $\mathcal{N}_{B},$ we have
+\[
+D_{B}^{(j,x) (\blambda)}=\E[\bar{D}_{B}^{(j,x)} (\blambda)],\quad\text{with probability}\;1,
+\]
+thereby completing the proof of Proposition~\ref{prop:delay_SFA}.
+\end{proof}
+
+Equipped with Proposition~\ref{prop:delay_SFA} and Lemma \ref{lem:delay_flow_congestion}, we are now ready to prove Theorem \ref{thm:congestion}.
+\begin{proof}[Proof of Theorem \ref{thm:congestion}] 
+
+By the definition, we have $\frac{1}{1-f_{v}}\leq\frac{1}{1-\rho_{j}(\blambda)}$,
+for each $v\in j.$ Proposition \ref{prop:delay_SFA} implies that, with probability 1,
+\[
+D_{B}^{(j,x)} (\blambda)=\sum_{v:v\in j}\frac{x}{1-f_{v}}\leq\frac{xd_{j}}{1-\rho_{j}(\blambda)},
+\]
+It follows from Lemma \ref{lem:delay_flow_congestion} that $D_{W}^{(j,x)} (\blambda) = D_{B}^{(j,x)} (\blambda).$
+Therefore, we have
+\[
+D_{W}^{(j,x)} (\blambda) \leq\frac{xd_{j}}{1-\rho_{j}(\blambda)},\quad\text{with probability}\;1.
+\] 
+This completes the proof of Theorem~\ref{thm:congestion}.
+\end{proof}
+

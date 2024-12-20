@@ -1,0 +1,556 @@
+%% ==============================================================
+%% ARTICLE DISTRIBUTED UNMIXING 2016
+%% ==============================================================
+%%
+%% ==============================================================
+%\documentclass[11pt,journal,draftcls,a4paper,onecolumn]{IEEEtran}
+\documentclass[journal,final,letterpaper,twoside,twocolumn]{IEEEtran}
+\newcommand{\boolproof}{1} % 0: deterministic, 1: stochastic
+
+%% ==============================================================
+% Affichage et al. pour de nombreux auteurs
+%% ==============================================================
+\makeatletter
+\def\bstctlcite{\@ifnextchar[{\@bstctlcite}{\@bstctlcite[@auxout]}}
+\def\@bstctlcite[#1]#2{\@bsphack
+  \@for\@citeb:=#2\do{%
+    \edef\@citeb{\expandafter\@firstofone\@citeb}%
+    \if@filesw\immediate\write\csname #1\endcsname{\string\citation{\@citeb}}\fi}%
+  \@esphack}
+\makeatother
+
+%% Preamble
+\input{preamble_article}
+\usepackage{pgffor}
+\usepackage[dvipsnames]{xcolor}
+
+% Graphics path
+\graphicspath{{img/}}
+
+% Tikz commands/style
+\usepackage{tikz}
+\usetikzlibrary{shapes,positioning}
+
+\tikzset{data/.style={draw,rectangle,rounded corners = 3pt,thick,fill=black!25}}
+\tikzset{hp/.style={draw,rectangle}} %,dashed
+\tikzset{mlink/.style={very thick,->,>=stealth}}
+\tikzset{hlink/.style={<->,>=stealth,thick,dashed}}
+\tikzstyle{grisEncadre}=[thick, dashed, fill=gray!20] % communication delay
+\tikzstyle{grisFonce}=[fill=gray!100] % computation delay
+
+\tikzstyle{worker}=[draw,rectangle,thick,rounded corners=3pt]
+\tikzstyle{master}=[draw,ellipse,very thick,fill=black!25]
+\tikzstyle{local_variable}=[draw,rectangle,thick,rounded corners=3pt,fill=black!10]
+\newcommand{\rev}[1]{\textcolor{red}{#1}} 
+
+\def\firstToUp#1{\expandafter\firstToUpA#1!!} % https://tex.stackexchange.com/questions/199662/lower-case-first-character
+\def\firstToUpA#1#2!!{\MakeUppercase{#1}#2}
+
+\usetikzlibrary{positioning,spy,calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.14}
+
+%%=================================================
+% Michael Shell trick to allow the use of subcaption without modifying the IEEE caption style
+\makeatletter
+\let\MYcaption\@makecaption
+\makeatother
+
+\usepackage[font=footnotesize]{subcaption}
+
+\makeatletter
+\let\@makecaption\MYcaption
+\makeatother
+
+% Custom subcaption numbering
+\captionsetup[subfigure]{labelformat=simple}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+%%================================================
+
+\input{notations}
+
+%% Title.
+\title{Partially Asynchronous Distributed Unmixing of Hyperspectral Images}
+
+%% Authors
+\author{Pierre-Antoine Thouvenin,~\IEEEmembership{Member,~IEEE}, Nicolas Dobigeon,~\IEEEmembership{Senior Member,~IEEE} and Jean-Yves~Tourneret,~\IEEEmembership{Senior Member,~IEEE}
+
+%% Infos
+\thanks{This work was supported in part by the Hypanema ANR Project no. ANR-12-BS03-003, by the MapInvPlnt ERA-NET MED Project no. ANR-15-NMED-0002-02, by the Thematic Trimester on Image Processing of the CIMI Labex under Grant ANR-11-LABX-0040-CIMI within the Program ANR-11-IDEX-0002-02 and by the Direction G{\'e}n{\'e}rale de l'Armement, French Ministry of Defence.}
+\thanks{This work has been conducted while P.-A. T. was working with the University of Toulouse. N. D. and J.-Y. T. are with the University of Toulouse, IRIT/INP-ENSEEIHT, 31071 Toulouse, France. (e-mail: pierreantoine.thouvenin@gmail.com, \{Nicolas.Dobigeon, Jean-Yves.Tourneret\}@enseeiht.fr}}
+%% ==============================================================
+
+\begin{document}
+\setlength{\textfloatsep}{4pt}
+\setlength{\intextsep}{4pt}
+\setlength{\abovedisplayskip}{5pt}
+\setlength{\belowdisplayskip}{5pt}
+%
+\maketitle
+%
+\begin{abstract} % to be rewritten, mention interest of PALM in practice
+So far, the problem of unmixing large or multitemporal hyperspectral datasets has been specifically addressed in the remote sensing literature only by a few dedicated strategies. Among them, some attempts have been made within a distributed estimation framework, in particular relying on the alternating direction method of multipliers (ADMM). In this paper, we propose to study the interest of a partially asynchronous distributed unmixing procedure based on a recently proposed asynchronous algorithm. Under standard assumptions, the proposed algorithm inherits its convergence properties from recent contributions in non-convex optimization, while allowing the problem of interest to be efficiently addressed. Comparisons with a distributed synchronous counterpart of the proposed unmixing procedure allow its interest to be assessed on synthetic and real data. Besides, thanks to its genericity and flexibility, the procedure investigated in this work can be implemented to address various matrix factorization problems.
+\end{abstract}
+%
+\begin{IEEEkeywords}
+Partially asynchronous distributed estimation, hyperspectral unmixing, non-convex optimization.
+\end{IEEEkeywords}
+
+%% ==============================================================
+%% INTRODUCTION
+%% ==============================================================
+\section{Introduction} \label{sec:intro}
+
+% Hyperspectral unmixing and state-of-the-art approaches
+% -> voir si le nouveau papier de Bolte permet de traiter I-S, beta-divergence
+\IEEEPARstart{A}{cquired} in hundreds of contiguous spectral bands, hyperspectral (HS) images present a high spectral resolution, which is mitigated by a lower spatial resolution in specific applications such as airborne remote sensing. The observed spectra are thus represented as mixtures of signatures corresponding to distinct materials. Spectral unmixing then consists in estimating the reference signatures associated with each material, referred to as endmembers, and their relative fractions in each pixel of the image, referred to as abundances, according to a predefined mixture model. In practice, a linear mixing model (LMM) is traditionally adopted when the declivity of the scene and microscopic interactions between the observed materials are negligible~\cite{Bioucas2012jstars}. Per se, HS unmixing can be cast as a blind source separation problem and, under the above assumptions, can be formulated as a particular instance of matrix factorization.
+
+% Interest of distributed procedures + prior art (literature) resorting to
+For this particular application, using distributed procedures can be particularly appealing to estimate the abundances since the number of pixels composing the HS images can be orders of magnitude larger than the number of spectral bands in which the images are acquired. In this context, distributed unmixing methods previously proposed in the remote sensing literature essentially rely on synchronous algorithms~\cite{Robila2013,Sigurdsson2016,Sigurdsson2017,Tsinos2017} with limited convergence guarantees. A different approach consists in resorting to a proximal alternating linearized minimization (PALM) \cite{Bolte2013,Chouzenoux2016} to estimate the mixture parameters (see, e.g., \cite{Repetti2014,Li2016,Thouvenin2015gretsi} in this context), which leads to an easily distributable optimization problem when considering the update of the abundances, and benefits from well established convergence results.
+
+% Approach considered in this work + first motivation
+While a synchronous distributed variant of the PALM algorithm is particularly appealing to address HS unmixing, this algorithm does not fully exploit the difference in the computing performance of the involved computing units, which is precisely the objective pursued by the numerous asynchronous optimization techniques proposed in the optimization literature (e.g., \cite{Bianchi2013,Liang2014,Chen2015,Lorenzo2015,Facchinei2015,Scutari2017,Yang2016,Pesquet2014,Combettes2016}). For distributed synchronous algorithms, a master node waits for the information brought by all the available computation nodes (referred to as \emph{workers}) before proceeding to the next iteration (e.g., updating a variable shared between the different nodes, see Fig.~\ref{fig:sync}). On the contrary, asynchronous algorithms offer more flexibility in the sense that they allow more frequent updates to be performed by the computational nodes, thus reducing their idleness time. In particular, asynchronous algorithms can lead to a significant speed up in the algorithm computation time by allowing the available computational units (i.e., cores and machines) to work in parallel, with as few synchronizations (i.e., memory locks) as possible~\cite{Peng2016,Davis2016,Cannelli2016}. For some practical problems, there is no master node, and the workers can become active at any time and independently from the other nodes~\cite{Bianchi2016,Davis2016,Cannelli2016}. For other applications, a master node first assigns different tasks to all the available workers, then aggregates information from a given node as soon as it receives its information, and launches a new task on this specific node (see Fig.~\ref{fig:async}). In this partially asynchronous setting, the workers may make use of out-of-date information to perform their local updates~\cite{Combettes2016}. Given the possible advantages brought by the asynchronicity, we propose an asynchronous unmixing procedure based on recent non-convex optimization algorithms. To this end, we consider a centralized architecture as in~\cite{Chang2016}, composed of a master node in charge of a variable shared between the different workers, and $\ntime$ workers which have access to a local variable (i.e., only accessible from a given worker) and a (possibly out-of-date) local copy of the shared variable.
+
+% Discussion on asynchronous algorithms adapted to this context (in theory)
+Asynchronous methods adapted to the aforementioned context include many recent papers, e.g., \cite{Lian2015,Chang2016,Peng2016,Davis2016,Cannelli2016}. For HS image unmixing, Gauss-Seidel optimization schemes have proved convenient to decompose the original optimization task into simpler sub-problems, which can be solved or distributed efficiently~\cite{Wright2015}. We may mention the recently proposed partially asynchronous distributed alternating direction method of multipliers (ADMM) \cite{Chang2016}, used to solve a distributed optimization task reformulated as a consensus problem. However, HS unmixing does not allow traditional block coordinate descent (BCD) methods (such as the ADMM~\cite{Boyd2010,Wang2016}) to be efficiently applied due to the presence of sub-problems which require iterative solvers. In such cases, the PALM algorithm~\cite{Bolte2013} and its extensions~\cite{Frankel2015,Chouzenoux2016}, which are sequential algorithms, combine desirable convergence guarantees for non-convex problems with an easily distributable structure in a synchronous setting. Recently, PALM has been extended to accommodate asynchronous updates~\cite{Davis2016}, and analyzed in a stochastic and a deterministic framework. More specifically, the author in~\cite{Davis2016} considers the general case where all the variables to be estimated are shared by the different workers. However, the explicit presence of a maximum allowable delay in the update steps is problematic, since this parameter is not explicitly controlled by the algorithm. In addition, the residual terms resulting from the allowed asynchronicity have a significant impact on the step-size prescribed to ensure the convergence of the algorithm. In practice, the use of this step-size does not lead to a reduction of the computation time needed to reach convergence, as it will be illustrated in Section~\ref{sec:exp}. From this practical point of view, the algorithm proposed in~\cite{Chang2016}, where the maximum delay is explicitly controlled, appears to be more convenient. However, the use of this ADMM-based algorithm does not ensure that the constraints imposed on the shared variables are satisfied at each iteration, and the sub-problems derived in the context of HS unmixing require the use of iterative procedures.
+Finally, the strategy developed in~\cite{Cannelli2016} allows more flexibility in the allowed asynchronicity, while requiring  slightly more stringent assumptions on the penalty functions when compared to~\cite{Davis2016}.
+
+% Justify the choice of Cannelli2017
+Consequently, this paper proposes to adapt the framework introduced in \cite{Cannelli2016}, which encompasses the system structure described in \cite{Chang2016}, to HS unmixing. Indeed, given the preceding remarks, the framework introduced in \cite{Cannelli2016} appears as one of the most flexible to address HS unmixing in practice. This choice is partly justified by the possible connections between the PALM algorithm and~\cite{Cannelli2016}. Indeed, the PALM algorithm enables a synchronous distributed algorithm to be easily derived for matrix factorization problems, which then offers an appropriate reference to precisely evaluate the relevance of the asynchronicity tolerated by the approach described in~\cite{Cannelli2016}. Another contribution of this paper consists in assessing the interest of asynchronicity for HS unmixing, in comparison with recently proposed synchronous distributed unmixing procedures.
+
+% Paper outline
+The paper is organized as follows. The problem addressed in this paper is introduced in Section~\ref{sec:LMM}. The proposed unmixing procedure is detailed in Section~\ref{sec:algorithm}, along with the assumptions required from the problem structure to recover appropriate convergence guarantees. Simulation results illustrating the performance of the proposed approach on synthetic and real data are presented in Sections~\ref{sec:exp} and~\ref{sec:real_exp}. Finally, Section~\ref{sec:conclusion} concludes this work and outlines possible research perspectives.
+
+\input{sync_fig}
+\input{async_fig}
+
+%\rev{As in recent contributions on distributed hyperspectral unmixing \cite{Tsinos2017, Sigurdsson2017}, Since the work presented in this paper is aimed at studying how recently proposed asynchronous optimization procedures can be adapted to address hyperspectral unmixing problems, the numerical experiments of this paper, conducted on relatively small datasets, is meant to serve as a proof of concept to evaluate the interest of the asynchrony tolerated by the proposed approach, in comparison with synchronous unmixing algorithms.} 
+
+%% ==============================================================
+%% PROBLEM STATEMENT
+%% ==============================================================
+\section{Problem formulation} \label{sec:LMM}
+
+The LMM consists in representing each acquisition by a linear combination of the endmembers $\m_r$, which are present in unknown proportions. Assuming the data are composed of $\nendm$ endmembers, where $\nendm$ is \emph{a priori} known, and considering that the image is divided into $\ntime$ subsets of pixels (see Remark~\ref{remark1} for details) to distribute the data between several workers, the LMM can be defined as
+%
+\begin{equation} \label{eq:model}
+    \Y_\iworker  = \M \A_\iworker + \mathbf{B}_\iworker, \; \iworker \in \{1, \dotsc, \ntime \}
+\end{equation}
+%
+where $\Y_\iworker = \left[ \mathbf{y}_{1,\iworker},\dotsc,\mathbf{y}_{\nbpix,\iworker} \right]$ is an $\nband \times \nbpix$ matrix whose columns are the spectral signatures acquired for each pixel of the $\iworker$th pixel subset. Note that each group can be assigned a different number of pixels if needed. The columns $\m_r$ of the matrix $\M \in \mathbb{R}^{\nband \times \nendm}$ are the different endmembers, and the columns $\a_{n,\iworker}$ of the abundance matrix $\A_\iworker \in \mathbb{R}^{\nendm \times \nbpix}$ gather the proportion of the endmembers within $\y_{n,\iworker}$. Finally, the matrix $\B_\iworker \in \mathbb{R}^{\nband \times \nbpix}$ represents an additive noise resulting from the data acquisition and the modeling errors. The following constraints, aimed at ensuring a physical interpretability of the results, are usually considered
+%
+\begin{equation}
+    \label{eq:constraints}
+    \A_\iworker \succeq \mathbf{0}_{\nendm ,\nbpix}, \quad  \t{\A_\iworker} \mathbf{1}_\nendm  = \mathbf{1}_\nbpix, \quad \M \succeq \mathbf{0}_{\nband ,\nendm}
+\end{equation}
+%
+where $\succeq$ denotes a term-wise inequality. Assuming the data are corrupted by a white Gaussian noise leads to the following data fitting term
+%
+\begin{equation}
+    \label{eq:ft}
+    f_\iworker(\A_\iworker,\M) = \frac{1}{2} \Fnorm{\Y_\iworker - \M \A_\iworker}.
+\end{equation}
+%
+In addition, the constraints summarized in~\eqref{eq:constraints} are taken into account by defining
+%
+\begin{equation}
+g_\iworker(\A_\iworker) = \iota_{\mathcal{A}_\nbpix} (\A_\iworker)
+\end{equation}
+%
+\begin{align}
+    & \mathcal{A}_\nbpix = \Bigl\{ \X \in \mathbb{R}^{\nendm \times \nbpix} \mid {\X}^T\mathbf{1}_\nendm = \mathbf{1}_\nbpix, \X \succeq \mathbf{0}_{\nendm, \nbpix}  \Bigr\} \\
+    & r(\M) = \iota_{ \{\cdot \succeq \mathbf{0}\}} (\M)
+\end{align}
+%
+where $\iota_\mathcal{S}$ denotes the indicator function of a set $\mathcal{S}$ ($\iota_\mathcal{S} (\mathbf{x}) = \mathbf{0}$ if $\mathbf{x} \in \mathcal{S}$, $+\infty$ otherwise). This leads to the following optimization problem
+%
+\begin{equation} \label{eq:problem}
+    (\A^*, \M^*) \in \argmin{\A,\M} \Psi(\A, \M)
+\end{equation}
+%
+with
+%
+\begin{align}
+    & \Psi(\A,\M) = F(\A,\M) + G(\A) + r(\M) \\
+    & F(\A,\M) = \sum_{\iworker = 1}^\nworker f_\iworker(\A_\iworker, \M) , \quad G(\A) = \sum_{\iworker = 1}^\nworker g_\iworker (\A_\iworker).
+\end{align}
+
+With these notations, $\A_\iworker$ denotes a  \emph{local} variable (i.e., which will be accessed by a single worker), and $\M$ is a global variable (i.e., shared between the different workers, see Fig.~\ref{fig:architecture}). More generally, $f_\iworker$ plays the role of a data fitting term, whereas $g_{\iworker}$ and $r$ can be regarded as regularizers or constraints. The structure of the proposed unmixing algorithm, inspired by~\cite{Cannelli2016}, is detailed in the following section.
+
+\begin{remark} \label{remark1}
+    In the initial formulation of the mixing model~\eqref{eq:model}, the indexes $\iworker$ and $\nworker$ refer to subsets of pixels. A direct interpretation of this statement can be obtained by dividing a unique (and possibly large) hyperspectral image into $\nworker$ non-overlapping tiles of smaller (and possibly different) sizes. In this case, each tile is individually unmixed by a given worker. Another available interpretation allows multitemporal analysis to be conducted. Indeed, in practice, distributed unmixing procedures are of particular interest when considering the unmixing of a sequence of several HS images, acquired by possibly different sensors at different dates, but sharing the same materials~\cite{Henrot2016,Thouvenin2015b,Yokoya2017}. In this case, $\iworker$ and $\nworker$ could refer to time instants. Each worker $\iworker$ is then dedicated to the unmixing of a unique HS image acquired at a given time instant. The particular applicative challenge of distributed unmixing of multitemporal HS images partly motivates the numerical experiments on synthetic (yet realistic) and real data presented hereafter.
+\end{remark}
+
+\begin{remark}
+Even if the work reported in this work has been partly motivated by the particular application of HS unmixing, the problem formulated in this section is sufficiently generic to encompass a wider class of matrix factorization tasks, as those encountered in audio processing \cite{Fevotte2007}, machine learning \cite{Tan2013,Gao2014}.
+\end{remark}
+
+% In fact, a convergence analysis for~\eqref{eq:problem} can be easily derived from the analysis of~\eqref{eq:problem} by induction on the number of blocks $I$ and $J$
+
+%% ==============================================================
+%% ASYNCHRONOUS UNMIXING STRATEGY
+%% ==============================================================
+\section{A partially asynchronous unmixing algorithm} \label{sec:algorithm}
+
+    \subsection{Algorithm description}
+    
+    \input{fig_master_slave}
+
+Reminiscent of~\cite{Chang2016}, the proposed algorithm relies on a star topology configuration in which a master node supervises an optimization task distributed between several workers. The master node also updates and transmits the endmember matrix $\M$ shared by the different workers. In fact, the computation time of synchronous algorithms is essentially conditioned by the speed of the slowest worker (see Figs.~\ref{fig:sync} and~\ref{fig:async}). Consequently, relaxing the synchronization requirements (by allowing bounded delays between the information brought by each worker) allows a significant decrease in the computation time to reach convergence, which can scale almost linearly with the number of workers~\cite{Chang2016,Davis2016}. Note that, even though asynchronous optimization schemes may require more iterations than their synchronous counterparts to reach a given precision, allowing more frequent updates generally compensates this drawback in terms of computation time~\cite{Chang2016}.
+
+In the partially asynchronous setting considered, the master node updates the variable shared by the workers once it has received information from at least $\nmworker \ll \ntime$ workers. The new state of the shared variable $\M$ is then transmitted to the $\nmworker$ available workers, which can individually proceed to the next step. As in~\cite{Cannelli2016}, a relaxation step with decreasing stepsizes ensures the convergence of the algorithm (see Algo.~\ref{alg:master}). In order to clarify to which extent the convergence analysis introduced in~\cite{Cannelli2016} is applicable to the present setting, we consider $\nmworker = 1$ in the rest of this paper. However, other values of $K$ could be considered without loss of generality. Details on the operations performed by the master node and each worker are detailed in Algos.~\ref{alg:master} and~\ref{alg:worker} respectively.
+
+\begin{remark}
+\begin{enumerate}[label=(\alph*)]
+\item The parameter $\gamma_k$ is essentially instrumental to ensure the global convergence of the partially asynchronous unmixing algorithm described in this work, following the general framework introduced in \cite{Cannelli2016}. For simplicity, we have directly adopted the expression proposed in \cite{Scutari2017} \cite[Assumption D., p. 18]{Cannelli2016} which has been reported to yield satisfactory results in practice \cite{Scutari2017}. Evaluating the practical interest of different expressions for the relaxation parameters in terms of the convergence speed of the algorithm is an interesting prospect, which is however beyond the scope of this paper.
+%
+\item Note that a synchronous distributed counterpart of Algo.~\ref{alg:master} can be easily derived for Problem~\eqref{eq:problem}, which partly justifies the form chosen for Algo.~\ref{alg:master}. This version consists in setting $\gamma_k = 1$, and waiting for the updates performed by all the workers (i.e., $\nmworker = \nworker$, see~\ref{alg:wait_step} of Algo.~\ref{alg:master}) before updating the shared variable $\M$. This implementation will be taken as a reference to evaluate the computational efficiency of the proposed algorithm in Sections~\ref{sec:exp} and~\ref{sec:real_exp}. 
+\end{enumerate}
+\end{remark}
+
+\input{alg_master}
+
+    \subsection{Parameter estimation} \label{sec:parameter_estimation}
+
+A direct application of the algorithm described in Algo.~\ref{alg:worker} under the constraints~\eqref{eq:constraints} leads to the following update rule for the abundance matrix $\A_{\iworker^k}$
+%
+\begin{align}
+    \label{eq:update_A}
+    \widehat{\A}_{\iworker^k}^k &= \prox_{\iota_{\mathcal{A}_\nbpix}} \biggl( \A_\iworker^{k} - \frac{1}{c_{\Atk}^k} \nabla_{\A_\iworker} f_\iworker \bigl(\A_{\iworker^k}^k,\M^{k - \dtk} \bigr)\biggr)
+\end{align}
+%
+where $\prox_{\iota_{\mathcal{A}_\nbpix}}$ denotes the proximal operator of the indicator function $\iota_{\mathcal{A}_\nbpix}$ (see, e.g., \cite{Combettes2011}), and
+%
+\begin{equation}
+    \nabla_{\A_\iworker} f_\iworker(\A_\iworker,\M) = \t{\M} \bigl(\M\A_\iworker - \Y_\iworker \bigr).
+\end{equation}
+%
+The step-size $c_{\Atk}^k$  is chosen as in the standard PALM algorithm, i.e.,
+%
+\begin{equation}
+    c_{\Atk}^k = L_{\Atk}^k = \enorm{\t{(\M^{k - \dtk})} \M^{k - \dtk}}
+\end{equation}
+%
+where $L_{\Atk}^k$ denotes the Lipschitz constant of $\nabla_{\A_\iworker} f_\iworker(\cdot,\M^{k-\dtk})$ (see \cite[Remark 4 (iv)]{Bolte2013}).
+%
+Note that the projection $\prox_{\iota_{\mathcal{A}_\nbpix}}(\cdot)$ can be exactly computed (see~\cite{Duchi2008,Condat2015} for instance). Similarly, the update rule for the endmember matrix $\M$ is
+%
+\begin{equation}
+    \label{eq:update_M}
+    \widehat{\M}^k = \prox_{\iota_{\{ \cdot \succeq \mathbf{0} \}}} \biggl(\M^k - \frac{1}{c_\M^k} \nabla_{\M} F\bigl( \A^{k+1},\M^k \bigr) \biggr)
+\end{equation}
+%
+with
+%
+\begin{equation}
+    \nabla_{\M} F \bigl(\A,\M \bigr) = \sum_\iworker (\M \A_\iworker - \Y_\iworker) \t{\A_\iworker}
+\end{equation}
+%
+\begin{equation}
+    c_\M^k = L_\M^k = \enorm{\sum_\iworker \A_\iworker^{k+1} \t{(\A_\iworker^{k+1})}}.
+\end{equation}
+%
+and $L_\M^k$ is the Lipschitz constant of $\nabla_{\M} F \bigl(\A^k,\cdot \bigr)$.
+
+\input{alg_worker}
+
+    \subsection{Convergence guarantees} \label{subsec:convergence}
+
+In general, the proposed algorithm requires the following assumptions, based on the convergence results given in \cite[Theorem 1]{Bolte2013} and \cite[Theorem 1]{Cannelli2016}.
+
+\begin{assumption}[Algorithmic assumption] \label{alg_assumption}
+    Let $(\iworker_k,\dtk) \in \{1,\dotsc,\ntime \}\times \{1,\dotsc,\tau \}$ denote the couple composed of the index of the worker transmitting information to the master at iteration $k$, and the delay between the (local) copy $\tilde{\M}^k$ of the endmember matrix $\M$ and the current state $\M^k$ (i.e., $\tilde{\M}^k \triangleq \M^{k - \dtk}$). The allowable delays $\dtk$ are assumed to be bounded by a constant $\tau \in \mathbb{N}^*$. In addition, each couple $(\iworker_k,\dtk)$ represents a realization of a random vector within the probabilistic model introduced in \cite[Assumption C]{Cannelli2016}.
+    %To alleviate notations in the proof proposed in Appendix, we define $d_{k,\iworker} = 0$ whenever $k < 0$.
+\end{assumption}
+
+\begin{assumption}[Inherited from PALM~\cite{Bolte2013}] \label{assumption}~
+    \begin{enumerate}[label=(\roman*)]
+        \item For any $\iworker \in \{1, \dotsc, \ntime\}$, $g_\iworker : \mathbb{R}^{\nendm \times \nbpix} \rightarrow(-\infty, +\infty]$ and $r : \mathbb{R}^{\nband \times \nendm} \rightarrow(-\infty, +\infty]$ are proper, convex lower semi-continuous (l.s.c.) functions; \label{assumption_convexity}
+        %
+        \item For $\iworker \in \{1, \dotsc, \ntime\}$, $f_\iworker : \mathbb{R}^{\nendm \times \nbpix} \times \mathbb{R}^{\nband \times \nendm} \rightarrow \mathbb{R}$ is a $\mathcal{C}^1$ function, and is convex with respect to each of its variables when the other is fixed;
+        %
+        \item $\Psi$, $f_\iworker$, $g_\iworker$, and $r$ are lower bounded, i.e., $\inf_{\mathbb{R}^{\nendm \times \nbpix} \times \mathbb{R}^{\nband \times \nendm}} \Psi > -\infty$, $\inf_{\mathbb{R}^{\nendm \times \nbpix} \times \mathbb{R}^{\nband \times \nendm}} f_\iworker > -\infty$, $\inf_{\mathbb{R}^{\nendm \times \nbpix}} g_\iworker > -\infty$, and $\inf_{\mathbb{R}^{\nband \times \nendm}} r > -\infty$;
+        %
+        \item $\Psi$ is a coercive semi-algebraic function (see~\cite{Bolte2013}); \label{assumption_coercivity}
+        %
+        \item For all $\iworker \in \{1, \dotsc, \ntime\}$, $\z \in \mathbb{R}^{\nband \times \nendm}$, $\x_\iworker~\mapsto~f_\iworker(\x_\iworker,\z)$ is a $\mathcal{C}^1$ function, and the partial gradient $\nabla_{\x_\iworker} f_\iworker(\cdot,\z)$ is Lipschitz continuous with Lipschitz constant $L_{\x_\iworker}(\z)$. Similarly, $\z \mapsto f_\iworker(\x_\iworker,\z)$ is a $\mathcal{C}^1$ function, and the partial gradient $\nabla_{\z} f_\iworker(\x_\iworker,\cdot)$ is Lipschitz continuous, with constant $L_{\z,\iworker}(\x_\iworker)$; \label{assumption:partial_grad}
+        %
+        \item the Lipschitz constants used in the algorithm, i.e., $L_{\xtk^k}(\tilde{\z}^k)$ and $L_{\z,\iworker_k}(\xhtk^k)$ (denoted by $L_{\xtk^k}^k$ and $L_{\z,\iworker_k}^k$ in the following) are bounded, i.e. there exists appropriate constants such that for all iteration index $k$ \label{assumption_lip}
+        %
+        \begin{equation*}
+            0 < L_{\x}^- \leq L_{\xtk}^k \leq L_{\x}^+, \quad 0 < L_{\z}^- \leq L_{\z,\iworker^k}^k \leq L_{\z}^+.
+        \end{equation*}
+        %
+        \item $\nabla F$ is Lipschitz continuous on bounded subsets. \label{assumption_lip_bounded}
+    \end{enumerate}
+\end{assumption}
+
+\begin{assumption}[Additional assumptions] \label{assumption2}
+    \begin{enumerate}[label=(\roman*)]
+        \item For all $\iworker \in \{1, \dotsc, \ntime\}$, $\x_\iworker \in \mathbb{R}^{\nendm \times \nbpix}$,  $\nabla_{\x_\iworker} f_\iworker(\x_\iworker,\cdot)$ is Lipschitz continuous with Lipschitz constant $\Ldxtz(\x_\iworker)$;
+        %
+        \item The Lipschitz constants $\Ldxtkz(\xhtk^k)$ (denoted by $\Ldxtkz^k$ in the following) is bounded, i.e. there exists appropriate positive constants such that for all $k \in \mathbb{N}$:\label{assumption2_lip}
+            \begin{equation*}
+            0 < \Ldxz^- \leq \Ldxtkz^k \leq \Ldxz^+.
+            \end{equation*}
+        %\item $f_\iworker$ is block-convex, i.e., $f_\iworker(\cdot,\x_\iworker)$ and $f_\iworker(\cdot, \z)$ are convex functions for any $\x_\iworker$, $\z$. \label{assumption2_block_convex}
+    \end{enumerate}
+\end{assumption}
+
+Assumption~\ref{alg_assumption} summarizes standard algorithmic assumptions to ensure the convergence of Algo.~\ref{alg:master}. Besides, Assumption~\ref{assumption} gathers requirements of the traditional PALM algorithm~\cite{Bolte2013}, under which the distributed synchronous version of the proposed algorithm can be ensured to converge.
+
+Note that the non-convex problem~\eqref{eq:problem} obviously satisfies Assumptions~\ref{assumption} to~\ref{assumption2} for the functions defined in Section~\ref{sec:LMM} (see~\cite{Bolte2013} for examples of semi-algebraic functions). In particular, the bounds on the Lipschitz constants involved in Assumptions~\ref{assumption}\ref{assumption_lip_bounded} and~\ref{assumption2}\ref{assumption2_lip} are satisfied in practice, considering the fact that hyperspectral unmixing is generally conducted on reflectance data (implying $\Y_\omega \in [0, 1]^{\nband \times \nbpix}$), and given the constraints imposed on $\A_\omega$ and $\M$ respectively.
+
+% \begin{remark}
+% Following \cite[Remark 3 (iii)]{Bolte2013}, the lower bounds required from the Lipschitz constants in Assumptions~\ref{assumption}\ref{assumption_lip} and~\ref{assumption2}\ref{assumption2_lip} are not restrictive.
+% \end{remark}
+
+Under Assumptions~\ref{alg_assumption} to~\ref{assumption2}, the analysis led in~\cite{Cannelli2016} allows the following convergence result to be satisfied.
+
+\begin{proposition} \label{prop_stochastic}
+    Suppose that Problem~\eqref{eq:problem} satisfies the requirements specified in Assumptions~\ref{alg_assumption} to~\ref{assumption2}. Define the sequence $\{ \v^k \}_{k \in \mathbb{N}}$ of the iterates generated by Algos.~\ref{alg:master} and~\ref{alg:worker}, with $\v^k \triangleq (\A^k,\M^k)$ and the parameters in Algo.~\ref{alg:worker} chosen as
+    %
+    \begin{equation*}
+        c_{\xtk}^k = \Lxtk^k, \quad c_\z^k = \Lz^k.
+    \end{equation*}
+    %
+    Then, the following convergence results are obtained:
+    %
+    \begin{enumerate}[label=(\roman*)]
+        \item the sequence $\{ \Psi(\v^k) \}_{k \in \mathbb{N}}$ converges almost surely;
+        %
+        \item every limit point of the sequence $\{ \v^k \}_{k \in \mathbb{N}}$ is a critical point of $\Psi$ almost surely.
+    \end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See sketch of proof in the Appendix.
+\end{proof}
+
+The convergence analysis is conducted using an auxiliary function (introduced in Lemma~\ref{lemma2} in Appendix) to handle asynchronicity~\cite{Davis2016}. The resulting convergence guarantees then allow convergence results associated with the original problem~\eqref{eq:problem} to be recovered.
+
+Besides, the following result ensures a stronger convergence guarantee for the synchronous counterpart of Algo.~\ref{alg:master}.
+
+%% ==============================================================
+%% THEOREM 1 : finite length property
+%% ==============================================================
+% Synchronous version
+\begin{proposition}[Finite length property, following from~\cite{Bolte2013}] \label{prop_deterministic}
+    Suppose that Problem~\eqref{eq:problem} satisfies the requirements specified in Assumptions~\ref{assumption} to~\ref{assumption2}. Define the sequence $\{ \v^k \}_{k \in \mathbb{N}}$ of the iterates generated by the synchronous version of Algo.~\ref{alg:master}, with $\v^k \triangleq (\x^k,\z^k)$ and
+    %
+    \begin{equation*}
+        c_{\xtk}^k = \Lxtk^k, \quad c_\z^k = \Lz^k, \quad \gamma_k = 1, \quad \nmworker = \nworker.
+    \end{equation*}
+    %
+    Then, the following properties can be proved:
+    %
+    \begin{enumerate}[label=(\roman*)]
+        \item the sequence $\{ \v^k \}_{k \in \mathbb{N}}$ has finite length
+        %
+        \begin{equation*}
+            \begin{split}
+                &\sum_{k=1}^{+\infty} \norm{\v^{k+1} - \v^k} < +\infty
+            \end{split}
+        \end{equation*}
+        %
+        where
+        %
+        \begin{equation*}
+            \norm{\v^{k+1} - \v^k} = \sqrt{\Fnorm{\A^{k+1} - \A^k} + \Fnorm{\M^{k+1} - \M^k}};
+        \end{equation*}
+        %
+        \item the sequence $\{ \v^k \}_{k \in \mathbb{N}}$ converges to a critical point of $\Psi$.
+    \end{enumerate}
+\end{proposition}
+
+\begin{proof}
+These statements result from a direct application of \cite[Theorem 1, Theorem 3]{Bolte2013} and \cite[Remark 4 (iv)]{Bolte2013}.
+\end{proof}
+
+Note that an additional volume regularization can be considered, as long as it satisfies the conditions given in~Assumption~\ref{assumption}, and more specifically the convexity Assumption~\ref{assumption}\ref{assumption_convexity}. For instance, the mutual distance between the endmembers introduced in \cite{Berman2004} can be easily accounted for.
+
+%% ==============================================================
+%% EXPERIMENT WITH SYNTHETIC DATA
+%% ==============================================================
+\section{Experiments with synthetic data} \label{sec:exp}
+
+To illustrate the interest of the allowed asynchronicity, we compare the estimation performance of Algo.~\ref{alg:master} to the performance of its synchronous counterpart (described in Section~\ref{sec:algorithm}), and evaluate the resulting unmixing performance in comparison with three unmixing methods proposed in the literature. We propose to consider the context of multitemporal HS unmixing, which is of particular interest for recent remote sensing applications~\cite{Henrot2016,Thouvenin2015b,Yokoya2017}. For this application, a natural way of distributing the data consists in assigning a single HS image to each worker.
+%
+To this end, we generated synthetic data composed of $\ntime = 3$ HS images resulting from linear mixtures of $\nendm \in \left\{3, 6, 9\right\}$ endmembers acquired in $\nband = 413$ bands. The generated abundance maps vary smoothly over time (i.e., from one image to another) to reproduce a realistic evolution of the scene of interest. As in \cite[Section V]{Thouvenin2018}, the abundance maps were obtained by multiplying reference abundance coefficients with trigonometric functions to ensure a sufficiently smooth temporal evolution. For the dataset with $\nendm = 3$, the reference abundance map was obtained by unmixing the Moffett scene (same area as in \cite{Dobigeon2009}). For the datasets composed of $\nendm \in \{6, 9\}$ endmembers, we directly used the synthetic abundance maps introduced in \cite{Plaza2011} as a reference\footnote{Abundance maps available at \url{http://www.umbc.edu/rssipl/people/aplaza/fractals.zip}.}. Each image, composed of $10,000$ pixels, was then corrupted by an additive white Gaussian noise whose variance ensures a signal-to-noise ratio (SNR) of $30$ dB.
+
+Note that the distributed methods were run on a single computer for illustration purposes using the built-in low level distributed computing instructions available in Julia \cite{Bezanson2017} (which provide an MPI-like interface). In this case, the workers are independent processes. 
+
+As is common with many blind unmixing algorithms, the performance of the proposed approach is expected to be limited in cases where the initial endmember matrix does not properly represent the observed materials. This observation essentially results from the nonconvex nature of the problem presently addressed, and is not specific to the proposed approach. To the best of the authors' knowledge, no blind unmixing algorithm can systematically ensure the convergence of the generated iterates to a ``satisfactory'' critical point of the objective function in cases where the initialization is relatively poor.
+
+\input{objective}
+
+    \subsection{Compared methods}
+
+The estimation performance of the proposed algorithm has been compared to those of several unmixing methods from the literature. Note that only the computation times associated with Algo.~\ref{alg:master} and its synchronous version, implemented in Julia~\cite{Bezanson2017}, can lead to a consistent comparison in this experiment. Indeed, some of the other unmixing methods have been implemented in \textsc{Matlab} by their respective authors. In the following lines, implementation details specific to each of these methods are given.
+%
+\begin{enumerate}
+    \item VCA/FCLS: the endmembers are first extracted on each image using the vertex component analysis (VCA) \cite{Nascimento2005}, which requires pure pixels to be present. The abundances are then estimated for each pixel by solving a fully constrained least squares problem (FCLS) using the ADMM algorithm described in~\cite{Bioucas2010};
+    %
+    \item SISAL/FCLS: the endmembers are extracted on each image by the simplex identification via split augmented Lagrangian (SISAL) \cite{Bioucas2009}, and the abundances are estimated for each pixel by FCLS. The tolerance for the stopping rule is set to $10^{-4}$;
+    %
+    \item Proposed method (referred to as ASYNC): the endmembers are initialized with the signatures obtained by VCA on the first image of the sequence, and the abundances are initialized by FCLS. The synchronous and asynchronous algorithms are stopped when the relative decrease of the objective function between two consecutive iterations is lower than $10^{-5}$, with a maximum of 100 and 500 iterations respectively. Its synchronous counterpart is referred to as SYNC. The relaxation parameter $\gamma_k$ $(k \in \mathbb{N}^*)$ is updated as in \cite{Cannelli2016} with $\gamma_0 = 1$ and $\mu = 10^{-6}$ (see Algo. ~\ref{alg:master}). In the absence of any temporal or spatial reglarization, the lexicographically ordered pixels composing the datasets are evenly distributed between $\nworker = 3$ workers;
+    %
+    \item DAVIS~\cite{Davis2016}: this asynchronous algorithm only differs from the previous algorithm, in that no relaxation step is considered, and in the expression of the descent stepsize used to ensure the algorithm convergence. To ensure a fair comparison, it has been run in the same setting as the proposed asynchronous method;
+    %
+    \item DSPLR~\cite{Tsinos2017}: the DSPLR algorithm is considered with the stopping criterion proposed in~\cite{Tsinos2017} (set to $\varepsilon = 10^{-5}$), with a maximum of 100 iterations. The same initialization as the two previous distributed algorithms is used.
+\end{enumerate}
+
+\input{tab_results_synth}
+
+The estimation performance reported in Table~\ref{tab:results_synth} are evaluated in terms of
+%
+\begin{enumerate}[label=(\roman*)] %,resume
+    \item endmember estimation and spectral reconstruction through the average spectral angle mapper (aSAM)
+\end{enumerate}
+%
+\begin{equation}
+    \aSAM(\M) = \frac{1}{\nendm } \sum_{r=1}^\nendm   \arccos \left( \frac{ \mathbf{m}_r^T \widehat{\mathbf{m}}_r }{ \lVert \mathbf{m}_r \rVert_2 \lVert \widehat{\mathbf{m}}_r \rVert_2 } \right)
+\end{equation}
+%
+\begin{equation} \label{eq:aSAM_Y}
+    \aSAM(\Y) = \frac{1}{\nbpix \ntime} \sum_{n,\iworker} \arccos \left( \frac{ \mathbf{y}_{n,\iworker}^T \bigl(\widehat{\M} \hat{\a}_{n,\iworker} \bigr) }{ \lVert \mathbf{y}_{n,\iworker} \rVert_2 \lVert \widehat{\M} \hat{\a}_{n,\iworker} \rVert_2 } \right);
+\end{equation}
+%
+\begin{enumerate}[label=(\roman*),resume]
+    \item abundance estimation through the global mean square error (GMSE) \vspace{-0.2cm}
+    %
+    \begin{align}
+        \GMSE(\A)  & = \frac{1}{\ntime \nendm \nbpix} \sum_{\iworker=1}^\ntime \lVert \A_\iworker - \widehat{\A}_\iworker \rVert_{\text{F}}^2;
+    \end{align}
+    %
+    \item quadratic reconstruction error (RE)
+    \begin{align}
+        \label{eq:RE}
+        \RE &= \frac{1}{\ntime \nband \nbpix} \sum_{\iworker=1}^\ntime \lVert \Y_\iworker - \widehat{\M} \widehat{\A}_\iworker \rVert_{\text{F}}^2.
+    \end{align}
+\end{enumerate}
+
+\input{time_series}
+
+	\subsection{Results}
+
+The results reported in Table~\ref{tab:results_synth} correspond to a single trial of the different algorithms. More precisely, the results reported for VCA/FCLS are representative of the results obtained over multiple runs, which have not been observed to vary significantly from one run to another. A similar observation has been made for multiple runs of the asynchronous algorithms (ASYNC and DAVIS) whose performance does not change significantly over different runs for the simulation setting adopted in this paper, both in terms of estimation accuracy and computation time.
+
+\begin{itemize}
+    \item \textbf{Endmember estimation:} the proposed asynchronous algorithm leads to competitive endmember estimation for the three synthetic datasets (in terms of aSAM and RE), notably in comparison with its synchronous counterpart. We can note that the DSPLR algorithm yields interesting estimation results for $\nendm = 3$, which however significantly degrade as $\nendm$ increases. This partly results from the matrix inversions involved in the update steps of~\cite{Tsinos2017}, which remain relatively sensitive to the conditioning of the involved matrices, and consequently to the choice of the regularization parameter of the augmented Lagrangian.
+    %
+    \item \textbf{Abundance estimation:} the synchronous PALM algorithm leads to the best abundance estimation results, even in the absence of any additional regularization on the spatial distribution of the abundances. In this respect, we can note that the performance of PALM and its asynchronous version is relatively similar, and consistently outperforms the other unmixing methods.
+    %
+    \item \textbf{Overall performance:} the performance measures reported in Table~\ref{tab:results_synth} show that the proposed distributed algorithm yields competitive estimation results, especially in terms of the required computational time when compared to its synchronous counterpart. To be more explicit, the evolution of the objective function versus the computation time shows the interest of the allowed asynchronicity to speed up the unmixing task, as illustrated in Fig.~\ref{fig:objective} (the computation time required by Algo.~\ref{alg:master} is almost 4 times lower than the one of its synchronous counterpart).
+\end{itemize}
+
+Note that even though the SYNC and ASYNC algorithms start from the same initial point, there is no guarantee that both methods converge to the same critical point, which essentially accounts for the differences in the results reported for both methods in Table~\ref{tab:results_synth}. For the asynchronous algorithms, another potential source of variability comes from the variations in the order the updates are performed from one run to another. For the simulation setting adopted in this work, such variations have not been observed to lead to significant differences in the estimation results.
+
+%% ==============================================================
+%% EXPERIMENT WITH REAL DATA
+%% ==============================================================
+\section{Experiments with real data} \label{sec:real_exp}
+
+In practice, as emphasized earlier, distributed unmixing procedures are of particular interest when considering the unmixing of large HS images, or of a sequence of HS images acquired by possibly different sensors at different time instants~\cite{Henrot2016,Thouvenin2015b,Yokoya2017}, referred to as multitemporal HS (MTHS) images. The unmixing of two large real HS images is first proposed, whereas the application to MTHS images essentially motivates the last example addressed in this section. The experiments have been conducted in the same setting as in the previous section (the pixels composing the datasets are evenly distributed between $\Omega = 3$ workers).
+
+	\subsection{Description of the datasets}
+
+        \paragraph{Cuprite dataset (single HS image)}
+the first dataset considered in this work consists of a $190 \times 250$ subset extracted from the popular Cuprite dataset. In this case, reference abundance maps are available from the literature (see for instance~\cite{Nascimento2005,Miao2007}). After removing water-absorption and low SNR bands, $189$ out of the $224$ spectral bands initially available were exploited in the subsequent unmixing procedure. The data have been unmixed with $\nendm = 10$ endmembers based on prior studies conducted on this dataset~\cite{Nascimento2005,Miao2007}.
+
+        \paragraph{Houston dataset (single HS image)}
+the second dataset considered hereafter was acquired over the campus of the University of Houston, Texas, USA, in June 2012~\cite{Debes2014}. The $152 \times 108$ scene of interest is composed of $144$ bands acquired in the wavelength range \SIrange{380}{1050}{\nano\metre}. The data have been unmixed with $\nendm = 4$ endmembers based on prior studies conducted on this dataset~\cite{Drumetz2016}.
+
+        \paragraph{Mud lake dataset (MTHS images)}
+we finally consider a real sequence of AVIRIS HS images acquired between 2014 and 2015 over the Mud Lake, located in the Lake Tahoe region (California, United States of America)\footnote{The images from which the interest of interest is extracted are freely available from the online AVIRIS flight locator tool at \url{http://aviris.jpl.nasa.gov/alt_locator/}.}. The $100 \times 100$ scene of interest is in part composed of a lake and a nearby field displayed in Fig.~\ref{fig:cube}. The images have been unmixed with $\nendm = 3$ endmembers based on results obtained from prior studies conducted on these data~\cite{Thouvenin2015b,Thouvenin2015TR}, and confirmed by the results of the noise-whitened eigengap algorithm (NWEGA) \cite{Halimi2016} reported in Table~\ref{tab:tab_ega}. After removing the water absorption bands, 173 out of the 224 available spectral bands were finally exploited.
+
+	\subsection{Results}
+	
+	\input{tab_ega}
+
+Given the absence of ground truth for the different datasets (except the indications available in the literature for the Cuprite scene~\cite{Nascimento2005,Miao2007}), the estimation results obtained by the proposed algorithms are compared to the other unmixing procedures in terms of the RE and the aSAM introduced in~\eqref{eq:aSAM_Y} and~\eqref{eq:RE} respectively (see Table~\ref{tab:results_real}). The consistency of the estimated abundance maps, reported in Figs.~\ref{fig:A_cuprite} to~\ref{fig:A3_real}, is also considered when analyzing the different results.
+
+	   \paragraph{Cuprite dataset}
+except for the DSPLR algorithm, whose scale indeterminacy leads to results somewhat harder to interpret for this dataset, the results obtained by the different methods are relatively similar, both in terms of the estimated abundance maps and the recovered endmembers (see Fig.~\ref{fig:A_cuprite}).
+
+	   \paragraph{Houston dataset}
+the distributed algorithms yield abundance maps in agreement with the VCA/FCLS and SISAL algorithms (see Fig.~\ref{fig:A_houston}). We can note that the algorithms SYNC, ASYNC and DSPLR provide a more contrasted abundance map for the concrete than VCA/FCLS, SISAL/FCLS and DAVIS.
+
+	   \paragraph{Mud lake dataset}
+the algorithms SYNC, DAVIS~\cite{Davis2016} and ASYNC lead to particularly convincing abundance maps, in the sense that the abundances of the different materials (containing soil, water and vegetation) are consistently estimated for each time instant, contrary to VCA/FCLS, SISAL/FCLS and DSPLR (see Figs.~\ref{fig:A1_real} to~\ref{fig:A3_real}). At $\iworker = 5$, VCA/FCLS and SISAL, which have been applied  individually to each image of the sequence, appear to be particularly sensitive to the presence of outliers in the area delineated in red in Fig.~\ref{fig:cube5} (see~\cite{Thouvenin2015b} for a previous study on this dataset). This observation is further confirmed by the abundance maps reported at $t = 5$ in Figs.~\ref{fig:A1_real} and~\ref{fig:A2_real}, as well as the corresponding endmembers reported in Fig.~\ref{fig:real_endm} (whose amplitude is significantly greater than 1). This sensitivity notably results from the fact that each scene has been analyzed independently from the others in this specific context (note that the results would have been worse if these methods were applied to all the images at once).
+
+
+	   \paragraph{Global reconstruction performance}
+the performance measures reported for the different datasets in Table~\ref{tab:results_real} confirm the interest of the PALM algorithm and its asynchronous variant for unmixing applications. The asynchronous variant can be observed to lead to a notable reduction of the computation time (see also Fig.~\ref{fig:objective_real}), while allowing a reconstruction performance similar to the classical PALM algorithm to be obtained.
+
+\input{tab_results_real}
+%% ==============================================================
+%% CONCLUSION AND FUTURE WORK
+%% ==============================================================
+\section{Conclusion and future work} \label{sec:conclusion}
+
+This paper focused on a partially asynchronous distributed unmixing algorithm based on recent contributions in non-convex optimization~\cite{Cannelli2016,Chang2016,Davis2016}, which proves convenient to address large scale hyperspectral unmixing problems. Under relatively standard conditions, the proposed approach inherits from the convergence guarantees studied in~\cite{Cannelli2016}, and from those of the traditional PALM algorithm~\cite{Bolte2013,Chouzenoux2016} for its synchronous counterpart. Evaluated on synthetic and real data, the proposed approach provided competitive estimation results, while significantly reducing the computation time to reach convergence. From a computational point of view, implementing a fully functional, large scale asynchronous unmixing algorithm and assessing its scalability with respect to the volume of data involved is an interesting prospect. As with any distributed algorithm, the computation time required by the proposed method
+is expected to decrease linearly with the number of workers assigned to the unmixing task until the cost of the master/worker communications is comparable to the cost of the estimation task conducted on each worker. Future research perspectives also include the extension to different network topology as in~\cite{Pesquet2014,Bianchi2016}, or the use of variable metrics as described in~\cite{Repetti2014,Chouzenoux2014,Chouzenoux2016,Frankel2015}.
+% voir si application possible en présence d'un autre terme d'attaches aux données (à voir)
+
+
+%% ==============================================================
+%% APPENDIX
+%% ==============================================================
+\begin{appendix}
+\input{proof}
+\end{appendix}
+
+\input{real_abundances_cuprite}
+\input{real_abundances}
+\input{real_endm}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[t]{0.32\textwidth}
+    	\centering	\includegraphics[keepaspectratio,width=0.99\textwidth]{33}
+    	\caption{Cuprite}
+    	\label{fig:f_cuprite}
+    \end{subfigure}
+    %
+    \begin{subfigure}[t]{0.32\textwidth}
+    	\centering	\includegraphics[keepaspectratio,width=0.99\textwidth]{34}
+    	\caption{Houston}
+    	\label{fig:f_houston}
+    \end{subfigure}
+    %
+    \begin{subfigure}[t]{0.32\textwidth}
+    	\centering	\includegraphics[keepaspectratio,width=0.99\textwidth]{35}
+    	\caption{Mud lake}
+    	\label{fig:f_mud}
+    \end{subfigure}
+    %
+    \caption{Evolution of the objective function for the synthetic datasets, obtained for DAVIS~\cite{Davis2016}, Algo.~\ref{alg:master} and its synchronous version until convergence.}
+    \label{fig:objective_real}
+\end{figure*}
+
+
+%%\section*{Acknowledgements}
+%%We thank ... from ...(Institute)... for discussions related to ... and feedback about this manuscript.
+
+\bibliographystyle{IEEEtran}
+\bibliography{strings_all_ref,all_ref}
+
+%% ==============================================================
+%% BIOGRAPHIES
+%% ==============================================================
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=3in,clip,keepaspectratio]{photo_Thouvenin}}]{Pierre-Antoine Thouvenin} (S'15--M'17) received the state engineering degree in electrical engineering from ENSEEIHT, Toulouse, France, and the M.Sc. degree in signal processing from the National Polytechnic Institute of Toulouse (INP Toulouse), both in 2014, as well as the PhD degree in Signal Processing from the INP Toulouse in 2017. Since September 2017, he has been working as a post-doctoral research associate within the Biomedical and Astronomical Signal Processing (BASP) group, Heriot-Watt University, Edinburgh, UK. His research interests include statistical modeling, optimization techniques and hyperspectral unmixing.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=3in,clip,keepaspectratio]{photo_Dobigeon}}]{Nicolas Dobigeon} (S'05--M'08--SM'13) received the state engineering degree in electrical engineering from ENSEEIHT, Toulouse, France, and the M.Sc. degree in signal
+processing from the National Polytechnic Institute of Toulouse (INP Toulouse), both in June 2004, as well as the Ph.D. degree and Habilitation {\`a} Diriger des Recherches in Signal Processing from the INP Toulouse in 2007 and 2012, respectively.
+He was a Post-Doctoral Research Associate with the Department of Electrical Engineering and Computer Science, University of Michigan, Ann Arbor, MI, USA, from 2007 to 2008.
+
+Since 2008, he has been with the National Polytechnic Institute of Toulouse (INP-ENSEEIHT, University of Toulouse) where he is currently a Professor. He conducts his research within the Signal and Communications Group of the IRIT Laboratory and he is also an affiliated faculty member of the Telecommunications for Space and Aeronautics (T{\'e}SA) cooperative laboratory.
+His current research interests include statistical signal and image processing, with a particular interest in Bayesian inverse problems with applications to remote sensing, biomedical imaging and genomics.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=3in,clip,keepaspectratio]{photo_Tourneret}}]{Jean-Yves Tourneret} (SM'08) received the ing{\'e}nieur degree in electrical engineering from the Ecole Nationale Sup{\'e}rieure d'Electronique, d'Electrotechnique, d'Informatique, d'Hydraulique et des T{\'e}l{\'e}communications (ENSEEIHT) de Toulouse in 1989 and the Ph.D. degree from the National Polytechnic Institute from Toulouse in 1992. He is currently a professor in the university of Toulouse (ENSEEIHT) and a member of the IRIT laboratory (UMR 5505 of the CNRS). His research activities are centered around statistical signal and image processing with a particular interest to Bayesian and Markov chain Monte-Carlo (MCMC) methods. He has been involved in the organization of several conferences including the European conference on signal processing EUSIPCO'02 (program chair), the international conference ICASSP'06 (plenaries), the statistical signal processing workshop SSP'12 (international liaisons), the International Workshop on Computational Advances in Multi-Sensor Adaptive Processing CAMSAP 2013 (local arrangements), the statistical signal processing workshop SSP'2014 (special sessions), the workshop on machine learning for signal processing MLSP'2014 (special sessions). He has been the general chair of the CIMI workshop on optimization and statistics in image processing hold in Toulouse in 2013 (with F. Malgouyres and D. Kouam{\'e}) and of the International Workshop on Computational Advances in Multi-Sensor Adaptive Processing CAMSAP 2015 (with P. Djuric). He has been a member of different technical committees including the Signal Processing Theory and Methods (SPTM) committee of the IEEE Signal Processing Society (2001-2007, 2010-present). He has been serving as an associate editor for the IEEE Transactions on Signal Processing (2008-2011, 2015-present) and for the EURASIP journal on Signal Processing (2013-present).
+\end{IEEEbiography}
+
+\end{document}

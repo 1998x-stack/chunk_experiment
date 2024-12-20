@@ -1,0 +1,119 @@
+\section{Preliminaries and Related Work}
+
+Let $G=(V, E)$ be an undirected, unweighted graph with $n = |V|$ vertices
+and $m = |E|$ edges.
+$G$ can contain self-loops and parallel (duplicate) edges, and is not necessarily connected.
+We assume a global ordering of the vertices to break ties when necessary.
+If the degree of every vertex is bounded by a constant, we say the graph
+is \defn{bounded-degree}.
+%
+We use standard definitions of \emph{spanning tree}, \emph{spanning
+  forest}, \emph{connected component}, \emph{biconnected component},
+\emph{articulation points}, \emph{bridge}, and
+\emph{$k$-edge-connectivity} on a graph, and
+\emph{lowest-common-ancestor} (LCA) query on a tree (as summarized in
+Appendix~\ref{sec:appendix-prelim}).
+%
+Let $[n] = \{1, 2, \cdots, n\}$ where $n$ is a positive integer.
+
+%An event happens with high probability (\whp{}) if it happens with the probability of $1-n^{-\Omega(1)}$.
+
+\myparagraph{Computation models}
+Sequential algorithms are analyzed using the \defn{\seqmodel}
+model~\cite{blelloch2016efficient}, comprised of an infinitely large
+asymmetric memory and a small \local{} memory.  The cost of writing to
+the large memory is $\wcost$, and all other operations have unit cost.
+This models practical settings in which there is a small amount of
+standard symmetric memory (e.g., a cache) in addition to the asymmetric memory.
+
+For parallel algorithms, we use the \defn{\ourmodellong\ (NP)} 
+model~\cite{BBFGGMS16}, which is designed to characterize both parallelism
+and memory read-write asymmetry. In the model, a
+computation is represented as a (dynamically unfolding) directed acyclic graph (DAG) of tasks that
+begins and ends with a single task called the root. A task consists of
+a sequence of instructions that must be executed in order. Tasks can
+also call the Fork instruction, which creates child tasks that can be
+run in parallel with each other. The memory in the \ourmodel\ Model
+consists of (i) an infinitely large
+\emph{asymmetric} memory accessible to all tasks and (ii) a small
+task-specific \emph{\local} memory accessible only to a task
+and its children.  The cost of writing to large memory is
+$\wcost$, and all other operations have unit cost.
+%
+%The primary metrics for algorithms in the \ourmodel\ Model are work
+%and \depth. 
+The \defn{work} $W$ of a computation is the sum of the costs of the
+operations in its DAG and the \defn{\depth{}} $D$ is the
+cost of the DAG's most expensive path.  Under mild assumptions,
+Ben-David et al.~\cite{BBFGGMS16} showed that a work-stealing scheduler
+can execute an algorithm whose \ourmodel{} complexity is
+work $W$ and \depth{} $D$ in $O(W / P + \wcost D)$ expected time
+on $P$ processors.
+
+In both models,
+%Because the emphasis in this paper is on reducing the number of writes
+%to the asymmetric memory, we will often explicitly report a bound on
+the number of \defn{writes} refers only to the writes to the
+asymmetric memory, ignoring any writes to \local{}
+memory.  All reads and writes are to words of size $\Theta(\log n)$
+for input size $n$.  The size of the \local{} memory is measured in
+words.
+
+\myparagraph{Related Work}
+Read-write asymmetries have been studied in the context of NAND Flash
+chips~\cite{BT06, Eppstein14, Gal05, ParkS09}, focusing on how to
+balance the writes across the chip to avoid uneven wear-out of
+locations.  Targeting instead the new memory technologies, read-write
+asymmetries have been an active area of research in the
+systems/database/architecture communities (e.g., \cite{Arulraj17sigmod,
+  Bausch2012damon, Chen11, Chen2015pvldb, ChoL09, LeeIMB09,
+  Oukid2016sigmod, Viglas12, Viglas14, wang2013wade, yang:iscas07,
+  zhou2012writeback, ZhouZYZ09, ZWT13}).  In the algorithms community,
+Blelloch et al.~\cite{BFGGS15} defined several sequential and parallel
+computation models that take asymmetric read-write costs into account,
+and analyzed and designed sorting algorithms under these models.
+Their follow-up paper~\cite{blelloch2016efficient} presented
+sequential algorithms for various problems that do better than their
+classic counterparts under asymmetric read-write costs, as well as
+several lower bounds.  Carson et al.~\cite{carson2016write} presented
+write-efficient sequential algorithms for a similar model, as well as
+write-efficient parallel algorithms (and lower bounds) on a
+distributed memory model with asymmetric read-write costs, focusing on
+linear algebra problems and direct N-body methods.  Ben-David et
+al.~\cite{BBFGGMS16} proposed a nested-parallel model with asymmetric
+read-write costs and presented write-efficient, work-efficient, low
+\depth{} (span) parallel algorithms for reduce, list contraction, tree
+contraction, breadth-first search, ordered filter, and planar convex
+hull, as well as a write-efficient, low-\depth{} minimum spanning tree
+algorithm that is nearly work-efficient.  Jacob and
+Sitchinava~\cite{jacob2017} showed lower bounds for an asymmetric
+external memory model.  In each of these models, there is a small
+amount of \local{} memory that can be used to help minimize the number
+of writes to the large asymmetric memory.
+
+Although graph decompositions with various properties have been shown
+to be quite useful in a large variety of applications (e.g.,
+\cite{abraham2012using, awerbuch1985complexity, awerbuch1992low, awerbuch1989network, blelloch2014nearly, linial1991decomposing, miller2013parallel}),
+to our knowledge none of the prior
+algorithms provide the necessary conditions for processing graphs
+with a sublinear number of writes in order to answer connectivity/biconnectivity
+queries (targeting instead other decomposition properties
+that are unnecessary in our setting, such as few edges between
+clusters).  For example, Miller et al.'s~\cite{miller2013parallel}
+parallel low-diameter decomposition algorithm requires at least
+$\Omega(n)$ writes (even if a write-efficient BFS~\cite{BBFGGMS16} is
+used), and provides no guarantees on the partition sizes.  Similarly,
+algorithms for size-balanced graph partitioning (e.g.,
+\cite{andreev2004balanced}) require $\Omega(n)$ writes.  Our
+\implicit{} construction is reminiscient of sublinear time algorithms
+for estimating the number of connected
+components~\cite{Berenbrink2014ipl, chazelle2005siam} in its use of
+BFS from a sample of the vertices.  However, their BFS is used for a
+completely different purpose (approximate counting of $1/n_u$, the
+inverse of the size of the connected component containing a sampled
+node $u$), does not provide a partitioning of the nodes into clusters
+(two BFS from different nodes can overlap), and cannot be used for
+connectivity or biconnectivity queries (two BFS from the same
+connected component may be truncated before intersecting).
+
+

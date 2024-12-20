@@ -1,0 +1,258 @@
+\section{Part-based Grasp Planning}
+\label{sec-planning}
+
+Grasp planning is performed on the skeletonized and segmented object parts which are analyzed in order to search for feasible grasping poses. 
+Therefore, we define several grasping strategies which take into account different local object properties such as the local surface shape or the skeleton structure.
+\autoref{fig:planning} depicts an overview of the grasp planning process. 
+%Therefore, a skeleton vertex $v_i$ is selected and several local object properties are evaluated if one or multiple grasping strategies are applicable. If so, grasping hypotheses are generated according to the grasping strategy. 
+\begin{figure}[tbh]%
+\centering
+\includegraphics[width=1\columnwidth]{fig/grasp-planning/planning-overview4.pdf}
+\caption{The grasp planning process.}%
+\label{fig:planning}%
+\end{figure}
+The grasp planner is shown in \autoref{alg:grasp-planner}. First, a skeleton vertex $v_i$ is selected by processing all skeleton segments and returning all end point vertices, branching vertices, and vertices on connecting segments according to the skeleton vertex distance parameter $d$, which defines the minim distance between two consecutive skeleton vertices. 
+Then, we  iterate through all defined grasping strategies and calculate several local object properties. The properties $P$ are used to evaluate if the grasping strategy $gs$ is applicable to the vertex $v_i$. If so, several grasping hypotheses are created. For each hypothesis $h$, a validity check is applied to ensure the correctness of the result. All valid hypotheses are finally stored and returned.
+
+{\SetAlgoNoLine%
+\begin{algorithm}[htb]
+	\caption{Grasp Planner}
+	\label{alg:grasp-planner}
+	Input:\\
+	\, skeleton $S$, grasping strategies $GS$, vertex dist. $d$\\
+	Output:\\
+	\, set of valid grasps $G$ \\
+\hrulefill \\
+	$G = \emptyset$\\
+	\While{$(!\text{timeout}() \land \text{verticesAvailable}())$}%|G|<n)$ }
+	{
+		$v_i = \text{nextSkeletonVertex}(S, d)$\\
+		\ForAll{$(gs \in GS)$}
+		{
+			$P = \text{calculateLocalObjectProperties}(v_i, gs, S)$\\
+			\If{$(\text{evaluateGraspingStrategy}(gs, P))$}
+			{
+				$H = \text{generateGraspingHypotheses}(v_i, gs, P)$\\
+				\ForAll{$(h \in H)$}
+				{
+					\If{$(\text{isValid}(h))$}
+					{
+						$G = G \bigcup \{h\}$
+					}
+				}
+			
+			}
+		}
+	}
+	\Return $G$
+\end{algorithm}
+}
+
+\subsection{Local Object Properties}
+
+To verify that a grasping strategy is applicable, we define several local object properties which can be derived from a skeleton vertex $v = (s,P)$:
+
+\begin{itemize}
+\item \textbf{Vertex Type} $P_T$ : Identifies the type of vertex $P_T \in \{connection, endpoint, branch\}$. 
+\item \textbf{Grasping Interval} $P_I$: Starting from $v$, $P_I$ includes all outgoing skeleton sub graphs until either a branching or endpoint vertex is reached or a maximum length is travelled on the corresponding graph. Hence, $P_I = \{SG_0, \ldots, SG_s\}$ contains the sub graphs $SG \subset S$ starting from $v$ resulting in $|P_I| = 1$ for endpoint vertices, $|P_I| = 2$ for connecting vertices and $|P_I| > 2$ for branching vertices. Depending on the evaluated strategy, the maximum path length is set to half of the robot hand's width (power grasps) or to the width of one finger (precision grasp).
+This information is of interest to determine if a connection segment offers enough space for applying a grasp.
+%
+In addition, the curvature $\kappa$ of each point on the grasping interval needs to be limited in order to avoid sharp edges which are difficult to capture in terms of aligning the hand for grasp planning. Hence, a sub graph is cut if the curvature at a specific skeleton point is too high.
+The curvature at a skeleton point $s$ is defined as
+\begin{equation*}
+\kappa(s) = \frac{|| s' \times s'' ||}{||s' ||^3},
+\end{equation*}
+with the first and second derivatives $s'$ and $s''$ which can be derived by numerical differentiation~\cite{casey1996exploring}. 
+
+%\item \textit{Grasp Type} $P_G$: Specifies which grasp type $P_G \in \{power, precision\}$ is applicable. If $P_T=connection$, the skeleton neighborhood on the corresponding segment of $v$ is analyzed to determine the minimum distance on the skeleton path to the segment border. If the distance is below a threshold (half of the hand width for power grasps, width of one finger for precision grasps), the corresponding grasp type is supported. On skeleton endpoints, both grasp types are applicable and we do not allow grasps on branching vertices in order to reduce the complexity.
+\item \textbf{Local Surface Shape} $P_{SS}$: $P_{SS}$ describes the local surface of the object by providing several parameters. First, we reduce the complexity of the analysis of the local object shape by introducing a grasping plane onto which the associated surface points of $P_I$ are projected. The plane is defined by the skeleton point $s$ and the normal parallel to the tangent in $s$.
+The considered surface points cover all associated surface points of the skeleton vertices in $P_I$ (see \autoref{fig:grasping-interval}).
+
+\begin{figure}[tbh]%
+\centering
+\includegraphics[width=0.48\columnwidth]{fig/grasp-planning/GraspingInterval1.png}
+%\hspace{1em}
+\includegraphics[width=0.48\columnwidth]{fig/grasp-planning/GraspingPlane3.png}
+\caption{Left: Based on a skeleton vertex $v$ (shown in green), a grasping interval $P_I$ is depicted. The red planes define the borders of $P_I$ and the associated surface points of $P_I$ are visualized as red points. On the right, the grasping plane is depicted in green and the projected surface points are shown in red. The corresponding eigenvectors of the projected surface points are visualized as red and green arrows.}%
+\label{fig:grasping-interval}%
+\end{figure}
+
+The projected surface points are analyzed by applying a principal component analysis to determine the eigenvalues $\lambda_1, \lambda_2$ and the eigenvectors $ev_1, ev_2$. In the following, $\lambda_2$ is used to identify the local thickness of the object.
+For further processing, the ratio $r = \frac{\lambda_1}{\lambda_2}$ is calculated and a threshold $t_r$ is used to distinguish between round and rectangular surface shapes. Throughout this work, we use $t_r = 1.2$.
+\begin{equation}
+shape = \begin{cases}
+     round & \text{if } r < t_r \\
+     rectangular & \text{otherwise }
+   \end{cases}
+\label{eq:shape-form}
+\end{equation}
+Finally, the local surface shape is represented through the 5-tuple $P_{SS} = (\lambda_1, \lambda_2, ev_1, ev_2, shape)$.
+
+\end{itemize}
+
+
+\subsection{Grasping Strategies}
+
+Our approach allows for setting up a variety of grasping strategies based on the available local and global object information. In the following, we describe several grasping strategies which can be used to generate \textit{precision} and \textit{power} grasps on connection and endpoint parts of the skeleton. To evaluate if a grasping strategy $gs$ can be applied, the local object properties are analyzed as described in \autoref{tab:GraspingStrategies}.
+\begin{table*}[t]
+  \centering
+\begin{tabular}{| R{3.3cm} | M{0.5cm} | M{1.0cm} | M{2.5cm} | M{1.3cm} | M{2.2cm} | M{2.2cm} |}
+  \hline			
+ \textbf{Grasping Strategy} & \textbf{Nr.} & $\mathbf{P_T}$ 	&  \textbf{Interval Length in} $\mathbf{P_I}$ & \textbf{Shape} &  $\mathbf{\lambda_1}$ &  $\mathbf{\lambda_2}$\\
+	\hline
+\multirow{2}{3.3cm}{\textit{Precision Grasp on Connecting Segments}} 	& 1a & con. 	& $\geq fingerwidth$					&	round 	
+& n/a & $ [pre_2^-,pre_2^+]$\\ \cline{2-7}
+
+																																			& 1b & con. 	& $\geq fingerwidth$					&	rect. 	
+& $ [pre_1^-,pre_1^+]$ & $ [pre_2^-,pre_2^+]$\\
+\hline	
+
+\multirow{2}{3.3cm}{\textit{Power Grasp on Connecting Segments}}  		&	2a & con. 	& $\geq 0.5 \cdot handwidth$	&	round 
+& n/a & $ [pow_2^-,pow_2^+]$\\ \cline{2-7}
+
+																																			& 2b & con. 	& $\geq 0.5 \cdot handwidth$	&	rect. 
+& $ >pow_1^-$ & $ [pow_2^-,pow_2^+]$\\
+\hline			
+
+\textit{Precision Grasp on Endpoint Vertices } 										& 3 & endpt. 		& n/a 												&	round, rect. 
+& n/a & $ [pre_2^-,pre_2^+]$\\
+\hline
+
+\textit{Power Grasp on Endpoint Vertices} 												& 4 &  endpt. 		& n/a 												&	round, rect. 	
+& n/a & $ [pow_2^-,pow_2^+]$\\
+\hline
+\end{tabular}
+\caption{Grasping strategies are defined according to several local object properties.}\label{tab:GraspingStrategies}
+\end{table*}
+%\todo{3a und 3b round, rectangular, 4a 4b round recangular}
+
+The grasping strategies can be interpreted as follows:
+\begin{enumerate}
+\item \textbf{Precision Grasp on Connecting Segments:}
+This strategy is applied on a vertex of a connection segment, which means that exactly two skeleton intervals are available in $P_I$. 
+The length of each interval has to be at least $fingerwidth$ resulting in an 
+accumulated length of the local object skeleton intervals of two times the width of an finger which is reasonable for applying precision grasps. In addition, we distinguish between \textit{round} and \textit{rectangular} shapes of the local object surface.
+For \textit{round} shaped objects, we evaluate if the local object thickness, identified by $\lambda_2$ is within the range $[pre_2^-,pre_2^+]$. In case the shape is \textit{rectangular}, we additionally check if the local object length $\lambda_1$ is within $[pre_1^-, pre_1^+]$ in order to bias the decision towards power grasps on objects which provide a reasonable depth. % (see \autoref{fig:plane-grasps}).
+
+\item \textbf{Power Grasp on Connecting Segments:}
+Similar to the precision grasp strategy, we analyze the length of both skeleton intervals in $P_I$ for a given vertex of a connection segment.
+%This strategy is applied on connection segments which means that two skeleton intervals are available in $P_I$. 
+The length of each interval has to be at least $0.5 \cdot handwidth$ in order to be able to apply a power grasp.
+In addition, we distinguish between \textit{round} and \textit{rectangular} shapes of the local object surface.
+For \textit{round} shaped objects, we evaluate if the local object thickness, identified by $\lambda_2$, is within the range $[pow_2^-,pow_2^+]$. In case the shape is \textit{rectangular}, we need to exclude small objects and therefore we additionally check if the local object length $\lambda_1$ is larger than $pow_1^-$.
+%The effects of the local object properties are schematically depicted in \autoref{fig:plane-grasps}.
+%
+%\begin{figure}[tbh]%
+%\centering
+%\includegraphics[height=0.15\textheight]{fig/grasp-planning/GrasPlanner-ObjectProperties-precision.pdf}
+%\includegraphics[height=0.15\textheight]{fig/grasp-planning/GrasPlanner-ObjectProperties-power.pdf}
+%\caption{Precision and Power Grasps on connecting segments: Analysis of local object properties according to the grasping plane.}%
+%\label{fig:plane-grasps}%
+%\end{figure}
+
+\item \textbf{Precision Grasp on Endpoint Vertices:}
+This strategy is applied on endpoints of the skeleton structure. Similar to the grasping strategies on connecting segments, the local object shape is interpreted based on the properties of the grasping plane. The length of the local object shape has to be within the range $[pre_2^-,pre_2^+]$ in order to be able to apply a precision grasp.
+\item \textbf{Power Grasp on Endpoint Vertices:}
+Power grasps are applied on endpoints if the local object length is within $[pow_2^-,pow_2^+]$.
+%This strategy is applied if $P_T = connection$, the length of both skeleton intervals in $P_I$ is at least $fingerwidth$, and the local thickness of the segment is within a range $l_{precision}< \lambda_2 < u_{precision}$. In our experiments, we set $l_{precision} = 0.1cm$ and $u_{precision} = 2cm$.
+%
+%
+%\textbf{Power Grasp on Endpoint Segments}\\
+%The strategy if selected if $P_T = endpoint$ and $l_{power} < \lambda_2 < u_{power}$.
+%
+%
+%\textbf{Precision Grasp on Endpoint Segments}\\
+%The strategy if selected if $P_T = endpoint$ and $l_{precision} < \lambda_2 < u_{precision}$.
+\end{enumerate}
+
+
+
+%%%%% parameter details for Armar-3
+%In our experiments, we set the parameters $pre_1^- = 0.1cm$, $pre_1^+ = 4cm$, $pre_2^- = 0.1cm$, $pre_2^+ = 2cm$, $pow_1^- = 4cm$, $pow_2^- = 2cm$,  $pow_2^+=6cm$  to specify the applicable grasping volume for power and precision grasps.
+ 
+\subsection{Grasping Hypotheses}
+From each grasping strategy several grasping hypotheses are derived and evaluated for correctness (collision-free and force closure) in order to validate the generated grasp.
+
+\textbf{Grasp Center Points:}
+For each hand model, we define a grasp center point (GCP) for precision and power grasps, identifying the grasping center point and the approaching direction \cite{Asfour2008b}. The $GCP_{pre}$ and $GCP_{pow}$ for the robotic hand of ARMAR-III is depicted in \autoref{fig:gcp-armar}. The approach direction is the z-Axis of the depicted coordinate system (visualized in blue).
+
+\begin{figure}[t!]%
+\centering
+\includegraphics[width=0.4\columnwidth]{fig/grasp-planning/gcp_precision2.png}
+%\hspace{1.5cm}
+\includegraphics[width=0.4\columnwidth]{fig/grasp-planning/gcp_power2.png}
+\caption{The grasp center points of the ARMAR-III hand for precision and power grasps.}%
+\label{fig:gcp-armar}%
+\end{figure}
+
+\textbf{Building Grasping Hypotheses:} For a given skeleton vertex $v$, all valid grasping strategies are evaluated and a set of grasping hypotheses is derived. Therefore, a set of potential approach directions and corresponding hand poses is determined as follows.
+
+\begin{itemize}
+\item \textit{Hand Orientation:} The \textit{shape} entry of the Local Surface Shape property $P_{SS}$ results in the generation of different approach directions. 
+In case of a \textit{round} local surface, the approach direction is uniformly sampled around the skeleton point $s$. In this case, the approach directions are perpendicular to the skeleton tangent in $s$ for connecting segments and aligned with the skeleton tangent for endpoints. 
+%
+If the local object shape evaluates to \textit{rectangular}, four approach directions are built to align the robot hand according to the eigenvectors $ev_1$ and $ev_2$.
+%
+In \autoref{fig:approach}, the generated approach directions for one endpoint and one skeleton point on a connection segment are depicted for \textit{round} (left) and \textit{rectangular} (right) local surface properties. In both figures, the approach direction is projected along the negative approach direction onto the object surface. It can be seen that a \textit{round} local surface results in uniformly sampled orientations (in this example, there are eight directions generated for an endpoint, respectively 16 for a skeleton point on a connecting segment). The right figure shows how a \textit{rectangular} local surface results in two approach directions for an endpoint and four approach directions for a skeleton point on a connection segment.
+%
+Based on the skeleton points, the set of approach directions and the hand approach vector of the GCP, a set of hand orientations is computed which are used to position the hand in the next step.
+
+\begin{figure}[t!]%
+\centering
+\includegraphics[width=0.46\columnwidth]{fig/grasp-planning/flashlight-approach2.png}
+\includegraphics[width=0.42\columnwidth]{fig/grasp-planning/wood-approach.png}
+\caption{The generated approach directions are depicted for an endpoint with local surface properties \textit{round} (left) and \textit{rectangular} (right). In addition, the approach directions for one skeleton point on a connecting segment are depicted for \textit{round} and \textit{rectangular} local surface properties.}%
+\label{fig:approach}%
+\end{figure}
+
+\item \textit{Hand Position:} The initial position of the hand is derived from the skeleton point $s$. This position is extended to full 6D hand poses by combining it with all computed hand orientations of the preceding step.
+
+\item \textit{Retreat Movement:} To generate a valid grasping hypothesis, the hand model is moved backwards (according to the approach direction) until a collision-free pose is detected. This procedure is aborted if the movement exceeds a certain length. 
+\end{itemize}
+
+In \autoref{fig:spraybottle-endpoint} and \autoref{fig:spraybottle-connection} the grasping interval, the grasping plane and a generated grasp are depicted for an endpoint vertex and a connection segment respectively.
+
+\begin{figure}[th!]%
+\centering
+\includegraphics[width=0.28\columnwidth]{fig/grasp-planning/GraspingSpraybottle3.png}\hspace{2mm}
+\includegraphics[width=0.27\columnwidth]{fig/grasp-planning/GraspingSpraybottle2.png}\hspace{1mm}
+\includegraphics[width=0.26\columnwidth]{fig/grasp-planning/GraspingSpraybottle1b.png}
+\caption{(a) The grasping interval together with all associated surface points for a skeleton end point. (b) The grasping plane together with the projected surface points. (c) A generated grasp based on the grasping strategy 1b.}%
+\label{fig:spraybottle-endpoint}%
+\end{figure}
+
+
+\begin{figure}[t!]%
+\centering
+\includegraphics[width=0.19\columnwidth]{fig/grasp-planning/GraspingSpraybottle6.png}\hspace{5mm}
+\includegraphics[width=0.28\columnwidth]{fig/grasp-planning/GraspingSpraybottle5.png}
+\includegraphics[width=0.25\columnwidth]{fig/grasp-planning/GraspingSpraybottle7b.png}
+%\includegraphics[width=0.27\columnwidth]{fig/grasp-planning/GraspingSpraybottle6.png}
+%\includegraphics[width=0.38\columnwidth]{fig/grasp-planning/GraspingSpraybottle5.png}
+%\includegraphics[width=0.32\columnwidth]{fig/grasp-planning/GraspingSpraybottle7b.png}
+\caption{(a) The grasping interval together with all associated surface points for a skeleton point on a connection segment. (b) The grasping plane together with the projected surface points. (c) A generated grasp based on the grasping strategy 3.}%
+\label{fig:spraybottle-connection}%
+\end{figure}
+
+
+\begin{figure*}[ht!]%
+\centering
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/clamp-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/mustard-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/comet-bleach-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/allankey-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/cutter2-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/brush-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/screwdriver-grasps.png}
+\includegraphics[height=0.13\textheight]{fig/grasp-planning/spraybottle-grasps2.png}
+\caption{Results of the skeleton based grasp planner with several objects of the KIT and YCB object databases. The red dots and the green lines depict the approach movements of the corresponding grasp.}%
+\label{fig:results-grasps}%
+\end{figure*}
+
+\subsection{Validation of Grasping Hypotheses}
+
+All generated grasping hypotheses are evaluated by closing the fingers, determine the contacts on the object model and by determining if the contacts result in a force-closure grasp. In addition, the quality of the grasp in terms of the grasp wrench space $\epsilon$ value is computed. For grasp stability analysis we employ the methods provided by the Simox library \cite{Vahrenkamp12b}.
+All force closure grasps are stored in the set $G$ of valid grasps.
+In \autoref{fig:results-grasps} the resulting set of grasps are depicted for several objects of the KIT object model database \cite{Kasper12} and the Yale-CMU-Berkeley (YCB) Object and Model Set \cite{Calli2015}. Note, that the object models were generated based on real-world point cloud data, i.e. no artificial shapes are used for grasp planning. 
+The resulting grasps are visualized by projecting the GCP onto the surface according to the corresponding approach direction. The orientation of the grasp is visualized via a green bracket.
+A selection of the generated grasps for different hands is additionally shown in \autoref{fig:results-hands}.

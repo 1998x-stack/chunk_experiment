@@ -1,0 +1,171 @@
+%!TEX root = main.tex
+%\vspace{-0.2cm}
+\section{Experiments}
+%\vspace{-0.3cm}
+% \subsection{Performance on CQA}
+\label{sec:exp1}
+
+
+
+
+
+Since there is little effort to use answer sets in question classification, we did not find any suitable datasets which are publicly available. 
+We collected two datasets ourselves and also used two other well-known ones. %datasets in our experiments.   
+These datasets are summarized in Table~\ref{tb:data}. 
+\Insurance is a private dataset we collected from a car insurance company's website.
+Each question is classified into  319 classes with corresponding answer data.
+All questions which belong to the same category share the same answers. 
+The \DMV dataset is collected from New York State the \DMV's FAQ website. %We will make this data publicly available in the future.
+The \Yahoo~Ans dataset is only a subset of the original publicly available \Yahoo~Answers dataset \cite{Fleming,Shah:2010:EPA:1835449.1835518}. % which is \href{http://webscope.sandbox.yahoo.com/catalog.php?datatype=l}{publicly available}.
+Though not very suitable for our framework, 
+we still included the frequently used \TREC dataset (factoid question type classification) for comparison.
+
+% The descriptions of each dataset are as follows:
+
+% \begin{description}
+% \item[$\bullet$ \TREC] The \TREC dataset\footnote{\tiny http://cogcomp.cs.illinois.edu/Data/QA/QC/} is a factoid question classification dataset. 
+% The task is to classify each question into one of the 6 different question types \cite{Li:2002:LQC:1072228.1072378}. 
+% The reason we include this factoid questions dataset is to show the effectiveness of the proposed method in an frequently used dataset even there is no categorized answer sets available.
+
+% \item[$\bullet$ \Insurance] This is a private dataset which we collected from a car insurance company's website.
+% Each question is classified into the 319 possible classes with corresponding answer data. 
+% All questions which belongs to the same category share the same answers. 
+% %Due to the insurance policies are different in various of scenarios, we carefully defined 319 categories. 
+% All answers are generated manually. Most questions have multiple assigned labels.
+
+% \item[$\bullet$ \DMV dataset] We collected this dataset from New York State \DMV's FAQ website. We will make this data publicly available in the future.
+
+% \item[$\bullet$ \Yahoo Ans] The \Yahoo! Answers dataset \cite{Fleming,Shah:2010:EPA:1835449.1835518} is a publicly available dataset.\footnote{\tiny http://webscope.sandbox.yahoo.com/catalog.php?datatype=l} There are more than 4 million questions with answers. 
+% For simplicity reasons, we only randomly sample 8,871 questions from the complete dataset. 
+% There are 27 top level categories across different domains. 
+% To make our task more realistic and challenging, we test the proposed model with respect to the subcategories and there are 678 classes.
+% \end{description}
+
+
+
+
+
+
+
+
+
+
+
+We only compare our model's performance with CNNs for two following reasons: we consider our ``group sparsity''
+as a modification to the general CNNs for grouped feature selection. 
+This idea is orthogonal to any other CNN-based models and 
+can be easily applied to them; 
+in addition, as discussed in Sec.~\ref{sec:intro}, 
+we did not find any other model in comparison with solving question classification tasks with answer sets.
+
+%% The datasets we use in the experiments require the label information for both questions and answers. 
+%% Besides that, similar with websites' FAQ section, all the questions which belong to the same category share the same answer sets.
+%% Among the above the four datasets, only the \Insurance and \DMV datasets are suitable for our model.
+%% The questions which fall into the same category have different answers in \Yahoo dataset. 
+
+There is crucial difference between the \Insurance and \DMV datasets on one hand and the \Yahoo set on the other.
+In \Insurance and \DMV, all questions in the same (sub)category share the same answers,
+whereas \Yahoo provides individual answers to each question.
+
+\begin{table}[t]
+\centering
+\scalebox{0.75}{
+\begin{tabular}{ |l|l|l|l|l|l|c| }
+\hline
+            Datasets& $C_t$ &  $C_s$ &  $N_{data}$   & $N_{test}$ & $N_{ans}$ & Multi-label\\ 
+\hline
+                \TREC    &  6  &    $50$   & 5952   &  500   & - & No\\
+\hline
+               \Insurance  & - & 319      &  1580  &    303    & 2176 & Yes  \\
+\hline
+                \DMV     &  8   &  47 & 388   &  50  & 2859 & Yes\\
+\hline
+                 \Yahoo Ans      & 27  &  678       &  8871  &  3027  & 10365  & No \\
+\hline
+\end{tabular}
+}
+%\vspace{-0.1cm}
+\caption{Summary of datasets. $C_t$ and $C_s$ are the numbers of top-level and sub- categories, resp.
+%and $C_s$ is the number of sub-categories. 
+%Note we only do top level classification on \TREC. 
+$N_{\mathrm{data}}$, $N_{\mathrm{test}}$, $N_{\mathrm{ans}}$ are the sizes of data set, test set, and answer set, resp.
+Multilabel means each question can belong to multiple categories.}
+\label{tb:data}
+%\vspace{-0.1cm}
+\end{table}
+
+
+
+
+
+\begin{table}%[!htbp]
+\centering
+\scalebox{0.8}{
+\begin{tabular}{|c|rrr|r r|r|}
+\hline
+\multirow{2}{*}{} & \multirow{2}{*}{\!\!\TREC\!\!} &\multirow{2}{*}{\!\!\!\sc Insur.\!\!} & \multirow{2}{*}{\!\!\!\DMV\!\!}
+& \multicolumn{3}{c|}{\Yahoo dataset}\\
+\cline{5-7}
+ & & & & sub & top & unseen \\
+%\cline{5-7}
+\hline
+CNN$^\dagger$  & 93.6 & 51.2& 60& 20.8& 53.9&47\\
+%\hline
++sparsity$^\ddagger$   & 93.2 & 51.4& 62& 20.2& 54.2&46\\
+\hline
+\hline
+$\vecW_R$ & 93.8& 53.5& 62& 21.8& 54.5&48\\
+%\hline
+$\vecW_Q$ & $\textbf{94.2}$& 53.8& 64& 22.1& 54.1&48\\
+%\hline
+$\vecW_A$ & - & $\textbf{55.4}$& $\textbf{66}$ & $\textbf{22.2}$ & $\textbf{55.8}$ & $\textbf{53}$\\
+\hline
+\end{tabular}
+}
+%\vspace{-0.2cm}
+\caption{Experimental results. Baselines: $^\dagger$sequential CNNs ($\alpha=\beta=0$ in Eq.~\ref{eq:loss_sgl}), $^\ddagger$CNNs with global sparsity ($\beta=0$). 
+$\vecW_R$: randomly initialized projection matrix. $\vecW_Q$: question-initialized projection matrix. 
+$\vecW_A$: answer set-initialized projection matrix. % represents the performance of the model whose projection matrix is initialized by answer set. 
+There are three different classification settings for \Yahoo: subcategory, top-level category, and top-level accuracies on unseen sub-labels.}
+\label{tb:results}
+\vspace{-0.2cm}
+\end{table}
+
+%Note that projection matrix will be updated during training for better classification performance.
+
+%In the cases of single-label classification tasks (\TREC and \Yahoo), we set the last layer as softmax-layer which tries to get one unique peaky choice across all other labels. 
+For multi-label classification (\Insurance and \DMV), we replace the softmax layer in CNNs with a sigmoid layer which predicts each category independently 
+while softmax is not. %function has an exclusive property which allows cross influence between categories. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+All experimental results are summarized in Table~\ref{tb:results}. 
+The improvements are substantial for \Insurance and \DMV,
+but not as significant for \Yahoo and \TREC.
+%The improvement on \Yahoo is not as significant as \Insurance and \DMV. 
+One reason for this is the questions in \Yahoo/\TREC are shorter, %, sometimes only with 2--3 words. 
+%When the sentences become shorter, 
+which makes the group information harder to encode. 
+Another reason is that each question in \Yahoo/\TREC has a single label, and thus can not fully benefit from group sparse properties.
+%\Yahoo-top shows the results of top-level category classification. We map the subcategories back to the top categories and get the results in Table~\ref{tb:results}.
+
+Besides the conventional classification tasks, we also test our proposed model on an unseen-label case. In these experiments, there are a few sub-category labels that are not included in the training data. However, we still hope that our model could still return the correct parent category for these unseen subcategories at test time.
+% label into correct parent category based on the model's sub-category estimation. 
+In the testing set of \Yahoo dataset, we randomly add 100 questions whose subcategory labels are unseen in training set. The classification results of \Yahoo-unseen in Table~\ref{tb:results} are obtained by mapping the predicted subcategories back to top-level categories. %and check whether the true label's top category match with predicted label's parent category. 
+The improvements are substantial due to the group information encoding.
+
+

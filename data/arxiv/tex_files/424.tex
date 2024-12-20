@@ -1,0 +1,73 @@
+% !TEX root = main.tex
+
+\section{Related Work}
+\label{sec:relwork}
+
+%captioning models
+  %old way
+  %lstms
+  %attention
+  %attention with results from other task (e.g. attribute recognition)
+%learning methods
+
+\paragraph{Models for Image Captioning}
+The history of image captioning can date back to decades ago.
+Early attempts are mostly based on detections,
+which first detect visual concepts (\eg objects and their attributes) \cite{kulkarni2013babytalk, farhadi2010every}
+followed by template filling \cite{kulkarni2013babytalk}~or nearest neighbor retrieving for caption generation \cite{devlin2015exploring, farhadi2010every}.
+%
+With the development of neural networks,
+a more powerful paradigm, \emph{encoder-and-decoder}, was proposed by \cite{vinyals2015show},
+which then becomes the core of most state-of-the-art image captioning models.
+It uses a CNN \cite{simonyan2014very}~to represent the input image with a feature vector,
+and applies a LSTM net~\cite{hochreiter1997long} upon the feature to generate words one by one.
+
+Based on the encoder-and-decoder, many variants are proposed,
+where \emph{attention mechanism} \cite{xu2015show}~appears to be the most effective add-on.
+Specifically, attention mechanism replaces the feature vector with a set of feature vectors,
+such as the features from different regions \cite{xu2015show}~, and those under different conditions \cite{zhou2016image}.
+It also uses the LSTM net to generate words one by one,
+where the difference is that
+at each step, a mixed guiding feature over the whole feature set,
+will be \emph{dynamically} computed.
+%
+In recent years, there are also approaches combining attention mechanism and detection.
+Instead of doing attention on features,
+they consider the attention on a set of detected visual concepts,
+such as attributes \cite{yao2016boosting} and objects \cite{you2016image}.
+
+Despite of the specific structure of any image captioning model,
+it is able to give $p(c|I)$, the probability of a caption conditioned on an image.
+Therefore, all image captioning models can be used as the target or the reference in CL method.
+
+\paragraph{Learning Methods for Image Captioning}
+Many state-of-the-art image captioning models adopt \emph{Maximum Likelihood Estimation (MLE)} as their learning method,
+which maximizes the conditional log-likelihood of the training samples, as:
+\begin{align}
+	\sum_{(c_i,I_i) \in \cD} \sum^{T_i}_{t = 1} \ln p(w^{(t)}_i|I_i, w^{(t - 1)}_i, ..., w^{(1)}_i, \vtheta),
+\end{align}
+where $\vtheta$ is the parameter vector, $I_i$ and $c_i = (w^{(1)}_i, w^{(2)}_i, ..., w^{(T_i)}_i)$ are a training image and its caption.
+Although effective, some issues, including high resemblance in model-gerenated captions, are observed \cite{dai2017towards}~on models learned by MLE.
+
+Facing these issues, alternative learning methods are proposed in recent years.
+Techniques of reinforcement learning (RL) have been introduced in image captioning by \cite{rennie2016self}~and \cite{liu2016optimization}.
+RL sees the procedure of caption generation as a procedure of sequentially sampling actions (words) in a policy space (vocabulary).
+The rewards in RL are defined to be evaluation scores of sampled captions.
+Note that distinctiveness has not been considered in both approaches, RL and MLE.
+
+Prior to this work,
+some relevant ideas have been explored \cite{vedantam2017context,mao2016generation,dai2017towards}.
+Specifically, \cite{vedantam2017context,mao2016generation}~proposed an introspective learning (IL) approach
+that learns the target model by comparing its outputs on $(I,c)$ and $(I_/,c)$.
+Note that IL uses the target model itself as a reference.
+On the contrary, the reference model in CL provides more \emph{independent} and \emph{stable} indications about distinctiveness.
+In addition, $(I_/, c)$ in IL is pre-defined and fixed across the learning procedure,
+while the negative sample in CL, \ie $(I,c_/)$, is \emph{dynamically} sampled, making it more diverse and random.
+Recently, Generative Adversarial Networks (GAN) was also adopted for image captioning \cite{dai2017towards},
+which involves an evaluator that may help promote the distinctiveness.
+However, this evaluator is \emph{learned} to \emph{directly} measure the distinctiveness as a parameterized approximation,
+and the approximation accuracy is not ensured in GAN.
+In CL, the \emph{fixed} reference provides stable \emph{bounds} about the distinctiveness,
+and the bounds are supported by the model's performance on image captioning.
+Besides that, \cite{dai2017towards} is specifically designed for models that generate captions word-by-word,
+while CL is more generic.

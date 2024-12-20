@@ -1,0 +1,278 @@
+In this section, we overview the compact formulation for \LBFGS{} matrices
+and how to efficiently compute a partial eigendecomposition.  Finally, we
+review the shape-changing trust-region method considered in this paper.
+
+
+\subsection{The compact representation}  
+The special structure of the recursion formula for \LBFGS{} matrices
+admits a so-called compact representation~\cite{ByrNS94},
+which is overviewed in this section.
+
+Using the $m$ most recently computed pairs $\{s_j\}$ and $\{y_j\}$ given
+in (\ref{eqn-sy}), we define the following matrices
+\begin{equation*}
+  \vec{S}_k \defined \left[ \vec{s}_{k-m} \,\, \cdots \,\, \vec{s}_{k-1}\right] \quad \text{ and } \quad \vec{Y}_k \defined \left[ \vec{y}_{k-m} \,\, \cdots \,\, \vec{y}_{k-1}\right].
+\end{equation*}
+With $\vec{L}_k$ taken to be the strictly lower triangular part of the matrix
+of $ \vec{S}^T_k \vec{Y}_k
+$,
+and $ \vec{D}_k $ defined as the diagonal of $ \vec{S}^T_k \vec{Y}_k
+$,
+the compact representation of an \LBFGS{} matrix is
+\begin{equation}
+	\label{eq:comactlbfgs}
+	\vec{B}_k = \vec{B}_0 + \vec{\Psi}_k \vec{M}_k \vec{\Psi}^T_k,
+\end{equation}
+where 
+\begin{equation}\label{eqn-PsiM}
+\Psi_k\defined
+ \left[ \vec{B}_0\vec{S}_k \,\, \vec{Y}_k\right] \quad
+\text{and} \quad
+M_k\defined 
+	-\left[ 
+\begin{array}{c c}
+\vec{S}^T_k\vec{B}_0 	\vec{S}_k 			& \vec{L}_k \\
+	\vec{L}^T_k 								& -\vec{D}_k
+\end{array}
+\right]^{-1}
+\end{equation}
+(see~\cite{ByrNS94} for details).  Note that $ \vec{\Psi}_k \in \Re^{n
+  \times 2m} $, and $ \vec{M}_k \in \Re^{2m \times 2m} $ is invertible
+provided $s_i^Ty_i > 0$ for all $i$~\cite[Theorem 2.3]{ByrNS94}.  An
+advantage of the compact representation is that if $ \vec{B}_0 $ is
+chosen to be a multiple of the identity, then computing products
+with $B_k$ or solving linear systems with $B_k$ can be done efficiently~\cite{ErwayMarcia17LAA,LukV13}.
+
+It should be noted that {\small L-BFGS} matrices are just one member of
+the Broyden class of matrices (see, e.g.,~\cite{NocW99}),
+and in fact every member of the Broyden class of matrices admits a
+compact representation~{\cite{DeGuchyEM16,ErwayM15,LukV13}.
+
+
+\subsection{Partial eigendecomposition of $ \vec{B}_k $}
+\label{subsec:eigen}
+If $ \vec{B}_0$ is taken to be a multiple of the identity matrix, then the partial
+eigendecomposition of $B_k$ can be computed efficiently from the compact
+representation \eqref{eq:comactlbfgs} using either a partial {\small QR}
+decomposition~\cite{BurdakovLMTR16} or a partial singular
+value decomposition ({\small SVD})~\cite{Lu92}.  Below, we review the
+approach that uses the {\small QR} decomposition, and we assume
+that $ \vec{\Psi}_k $ has rank $ r = 2m $.  (For the rank-deficient case,
+see the techniques found in \cite{BurdakovLMTR16}.)
+
+Let
+\begin{equation*}
+	\vec{\Psi}_k = \vec{Q}\vec{R}, 
+\end{equation*}
+be the so-called ``thin'' {\small QR} factorization of $\Psi_k$, where
+$\vec{Q} \in \Re^{n\times r} $ and $ \vec{R} \in \Re^{r\times
+  r} $.  Since the matrix $ \vec{R} \vec{M}_k \vec{R}^T$  is a small $(r\times r)$
+  matrix with $r\ll n$ (recall that $r=2m$, where $m$ is typically between 3 and 7), it is
+computationally feasible to calculate its eigendecomposition; thus, suppose
+$\vec{W} \hat{\vec{\Lambda}} \vec{W}^T $ is the eigendecomposition of $
+\vec{R} \vec{M}_k \vec{R}^T.$ Then,
+\begin{equation*}
+	\vec{\Psi}_k\vec{M}_k\vec{\Psi}^T_k = \vec{Q} \vec{R} \vec{M}_k\vec{R}^T \vec{Q}^T= \vec{Q} \vec{W} \hat{\vec{\Lambda}}\vec{W}^T \vec{Q}^T = 
+									\vec{\Psi}_k \vec{R}^{-1} \vec{W} \hat{\vec{\Lambda}}\vec{W}^T  \vec{R}^{-T} \vec{\Psi}^{T}_k.
+\end{equation*}
+Defining
+\begin{equation}\label{eqn-pparallel}
+\vec{P}_{\parallel} = \vec{\Psi}_k \vec{R}^{-1} \vec{W},
+\end{equation}
+gives that
+\begin{equation}\label{eqn-lambdahat}
+	\vec{\Psi}_k \vec{M}_k \vec{\Psi}^T_k = \vec{P}_\parallel \hat{\vec{\Lambda}} \vec{P}^T_\parallel.
+\end{equation}
+Thus, for $B_0=\gamma_kI$, the eigendecomposition of $B_k$ can be written as
+\begin{equation}
+	\label{eq:eiglbfgs}
+	\vec{B}_k = \gamma_k \vec{I} + \vec{\Psi}_k \vec{M}_k \vec{\Psi}^T_k = P\Lambda P^T,
+\end{equation}
+where 
+\begin{equation} \label{eqn-P}
+  P \defined
+  \left[ \vec{P}_{\parallel} \,\, \vec{P}_{\perp}\right], \quad
+  \Lambda \defined
+\left[ \begin{array}{cc}
+    \hat{\vec{\Lambda}}+\gamma_k I_r 	& 			\\
+    & \gamma_k I_{n-r}
+  \end{array}
+\right],
+\end{equation}
+and $ \vec{P}_{\perp} \in
+\mathbb{R}^{n \times (n-r)} $ is defined as the orthogonal complement of $
+\vec{P}_{\parallel} $, i.e., $ \vec{P}^T_{\perp}\vec{P}_{\perp} =
+\vec{I}_{n-r} $ and $ \vec{P}^T_{\parallel}\vec{P}_{\perp} = \vec{0}_{r
+  \times (n-r)}$ .  
+Hence, $\vec{B}_k$ has $r$ eigenvalues given by the diagonal
+elements of $ \hat{ \vec{\Lambda} } +\gamma_k \vec{I}_{r} $ and
+the remaining eigenvalues are $ \gamma_k $ with multiplicity $ n-r $.
+
+\subsubsection{Practical computations}
+Using the above method yields the eigenvalues of $B_k$ as well as the
+ability to compute products with $P_\parallel$. 
+Formula (\ref{eqn-pparallel}) indicates that $Q$ is not
+required to be explicitly formed in order to compute products with
+$P_\parallel$.
+For this reason, it is desirable to avoid
+forming $Q$ by computing only $R$ via the Cholesky factorization of
+$ \vec{\Psi}^T_k\vec{\Psi}_k$,
+i.e., $ \vec{\Psi}^T_k\vec{\Psi}_k = \vec{R}^T\vec{R} $
+(see~\cite{BurdakovLMTR16}).
+
+At an additional expense,
+the eigenvectors stored in the columns of $P_\parallel$ may be formed and
+stored.  For the shape-changing trust-region method used in this paper, it
+is not required to store $P_\parallel$.
+In contrast, the matrix $P_\perp$ is
+prohibitively expensive to form.  It turns out that for this work it is
+only necessary to be able to compute projections into the subspace $
+\vec{P}_{\perp} \vec{P}_{\perp}^T $, which can be done using the
+identity
+\begin{equation} \label{eqn-projection}
+\vec{P}_{\perp}\vec{P}^T_{\perp} = \vec{I}-
+\vec{P}_{\parallel}\vec{P}^T_{\parallel}.
+\end{equation}
+
+
+\subsection{A shape-changing L-BFGS trust-region method}
+Generally speaking,
+at
+ the $k$th step of a trust-region method, a search direction is computed by
+approximately solving the trust-region subproblem
+\begin{equation}
+	\label{eq:subproblem}
+		\vec{p}^* = \underset{\left\| \vec{p} \right\| \le {\Delta_k}}{\text{ argmin }} Q(\vec{p}) \defined\vec{g}^T_k \vec{p} + \frac{1}{2} \vec{p}^T \vec{B}_k \vec{p}, 
+\end{equation}
+where $ \vec{g}_k \defined \nabla f(\vec{x}_k) $, $ \vec{B}_k \approx
+\nabla^2 f(\vec{x}_k) $, and $ \Delta_k > 0 $ is the trust-region radius.
+When second derivatives are unavailable or computationally too expensive to
+compute, approximations using gradient information may be preferred.  Not
+only do quasi-Newton matrices use only gradient and function information,
+but in the large-scale case, these Hessian approximations are never stored;
+instead, a recursive formula or methods that avoid explicitly forming $B_k$
+may be used to compute matrix-vector products with the approximate Hessians
+or their inverses~\cite{ByrNS94,ErwayM15,ErwayMarcia17LAA,LukV13}.
+ 
+\medskip
+
+
+Consider the trust-region subproblem defined by the shape-changing infinity norm:
+\begin{equation}
+	\label{eq:subprobsc}
+	\underset{\left\| \vec{p} \right\|_{\vec{P},\infty} \le {\Delta_k}}{\text{ minimize }} Q(\vec{p}) = \vec{g}^T_k \vec{p} + \frac{1}{2} \vec{p}^T \vec{B}_k \vec{p},
+\end{equation}
+where 
+\begin{equation}\label{eq:shape-changing_norm}
+	\left\| \vec{p} \right\|_{\vec{P},\infty} \defined \text{max}\left( \| \vec{P}^T_{\parallel} \vec{p} \|_{\infty}, \| \vec{P}^T_{\perp} \vec{p} \|_{2} \right)
+\end{equation}
+and $ \vec{P}_{\parallel} $ and $ \vec{P}_{\perp} $ are given in
+(\ref{eqn-P}).  Note that the ratio $\|p\|_2/\|p\|_{\vec{P},\infty}$
+  does not depend on $n$ and only moderately depends on $r$. (In particular, $1 \le \|p\|_2/\|p\|_{\vec{P},\infty} \le \sqrt{r+1}$.)
+  Because this norm depends on the
+eigenvectors of $ \vec{B}_k $, the shape of the trust region changes each
+time the quasi-Newton matrix is updated, which is possibly every iteration
+of a trust-region method.  (See~\cite{BurdakovLMTR16} for more details and
+other properties of this norm.)  The motivation for this choice of norm is
+that the the trust-region subproblem (\ref{eq:subprobsc}) decouples into
+two separate problems for which closed-form solutions exist.
+
+We now review the closed-form solution to (\ref{eq:subprobsc}), as detailed 
+in~\cite{BurdakovLMTR16}.  Let 
+\begin{equation}\label{eqn-varchange}
+  \vec{v} = \vec{P}^T\vec{p} = 	\left[ 
+										\begin{array}{c}
+                                                                                  \vec{P}^T_{\parallel}\vec{p} \\
+                                                                                  \vec{P}^T_{\perp}\vec{p} 
+										\end{array}
+                                                                              \right]
+                                                                              \defined 	\left[ 
+										\begin{array}{c}
+											\vec{v}_{\parallel} \\
+											\vec{v}_{\perp} 
+										\end{array}
+									\right] \quad \text{ and } \quad
+				\vec{P}^T\vec{g}_k = 	\left[ 
+										\begin{array}{c}
+											\vec{P}^T_{\parallel}\vec{g}_k \\
+											\vec{P}^T_{\perp}\vec{g}_k 
+										\end{array}
+									\right]
+								\defined 	\left[ 
+										\begin{array}{c}
+											\vec{g}_{\parallel} \\
+											\vec{g}_{\perp} 
+										\end{array}
+									\right].
+\end{equation}
+With this change of variables, the objective function of (\ref{eq:subprobsc})
+becomes
+\begin{align*}
+	Q\left( \vec{P}\vec{v} \right) &= \vec{g}^T_k \vec{P}\vec{v} + \frac{1}{2} \vec{v}^T \left(  \hat{\vec{\Lambda}}+\gamma_k \vec{I}_n   \right) \vec{v}  \\
+							&= \vec{g}^T_{\parallel} \vec{v}_{\parallel} + \vec{g}^T_{\perp} \vec{v}_{\perp} +
+									\frac{1}{2}\left( \vec{v}^T_{\parallel} \left( \hat{\vec{\Lambda}} + \gamma_k \vec{I}_r  \right) \vec{v}_{\parallel} + 
+										\gamma_k\left\| \vec{v}_{\perp} \right\|^2_2  \right) \\
+							&= \vec{g}^T_{\parallel} \vec{v}_{\parallel}+\frac{1}{2} \vec{v}^T_{\parallel} \left( 
+\hat{\vec{\Lambda}} + \gamma_k \vec{I}_r\right) \vec{v}_{\parallel} + \vec{g}^T_{\perp} \vec{v}_{\perp} + \frac{1}{2}\gamma_k\left\| \vec{v}_{\perp} \right\|^2_2.
+\end{align*}
+The trust-region constraint 
+$\left\| \vec{p} \right\|_{\vec{P},\infty} \le \Delta_k $ implies $ \left\|
+  \vec{v}_{\parallel} \right\|_{\infty} \le \Delta_k $ and $ \left\|
+  \vec{v}_{\perp} \right\|_{2} \le \Delta_k$, which decouples
+\eqref{eq:subprobsc} into the following two trust-region subproblems:
+\begin{eqnarray}
+  \underset{ \left\| \vec{v}_{\parallel} \right\|_{\infty} \le \Delta_k }{\text{ minimize }} q_{\parallel}\left(\vec{v}_{\parallel}\right) & \defined & \vec{g}^T_{\parallel} \vec{v}_{\parallel} + \frac{1}{2} \vec{v}^T_{\parallel} \left(  \hat{\vec{\Lambda}} + \gamma_k \vec{I}_r \right) \vec{v}_{\parallel} \label{eqn-sub1} \\
+	\underset{ \left\| \vec{v}_{\perp} \right\|_{2} \le \Delta_k }{\text{ minimize }} q_{\perp}\left(\vec{v}_{\perp}\right) &\defined& \vec{g}^T_{\perp} \vec{v}_{\perp} + 
+	\frac{1}{2}\gamma_k\left\| \vec{v}_{\perp} \right\|^2_2. \label{eqn-sub2}
+\end{eqnarray}
+Observe that the resulting minimization problems are considerably simpler
+than the original problem since in both cases the Hessian of the new
+objective functions are diagonal matrices.  The solutions to
+these decoupled problems have closed-form analytical solutions~\cite{BurdakovLMTR16,BruEM16}. Specifically, letting 
+$ \lambda_i \defined \hat{\lambda}_{i} +
+\gamma_k$, the solution to (\ref{eqn-sub1}) is given coordinate-wise by 
+\begin{equation}\label{eqn:solution_vparallel}
+		[\vec{v}^*_{||} ]_i =
+		\begin{cases}
+		-\frac{\left[ \vec{g}_{||}\right]_i}{ \lambda_i} 
+			& \text{ if } \left| \frac{ \left[ \vec{g}_{||}\right]_i  }{\lambda_i} \right| \le \Delta_k \text{ and }  \lambda_i > 0, \\
+		 c & \text{ if } \left[ \vec{g}_{\parallel}\right]_i = 0 \text{ and }  \lambda_i = 0,\\
+		- \text{sgn}(\left [ \vec{g}_{\parallel} \right ]_i) \Delta_k											
+		& \text{ if } \left[ \vec{g}_{\parallel}\right]_i \ne 0 \text{ and }  \lambda_i = 0,\\				
+		\pm\Delta_k 											
+		& \text{ if } \left[ \vec{g}_{\parallel}\right]_i = 0 \text{ and }  \lambda_i < 0,\\
+		-\frac{\Delta_k}{ \left| \left[ \vec{g}_{||}\right]_i \right|} \left[ \vec{g}_{||}\right]_i 
+		& \text{ otherwise},
+		\end{cases}, 
+\end{equation}
+where $c$ is any real number in $[-\Delta_k, \Delta_k]$ and `sgn' denotes the
+signum function. Meanwhile, the minimizer of (\ref{eqn-sub2})
+is given by
+\begin{equation}
+\label{eq:subsolnperp}
+\vec{v}^*_{\perp} = \beta \vec{g}_{\perp},
+\end{equation}
+where
+\begin{equation}
+\label{eq:subsolnbeta}
+\beta =
+\begin{cases}			
+	-\frac{1}{\gamma_k} 							& \text{ if } \gamma_k > 0 \text{ and }  \left \| \vec{g}_{\perp} \right \|_2 \le \Delta_k |\gamma_k|, \\
+-\frac{ \Delta_k}{\| \vec{g}_{\perp} \|_2}     & \text{ otherwise. }			
+\end{cases}
+\end{equation}
+Note that the solution to (\ref{eq:subprobsc}) is then
+\begin{equation}\label{eqn-finalsolution}
+  \vec{p}^* = \vec{P}\vec{v}^* = \vec{P}_{\parallel}\vec{v}^*_{\parallel} + \vec{P}_{\perp}\vec{v}^*_{\perp} = 
+\vec{P}_{\parallel}\vec{v}^*_{\parallel} + \beta\vec{P}_{\perp}g_{\perp} =
+\vec{P}_{\parallel}\vec{v}^*_{\parallel} + \beta\vec{P}_{\perp}\vec{P}_{\perp}^Tg_{k},
+\end{equation}
+where the latter term is computed using (\ref{eqn-projection}).
+Additional simplifications yield the following expression for $p^*$:
+\begin{equation}\label{eq:pstar}
+	p^* = \beta g + P_{\parallel}(v_{\parallel}^* - \beta g_{\parallel}).
+\end{equation}	
+The overall cost of computing the solution to  \eqref{eq:subprobsc} is comparable to that of using the Euclidean norm
+(see~\cite{BurdakovLMTR16}).  The main advantage of using the shape-changing norm \eqref{eq:shape-changing_norm}
+is that the solution $p^*$ in \eqref{eq:pstar} has a closed-form expression.
+

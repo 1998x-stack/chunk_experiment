@@ -1,0 +1,2841 @@
+
+\chapter{Fibred adjunction models}
+\label{chap:fibadjmodels}
+
+In this chapter we discuss the category-theoretic structures we use in Chapter~\ref{chap:interpretation} to give eMLTT a denotational semantics. Specifically, we work in the setting of fibred category theory because it provides a natural framework for developing the semantics of dependently typed languages, where i) functors model type-dependency, ii) split fibrations model substitution, and iii) split closed comprehension categories model $\Sigma$- and $\Pi$-types. See Section~\ref{sect:fibrationsbasics} for a brief overview of fibred category theory. It is important to note that the ideas we develop in this chapter can also be expressed in terms of other equivalent category-theoretic models of dependent types, such as contextual categories~\cite{Streicher:Semantics}, categories with families~\cite{Hofmann:SyntaxAndSemantics}, or categories with attributes~\cite{Pitts:CategoricalLogic}.
+
+Specifically, in Section~\ref{sect:fibadjmodelsstructure}, we study the category-theoretic structures needed to model value and computation $\Sigma$- and $\Pi$-types, the empty type, the coproduct type, the type of natural numbers, intensional propositional equality, and the homomorphic function type. It is worth highlighting that in the case of the empty type, the coproduct type, and type of natural numbers, we identify category-theoretically more natural axiomatisations than commonly used in the semantics of dependently typed languages.
+
+In Section~\ref{sect:fibadjmodels}, we combine these category-theoretic structures into a class of models suitable for giving a denotational semantics to eMLTT, called \emph{fibred adjunction models}. These models are a natural fibrational generalisation of adjunction-based models of simply typed computational languages such as CBPV and EEC.
+Finally, in Section~\ref{sect:examplesoffibadjmodels}, we discuss some examples of these models, arising from i) identity adjunctions, ii) simple fibrations and models of EEC, iii) families fibrations and lifting of adjunctions, iv) the Eilenberg-Moore fibrations of split fibred monads, and v) the fibration of continuous families of $\omega$-complete partial orders and lifting of CPO-enriched Eilenberg-Moore adjunctions (so as to extend eMLTT with general recursion). 
+
+
+\section{Category theory for modelling eMLTT}
+\label{sect:fibadjmodelsstructure}
+
+In this section we discuss the category-theoretic structures that we use in Chapter~\ref{chap:interpretation} to give eMLTT a sound and complete denotational semantics.
+Similarly to the overview of fibred category theory we gave in Section~\ref{sect:fibrationsbasics}, we only discuss split versions of these structures. The non-split versions can be recovered by relaxing the preservation conditions for reindexing so that they hold up-to-isomorphism rather than equality.
+
+\subsection{$\Pi$- and $\Sigma$-types}
+\label{sect:modelsofdependentsunctionandsumtypes}
+
+We begin by discussing the structures we use to model the value $\Pi$- and $\Sigma$-types. 
+As standard in categorical semantics of dependent types, we use well-behaved right and left adjoints to weakening functors to model these types, e.g., see~\cite[Section~10.5]{Jacobs:Book}.
+
+\begin{definition}
+\label{def:splitdependentproducts}
+\index{split dependent!-- products}
+\index{ Product@$\Pi_A$ (split dependent product)}
+A split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ is said to have  \emph{split dependent products} if every weakening functor $\pi_A^* : \mathcal{V}_{p(A)} \longrightarrow \mathcal{V}_{\ia A}$ has a right adjoint $\Pi_A : \mathcal{V}_{\ia A} \longrightarrow \mathcal{V}_{p(A)}$ such that the split Beck-Chevalley condition holds: for any Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, the canonical natural transformation
+\[
+\hspace{-0.15cm}
+\xymatrix@C=1.15em@R=1.25em@M=0.5em{
+(p(f))^* \comp \Pi_B \ar[rrrr]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, (p(f))^* \,\comp\, \Pi_B} &&&& \Pi_A \comp \pi^*_A \comp (p(f))^* \comp \Pi_B \ar[r]^-{=} & \Pi_A \comp (p(f) \comp \pi_A)^* \comp \Pi_B \ar[d]^{=}
+\\
+\Pi_A \comp \ia f^* &&&& \Pi_A \comp \ia f ^* \comp \pi^*_B \comp \Pi_B \ar[llll]^-{\Pi_A \,\comp\, \ia f^* \,\comp\, \varepsilon^{\pi^*_B \,\dashv\, \Pi_B}} & \Pi_A \comp (\pi_B \comp \ia f)^* \comp \Pi_B \ar[l]^-{=}
+}
+\]
+is required to be an identity. In particular, we must have $(p(f))^* \comp \Pi_B = \Pi_A \comp \ia f^*$.
+\end{definition}
+
+\begin{definition}
+\label{def:weaksplitdependentsums}
+\index{split dependent!weak -- sums}
+\index{ Sigma@$\Sigma_A$ (weak split dependent sum)}
+A split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ is said to have  \emph{weak split dependent sums} if every weakening functor $\pi_A^* : \mathcal{V}_{p(A)} \longrightarrow \mathcal{V}_{\ia A}$ has a left adjoint $\Sigma_A : \mathcal{V}_{\ia A} \longrightarrow \mathcal{V}_{p(A)}$ such that the split Beck-Chevalley condition holds: for any Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, the canonical natural transformation
+\[
+\hspace{-0.15cm}
+\xymatrix@C=1.25em@R=1.25em@M=0.5em{
+\Sigma_A \comp \ia f^* \ar[rrrr]^-{\Sigma_A \,\comp\, \ia f^* \,\comp\, \eta^{\Sigma_B \,\dashv\, \pi^*_B}} &&&& \Sigma_A \comp \ia f^* \comp \pi^*_B \comp \Sigma_B \ar[r]^-{=} & \Sigma_A \comp (\pi_B \comp \ia f)^* \comp \Sigma_B \ar[d]^{=}
+\\
+(p(f))^* \comp \Sigma_B &&&& \Sigma_A \comp \pi^*_A \comp (p(f))^* \comp \Sigma_B \ar[llll]^-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, (p(f))^* \,\comp\, \Sigma_B} & \Sigma_A \comp (p(f) \comp \pi_A)^* \comp \Sigma_B \ar[l]^-{=}
+}
+\]
+is required to be an identity. In particular, we must have $\Sigma_A \comp \ia f^* = (p(f))^* \comp \Sigma_B$.
+\end{definition}
+
+Observe that these Beck-Chevalley conditions seem to guarantee that only the $\Pi_A$- and $\Sigma_A$-functors are preserved by reindexing. However, as we show below, they in fact ensure that the units and counits of the corresponding adjunctions are also preserved. 
+
+\begin{proposition}
+\label{prop:BCfordepproducts}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split dependent products, and a Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, then we have 
+\[
+(p(f))^* \comp \eta^{\pi^*_B \,\dashv\, \Pi_B} = \eta^{\pi^*_A \,\dashv\, \Pi_A} \comp (p(f))^*
+\qquad
+\ia f ^* \comp \varepsilon^{\pi^*_B \,\dashv\, \Pi_B} = \varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \comp \ia f ^*
+\]
+\end{proposition}
+
+\begin{proof}
+These two equations follow from the commutativity of the next two diagrams.
+\vspace{0.25cm}
+\[
+\xymatrix@C=0.6em@R=5em@M=0.5em{
+(p(f))^* \ar[r]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, (p(f))^*} \ar@/_6pc/[dd]_-{(p(f))^* \comp \,\eta^{\pi^*_B \,\dashv\, \Pi_B}}^<<<<<<<<<<<<<<<{\quad\dcomment{\text{nat. of } \eta^{\pi^*_A \,\dashv\, \Pi_A}}} & \Pi_A \comp \pi^*_A \comp (p(f))^* \ar@/^6.5pc/[ddd]^>>>>>>>>>>>>>>>>>>>>>>>>>>{=} \ar[dl]_{\Pi_A \,\comp\, \pi^*_A \,\comp\, (p(f))^* \,\comp\, \eta^{\pi^*_B \,\dashv\, \Pi_B}\quad}^{\qquad\quad\!\!\!\dcomment{\pi^*_A \comp (p(f))^* = \ia f ^* \comp \pi^*_B}}
+\\
+\Pi_A \comp \pi^*_A \comp (p(f))^* \comp \Pi_B \comp \pi^*_B \ar[r]^-{=} & \Pi_A \comp \ia f ^* \comp \pi^*_B \comp \Pi_B \comp \pi^*_B \ar@/_2pc/[d]_>>>>>>>{\Pi_A \,\comp\, \ia f ^* \,\comp\, \varepsilon^{\pi^*_B \,\dashv\, \Pi_B} \,\comp\, \pi^*_B}^>>>>>>{\,\,\,\,\,\,\dcomment{\pi^*_B \,\dashv\, \Pi_B}}
+\\
+(p(f))^* \comp \Pi_B \comp \pi^*_B \ar[r]_-{=} \ar[u]^-{\dhide{\eta^{\pi^*_A \,\dashv\, \Pi_A} \comp (p(f))^* \comp \Pi_B \comp \pi^*_B}\!\!}_>>>>>>{\quad\quad\!\!\dcomment{\text{split Beck-Chevalley}}} & \Pi_A \comp \ia f ^* \comp \pi^*_B  & 
+\\
+& \Pi_A \comp \ia f ^* \comp \pi^*_B \ar@/_3.5pc/[uu]_>>>>>>>{\!\!\!\!\dhide{\Pi_A \comp \ia f ^* \comp \pi^*_B \comp \eta^{\pi^*_B \,\dashv\, \Pi_B}}} \ar[u]^{\id_{\Pi_A \comp\, \ia f ^* \,\comp\, \pi^*_B}}
+}
+\]
+
+\vspace{0.15cm}
+
+\[
+\xymatrix@C=0.6em@R=5em@M=0.5em{
+\ia f ^* \comp \pi^*_B \comp \Pi_B \ar@{<-}@/_7pc/[ddd]_>>>>>>>>>>>>>>>>>>>>>>>>>>>{=} \ar[r]^-{\ia f ^* \,\comp\, \varepsilon^{\pi^*_B \,\dashv\, \Pi_B}} & \ia f ^* \ar@{<-}@/^5.5pc/[dd]^-{\varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, \ia f ^*}_<<<<<<<<<<<<<<<{\dcomment{\text{nat. of } \varepsilon^{\pi^*_A \,\dashv\, \Pi_A}}\quad}
+\\
+\pi^*_A \comp \Pi_A \comp \pi^*_A \comp (p(f))^* \comp \pi_B \ar[r]^-{=} \ar@/_4pc/[dd]_<<<<<<<<<{\dhide{\varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \comp \pi^*_A \comp (p(f))^* \comp \Pi_B}\!\!\!\!}^<<<<<<<<<<<<{\,\,\,\,\,\,\,\dcomment{\pi^*_A \dashv \Pi_A}} & \pi^*_A \comp \Pi_A \comp \ia f ^* \comp \pi^*_B \comp \Pi_B \ar[ul]_{\quad\,\,\,\varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, \ia f ^* \,\comp\, \pi^*_B \,\comp\, \Pi_B}^{\dcomment{\pi^*_A \comp (p(f))^* = \ia f ^* \comp \pi^*_B}\qquad\quad} \ar[d]^-{\!\!\dhide{\pi^*_A \comp \Pi_A \comp \ia f ^* \comp \varepsilon^{\pi^*_B \,\dashv\, \Pi_B}}}_>>>>>>{\dcomment{\text{split Beck-Chevalley}}\qquad\!\!}
+\\
+\pi^*_A \comp (p(f))^* \comp \Pi_B \ar[d]^{\id_{\pi^*_A \comp\, (p(f))^* \comp\, \Pi_B}} \ar[r]_-{=} \ar@/_2pc/[u]_>>>>>>>{\pi^*_A \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, (p(f))^* \,\comp\, \Pi_B} & \pi^*_A \comp \Pi_A \comp \ia f ^*
+\\
+\pi^*_A \comp (p(f))^* \comp \Pi_B
+}
+\]
+
+\pagebreak
+
+In both diagrams, we write $\pi^*_A \comp (p(f))^* = \ia f ^* \comp \pi^*_B$  for the composite equation
+\[
+\pi^*_A \comp (p(f))^* = (p(f) \comp \pi_A)^* = (\pi_B \comp \ia f)^* = \ia f ^* \comp \pi^*_B
+\]
+where the middle equation holds because $(\ia f , p(f)) : \pi_A \longrightarrow \pi_B$ is a morphism in $\mathcal{B}^\to$ given by $\mathcal{P}(f)$---see Proposition~\ref{prop:comprehensioncategorywithunit} for the definition of $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^\to$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:BCfordepsums}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with weak split dependent sums, and a Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, then we have 
+\[
+\ia f ^* \comp \eta^{\Sigma_B \,\dashv\, \pi^*_B} = \eta^{\Sigma_A \,\dashv\, \pi^*_A} \comp \ia f ^*
+\qquad
+(p(f))^* \comp \varepsilon^{\Sigma_B \,\dashv\, \pi^*_B} = \varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \comp (p(f))^*
+\]
+\end{proposition}
+
+\begin{proof}
+By straightforward diagram chasing, analogously to Proposition~\ref{prop:BCfordepproducts}.
+\end{proof}
+
+Analogously to~\cite[Section~10.5]{Jacobs:Book}, we also require these split dependent sums to be strong, as made precise in Definition~\ref{def:strongsums}, so as to be able to model the type-dependency appearing in the typing rule of the elimination form for the value $\Sigma$-type. %, i.e., pattern-matching.
+
+
+\begin{definition}
+\label{def:strongsums}
+\index{split dependent!strong -- sums}
+\index{ Sigma@$\Sigma_A$ (strong split dependent sum)}
+\index{ k@$\kappa_{A,B}$ (isomorphism witnessing the strength of split dependent sums)}
+A split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ is said to have \emph{strong split dependent sums} if it has weak split dependent sums, as defined above, and if for every two objects $A$ in $\mathcal{V}$ and $B$ in $\mathcal{V}_{\ia{A}}$, the canonical composite morphism 
+\[
+\xymatrix@C=5em@R=1em@M=0.5em{
+\kappa_{A,B} \quad \defeq \quad \ia B \ar[r]^-{\ia {\eta_B^{\Sigma_A \,\dashv\, \pi_A^*}}} & \ia {\pi^*_A(\Sigma_A (B))} \ar[r]^-{\ia {\overline{\pi_A}(\Sigma_A (B))}} & \ia {\Sigma_A (B)}
+}
+\]
+is an isomorphism. 
+\end{definition}
+
+Following~\cite[Section~10.5]{Jacobs:Book}, we next combine split dependent products and strong split dependent sums into a structure that forms the basis of our semantics of eMLTT's value fragment. In particular, this structure allows us to model the core features of eMLTT such as the empty value context, the extension of value contexts, and the value $\Sigma$- and $\Pi$-types, including the corresponding introduction and elimination forms. 
+
+\begin{definition}
+\label{def:sccompc}
+\index{category!split closed comprehension --}
+\index{ SCCompC@\SCCompC\, (split closed comprehension category)}
+\index{ 1@$1$ (terminal object)}
+\index{object!terminal --}
+A \emph{split closed comprehension category} (\SCCompC) is a full split comprehension category with unit that has both split dependent products and strong split dependent sums, and a terminal object $1$ in its base category.
+\end{definition}
+
+Similarly to how we defined the product type $A \times B$ and the function type $A \to B$ as non-dependent versions of $\Sigma\, x \!:\! A .\, B$ and $\Pi\, x \!:\! A .\, B$ in Chapter~\ref{chap:syntax}, the split dependent products and strong split dependent sums make each fibre of a given \SCCompC\, into a Cartesian closed category (CCC), as illustrated in the next proposition.
+
+\pagebreak
+
+\begin{proposition}
+\label{prop:sccompc}
+\index{ CCC@CCC (Cartesian closed category)}
+\index{category!Cartesian closed --}
+\index{ A@$A \times_X B$ (Cartesian product of $A$ and $B$ in $\mathcal{V}_X$)}
+\index{ A@$A \Rightarrow_X B$ (exponential object in $\mathcal{V}_X$)}
+Given a \SCCompC ~$p : \mathcal{V} \longrightarrow \mathcal{B}$, then every fibre $\mathcal{V}_X$ is a CCC with
+\[
+A \times_X B \defeq \Sigma_A (\pi_A^*(B))
+\qquad
+A \Rightarrow_X B \defeq \Pi_A (\pi_A^*(B))
+\]
+and this structure is preserved on-the-nose by reindexing, i.e., $p$ is a split fibred CCC.
+\end{proposition}
+
+We omit the details of the proof of this proposition and refer the reader to the proof of the non-split version of this proposition given in~\cite[Proposition~10.5.4]{Jacobs:Book}.
+
+However, as the fibre-wise Cartesian products $A \times_X B$ play an important role in the interpretation of sequential composition in~Section~\ref{sect:interpretation}, we spell out the definitions of the corresponding vertical projection and pairing morphisms.
+
+\index{projection!first --}
+\index{ fst@$\semfst$ (first projection for Cartesian products)}
+We obtain the \emph{first projection} $\semfst : A \times_X B \longrightarrow A$ by using the fully-faithfulness of $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^{\to}$ on the following morphism between $\pi_{\Sigma_A(\pi_A^*(B))}$ and $\pi_A$ in $\mathcal{B}^\to$:
+\[
+\xymatrix@C=8.5em@R=6em@M=0.5em{
+\ia {\Sigma_A (\pi_A^*(B))} \ar[ddd]_{\pi_{\Sigma_A(\pi_A^*(B))}}^>>>>>>>>>>>{\qquad\qquad\qquad\qquad\dcomment{\text{id. law}}} \ar[r]^-{\kappa^{-1}_{A,\pi_A^*(B)}} \ar@/_3pc/[ddr]_{\id_{\ia {\Sigma_A (\pi_A^*(B))}}\!\!}^<<<<<<<<{\qquad\dcomment{\kappa_{A,\pi_A^*(B)} \text{ is an iso.}}} & \ia {\pi_A^*(B)} \ar[r]^-{\pi_{\pi_A^*(B)}} \ar@/_7.5pc/[dd]_{\kappa_{A,\pi_A^*(B)}}^<<<<<<<<<<<<<<<<<<{\quad\!\!\!\!\!\!\!\dcomment{\text{def. of } \kappa_{A,\pi_A^*(B)}}} \ar[d]^{\ia {\eta^{\Sigma_A \,\dashv\, \pi^*_A}_{\pi_A^*(B)}}} & \ia A \ar[ddd]^{\pi_A}_>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>{\dcomment{\mathcal{P}(\overline{\pi_A}(\Sigma_A(\pi_A^*(B))))}\qquad}
+\\
+& \ia {\pi^*_A(\Sigma_A(\pi_A^*(B)))} \ar[d]^{\ia {\overline{\pi_A}(\Sigma_A(\pi_A^*(B)))}} \ar[ur]_{\quad\,\,\,\pi_{\pi^*_A(\Sigma_A(\pi_A^*(B)))}}^>>>>>>>>>>>>>>>>>>>>>>{\dcomment{\mathcal{P}(\eta^{\Sigma_A \,\dashv\, \pi^*_A}_{\pi_A^*(B)})}\quad\,\,\,\,\,\,\,\,\,\,\,}
+\\
+& \ia {\Sigma_A(\pi_A^*(B))} \ar[dr]_{\pi_{\Sigma_A(\pi_A^*(B))}}
+\\
+X \ar[rr]_{\id_X} & & X
+}
+\]
+
+\index{projection!second --}
+\index{ snd@$\semsnd$ (second projection for Cartesian products)}
+We obtain the \emph{second projection} $\semsnd : A \times_X B \!\longrightarrow\! B$ by defining 
+\[
+\semsnd \defeq \varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B
+\]
+
+\index{ f@$\pair f g$ (unique mediating (pairing) morphism for Cartesian products)}
+\index{morphism!unique mediating (pairing) --}
+Finally, given two vertical morphisms $f : C \longrightarrow A$ and $g : C \longrightarrow B$ in $\mathcal{V}_X$, we obtain the unique mediating (\emph{pairing}) morphism $\pair f g : C \longrightarrow A \times_X B$  using the fully-faithfulness of $\mathcal{P}$ on the following morphism between $\pi_C$ and $\pi_{\Sigma_A(\pi^*_A(B))}$ in $\mathcal{B}^\to$:
+
+\[
+\hspace{-0.1cm}
+\xymatrix@C=4.4em@R=4em@M=0.5em{
+\ia{C} \ar[dddd]_{\pi_C}^>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>{\qquad\dcomment{\mathcal{P}(f)}} \ar[dddr]_{\ia f}^<<<<<<<<<<{\quad\,\,\,\,\,\,\,\dcomment{\text{def. of } h}} \ar[r]^-{h} & \ia {\pi^*_A(B)} \ar[dd]_{\id_{\ia {\pi^*_A(B)}}}^>>>>>>>>>>>>>>>>>>>>{\qquad\dcomment{\Sigma_A \dashv \pi^*_A}} \ar[dr]_{\ia {\eta^{\Sigma_A \,\dashv\, \pi^*_A}_{\pi^*_A(B)}}}^<<<<<<<<<<<<<{\qquad\dcomment{\text{def. of } \kappa_{A,\pi^*_A(B)}}} \ar[rr]^-{\kappa_{A,\pi^*_A(B)}}&  & \ia {\Sigma_A(\pi^*_A(B))} \ar[dddd]^{\pi_{\Sigma_A(\pi^*_A(B))}}_{\dcomment{\mathcal{P}(\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B)}\qquad\,\,\,\,} \ar[ddl]^{\!\!\!\!\!\!\ia {\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B}}_>{\dcomment{\text{def. of } \pi^*_A(\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B)}}
+\\
+& & \ia {\pi^*_A(\Sigma_A(\pi^*_A(B)))} \ar[dl]_{\ia {\pi^*_A(\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B)}\quad\!\!\!} \ar[ur]^{\ia{\overline{\pi_A}(\Sigma_A(\pi^*_A(B)))}\quad}
+\\
+& \ia {\pi^*_A(B)} \ar[d]^{\pi_{\pi^*_{A}(B)}} \ar[r]_{\ia {\overline{\pi_A}(B)}} & \ia {B} \ar[ddr]^{\pi_B}_<<<<<<<<<<<<<<<{\dcomment{\mathcal{P}(\overline{\pi_A}(B))}\qquad\qquad}
+\\
+& \ia A \ar[dl]^{\pi_A} \ar[drr]^{\pi_A}_{\dcomment{\text{id. law}}\qquad\qquad\qquad\qquad\qquad\qquad} & &
+\\
+X \ar[rrr]_{\id_X} & & & X 
+}
+\]
+where $h$ is the unique mediating morphism in the following pullback situation:
+\[
+\xymatrix@C=4em@R=4em@M=0.5em{
+\ia C \ar@/_2pc/[dr]_{\ia f} \ar@/^3pc/[rr]^{\ia g} \ar@{-->}[r]^-{h} & \ia {\pi^*_A(B)} \ar[d]_{\pi_{\pi^*_A(B)}}^<{\,\big\lrcorner} \ar[r]^-{\ia {\overline{\pi_A}(B)}} & \ia B \ar[d]^{\pi_B}_{\dcomment{\mathcal{P}(\overline{\pi_A}(B))}\quad\,\,\,\,\,\,\,\,\,}
+\\
+& \ia A \ar[r]_-{\pi_A} & X
+}
+\]
+and where $\pi_A \comp \ia f = \pi_C = \pi_B \comp \ia g$ follow from $\mathcal{P}(f)$ and $\mathcal{P}(g)$, respectively.
+
+
+Next, we prove two useful results (Proposition~\ref{prop:semsubstintoweakenedterm} and Corollary~\ref{cor:semsubstintoweakenedterm2}) that we later use to relate different ways of modelling non-dependent substitution. 
+At a high level, Proposition~\ref{prop:semsubstintoweakenedterm} says that given value terms $\vj \Gamma V A$ and $\vj {\Gamma, x \!:\! A} W B$, where the value type $B$ does not depend on $x$, i.e., $\lj \Gamma B$, we can model the substitution $\vj \Gamma {W[V/x]} B$ either by applying a reindexing functor, or by composing morphisms.
+
+\begin{proposition}
+\label{prop:semsubstintoweakenedterm}
+Given a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with strong split dependent sums, an object $X$ in $\mathcal{B}$, objects $A$ and $B$ in $\mathcal{V}_X$, a morphism $f : 1_X \longrightarrow A$ in $\mathcal{V}_{X}$, and a morphism $g : 1_{\ia A} \longrightarrow \pi^*_A(B)$ in $\mathcal{V}_{\ia A}$, then
+\[
+\xymatrix@C=4em@R=2em@M=0.5em{
+1_X \ar[r]^-{=} \ar[d]_-{f} & (\mathsf{s}(f))^*(1_{\ia A}) \ar[r]^-{(\mathsf{s}(f))^*(g)} & (\mathsf{s}(f))^*(\pi^*_A(B)) \ar[r]^-{=} & B
+\\
+A \ar[r]_-{\langle \id_{A} , !_A \rangle} & \Sigma_A(\pi^*_A(1_X)) \ar[r]_-{=} & \Sigma_A(1_{\ia A}) \ar[r]_-{\Sigma_A(g)} & \Sigma_A(\pi^*_A(B)) \ar[u]_-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_{B}}
+}
+\]
+commutes in $\mathcal{V}_X$.
+\end{proposition}
+
+\begin{proof}
+This diagram commutes because we have
+\[
+\xymatrix@C=4em@R=4em@M=0.5em{
+1_X \ar[r]^-{=} \ar[dd]_-{f}^-{\!\!\!\!\!\!\!\!\quad\qquad\dcomment{(a)}} \ar[dr]_-{1(\mathsf{s}(f))} & (\mathsf{s}(f))^*(1_{\ia A}) \ar[r]^-{(\mathsf{s}(f))^*(g)} \ar[d]^-{\overline{\mathsf{s}(f)}(1_{\ia A})}_<<<{\dcomment{1 \text{ is s. fib.}}\quad\!\!\!}^>>{\qquad\dcomment{\text{def. of } (\mathsf{s}(f))^*(g)}} & (\mathsf{s}(f))^*(\pi^*_A(B)) \ar[r]^-{=} \ar[d]_-{\overline{\mathsf{s}(f)}(\pi^*_A(B))}^<<<<{\!\!\!\quad\dcomment{p \text{ is a s. fib.}}} & B
+\\
+& 1_{\ia{A}} \ar[r]_-{g} \ar[dl]^<<<<<<<<{\varepsilon^{1 \,\dashv\, \ia -}_{A}}^<<<<<<<<{\qquad\qquad\qquad\qquad\dcomment{\text{using the fully-faithfulness of } \mathcal{P} \text{ on } (b)}} & \pi^*_A(B) \ar[ur]_-{\overline{\pi_A}(B)}
+\\
+A \ar[r]_-{\langle \id_{A} , !_A \rangle} & \Sigma_A(\pi^*_A(1_X)) \ar[r]_-{=} & \Sigma_A(1_{\ia A}) \ar[r]_-{\Sigma_A(g)} & \Sigma_A(\pi^*_A(B)) \ar[uu]_-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_{B}}
+}
+\]
+where $(a)$ commutes because we have
+\[
+\xymatrix@C=6em@R=3em@M=0.5em{
+1_X \ar@/^3pc/[rr]^-{1(\mathsf{s}(f))}_*+<1em>{\dcomment{\text{def. of } \mathsf{s}(f)}} \ar[r]_-{1(\eta^{1 \,\dashv\, \ia -}_X)} \ar@/_2.5pc/[ddr]_{f} \ar@/_1pc/[dr]_-{\id_{1_X}} & 1_{\ia {1_X}} \ar[r]_-{1(\ia {f})} \ar[d]^-{\varepsilon^{1 \,\dashv\, \ia -}_{1_X}}_-{\dcomment{1 \,\dashv\, \ia -}\,\,\,} & 1_{\ia A} \ar@/^2.5pc/[ddl]^-{\varepsilon^{1 \,\dashv\, \ia -}_A}_-{\dcomment{\text{nat. of } \varepsilon^{1 \,\dashv\, \ia -}}\,\,\,}
+\\
+& 1_X \ar[d]^-{f}_<<{\dcomment{\text{id. law}}\qquad}
+\\
+& A
+}
+\]
+Further, we note that $(b)$ refers to a diagram in $\mathcal{B}^{\to}$ between $\pi_{1_{\ia A}} : \ia {1_{\ia A}} \longrightarrow \ia {A}$ and $\pi_B : \ia {B} \longrightarrow X$ that commutes because i) we have the following sequence of equations:
+\[
+\begin{array}{c}
+\hspace{-4.25cm}
+p(\overline{\pi_A}(B)) \comp p(g) = p(\overline{\pi_A}(B)) \comp \id_{\ia A} = \pi_A = p(\varepsilon^{1 \,\dashv\, \ia -}_A) =
+\\[1mm]
+\hspace{2.5cm}
+\id_{X} \comp p(\varepsilon^{1 \,\dashv\, \ia -}_A)  = p(\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_B) \comp p(\Sigma_A(g)) \comp p(\langle \id_A , !_A \rangle) \comp p (\varepsilon^{1 \,\dashv\, \ia -}_A)
+\end{array}
+\]
+for the morphisms between the codomains of $\pi_{1_{\ia A}}$ and $\pi_B$; and ii) we can 
+show for the morphisms between the domains of $\pi_{1_{\ia A}}$ and $\pi_B$ that the following diagram commutes:
+\[
+\hspace{-0.25cm}
+\xymatrix@C=0.25em@R=5em@M=0.5em{
+\ia {1_{\ia A}} \ar[dd]_-{\ia {\varepsilon^{1 \,\dashv\, \ia -}_A}} \ar[rrrr]^-{\ia g} \ar[drr]^-{\!\!\!\eta^{1 \,\dashv\, \ia -}_{\ia {1_{\ia A}}}}_-{\dcomment{\text{iso.}}\!\!} \ar@/^5.25pc/[ddrrr]^-{\!\!\!\!\!\!\!\id_{\ia {1_{\ia A}}}}_-{\dcomment{1 \,\dashv\, \ia -}\,\,\,} &&&& \ia {\pi^*_A(B)} \ar[r]^-{\ia {\overline{\pi_A}(B)}} & \ia B
+\\
+&& \ia {1_{\ia {1_{\ia A}}}} \ar@/_1.5pc/[dr]_<<{\ia {1(\ia {\varepsilon^{1 \,\dashv\, \ia -}_A})}\!} \ar@/^2pc/[dr]_>>>>>>>>>>>{\ia {\varepsilon^{1 \,\dashv\, \ia -}_{1_{\ia A}}}\!\!\!}_>>>>>>>>>>>>>{\dcomment{\mathcal{P}(1(\ia {\varepsilon^{1\,\dashv\, \ia -}_A}))}\qquad\qquad\qquad\qquad\,\,\,\,}_<<<<<<<{\dcomment{1 \text{ is  s. f.}}} \ar@/^2pc/[ull]^-{\pi_{1_{\ia {1_{\ia A}}}}\!\!\!\!\!} & 
+\\
+\ia A \ar[dd]_-{\langle \id_A , !_A \rangle}^-{\quad\!\!\dcomment{\text{def. of } \langle \id_A , !_A \rangle}} \ar@/_0.75pc/[rrr]_-{\eta^{1 \,\dashv\, \ia -}_{\ia A}} \ar[drr]_-{h} &&& \ia {1_{\ia A}} \ar@/_1.5pc/[lll]_-{\pi_{1_{\ia A}}}^-{\dcomment{\eta^{1 \,\dashv\, \ia -}_{\ia A} \text{is an iso.}}} \ar[dl]^-{=}_>>>>>>>>>{\dcomment{(c)}\qquad\!\!\!\!} \ar[r]_-{\!\!\ia g}
+&
+\ia {\pi_A^*(B)}
+\ar[dddd]_-{\ia {\eta^{\Sigma_A \,\dashv\, \pi^*_A}_{\pi^*_A(B)}}}
+\ar@/^3pc/[uu]^-{\id_{\ia {\pi^*_A(B)}}}^>>>>{\dcomment{\id_{\ia {\pi^*_A(B)}} \,\comp\, \ia g = \ia g \,\comp \, \id_{\ia {1_{\ia A}}}}\quad\!\!\!}
+\\
+&& \ia {\pi^*_A(1_X)} \ar[dll]_-{\kappa_{A,\pi^*_A(1_X)}} \ar[dd]^-{\ia {\eta^{\Sigma_A \,\dashv\, \pi^*_A}_{\pi^*_A(1_X)}}}_-{\dcomment{\text{def. of } \kappa_{A,\pi^*_A(1_X)}} \quad\!\!\!\!}^>>>>>>>>>>{\qquad\qquad\dcomment{\text{nat. of } \eta^{\Sigma_A \,\dashv\, \pi^*_A}}}
+\\
+\ia {\Sigma_A(\pi^*_A(1_X))} \ar[ddd]_-{=} && 
+\\
+&& \ia {\pi^*_A(\Sigma_A(\pi^*_A(1_X)))} \ar[ull]^<<<<<<<<<{\ia {\overline{\pi_A}(\Sigma_A(\pi^*_A(1_X)))}\quad\!\!\!\!\!} \ar[d]_-{=}_-{\dcomment{1 \text{ is split fibred}}\qquad\,\,\,}
+\\
+&& \ia {\pi^*_A(\Sigma_A(1_{\ia A}))} \ar[dll]^-{\,\,\,\ia {\overline{\pi_A}(\Sigma_A(1_{\ia A}))}}^-{\qquad\qquad\qquad\qquad\qquad\dcomment{\text{def. of } \pi^*_A(\Sigma_A(g))}} \ar[rr]_-{\ia {\pi^*_A(\Sigma_A(g))}} && \ia {\pi^*_A(\Sigma_A(\pi^*_A(B)))} \ar[dr]_-{\ia {\overline{\pi_A}(\Sigma_A(\pi^*_A(B)))}} \ar@/_3pc/[uuuuuu]_<<<<<<<<<<<<<<<<<{\ia {\pi^*_A(\varepsilon^{\Sigma \,\dashv\, \pi^*_A}_B)}}^>>>>>>>>>>>>>>>>>>>>>>>>{\dcomment{\Sigma_A \,\dashv\, \pi^*_A}\quad\!\!\!\!\!}
+\\
+\ia {\Sigma_A(1_{\ia A})} \ar[rrrrr]_-{\ia {\Sigma_A(g)}} &&&&& \ia {\Sigma_A(\pi^*_A(B))} \ar[uuuuuuu]_-{\ia {\varepsilon^{\Sigma \,\dashv\, \pi^*_A}_B}}^>>>>>>{\dcomment{\text{def. of } \pi^*_A(\varepsilon^{\Sigma \,\dashv\, \pi^*_A})}\,\,\,}
+}
+\]
+In the previous diagram, $h$ is defined as the unique mediating morphism into the pullback square given by $\mathcal{P}(\overline{\pi_A}(1_X))$, for $\ia {!_A} : \ia {A} \longrightarrow \ia {1_{X}}$ and $\id_{\ia A} : \ia {A} \longrightarrow \ia {A}$. 
+
+Finally, we show that $(c)$ commutes by observing that $\eta^{1 \,\dashv\, \ia -}_{\ia A}$ satisfies the same universal property as $h$, as shown in the following diagram:
+\[
+\xymatrix@C=9em@R=6em@M=0.5em{
+& \ia {1_X} \ar[d]^-{\pi_{1_X}}_>{\dcomment{\mathcal{P}(!_A)}\qquad}^>{\,\,\,\,\,\,\,\dcomment{\eta^{1 \,\dashv\, \ia -}_X \text{ is an iso.}}} \ar@/^3.5pc/[dddr]^-{\id_{\ia {1_X}}}
+\\
+& X \ar@/^2pc/[ddr]_<<<<<<<<{\eta^{1 \,\dashv\, \ia -}_{X}}_<<<<<<<<<<<<<<<<<<{\dcomment{\text{nat. of } \eta^{1 \,\dashv\, \ia -}}\qquad\qquad}
+\\
+& \ia {1_{\ia A}} \ar[d]_-{=}^{\,\,\,\,\quad\dcomment{1 \text{ is split fibred}}}_>>>>{\dcomment{1 \text{ is s. fib.}}\,\,\,\,} \ar@/_5pc/[dd]_-{\pi_{1_{\ia A}}}_>>>>>>>>>>>>>>>>>>{\dcomment{\eta^{1 \,\dashv\, \ia -}_{\ia A} \text{is an iso.}}\,\,} \ar@/^2pc/[dr]^<<<<<<{\ia {1(\pi_A)}}
+\\
+\ia {A} \ar[ur]^-{\eta^{1 \,\dashv\, \ia -}_{\ia A}\!\!\!\!\!\!\!\!} \ar@/_2.75pc/[dr]_{\id_{\ia A}} \ar@/^1.5pc/[uur]_-{\pi_A} \ar@/^3.5pc/[uuur]^-{\ia {!_A}} & \ia {\pi^*_A(1_X)} \ar[d]_-{\pi_{\pi^*_A(1_X)}}^<<{\,\,\,\big\lrcorner} \ar[r]^-{\ia {\overline{\pi_A}(1_X)}} & \ia {1_X} \ar[d]^-{\pi_A}_-{\dcomment{\mathcal{P}(\overline{\pi_A}(1_X))}\qquad\qquad\quad\!\!\!\!\!\!\!\!\!\!}
+\\
+& \ia A \ar[r]_-{\pi_A} & X
+}
+\]
+\end{proof}
+
+Corollary~\ref{cor:semsubstintoweakenedterm2} follows from  Proposition~\ref{prop:semsubstintoweakenedterm} by setting $B \defeq U\ul{C}$. Intuitively, it says that given a value term $\vj \Gamma V A$ and a computation term $\cj {\Gamma, x \!:\! A} M \ul{C}$, where the computation type $\ul{C}$ does not depend on $x$, we can model the substitution $\cj \Gamma {M[V/x]} {\ul{C}}$ either by applying a reindexing functor, or by composing vertical morphisms.
+
+
+\begin{corollary}
+\label{cor:semsubstintoweakenedterm2}
+Given a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ \linebreak with strong split dependent sums, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$, a split fibred functor $U : q \longrightarrow p$, an object $X$ in $\mathcal{B}$, an object $A$ in $\mathcal{V}_X$, an object $\ul{C}$ in $\mathcal{C}_X$, a morphism $f : 1_X \longrightarrow A$ in $\mathcal{V}_{X}$, and a morphism $g : 1_{\ia A} \longrightarrow U(\pi^*_A(\ul{C}))$ in $\mathcal{V}_{\ia A}$, then 
+\[
+\hspace{-0.25cm}
+\xymatrix@C=2.25em@R=3em@M=0.5em{
+1_X \ar[r]^-{=} \ar[d]_-{f} & (\mathsf{s}(f))^*(1_{\ia A}) \ar[r]^-{(\mathsf{s}(f))^*(g)} & (\mathsf{s}(f))^*(U(\pi^*_A(\ul{C}))) \ar[r]^-{=} & (\mathsf{s}(f))^*(\pi^*_A(U(\ul{C}))) \ar[d]^-{=}
+\\
+A \ar[d]_-{\langle \id_{A} , !_A \rangle} & & & U(\ul{C})
+\\
+\Sigma_A(\pi^*_A(1_X)) \ar[r]_-{=} & \Sigma_A(1_{\ia A}) \ar[r]_-{\Sigma_A(g)} & \Sigma_A(U(\pi^*_A(\ul{C}))) \ar[r]_-{=} & \Sigma_A(\pi^*_A(U(\ul{C}))) \ar[u]_-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_{B}}
+}
+\]
+commutes in $\mathcal{V}_X$.
+\end{corollary}
+
+Next, we define the structures we use to model the computational $\Pi$- and $\Sigma$-types. Similarly to their value counterparts, we also model these types using well-behaved right and left adjoints to weakening functors, but in a different fibration. These definitions are based on $\mathcal{P}$-products and -coproducts discussed in~\cite[Definition~9.3.5]{Jacobs:Book}.
+
+
+\begin{definition}
+\label{def:splitdependentcompproducts}
+\index{split dependent!-- $p$-products}
+\index{ Product@$\Pi_A$ (split dependent $p$-product)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ is said to have  \emph{split dependent $p$-products} if every weakening functor $\pi_A^* : \mathcal{C}_{p(A)} \longrightarrow \mathcal{C}_{\ia A}$ has a right adjoint $\Pi_A : \mathcal{C}_{\ia A} \longrightarrow \mathcal{C}_{p(A)}$ such that the split Beck-Chevalley condition holds: for any Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, the canonical natural transformation
+\[
+\xymatrix@C=1em@R=1.5em@M=0.5em{
+(p(f))^* \comp \Pi_B \ar[rrrr]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, (p(f))^* \,\comp\, \Pi_B} &&&& \Pi_A \comp \pi^*_A \comp (p(f))^* \comp \Pi_B \ar[r]^-{=} & \Pi_A \comp (p(f) \comp \pi_A)^* \comp \Pi_B \ar[d]^{=}
+\\
+\Pi_A \comp \ia f^* &&&& \Pi_A \comp \ia f ^* \comp \pi^*_B \comp \Pi_B \ar[llll]^-{\Pi_A \,\comp\, \ia f^* \,\comp\, \varepsilon^{\pi^*_B \,\dashv\, \Pi_B}} & \Pi_A \comp (\pi_B \comp \ia f)^* \comp \Pi_B \ar[l]^-{=}
+}
+\]
+is required to be an identity. In particular, we must have $(p(f))^* \comp \Pi_B = \Pi_A \comp \ia f^*$.
+\end{definition}
+
+Observe that while the projection morphism $\pi_A : \ia A \longrightarrow p(A)$ in $\mathcal{B}$ is still induced by the split comprehension category with unit $p$, as in Definition~\ref{def:splitdependentproducts}, the weakening functor $\pi_A^* : \mathcal{C}_{p(A)} \longrightarrow \mathcal{C}_{\ia A}$ is now induced by reindexing along $\pi_A$ in $q$. 
+
+\begin{definition}
+\label{def:splitdependentcompsums}
+\index{split dependent!-- $p$-sums}
+\index{ Sigma@$\Sigma_A$ (split dependent $p$-sum)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$,  a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ is said to have \emph{split dependent $p$-sums} if every weakening functor $\pi_A^* : \mathcal{C}_{p(A)} \longrightarrow \mathcal{C}_{\ia A}$ has a left adjoint $\Sigma_A : \mathcal{C}_{\ia A} \longrightarrow \mathcal{C}_{p(A)}$ such that the split Beck-Chevalley condition holds: for any Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, the canonical natural transformation
+\[
+\hspace{-0.1cm}
+\xymatrix@C=1.25em@R=1.5em@M=0.5em{
+\Sigma_A \comp \ia f^* \ar[rrrr]^-{\Sigma_A \,\comp\, \ia f^* \,\comp\, \eta^{\Sigma_B \,\dashv\, \pi^*_B}} &&&& \Sigma_A \comp \ia f^* \comp \pi^*_B \comp \Sigma_B \ar[r]^-{=} & \Sigma_A \comp (\pi_B \comp \ia f)^* \comp \Sigma_B \ar[d]^{=}
+\\
+(p(f))^* \comp \Sigma_B &&&& \Sigma_A \comp \pi^*_A \comp (p(f))^* \comp \Sigma_B \ar[llll]^-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, (p(f))^* \,\comp\, \Sigma_B} & \Sigma_A \comp (p(f) \comp \pi_A)^* \comp \Sigma_B \ar[l]^-{=}
+}
+\]
+is required to be an identity. In particular, we must have $\Sigma_A \comp \ia f^* = (p(f))^* \comp \Sigma_B$.
+\end{definition}
+
+Observe that compared to the split dependent sums of $p$ (see Definition~\ref{def:strongsums}), we do not attempt to define a notion of strength for the split dependent $p$-sums of $q$. We do so because the typing rule of the elimination form for the computational $\Sigma$-type does not involve type-dependency, compared to the elimination form for the value $\Sigma$-type.
+
+Analogously to Propositions~\ref{prop:BCfordepproducts} and~\ref{prop:BCfordepsums}, these split Beck-Chevalley conditions again ensure that the units and counits of these adjunctions are preserved by reindexing.
+
+\begin{proposition}
+\label{prop:BCfordepcompproducts}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ with split dependent $p$-products, and a Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, then we have 
+\[
+(p(f))^* \comp \eta^{\pi^*_B \,\dashv\, \Pi_B} = \eta^{\pi^*_A \,\dashv\, \Pi_A} \comp (p(f))^*
+\qquad
+\ia f ^* \comp \varepsilon^{\pi^*_B \,\dashv\, \Pi_B} = \varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \comp \ia f ^*
+\]
+\end{proposition}
+
+\begin{proposition}
+\label{prop:BCfordepcompsums}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ with split dependent $p$-sums, and a Cartesian morphism $f : A \longrightarrow B$ in $\mathcal{V}$, then we have 
+\[
+\ia f ^* \comp \eta^{\Sigma_B \,\dashv\, \pi^*_B} = \eta^{\Sigma_A \,\dashv\, \pi^*_A} \comp \ia f ^*
+\qquad
+(p(f))^* \comp \varepsilon^{\Sigma_B \,\dashv\, \pi^*_B} = \varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \comp (p(f))^*
+\]
+\end{proposition}
+
+\begin{proof}
+Propositions~\ref{prop:BCfordepcompproducts} and~\ref{prop:BCfordepcompsums} are proved by straightforward diagram chasing, analogously to the proof of Proposition~\ref{prop:BCfordepproducts}.
+\end{proof}
+
+We conclude this section by showing that if the split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and the split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ are connected by a split fibred adjunction $F \dashv\, U : q \longrightarrow p$, then $U$ preserves split dependent products and $F$ preserves split dependent sums.
+
+\begin{proposition}
+\label{prop:UandFpreserveSigmaPi}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ \linebreak with split dependent products (resp.~weak split dependent sums), a split fibration \linebreak $q : \mathcal{C} \longrightarrow \mathcal{B}$ with split dependent $p$-products (resp.~split dependent $p$-sums), and a split fibred adjunction $F \dashv\, U : q \longrightarrow p$, then we have the natural isomorphism
+\[
+U \comp \Pi_A \cong \Pi_A \comp U : \mathcal{C}_{\ia A} \longrightarrow \mathcal{V}_{p(A)}
+\qquad
+(\text{resp.~} F \comp \Sigma_A \cong \Sigma_A \comp F : \mathcal{V}_{\ia A} \longrightarrow \mathcal{C}_{p(A)})
+\]
+for all objects $A$ in $\mathcal{V}$.
+\end{proposition}
+
+\begin{proof}
+
+Both natural isomorphisms follow straightforwardly from the fact that adjoints are unique up-to a unique natural isomorphism. 
+
+Specifically, in order to prove that the left-hand natural isomorphism involving $U$ and $\Pi_A$ exists, we first observe that we have the following two composite adjunctions:
+\[
+\xymatrix@C=3em@R=1.5em@M=0.5em{
+\mathcal{V}_{p(A)} \ar@/^2pc/[rr]^{F} & \dhide{\bot} & \mathcal{C}_{p(A)} \ar@/^2pc/[rr]^{\pi^*_A} \ar@/^2pc/[ll]^{U} & \dhide{\bot} & \mathcal{C}_{\ia A} \ar@/^2pc/[ll]^{\Pi_A}
+}
+\]
+\[
+\xymatrix@C=3em@R=1.5em@M=0.5em{
+\mathcal{V}_{p(A)} \ar@/^2pc/[rr]^{\pi^*_A} & \dhide{\bot} & \mathcal{V}_{\ia A} \ar@/^2pc/[rr]^{F} \ar@/^2pc/[ll]^{\Pi_A} & \dhide{\bot} & \mathcal{C}_{\ia A} \ar@/^2pc/[ll]^{U}
+}
+\vspace{0.2cm}
+\]
+We also recall that $F$ is a split fibred functor, meaning that $\pi^*_A \comp F = F \comp \pi^*_A$. 
+
+By combining these two observations, we get that both $U \comp \Pi_A$ and $\Pi_A \comp U$ are right adjoints to $\pi^*_A \comp F$ (or, equivalently, to $F \comp \pi^*_A$). Therefore, as right adjoints are unique up-to a unique natural isomorphism, we get that $U \comp \Pi_A \cong \Pi_A \comp U$. In detail, this natural isomorphism is given by the following two vertical natural transformations:
+\[
+\hspace{-0.1cm}
+\xymatrix@C=2em@R=2em@M=0.5em{
+U \comp \Pi_A \ar[rr]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U \,\comp\, \Pi_A} && \Pi_A \comp \pi^*_A \comp U \comp \Pi_A \ar[r]^{=} & \Pi_A \comp U \comp \pi^*_A \comp \Pi_A \ar[rr]^-{\Pi_A \,\comp\, U \,\comp\, \varepsilon^{\pi^*_A \,\dashv\, \Pi_A}} && \Pi_A \comp U
+}
+\]
+and
+\[
+\hspace{-0.15cm}
+\xymatrix@C=7em@R=2em@M=0.5em{
+\Pi_A \comp U \ar[r]^-{\eta^{F \,\dashv\, U} \,\comp\, \Pi_A \,\comp\, U} & U \comp F \comp \Pi_A \comp U \ar[r]^-{U \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, F \,\comp\, \Pi_A \,\comp\, U} & U \comp \Pi_A \comp \pi^*_A \comp F \comp \Pi_A \comp U \ar[d]^{=}
+\\
+U \comp \Pi_A & U \comp \Pi_A \comp F \comp U \ar[l]^-{U \,\comp\, \Pi_A \,\comp\, \varepsilon^{F \,\dashv\, U}} & U \comp \Pi_A \comp F \comp \pi^*_A \comp \Pi_A \comp U \ar[l]^-{U \,\comp\, \Pi_A \,\comp\, F \,\comp\, \varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U}
+}
+\]
+We denote this natural isomorphism by $\zeta_{\Pi, A} : U \comp \Pi_A \overset{\cong}{\,\longrightarrow\,} \Pi_A \comp U$.
+\index{ zeta@$\zeta_{\Pi, A}$ (natural isomorphism witnessing that $U$ preserves split dependent products)}
+
+
+%
+The other natural isomorphism is constructed similarly, by combining the adjunctions $\Sigma_A \dashv \pi^*_A$ with the fact that $U$ is a split fibred functor. In detail, it is given by
+\[
+\hspace{-0.2cm}
+\xymatrix@C=7.25em@R=2em@M=0.5em{
+F \comp \Sigma_A \ar[r]^-{F \,\comp\, \Sigma_A \,\comp\, \eta^{F \,\dashv\, U}} & F \comp \Sigma_A \comp U \comp F \ar[r]^-{F \,\comp\, \Sigma_A \,\comp\, U \,\comp\, \eta^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, F} & F \comp \Sigma_A \comp U \comp \pi^*_A \comp \Sigma_A \comp F \ar[d]^-{=}
+\\
+\Sigma_A \comp F & F \comp U \comp \Sigma_A \comp F \ar[l]^-{\varepsilon^{F \,\dashv\, U} \,\comp\, \Sigma_A \,\comp\, F} & F \comp \Sigma_A\comp \pi^*_A \comp U \comp \Sigma_A \comp F \ar[l]^-{F \,\comp\, \varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, U \,\comp\, \Sigma_A \,\comp\, F}
+}
+\]
+and
+\[
+\hspace{-0.1cm}
+\xymatrix@C=2.25em@R=2em@M=0.5em{
+\Sigma_A \comp F \ar[rr]^-{\Sigma_A \,\comp\, F \,\comp\, \eta^{\Sigma_A \,\dashv\, \pi^*_A}} && \Sigma_A \comp F \comp \pi^*_A \comp \Sigma_A \ar[r]^{=} & \Sigma_A \comp \pi^*_A \comp F \comp \Sigma_A \ar[rr]^-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, F \,\comp\, \Sigma_A} && F \comp \Sigma_A
+}
+\]
+We denote this natural isomorphism by $\zeta_{\Sigma,A} : F \comp \Sigma_A \overset{\cong}{\,\longrightarrow\,} \Sigma_A \comp F$.
+\index{ zeta@$\zeta_{\Sigma,A}$ (natural isomorphism witnessing that $F$ preserves split dependent sums)}
+\end{proof}
+
+\noindent We now show that the corresponding units and counits are also preserved by $U$ and $F$.
+
+
+\begin{proposition}
+\label{prop:PiUnitCounitPreservedByU}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split dependent products, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ with split dependent $p$-products, and a split fibred adjunction $F \dashv\, U : q \longrightarrow p$, then the next two diagrams commute.
+\[
+\hspace{-0.1cm}
+\xymatrix@C=3.75em@R=3em@M=0.5em{
+U \ar[r]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U} \ar[d]_-{U \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A}} & \Pi_A \comp \pi^*_A \comp U
+\\
+U \comp \Pi_A \comp \pi^*_A \ar[r]_-{\zeta_{\Pi,A} \,\comp\, \pi^*_A} & \Pi_A \comp U \comp \pi^*_A \ar[u]_-{=}
+}
+\quad
+\xymatrix@C=3.75em@R=3em@M=0.5em{
+\pi^*_A \comp \Pi_A \comp U \ar[r]^-{\varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U} \ar[d]_-{\pi^*_A \,\comp\, \zeta^{-1}_{\Pi,A}} & U
+\\
+\pi^*_A \comp U \comp \Pi_A \ar[r]_-{=} & U \comp \pi^*_A \comp \Pi_A \ar[u]_-{U \,\comp\, \varepsilon^{\pi^*_A \,\dashv\, \Pi_A}}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+We show the commutativity of these two diagrams by straightforward diagram chasing.
+For example, the left-hand square commutes because we have
+\[
+\hspace{-0.1cm}
+\xymatrix@C=6em@R=4em@M=0.5em{
+U 
+\ar[r]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U} \ar@/_6pc/[dd]_-{U \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A}}
+\ar@{}[d]^-{\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\dcomment{\text{nat. of } \eta^{\pi^*_A \,\dashv\, \Pi_A}}}
+& 
+\Pi_A \comp \pi^*_A \comp U
+\ar[dl]_<<<<<<<<<<<<{\Pi_A \,\comp\, \pi^*_A \,\comp\, U \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A}\quad}
+\ar[d]_>>>{\Pi_A \,\comp\, U \,\comp\, \pi^*_A \,\comp\, \eta^{\pi^*_A \,\dashv\, \Pi_A}}_<<<<<<<<{\dcomment{U \text{ is s. fib.}}\quad}^>>>>{\quad\dcomment{\pi^*_A \dashv \Pi_A}}
+\\
+\Pi_A \comp \pi^*_A \comp U \comp \Pi_A \comp \pi^*_A
+\ar[r]_-{=} 
+& 
+\Pi_A \comp U \comp \pi^*_A \comp \Pi_A \comp \pi^*_A
+\ar[d]_-{\Pi_A \,\comp\, U \,\comp\, \varepsilon^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, \pi^*_A}
+\\
+U \comp \Pi_A \comp \pi^*_A  
+\ar[r]_-{\zeta_{\Pi,A} \,\comp\, \pi^*_A}
+\ar[u]_-{\eta^{\pi^*_A \,\dashv\, \Pi_A} \,\comp\, U \,\comp\, \Pi_A \,\comp\, \pi^*_A}_<<{\,\,\,\,\,\,\quad\qquad\qquad\dcomment{\text{def. of } \zeta_{\Pi,A}}}
+& 
+\Pi_A \comp U \comp \pi^*_A
+\ar@/_6pc/[uu]_-{=}
+}
+\]
+The commutativity of the second square is proved analogously.
+\end{proof}
+
+\begin{proposition}
+\label{prop:SigmaUnitCounitPreservedByF}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with weak split dependent sums, a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$ with split dependent $p$-sums, and a split fibred adjunction $F \dashv\, U : q \longrightarrow p$, then the next two diagrams  commute.
+\[
+\xymatrix@C=3.75em@R=3em@M=0.5em{
+F 
+\ar[r]^-{\eta^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, F}
+\ar[d]_-{F \,\comp\, \eta^{\Sigma_A \,\dashv\, \pi^*_A}}
+& 
+\pi^*_A \comp \Sigma_A \comp F
+\\
+F \comp \pi^*_A \comp \Sigma_A
+\ar[r]_-{=} 
+& 
+\pi^*_A \comp F \comp \Sigma_A
+\ar[u]_-{\pi^*_A \,\comp\, \zeta_{\Sigma,A}}
+}
+\quad
+\xymatrix@C=3.75em@R=3em@M=0.5em{
+\Sigma_A \comp \pi^*_A \comp F
+\ar[r]^-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, F} \ar[d]_-{=}
+&
+F
+\\
+\Sigma_A \comp F \comp \pi^*_A
+\ar[r]_-{\zeta^{-1}_{\Sigma,A} \,\comp\, \pi^*_A}
+&
+F  \comp \Sigma_A \comp \pi^*_A
+\ar[u]_-{F \,\comp\, \varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+This proposition is proved analogously to Proposition~\ref{prop:PiUnitCounitPreservedByU}, also by straightforward diagram chasing, and by unfolding the definitions of $\zeta_{\Sigma,A}$ and $\zeta_{\Sigma,A}^{-1}$.
+\end{proof}
+
+
+\subsection{Empty type and coproduct type}
+\label{sect:fibadjmodelscolimits}
+
+As their syntax suggests, the empty type $0$ and the coproduct type $A + B$ are respectively most naturally modelled in terms of split fibred initial objects and split fibred binary coproducts in some split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$. However, it is important to observe that assuming such split fibred structure by itself does not suffice to model the dependently typed elimination forms for these types, i.e., the empty and binary case analysis.
+
+For the coproduct type, an appropriate fibrational structure has been characterised by Jacobs in~\cite[Exercise~10.5.6]{Jacobs:Book}. Specifically, Jacobs requires a certain mediating functor, induced by the injections of the split fibred coproducts, to be \emph{fully-faithful}.
+
+In this section we observe that the structure Jacobs suggested for modelling the dependently typed  elimination form for the coproduct type is in fact an instance of a more general phenomenon. Namely, we show that Jacobs's ideas apply to arbitrary split fibred colimits, including split fibred initial objects, enabling us to also model the empty type and the empty case analysis. In addition, we demonstrate that in fact one does not need to separately assume the existence of split fibred colimits of a given shape before imposing the fully-faithfulness condition---every split fibred cocone of a given shape for which the fully-faithfulness condition on the induced mediating functor holds turns out to be a split fibred colimit of that shape. We refer the reader to Section~\ref{sect:adjunctionsbackground} for the definitions of shapes, diagrams, cones, cocones, limits, and colimits.
+
+We begin by defining a notion of strong colimits, based on the fully-faithfulness condition that Jacobs proposed for fibred coproducts in~\cite[Exercise~10.5.6]{Jacobs:Book}.
+
+\begin{definition}
+\label{def:strongcolimits}
+\index{colimit!strong --}
+\index{ in@$\mathsf{\ul{in}}^{J}$ (strong colimit of $J$)}
+\index{ colim@$\mathsf{\ul{colim}}(J)$ (vertex of the strong colimit of $J$)}
+\index{ J@$\widehat{J}$ ($\mathsf{Cat}$-valued diagram derived from $J$)}
+Let us assume a small category $\mathcal{D}$ and a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$.
+Then, given an object $X$ in $\mathcal{B}$, we say that the fibre $\mathcal{V}_X$ has \emph{strong colimits of shape $\mathcal{D}$} if for every diagram $J : \mathcal{D} \longrightarrow \mathcal{V}_X$,  there exists a cocone $\mathsf{\ul{in}}^{J} : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$ over $J$ such that the unique mediating functor $\langle \ia {\mathsf{\ul{in}}^J_D}^*_{D \in \mathcal{D}} \rangle : \mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}} \longrightarrow \mathsf{lim}(\widehat{J})$, induced by the universal property of the limit $\mathsf{pr}^{\widehat{J}} : \Delta(\mathsf{lim}(\widehat{J})) \longrightarrow \widehat{J}$, is fully-faithful. Here, the diagram $\widehat{J} : \mathcal{D}^{\text{op}} \longrightarrow \mathsf{Cat}$ is given by 
+\[
+\widehat{J}(D) \defeq \mathcal{V}_{\ia {J(D)}}
+\qquad
+\widehat{J}(g) \defeq \ia {J(g)}^*
+\]
+\end{definition}
+
+More specifically, the functor $\langle \ia {\mathsf{\ul{in}}^J_D}^*_{D \in \mathcal{D}} \rangle$ arises as the unique mediating morphism in $\mathsf{Cat}$ for $\mathsf{lim}(\widehat{J})$ because the reindexing functors $\ia {\mathsf{\ul{in}}^J_D}^*$ form a cone over $\widehat{J}$. In particular, for all morphisms $g : D_i \longrightarrow D_j$ in $\mathcal{D}$, the outer triangle commutes in 
+\[
+\xymatrix@C=1.5em@R=2em@M=0.5em{
+& & \mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}} \ar@/_2pc/[dddll]_-{\ia {\mathsf{\ul{in}}^{J}_{D_j}} ^*} \ar@/^2pc/[dddrr]^-{\ia {\mathsf{\ul{in}}^{J}_{D_i}} ^*} \ar@{-->}[dd]^{\langle \ia {\mathsf{\ul{in}}^J_D}^*_{D \in \mathcal{D}} \rangle}
+\\
+\\
+& & \mathsf{lim}(\widehat{J}) \ar[dl]_{\mathsf{pr}^{\widehat{J}}_{D_j}} \ar[dr]^{\mathsf{pr}^{\widehat{J}}_{D_i}}
+\\
+\mathcal{V}_{\ia {J(D_j)}} \ar[r]_-{=} & \widehat{J}(D_j) \ar[rr]_{\ia {J(g)} ^*} & & \widehat{J}(D_i) \ar[r]_-{=} &  \mathcal{V}_{\ia {J(D_i)}}
+}
+\]
+because we have the following sequence of equations: 
+\[
+\ia {\mathsf{\ul{in}}^{J}_{D_i}} ^* = \ia {\mathsf{\ul{in}}^{J}_{D_j} \comp\, J(g)} ^* = \ia {J(g)} ^* \comp \ia {\mathsf{\ul{in}}^{J}_{D_j}} ^*
+\]
+where the left-hand equation holds because $\mathsf{\ul{colim}}(J)$ is the vertex of the cocone $\mathsf{\ul{in}}^{J}$.
+
+\begin{definition} 
+\label{def:strongsplitfibredcolims}
+\index{colimit!split fibred strong --}
+\index{ in@$\mathsf{\ul{in}}^{J}$ (split fibred strong colimit of $J$)}
+\index{ colim@$\mathsf{\ul{colim}}(J)$ (vertex of the split fibred strong colimit of $J$)}
+A full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ has \emph{split fibred strong colimits of shape $\mathcal{D}$} if every fibre of $p$ has strong colimits of shape $\mathcal{D}$ and this structure is preserved on-the-nose by reindexing, i.e., given any morphism $f : X \longrightarrow Y$ in $\mathcal{B}$ and any diagram $J : \mathcal{D} \longrightarrow \mathcal{V}_Y$, then we must have 
+\[
+f^*(\mathsf{\ul{colim}}(J)) = \mathsf{\ul{colim}}(f^* \comp\, J)
+\qquad
+f^*(\mathsf{\ul{in}}^{J}_D) =  \mathsf{\ul{in}}^{f^* \comp\, J}_D: f^*(J(D)) \longrightarrow \mathsf{\ul{colim}}(f^* \comp\, J)
+\]
+\end{definition}
+
+It is instructive to see what the above characterisation means for modelling the empty type and the coproduct type in a full split comprehension category with unit $p$.
+
+\index{object!split fibred strong initial --}
+\index{ 0@$\mathbf{0}$ (empty category)}
+\index{ 0@$0_X$ (initial object in $\mathcal{V}_X$)}
+\index{ @$?_A$ (unique morphism in $\mathcal{V}_{\ia {0_X}}$ from $1_{\ia {0_X}}$ to $A$)}
+To model the \emph{empty type}, we require $p$ to have split fibred strong colimits of shape $\mathbf{0}$, i.e., we require $p$ to have split fibred strong initial objects. 
+\index{initial object!split fibred strong --}
+Writing $0_X$ for the split fibred strong initial object in the fibre $\mathcal{V}_X$, its strength ensures that in the fibre $\mathcal{V}_{\ia {0_X}}$ there is exactly one morphism between any two objects. In particular, when later defining the interpretation of eMLTT, we make use of the fact that there is a unique vertical morphism from $1_{\ia {0_X}}$ to any other object $A$ in $\mathcal{V}_{\ia {0_X}}$, written ${?_A : 1_{\ia {0_X}} \longrightarrow A}$.
+
+\index{ A@$A +_X B$ (binary coproduct of $A$ and $B$ in $\mathcal{V}_X$)}
+\index{injection!left --}
+\index{injection!right --}
+\index{ inl@$\mathsf{inl}$ (left injection for binary coproducts)}
+\index{ inr@$\mathsf{inr}$ (right injection for binary coproducts)}
+To model the \emph{coproduct type}, we require $p$ to have split fibred strong colimits of shape $\mathbf{2}$, i.e., we require $p$ to have split fibred strong  coproducts. 
+\index{coproduct!split fibred strong --}
+Writing ${A_1 +_X A_2}$ for the split fibred strong binary coproduct of $A_1$ and $A_2$ in $\mathcal{V}_X$, its strength ensures that vertical morphisms of the form $B_1 \longrightarrow B_2$ in $\mathcal{V}_{\ia {A_1 +_X A_2}}$ are in one-to-one \linebreak correspondence with pairs of vertical morphisms $\ia {\mathsf{inl}} ^*(B_1) \longrightarrow \ia {\mathsf{inl}} ^*(B_2)$ and \linebreak $\ia {\mathsf{inr}} ^*(B_1) \longrightarrow \ia {\mathsf{inr}} ^*(B_2)$ in $\mathcal{V}_{\ia {A_1}}$ and $\mathcal{V}_{\ia {A_2}}$, respectively, where we write \linebreak $\mathsf{inl}$ for $\mathsf{\ul{in}}^J_0 : A_1 \longrightarrow A_1 +_X A_2$ and $\mathsf{inr}$ for $\mathsf{\ul{in}}^J_1 : A_2 \longrightarrow A_1 +_X A_2$, with $J(0) = A_1$ and \linebreak $J(1) = A_2$.
+This one-to-one correspondence gives us a dependent case analysis principle for $A_1 +_X A_2$, arising as a special case of a corresponding dependent elimination principle for arbitrary split fibred strong colimits whose existence we show next.
+
+
+\begin{proposition}
+\label{prop:indexedelimcolimits}
+\index{ f@$[f_D]_{D \in \mathcal{D}}$ (dependently typed elimination principle for split fibred strong colimits)}
+Let us assume a full split comprehension category with unit \linebreak $p : \mathcal{V} \longrightarrow \mathcal{B}$ that has split fibred strong colimits of shape $\mathcal{D}$, a diagram of the form \linebreak $J : \mathcal{D} \longrightarrow \mathcal{V}_X$, and an object $A$ in $\mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}}$. Then, given a family of vertical morphisms $f_{D} : 1_{\ia {J(D)}} \longrightarrow \ia {\mathsf{\ul{in}}^{J}_D} ^*(A)$, for all objects $D$ in $\mathcal{D}$, such that for all morphisms \linebreak$g : D_i \longrightarrow D_{\!j}$ in $\mathcal{D}$ we have $\ia {J(g)} ^*(f_{D_{\!j}}) = f_{D_i}$, there exists a unique vertical morphism $[f_D]_{D \in \mathcal{D}} : 1_{\ia {\mathsf{\ul{colim}}(J)}} \longrightarrow A$ in $\mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}}$ satisfying the following ``$\beta$-equations":
+\[
+\ia {\mathsf{\ul{in}}^{J}_{D_i}}^*([f_D]_{D \in \mathcal{D}}) = f_{D_i}  : 1_{\ia {J(D_i)}} \longrightarrow \ia {\mathsf{\ul{in}}^{J}_{D_i}} ^*(A)
+\]
+for all objects $D_i$ in $\mathcal{D}$.
+\end{proposition}
+
+\begin{proof}
+We postpone the lengthy details of this proof to Appendix~\ref{sect:proofofprop:indexedelimcolimits}, where  
+much of the space is taken up by straightforward but laborious diagram chasing.
+At a high level, the proof is based on using the universal property of the limit $\mathsf{pr}^{\widehat{J}} : \Delta(\mathsf{lim}(\widehat{J})) \longrightarrow \widehat{J}$ and the fully-faithfulness of the induced functor $\langle \ia {\mathsf{\ul{in}}^J_D}^*_{D \in \mathcal{D}} \rangle : \mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}} \longrightarrow \mathsf{lim}(\widehat{J})$. 
+\end{proof}
+
+\index{ f@$[f,g]$ (unique copairing of vertical morphisms)}
+In particular, when we define the interpretation of eMLTT's coproduct type in Chapter~\ref{chap:interpretation}, we write $[f,g] : 1_{\ia {A_1 +_X A_2}} \longrightarrow B$ for the corresponding unique copairing of any two vertical morphisms  $f : 1_{\ia {A_1}} \longrightarrow \ia {\mathsf{inl}} ^*(B)$ and $g : 1_{\ia {A_2}} \longrightarrow \ia {\mathsf{inr}} ^*(B)$. 
+
+
+Finally, notice that we have suggestively written the cocone in Definitions~\ref{def:strongcolimits} and~\ref{def:strongsplitfibredcolims} as $\mathsf{\ul{in}}^{J} : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$.
+As the notation suggests, and as promised earlier, it turns out that the fully-faithfulness condition ensures 
+that $\mathsf{\ul{in}}^{J}$ forms a colimit of $J$ in $\mathcal{V}_X$ in the standard sense.
+%
+In particular, the next proposition generalises an analogous result for strong fibred coproducts in $\mathsf{cod}_\mathcal{B}$, as given in~\cite[Exercise~10.5.6 (ii)]{Jacobs:Book}.
+
+\begin{proposition}
+\label{prop:fibredcolimits}
+Let us assume a full split comprehension category with unit \linebreak $p : \mathcal{V} \longrightarrow \mathcal{B}$ that has split fibred strong colimits of shape $\mathcal{D}$. Then, given a diagram of the form $J : \mathcal{D} \longrightarrow \mathcal{V}_X$, the cocone $\mathsf{\ul{in}}^{J} : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$, induced by the existence of split fibred strong colimits of shape $\mathcal{D}$, is a colimit of $J$ in $\mathcal{V}_X$ in the standard sense, i.e., the cocone $\mathsf{\ul{in}}^{J} : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$ is initial amongst the cocones over $J$ in $\mathcal{V}_X$.
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by appropriately instantiating Proposition~\ref{prop:indexedelimcolimits}. 
+In particular, given another cocone $\alpha : J \longrightarrow \Delta(A)$ in $\mathcal{V}_X$, we choose the object in $\mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}}$ to be $\pi^*_{\mathsf{\ul{colim}}(J)}(A)$ 
+and derive each $f_D$ from the corresponding component $\alpha_D$ of the given cocone $\alpha$.
+We postpone the details of this proof to Appendix~\ref{sect:proofofprop:fibredcolimits}.
+\end{proof}
+
+Further, observe that according to Definition~\ref{def:strongsplitfibredcolims}, if the given full split comprehension category with unit has split fibred strong colimits, the colimiting cocones in the fibres are preserved on-the-nose by reindexing. To add to this, we show below that the unique mediating morphisms are also preserved on-the-nose by reindexing.
+
+
+\begin{proposition}
+\index{ f@$f^*(\alpha)$ (component-wise reindexing of the cocone $\alpha$)}
+Given a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ 
+that has split fibred strong colimits of shape $\mathcal{D}$, a diagram $J : \mathcal{D} \longrightarrow \mathcal{V}_Y$, a cocone $\alpha : J \longrightarrow \Delta(A)$ in $\mathcal{V}_Y$, and a morphism $f : X \longrightarrow Y$ in $\mathcal{B}$, then we have 
+\[
+f^*([\alpha]) = [f^*(\alpha)]
+\]
+where $f^*(\alpha)$ is a cocone with $(f^*(\alpha))_D \defeq f^*(\alpha_D)$.
+Analogously, the unique morphisms arising from Proposition~\ref{prop:indexedelimcolimits} are also preserved on-the-nose by reindexing, i.e., 
+\[
+\ia {\overline{f}(\mathsf{\ul{colim}}(J))}^*([f_D]_{D \in \mathcal{D}}) = [\ia {\overline{f}(J(D))}^*(f_D)]_{D \in \mathcal{D}}
+\]
+\end{proposition}
+
+\begin{proof}
+As $[\alpha]$ is a morphism of cocones from $\mathsf{\ul{in}}^J$ to $\alpha$, we know that
+\[
+[\alpha] \comp \mathsf{\ul{in}}^J_D = \alpha_D
+\]
+for all $D$ in $\mathcal{D}$. Next, using the functoriality of the reindexing functor $f^*$, we get that
+\[
+f^*([\alpha]) \comp f^*(\mathsf{\ul{in}}^J_D) = f^*(\alpha_D)
+\]
+Now, as we have assumed split fibred strong colimits of shape $\mathcal{D}$, we have that
+\[
+f^*(\mathsf{\ul{in}}^J_D) = \mathsf{\ul{in}}^{f^* \comp\, J}_D
+\]
+from which we get that
+\[
+f^*([\alpha]) \comp \mathsf{\ul{in}}^{f^* \comp\, J}_D = f^*(\alpha_D)
+\]
+meaning that $f^*([\alpha])$ is a morphism of cocones from $\mathsf{\ul{in}}^{f^* \comp\, J}$ to $f^*(\alpha)$. But as we know that $\mathsf{\ul{in}}^{f^* \comp\, J}$ is the colimit of $f^* \comp J$, there is exactly one such morphism of cocones, namely, $[f^*(\alpha)]$. Therefore, we have successfully shown that $f^*([\alpha]) = [f^*(\alpha)]$.
+
+The proof that the unique morphisms $[f_D]_{D \in \mathcal{D}}$ arising from Proposition~\ref{prop:indexedelimcolimits} are also preserved on-the-nose by reindexing proceeds similarly: we show that the morphism $\ia {\overline{f}(\mathsf{\ul{colim}}(J))}^*([f_D]_{D \in \mathcal{D}})$ satisfies the same universal property as the unique morphism $[\ia {\overline{f}(J(D))}^*(f_D)]_{D \in \mathcal{D}}$, i.e., we show for all $D$ in $\mathcal{D}$ that we have 
+\[
+\ia {\mathsf{\ul{in}}^{f^* \comp\, J}_D}^*(\ia {\overline{f}(\mathsf{\ul{colim}}(J))}^*([f_D]_{D \in \mathcal{D}}))
+=
+\ia {\overline{f}(J(D))}^*(f_D)
+\]
+which follows by straightforward diagram chasing, 
+based on $p$ being a split fibration, and using the equations given in Definition~\ref{def:strongsplitfibredcolims} and the definition of $f^*(\mathsf{\ul{in}}^J_D)$.
+\end{proof}
+
+\subsection{Natural numbers}
+
+
+We recall that in the paper~\cite{Ahman:FibredEffects} on which this thesis is based on, the semantics of the type of natural numbers was given somewhat synthetically, by reading the semantic axiomatisation directly off the corresponding typing rules. 
+Similar syntax-based axiomatisations appear for natural numbers also elsewhere in the literature, e.g., in~\cite{Atkey:DepTypes}.
+
+It is worth noting that while such syntax-based axiomatisation provides the structure one needs to interpret the type of natural numbers and the corresponding dependently typed elimination form, it is not immediate how it relates to the existing work on fibrational models of the induction principle for natural numbers in predicate logic, which corresponds to the dependently typed elimination form via the Curry-Howard correspondence.
+Specifically, in fibrational models of predicate logic, the induction principle for an inductive type is commonly modelled by giving an algebra for the lifting of the endofunctor whose least fixed point defines the inductive type in question, e.g., as studied by Hermida and Jacobs~\cite{Hermida:fibinduction}, and Ghani et al.~\cite{Ghani:FibredInduction}. 
+
+In this section we propose a category-theoretically more natural characterisation of the structure we used in~\cite{Ahman:FibredEffects} for modelling the type of natural numbers, inspired by the above-mentioned fibrational treatment of the induction principle for natural numbers.
+
+
+\begin{definition}
+\label{def:strongsplitfibredweaknaturals}
+\index{weak split fibred strong natural numbers}
+\index{ zero@$\mathsf{zero}$ (zero morphism of weak split fibred strong natural numbers)}
+\index{ succ@$\mathsf{succ}$ (successor morphism of weak split fibred strong natural numbers)}
+\index{ N@$\mathbb{N}$ (weak split fibred strong natural numbers)}
+\index{ rec@$\mathsf{rec}(f_z,f_s)$ (elimination principle for weak split fibred strong natural numbers)}
+Given a full split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ such that $\mathcal{B}$ has a terminal object,
+we say that $p$ has \emph{weak split fibred strong natural numbers} if there exists a distinguished object $\mathbb{N}$ in $\mathcal{V}_1$, together with a pair of vertical morphisms
+\[
+\xymatrix@C=7em@R=1em@M=0.5em{
+1_1 \ar[r]^-{\mathsf{zero}} & \mathbb{N} & \mathbb{N} \ar[l]_-{\mathsf{succ}}
+}
+\]
+such that for any object $X$ in $\mathcal{B}$ and any pair of morphisms
+\[
+\hspace{-0.5cm}
+\xymatrix@C=7em@R=1em@M=0.5em{
+1_{\ia {1_X}} \ar[r]^-{f_z} & A & A \ar[l]_-{f_s}
+}
+\]
+in $\mathcal{V}$, with 
+\[
+p(A) = \ia {!_X^*(\mathbb{N})}
+\qquad
+p(f_z) = \ia {!_X^*(\mathsf{zero})}
+\qquad
+p(f_s) = \ia {!_X^*(\mathsf{succ})}
+\]
+there exists a (not necessarily unique) section $\mathsf{rec}(f_z,f_s)$ of 
+$\pi_A : \ia {A} \longrightarrow \ia {!_X^*(\mathbb{N})}$, making the following two squares commute:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\ia {1_X} \ar[r]^-{\ia {!_X^*(\mathsf{zero})}} \ar[d]_-{\eta^{1 \,\dashv\, \ia -}_{\ia {1_X}}} & \ia {!_X^*(\mathbb{N})} \ar[d]_-{\mathsf{rec}(f_z,f_s)} & \ia {!_X^*(\mathbb{N})} \ar[l]_-{\ia {!_X^*(\mathsf{succ})}} \ar[d]^-{\mathsf{rec}(f_z,f_s)}
+\\
+\ia {1_{\ia {1_X}}} \ar[r]_-{\ia {f_z}} & \ia {A} & \ia {A} \ar[l]^-{\ia {f_s}}
+}
+\]
+\end{definition}
+
+\index{ NNO@NNO (natural numbers object)}
+As a direct consequence of the above definition, we can show that every fibre of $p$ has a weak natural numbers object (NNO) that also supports a dependently typed elimination principle in the sense of the axiomatisation used in~\cite{Ahman:FibredEffects}, as shown next.
+
+\begin{proposition}
+\label{prop:fibredNNO}
+Let us assume a full split comprehension category with unit \linebreak $p : \mathcal{V} \longrightarrow \mathcal{B}$ such that $\mathcal{B}$ has a terminal object and $p$ has weak split fibred strong 
+natural numbers. Then, each fibre of $p$ has a weak NNO and this structure is preserved on-the-nose by reindexing.
+\end{proposition}
+
+\begin{proof}
+Due to its length, we postpone the proof of Proposition~\ref{prop:fibredNNO} to Appendix~\ref{sect:proofofprop:fibredNNO}. 
+Here, we only note that given an object $X$ in $\mathcal{B}$, a weak NNO in $\mathcal{V}_X$ can be given by
+\[
+\xymatrix@C=7em@R=6em@M=0.5em{
+1_X \ar[r]^-{!_X^*(\mathsf{zero})} & !_X^*(\mathbb{N}) & !_X^*(\mathbb{N}) \ar[l]_-{!_X^*(\mathsf{succ})}
+}
+\]
+\end{proof}
+
+At this point, we would also like to report on a small oversight in~\cite{Ahman:FibredEffects}. Namely, 
+the semantic ``$\beta$-equation" that corresponds to the application of the elimination form for natural numbers to the successor should have of course been given by
+\[
+\ia {!_X^*(\mathsf{succ})}^* (\mathsf{i}_A(f_z,f_s)) 
+=
+(\mathsf{s}(\mathsf{i}_A(f_z,f_s)))^*(f_s) 
+\]
+Taking this oversight into account, we show that the axiomatisations are equivalent.
+
+\begin{proposition}
+\label{prop:equivalenceofnaturalnumbersinthesisandpaper}
+\index{ i@$\mathsf{i}_A(f_z,f_s)$ (elimination principle for weak split fibred strong natural numbers)}
+Let us assume a full split comprehension category with unit \linebreak $p : \mathcal{V} \longrightarrow \mathcal{B}$ such that $\mathcal{B}$ has a terminal object. Then, $p$ having weak split fibred strong natural numbers is equivalent to $p$ supporting weak natural numbers as in~\cite{Ahman:FibredEffects}, i.e., for every object $X$ in $\mathcal{B}$, every object $A$ in $\mathcal{V}_{\ia {!_X^*(\mathbb{N})}}$, every morphism 
+\[
+f_z : 1_X \longrightarrow (\funsection(!_X^*(\mathsf{zero})))^*(A)
+\]
+in $\mathcal{V}_X$, and every morphism 
+\[
+f_s : 1_{\ia A} \longrightarrow \pi_A^*(\ia {!_X^*(\mathsf{succ})}^* (A))
+\]
+in $\mathcal{V}_{\ia A}$, there exists a morphism 
+\[
+\mathsf{i}_A(f_z,f_s) : 1_{\ia {!^*_X(\mathbb{N})}} \longrightarrow A
+\]
+in $\mathcal{V}_{\ia {!^*_X(\mathbb{N})}}$ such that 
+\[
+\begin{array}{c}
+(\funsection(!_X^*(\mathsf{zero})))^*(\mathsf{i}_A(f_z,f_s)) = f_z
+\\[3mm]
+\ia {!_X^*(\mathsf{succ})}^* (\mathsf{i}_A(f_z,f_s)) 
+=
+(\mathsf{s}(\mathsf{i}_A(f_z,f_s)))^*(f_s) 
+\end{array}
+\vspace{0.2cm}
+\]
+\end{proposition}
+
+\begin{proof}
+We postpone the straightforward but somewhat lengthy details of this proof to Appendix~\ref{sect:proofofprop:equivalenceofnaturalnumbersinthesisandpaper}, where much of the space is taken up by laborious diagram chasing.
+\end{proof}
+
+
+
+
+\subsection{Propositional equality}
+
+We recall that for dependently typed languages that support extensional propositional equality, i.e., languages that include an $\eta$-equation for propositional equality, the required category-theoretical structure is most naturally characterised by requiring all contraction functors (defined later in this section) to have well-behaved left adjoints, e.g., as discussed in~\cite[Section~10.5]{Jacobs:Book}.
+While we could use this adjunction-based characterisation of models of extensional propositional equality to prove the soundness of the interpretation of eMLTT, we would not be able to prove the completeness of the interpretation in Section~\ref{sect:completeness} because eMLTT's propositional equality is intensional.
+
+Therefore, in order to be able to later prove the completeness of the interpretation of eMLTT, we characterise the structure needed to model its intensional propositional equality similarly axiomatically as in the paper~\cite{Ahman:FibredEffects} on which this thesis is based on.
+
+\begin{definition}
+\label{def:diagonalmorphisminbase}
+\index{morphism!diagonal --}
+\index{ d@$\delta_A$ (diagonal morphism)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and an object $A$ in $\mathcal{V}$, the unique mediating morphism $\delta_A : \ia {A} \longrightarrow \ia {\pi_A^*(A)}$ induced by the pullback situation below is called a \emph{diagonal morphism}.
+\[
+\xymatrix@C=4em@R=4em@M=0.5em{
+\ia A \ar@/_2pc/[dr]_{\id_{\ia A}} \ar@/^3pc/[rr]^{\id_{\ia A}} \ar@{-->}[r]^-{\delta_A} & \ia {\pi^*_A(A)} \ar[d]_{\pi_{\pi^*_A(A)}}^<{\,\big\lrcorner} \ar[r]^-{\ia {\overline{\pi_A}(A)}} & \ia A \ar[d]^{\pi_A}_{\dcomment{\mathcal{P}(\overline{\pi_A}(A))}\quad\,\,\,\,\,\,\,\,\,}
+\\
+& \ia A \ar[r]_-{\pi_A} & p(A)
+}
+\]
+\end{definition}
+
+\begin{definition}
+\index{functor!contraction --}
+\index{ d@$\delta^*_A$ (contraction functor)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ and an object $A$ in $\mathcal{V}$, the functor $\delta^*_A : \mathcal{V}_{\ia {\pi^*_A(A)}} \longrightarrow \mathcal{V}_{\ia{A}}$ is called a \emph{contraction functor}.
+\end{definition}
+
+\begin{definition}
+\label{def:strongpropequality}
+\index{split intensional propositional equality}
+\index{ Id@$\Id_A$ (split intensional propositional equality)}
+\index{ r@$\mathsf{r}_A$ (reflexivity of split intensional propositional equality)}
+\index{ i@$\mathsf{i}_{A,B}(f)$ (elimination principle for split intensional propositional equality)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$, we say that $p$ supports \emph{split intensional propositional equality} if for every $A$ in $\mathcal{V}$, there exists an object $\Id_A$ in $\mathcal{V}_{\ia {\pi^*_A(A)}}$ and a morphism $\mathsf{r}_A : 1_{\ia A} \longrightarrow \delta^*_A(\Id_A)$ in $\mathcal{V}_{\ia {A}}$, such that for every object $B$ in $\mathcal{V}_{\ia {\Id_A}}$ and morphism $f : 1_{\ia A} \longrightarrow (\mathsf{s}(\mathsf{r}_A))^*(\ia {\overline{\delta_A}(\Id_A)} ^* (B))$ in $\mathcal{V}_{\ia {A}}$, there exists a morphism $\mathsf{i}_{A,B}(f) : 1_{\ia {\Id_A}} \longrightarrow B$ in $\mathcal{V}_{\ia {\Id_A}}$, satisfying 
+\[
+(\mathsf{s}(\mathsf{r}_A))^*(\ia {\overline{\delta_A}(\Id_A)} ^* (\mathsf{i}_{A,B}(f))) = f
+\]
+such that for any Cartesian morphism $g : A \longrightarrow A'$ in $\mathcal{V}$, the following equations hold:
+\[
+\begin{array}{c}
+{\ia {g'}}^*(\Id_{A'}) = \Id_A
+\\[3mm]
+\ia g^*(\mathsf{r}_{A'}) = \mathsf{r}_{A}
+\\[3mm]
+\ia {\overline{\ia {g'}}(\Id_{A'})}^*(\mathsf{i}_{A',B}(f)) = \mathsf{i}_{A,\ia {\overline{\ia {g'}}(\Id_{A'})}^*(B)}(\ia g^*(f))
+\end{array}
+\]
+Here, the morphism $g' : \pi^*_A(A) \longrightarrow \pi^*_{A'}(A')$ in $\mathcal{V}$ is induced by the universal property of the Cartesian morphism $\overline{\pi_{A'}}(A') : \pi^*_{A'}(A') \longrightarrow A'$, as illustrated in the next diagram.
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+& A \ar[dr]^-{g}
+\\
+\pi^*_A(A) \ar@{-->}[r]_-{g'} \ar[ur]^-{\overline{\pi_A}(A)} & \pi^*_{A'}(A') \ar[r]_-{\overline{\pi_{A'}}(A')} & A'
+\\
+\ia{A} \ar[r]^-{\ia g} \ar[dr]_-{\pi_A} \ar@{}[d]^<<<<<<{\qquad\qquad\quad\,\,\,\,\,\dcomment{\mathcal{P}(g)}} & \ia {A'} \ar[r]^-{\pi_{A'}} & p(A')
+\\
+& p(A) \ar[ur]_-{p(g)}
+}
+\]
+\end{definition}
+
+It is worth noting that the second equation $\ia g^*(\mathsf{r}_{A'}) = \mathsf{r}_{A}$ is well-formed because the morphisms $\ia {g'} \comp \delta_A : \ia {A} \longrightarrow \ia {\pi^*_{A'}(A')}$ and $\delta_{A'} \comp \ia g : \ia {A} \longrightarrow \ia {\pi^*_{A'}(A')}$ are equal. In particular, these morphisms satisfy the same universal property as the unnamed unique mediating morphism in the following pullback situation:
+\[
+\xymatrix@C=4em@R=4em@M=0.5em{
+\ia A \ar@/_2pc/[dr]_{\ia g} \ar@/^3pc/[rr]^{\ia g} \ar@{-->}[r]^-{} & \ia {\pi^*_{A'}(A')} \ar[d]_{\pi_{\pi^*_{A'}(A')}}^<{\,\big\lrcorner} \ar[r]^-{\ia {\overline{\pi_{A'}}(A')}} & \ia {A'} \ar[d]^{\pi_{A'}}_{\dcomment{\mathcal{P}(\overline{\pi_{A'}}(A'))}\quad\,\,\,\,\,\,\,\,\,}
+\\
+& \ia {A'} \ar[r]_-{\pi_{A'}} & p(A')
+}
+\]
+
+Finally, the third equation $\ia {\overline{\ia {g'}}(\Id_{A'})}^*(\mathsf{i}_{A',B}(f)) = \mathsf{i}_{A,\ia {\overline{\ia {g'}}(\Id_{A'})}^*(B)}(\ia g^*(f))$ is well-formed because the following diagram commutes:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\ia {A}
+\ar[rr]^-{\ia {g}}
+\ar@/_2pc/[d]_>>>>>{\eta^{1 \,\dashv\, \ia -}_{\ia A}\!\!}
+\ar@/_5pc/[dd]_<<<<<<{\mathsf{s}(\mathsf{r}_A)\!\!}
+&
+&
+\ia {A'}
+\ar@/^2pc/[d]^>>>>>{\!\!\eta^{1 \,\dashv\, \ia -}_{\ia {A'}}}_-{\dcomment{\mathcal{P}(\overline{\ia g}(1_{\ia {A'}}))}\qquad\qquad\qquad\qquad\qquad\quad\,\,\,}_-{\dcomment{\text{iso.}}\quad}
+\ar@/^5pc/[dd]^<<<<<<{\!\!\mathsf{s}(\mathsf{r}_{A'})}
+\\
+\ia {1_{\ia A}}
+\ar[r]^-{=}
+\ar@/_2pc/[u]_-{\pi_{1_{\ia A}}}^-{\dcomment{\text{iso.}}\quad}
+\ar[d]_-{\ia {\mathsf{r}_A}}_<<<<{\dcomment{\text{def.}}\quad}^-{\,\,\,\qquad\dcomment{\text{property of } \mathsf{r_A}}}
+&
+\ia {\ia {g}^*(1_{\ia {A'}})}
+\ar[r]^-{\ia {\overline{\ia g}(1_{\ia {A'}})}}
+\ar[d]_-{\ia {\ia g^*(\mathsf{r}_{A'})}}^-{\qquad\quad\dcomment{\text{def. of } \ia g^*(\mathsf{r}_{A'})}}
+&
+\ia {1_{\ia {A'}}}
+\ar@/^2pc/[u]^-{\pi_{1_{\ia {A'}}}}
+\ar[d]^-{\ia {\mathsf{r}_{A'}}}^<<<<{\quad\dcomment{\text{def.}}}
+\\
+\ia {\delta_A^*(\Id_A)}
+\ar[r]_-{=}
+\ar[d]_{\ia {\overline{\delta_A}(\Id_A)}}^-{\qquad\qquad\dcomment{\text{property of } \Id_A}}^-{\,\,\,\quad\qquad\qquad\qquad\qquad\qquad\qquad\dcomment{p \text{ is a split fibration}}}
+&
+\ia {\ia g^*(\delta_{A'}^*(\Id_{A'}))}
+\ar[r]_-{\ia {\overline{\ia g}(\delta_{A'}^*(\Id_{A'}))}}
+&
+\ia {\delta_{A'}^*(\Id_{A'})}
+\ar[d]^-{\ia {\overline{\delta_{A'}}(\Id_{A'})}}
+\\
+\ia {\Id_A}
+\ar[r]_-{=}
+&
+\ia {\ia {g'}^*(\Id_{A'})}
+\ar[r]_-{\ia {\overline{\ia {g'}}(\Id_{A'})}}
+&
+\ia {\Id_{A'}}
+}
+\]
+
+
+\subsection{Homomorphic function type}
+\label{sect:shallowenrichment}
+
+Analogously to EEC in the simply typed setting, the syntax of eMLTT suggests that the homomorphic function type $\ul{C} \multimap \ul{D}$ ought to be modelled in terms of enrichment. In particular, we seem to need a fibre-wise enrichment of the fibrations we use for modelling computation types in the fibrations we use for modelling value types, such that the enriched structure is preserved by reindexing in some appropriate sense. 
+
+While informally such fibre-wise enrichment might seem straightforward, then formally the situation turns out to be much more involved. In particular, even if all the fibres are enriched, the total category of the fibration we use for modelling computation types also includes non-vertical morphisms, which would need to be compatible with the vertical morphisms, now modelled using enrichment and hom-objects. 
+Correspondingly, the fibration would need to be given by a functor that is enriched when restricted to fibres.
+But for this to be even possible, the base category would also need to be an enriched category, with its enrichment compatible with that of the fibres. 
+
+As a result, the situation where some parts of the fibration are enriched and others are not seems overly complicated and somewhat ad-hoc, particularly, when compared to the arguably very natural and elegant models of eMLTT without the homomorphic function type, as studied in~\cite{Ahman:FibredEffects}. Ideally, one would like the models of eMLTT with the homomorphic function type to be only a small variation of the models given in op. cit. 
+
+As asking for fibre-wise enrichment does not seem to give a satisfactory semantic structure for modelling the homomorphic function type, one could wonder why not use the existing work on enriched fibrations, such as~\cite{Shulman:EnrichedIndexedCategories} and~\cite[Section~8.1]{Vasilakopoulou:Thesis}? Unfortunately, while this existing work gives two systematic approaches to combining enrichment and fibrations, neither fits well into the setting we are working in. 
+
+On the one hand, compared to the models of eMLTT without the homomorphic function type from~\cite{Ahman:FibredEffects}, trying to adapt~\cite{Shulman:EnrichedIndexedCategories} to our setting would lead us to having to require the base categories of the fibrations we use to additionally have finite products. While this would not be a significant problem in itself, the notion of enriched fibration one gets by applying the Grothendieck construction (see~\cite[Definition~1.10.1]{Jacobs:Book}) to the enriched indexed categories developed in~\cite{Shulman:EnrichedIndexedCategories} would be significantly more involved compared to the ordinary (unenriched) fibrations that are used to model eMLTT in~\cite{Ahman:FibredEffects}. 
+
+On the other hand, trying to adapt~\cite[Section~8.1]{Vasilakopoulou:Thesis} to our setting would involve imposing even more substantial conditions on the base categories of the fibrations we use. In particular, we would need to require the  base categories of the fibrations we work with to be self-enriched. Again, imposing such condition would be a significant change from the kinds of fibrations we used to model eMLTT in~\cite{Ahman:FibredEffects}.
+
+Having discussed some approaches that do not work, we now explain one that does work and that we use for modelling the homomorphic function type in Chapter~\ref{chap:interpretation}. While we still follow the intuition that the fibrations we use for modelling computation types should be fibre-wise enriched in the fibrations we use for modelling value types, the enrichment-like structure we use is sufficiently relaxed to make the compatibility issues between vertical and non-vertical morphisms disappear. In particular, we continue to use (unenriched) fibrations to model computation types, but additionally require the existence of fibre-wise ``hom-objects", given by functors of the form $\mathcal{C}^{\text{op}}_X \times \mathcal{C}_X \longrightarrow \mathcal{V}_X$, satisfying certain compatibility conditions, as made precise below.
+
+
+\index{ @$\int$ (Grothendieck construction)}
+Before we define the relaxed notion of enrichment suitable for modelling eMLTT's homomorphic function type, we first note that 
+given any split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$, we can construct a new split fibration
+\vspace{-0.25cm}
+\[
+\begin{array}{c}
+r : \bigintsss (X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X) \longrightarrow \mathcal{B}
+\end{array}
+\]
+by applying the
+\index{Grothendieck construction}
+\index{category!split $\mathcal{B}$-indexed --}
+\!\emph{Grothendieck construction} to the split $\mathcal{B}$-indexed category\footnote{A \emph{split $\mathcal{B}$-indexed category} is given by a functor $\mathcal{B}^{\text{op}} \longrightarrow \mathsf{Cat}$, see~\cite[Definition~1.4.4 (ii)]{Jacobs:Book}.} given by 
+\[
+X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X
+\qquad
+f \mapsto (f^*)^{\text{op}} \times f^*
+\]
+
+Concretely, the objects of the total category $\bigintsss (X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X)$ are triples $(X , \ul{C}, \ul{D})$, where $X$ is an object of $\mathcal{B}$, and $\ul{C}$ and $\ul{D}$ are objects of $\mathcal{C}_X$. A morphism from $(X , \ul{C}_1, \ul{D}_1)$ to $(Y , \ul{C}_2, \ul{D}_2)$ is given by a triple $(f,h,k)$, where $f : X \longrightarrow Y$ is a morphism in $\mathcal{B}$, and $h : f^*(\ul{C}_2) \!\longrightarrow\! \ul{C}_1$ and $k : \ul{D}_1 \longrightarrow f^*(\ul{D}_2)$ are morphisms in $\mathcal{C}_{X}$.  $r$ is then given by 
+\[
+r(X , \ul{C}, \ul{D}) \defeq X \qquad r(f,h,k) \defeq f
+\] 
+Finally, we note that $r$ is split and the chosen Cartesian morphisms are of the form 
+\[
+(f , \id_{f^*(\ul{C})} , \id_{f^*(\ul{D})}) : (X , f^*(\ul{C}),f^*(\ul{D})) \longrightarrow (Y,\ul{C},\ul{D})
+\]
+
+It is informative to observe that while the above definition of $r$ is convenient for us to work with, it can also be characterised in more abstract terms. Namely, the split $\mathcal{B}$-indexed category given by $X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X$ is the Cartesian product (in the $2$-category of split $\mathcal{B}$-indexed categories) of the split $\mathcal{B}$-indexed categories given by $X \mapsto \mathcal{C}^{\text{op}}_X$ and $X \mapsto \mathcal{C}_X$, of which the former is the opposite  of the latter, e.g., as discussed in \cite[Definition~1.10.10]{Jacobs:Book}. As a result, based on the fact that the Grothendieck construction forms an equivalence of categories between split $\mathcal{B}$-indexed categories and split fibrations with base category $\mathcal{B}$ (see \cite[Proposition~1.10.9]{Jacobs:Book}), and that it takes the split $\mathcal{B}$-indexed category given by $X \mapsto \mathcal{C}^{\text{op}}_X$ to the opposite $q^{\text{op}}$ of the split fibration $q$ (see \cite[Exercise~1.10.9]{Jacobs:Book}), the split fibration $r$ can equivalently be characterised as the Cartesian product $q^{\text{op}} \times q$ of the split fibrations $q^{\text{op}}$ and $q$, in the $2$-category $\mathsf{Fib}_{\mathsf{split}}(\mathcal{B})$.
+
+\index{ q@$q^{\text{op}}$ (opposite of the split fibration $q$)}
+
+We now define the relaxed notion of enrichment suitable for modelling eMLTT.
+
+\begin{definition}
+\label{def:shallowfibredenrichment}
+\index{split fibred pre-enrichment}
+\index{ @$\multimap$ (split fibred functor witnessing split fibred pre-enrichment)}
+\index{ xi@$\xi_{X,\ul{C},\ul{D}}$ (isomorphism witnessing split fibred pre-enrichment)}
+\index{ C@$\ul{C} \multimap_X \ul{D}$ (shorthand for $\multimap (X,\ul{C},\ul{D})$)}
+Given two split fibrations $p : \mathcal{V} \longrightarrow \mathcal{B}$ and $q : \mathcal{C} \longrightarrow \mathcal{B}$ such that $p$ has split fibred terminal objects, we say that $q$ admits \emph{split fibred pre-enrichment} in $p$ if there exists a split fibred functor $\multimap\,\, : r \longrightarrow p$, as depicted in
+\[
+\xymatrix@C=1.7em@R=3em@M=0.5em{
+\bigintsss (X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X) \ar[rrr]^-{\multimap} \ar[dr]_-{r} &&& \mathcal{V} \ar[dll]^-{p}
+\\
+& \mathcal{B} &
+}
+\]
+together with a family of isomorphisms (where we write $\ul{C} \multimap_X \ul{D}$ for $\multimap (X,\ul{C},\ul{D})$)
+\[
+\xi_{X,\ul{C},\ul{D}} : \mathcal{V}_X(1_X , \ul{C} \multimap_X \ul{D}) \overset{\cong}{\longrightarrow} \mathcal{C}_X(\ul{C},\ul{D})
+\]
+that are natural in both $\ul{C}$ and $\ul{D}$, and preserved on-the-nose by reindexing, as respectively illustrated by the commutativity of the two squares in the following diagram:
+\[
+\xymatrix@C=9em@R=2.25em@M=0.5em{
+\mathcal{V}_X(1_X , \ul{C}_1 \multimap_X \ul{D}_1) \ar[r]^-{\xi_{X,\ul{C}_1,\ul{D}_1}} \ar[d]_-{\mathcal{V}_X(1_X , h \,\multimap_{\id_X}\, k)}
+&
+\mathcal{C}_X(\ul{C}_1, \ul{D}_1) \ar[d]^-{\mathcal{C}_X(h, k)}
+\\
+\mathcal{V}_X(1_X , f^*(\ul{C}_2) \multimap_X f^*(\ul{D}_2)) \ar[r]^-{\xi_{X,f^*(\ul{C}_2),f^*(\ul{D}_2)}}
+&
+\mathcal{C}_X(f^*(\ul{C}_2), f^*(\ul{D}_2))
+\\
+\mathcal{V}_X(f^*(1_Y) , f^*(\ul{C}_2 \multimap_Y \ul{D}_2)) \ar[u]^-{=}
+\\
+\mathcal{V}_Y(1_Y , \ul{C}_2 \multimap_Y \ul{D}_2) \ar[u]^-{f^*} \ar[r]_-{\xi_{Y,\ul{C}_2,\ul{D}_2}}
+&
+\mathcal{C}_Y(\ul{C}_2, \ul{D}_2) \ar[uu]_-{f^*}
+}
+\]
+for every morphism
+$
+(f,h,k) : (X,\ul{C}_1,\ul{D}_1) \longrightarrow (Y,\ul{C}_2,\ul{D}_2)
+$
+in $\bigintsss  (X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X)$.
+\end{definition}
+
+\index{ C@$\ul{C} \multimap \ul{D}$ (shorthand for $\ul{C} \multimap_X \ul{D}$)}
+To improve the readability of our proofs, we sometimes omit the subscript on the functor $\multimap$ when it is clear from the context, i.e., we write $\ul{C} \multimap \ul{D}$ for $\ul{C} \multimap_X \ul{D}$. 
+
+\section{Fibred adjunction models}
+\label{sect:fibadjmodels}
+
+In this short section we combine the category-theoretic structures we discussed in Section~\ref{sect:fibadjmodelsstructure}
+into a class of categorical models suitable for interpreting eMLTT, called \emph{fibred adjunction models}. We use the same name for this class of models as we did in~\cite{Ahman:FibredEffects} for a more restricted class of models because the core of the models remains the same.
+
+\begin{definition}
+\label{def:fibadjmodels}
+\index{fibred adjunction model}
+A \emph{fibred adjunction model} is given by 
+\begin{itemize}
+\item a split closed comprehension category $p : \mathcal{V} \longrightarrow \mathcal{B}$, 
+\item a split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$, and
+\item a split fibred adjunction $F \dashv\, U : q \longrightarrow p$
+\end{itemize}
+such that
+\begin{itemize}
+\item $q$ has split dependent $p$-products (as in Definition~\ref{def:splitdependentcompproducts}),
+\item $q$ has split dependent $p$-sums (as in Definition~\ref{def:splitdependentcompsums}), 
+\item $p$ has split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$ (as in Definition~\ref{def:strongsplitfibredcolims}), 
+\item $p$ has weak split fibred strong natural numbers (as in Definition~\ref{def:strongsplitfibredweaknaturals}), 
+\item $p$ has split intensional propositional equality (as in Definition~\ref{def:strongpropequality}), and
+\item $q$ admits split fibred pre-enrichment in $p$ (as in Definition~\ref{def:shallowfibredenrichment}),
+\end{itemize}
+as depicted in
+\vspace{-2cm}
+\[
+\xymatrix@C=4em@R=5em@M=0.5em{
+\ar@{}[dd]^-{\!\!\quad\qquad\qquad\perp}
+\\
+\mathcal{V} \ar@/_1.75pc/[d]_-{p} \ar@{}[d]_-{\dashv\,\,\,\,\,} \ar@{}[d]^-{\,\,\,\,\,\,\,\dashv} \ar@/^1.75pc/[d]^-{\ia {-}} \ar@/^1.25pc/[rr]^-{F} &  &  \mathcal{C} \ar@/^1.25pc/[ll]^-{U} \ar@/^1pc/[dll]^-{q}
+\\
+\mathcal{B} \ar[u]_-{\!1}
+}
+\vspace{0.25cm}
+\]
+\end{definition}
+
+\noindent
+In the rest of this thesis, we assume that whenever we work with fibred adjunction models, their structure is given using the notation used in Definition~\ref{def:fibadjmodels} above, e.g., we use $p$ for the split closed comprehension category, $F \dashv\, U$ for the adjunction, etc.
+
+
+\section{Examples of fibred adjunction models}
+\label{sect:examplesoffibadjmodels}
+
+We now discuss some examples of fibred adjunction models.
+
+\subsection{Identity adjunctions}
+
+Given an \SCCompC\, $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$, weak split fibred strong natural numbers, and split intensional propositional equality, we can always pick the \emph{identity adjunction} $\id_{\mathcal{V}} \dashv \id_{\mathcal{V}} : \mathcal{V} \longrightarrow \mathcal{V}$ 
+\index{adjunction!identity --}
+to get an ``effect-free" fibred adjunction model, by letting $q \defeq p$ and  observing that $\id_{\mathcal{V}}$ is trivially split fibred. Further, observe that the split dependent $p$-products and split dependent $p$-sums are given in $q$ by the corresponding structure in $p$. Finally, we can define the split fibred pre-enrichment of $q$ in $p$ using the fact that $p$ is a split fibred CCC, i.e., we let $A \multimap_X B \defeq A \Rightarrow_X B$. We summarise this discussion in the next theorem.
+
+\begin{theorem}
+\label{thm:effectfreefibadjmodel}
+\index{fibred adjunction model!-- built from identity adjunction}
+Given an \SCCompC\, $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$, weak split fibred strong natural numbers, and split intensional propositional equality, the identity adjunction $\id_{\mathcal{V}} \dashv\, \id_{\mathcal{V}} : \mathcal{V} \longrightarrow \mathcal{V}$ gives rise to an ``effect-free" fibred adjunction model.
+\end{theorem}
+
+\subsection[Simple fibrations and models of EEC\raisebox{0.75pt}{+}]{Simple fibrations and models of EEC\raisebox{1.75pt}{+}}
+\label{sect:fibadjmodelsfromeecmodels}
+
+\index{ EEC@EEC\raisebox{0.75pt}{+} (extension of EEC with finite products)}
+Our second example of fibred adjunction models is based on the models of EEC\raisebox{0.75pt}{+}, where EEC\raisebox{0.75pt}{+} stands for an extension of EEC with finite coproducts, see~\cite[Definition~6.6]{Egger:EnrichedEffectCalculus}. The resulting fibred adjunction models are a restricted form of models defined in Definition~\ref{def:fibadjmodels} in that they do not support  propositional equality.
+
+\begin{definition}
+\index{model of EEC\raisebox{0.75pt}{+}}
+A \emph{model of EEC\raisebox{0.75pt}{+} with weak natural numbers} is given by a $\mathcal{V}$-enriched adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$, where $\mathcal{V}$ is a CCC that also has finite coproducts and a weak NNO, and where $\mathcal{C}$ 
+is $\mathcal{V}$-enriched, having all $\mathcal{V}$-tensors and $\mathcal{V}$-cotensors.
+\end{definition}
+
+In this example we use $X,Y,A,B,\ldots$ and $f,g,\ldots$ to range over the objects and morphisms of $\mathcal{V}$, and $\ul{C}, \ul{D}, \ldots$ and $h, k, \ldots$ to range over the objects and morphisms of $\mathcal{C}$, respectively. We denote the Cartesian closed structure of $\mathcal{V}$ by $A \times B$ and $A \Rightarrow B$, 
+the $A$-fold $\mathcal{V}$-tensors of $\mathcal{C}$ by $A \otimes\, \ul{C}$, and the $A$-fold $\mathcal{V}$-cotensors of $\mathcal{C}$ by $A \Rightarrow \ul{C}$. 
+\index{ A@$A \otimes\, \ul{C}$ ($A$-fold $\mathcal{V}$-tensor)}
+\index{ A@$A \Rightarrow \ul{C}$ ($A$-fold $\mathcal{V}$-cotensor)}
+
+\index{a@$A$-fold $\mathcal{V}$-tensor}
+\index{a@$A$-fold $\mathcal{V}$-cotensor}
+We recall from~\cite{Kelly:EnrichedCats} that the universal properties of the $A$-fold \emph{$\mathcal{V}$-tensors} and \emph{$\mathcal{V}$-cotensors} of $\mathcal{C}$ are characterised as the following two $\mathcal{V}$-isomorphisms:
+\[
+\mathcal{C}(A \otimes\, \ul{C},\ul{D}) \cong A \Rightarrow \mathcal{C}(\ul{C},\ul{D})
+\qquad
+\mathcal{C}(\ul{C},A \Rightarrow \ul{D}) \cong A \Rightarrow \mathcal{C}(\ul{C},\ul{D})
+\]
+
+In order to improve the readability of this example, and to simplify the associated proofs, we present this fibred adjunction model using the internal language of the models of EEC\raisebox{0.75pt}{+}, namely, a variant\footnote{Compared to the syntax used to present EEC\raisebox{0.75pt}{+} in~\cite{Egger:EnrichedEffectCalculus}, we use eMLTT's syntax for its elimination forms. Furthermore, we write $F$ for the EEC type former $!$ and make the type former $U$ explicit.} of the syntax of EEC\raisebox{0.75pt}{+}.
+This syntactic presentation is justified by the soundness and completeness results proved in~\cite[Theorem~7.1]{Egger:EnrichedEffectCalculus}. 
+Specifically, we represent morphisms $f : X \longrightarrow Y$ of $\mathcal{V}$ as EEC\raisebox{0.75pt}{+}'s non-linear terms $\zj {x \!:\! X} {f(x)} Y$, and morphisms $h : \ul{C} \longrightarrow \ul{D}$ of $\mathcal{C}$ as EEC\raisebox{0.75pt}{+}'s linear terms $\zj {z \!:\! \ul{C}} {h(z)} {\ul{D}}$. 
+
+
+We proceed by defining the \SCCompC\, part of this example of fibred adjunction models, based on the simple fibration construction discussed in Example~\ref{ex:simplefibration}. In particular, we let $p \defeq \mathsf{s}_{\mathcal{V}}$, which gives us an \SCCompC\, because $\mathsf{s}_{\mathcal{V}}$ can be easily seen to be split, and because we have the following result regarding closed comprehension categories (this closed comprehension category structure is also easily seen to be split).
+
+\begin{proposition}[{\cite[Theorem~10.5.5 (i)]{Jacobs:Book}}]
+The simple fibration $\mathsf{s}_{\mathcal{V}} : \mathsf{s}(\!\mathcal{V}) \longrightarrow \mathcal{V}$ is a closed comprehension category if and only if $\mathcal{V}$ is a CCC.
+\end{proposition}
+
+
+In particular, the corresponding terminal object functor $1 : \mathcal{V} \longrightarrow \mathsf{s}(\!\mathcal{V})$ and comprehension functor $\ia - : \mathsf{s}(\!\mathcal{V}) \longrightarrow \mathcal{V}$ are given by
+\[
+1(X) \defeq (X,1)
+\qquad
+\ia {(X,A)} \defeq X \times\, A
+\]
+
+The split dependent products and strong split dependent sums are given by 
+\[
+\Pi_{(X,A)}(X \times A,B) \defeq (X, A \Rightarrow B)
+\qquad
+\Sigma_{(X,A)}(X \times A, B) \defeq (X, A \times B)
+\]
+with the strength of the latter witnessed by isomorphisms $(X \times A) \times B \,\cong\, X \times (A \times B)$. 
+
+Next, we note that $\mathsf{s}_{\mathcal{V}}$ also has other structure we require from $p$ in Definition~\ref{def:fibadjmodels}, except for split intensional propositional equality, as mentioned earlier.
+
+
+\begin{proposition}
+$\mathsf{s}_{\mathcal{V}}$ has split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$, and weak split fibred strong natural numbers.
+\end{proposition}
+
+\begin{proof}
+The split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$ are given in terms of the initial object and binary coproducts in $\mathcal{V}$, i.e., 
+\[
+0_X \defeq (X , 0) 
+\qquad
+(X,A) +_X (X,B) \defeq (X, A + B)
+\]
+and the weak split fibred strong natural numbers in terms of the weak NNO in $\mathcal{V}$, i.e., 
+\[
+\begin{array}{c}
+\mathbb{N} \defeq (1, \mathbf{N})
+\\[1mm]
+\mathsf{zero} \defeq \big(\id_1 , (\zj {x \!:\! 1 \times 1} {\mathsf{z}\, (\star)} {\mathbf{N}})\big)
+\qquad
+\mathsf{succ} \defeq \big(\id_1, (\zj {x \!:\! 1 \times \mathbf{N}} {\mathsf{s}\, (\snd x)} {\mathbf{N}})\big)
+\end{array}
+\]
+where $\mathsf{z} : 1 \longrightarrow \mathbf{N}$ and $\mathsf{s} : \mathbf{N} \longrightarrow \mathbf{N}$ are the zero and successor morphisms associated with the weak NNO $\mathbf{N}$ assumed to exist in $\mathcal{V}$.
+\index{ z@$\mathsf{z}$ (zero morphism associated with a weak NNO)}
+\index{ s@$\mathsf{s}$ (successor morphism associated with a weak NNO)}
+
+The proofs that these definitions give rise to the required structure consist of straightforward reasoning in the equational theory of EEC\raisebox{0.75pt}{+}. We thus omit these proofs.
+\end{proof}
+
+We proceed by observing that it is possible to extend the simple fibration construction to an enriched (effectful) setting. In particular, we can construct a category $\mathsf{s}(\!\mathcal{V},\mathcal{C})$ whose objects are given by pairs $(X,\ul{C})$ of an object $X$ of $\mathcal{V}$ and an object $\ul{C}$ of $\mathcal{C}$, and whose morphisms $(X,\ul{C}) \longrightarrow (Y,\ul{D})$ are given by pairs $(f,h)$ of a morphism $f : X \longrightarrow Y$ in $\mathcal{V}$ and a morphism $h : X \otimes\, \ul{C} \longrightarrow \ul{D}$ in $\mathcal{C}$. 
+Analogously to the simple fibration construction, we can define a split fibration whose total category is $\mathsf{s}(\!\mathcal{V},\mathcal{C})$.
+
+\begin{proposition}
+\index{fibration!simple $\mathcal{V}$-enriched --}
+\index{ s@$\mathsf{s}_{\mathcal{V},\mathcal{C}}$ (simple $\mathcal{V}$-enriched fibration built from a $\mathcal{V}$-enriched category $\mathcal{C}$)}
+\index{ s@$\mathsf{s}(\hspace{-0.05cm}\mathcal{V},\mathcal{C})$ (total category of a simple $\mathcal{V}$-enriched fibration)}
+The functor $\mathsf{s}_{\mathcal{V}, \mathcal{C}} : \mathsf{s}(\!\mathcal{V},\mathcal{C}) \longrightarrow \mathcal{V}$, given by
+\[
+\mathsf{s}_{\mathcal{V},\mathcal{C}}(X,\ul{C}) \defeq X
+\qquad
+\mathsf{s}_{\mathcal{V},\mathcal{C}}(f,h) \defeq f
+\]
+is a split fibration, called the \emph{simple $\mathcal{V}$-enriched fibration}.
+\end{proposition}
+
+\begin{proof}
+It is straightforward to show that $\mathsf{s}_{\mathcal{V},\mathcal{C}}$ preserves identities and composition---these properties follow from routine reasoning in the equational theory of EEC\raisebox{0.75pt}{+}.
+
+Given a morphism $f : X \longrightarrow Y$ and an object $(Y,\ul{D})$ in $\mathsf{s}(\!\mathcal{V},\mathcal{C})$, the chosen Cartesian morphism over $f$ can be shown to be given by
+\[
+\overline{f}(Y,\ul{D}) \defeq \big(f, (\zj {z \!:\! X \otimes\, \ul{D}} {\doto z {(x,z')} {} {z'}} {\ul{D}})\big) : (X,\ul{D}) \longrightarrow (Y,\ul{D})
+\]
+As was the case for the simple fibration $\mathsf{s}_{\mathcal{V}}$, it is also easy to verify that $\mathsf{s}_{\mathcal{V},\mathcal{C}}$ is split.
+\end{proof}
+
+Next, we show that the $\mathcal{V}$-enriched adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ can be lifted to a split fibred adjunction between the two simple fibration constructions. 
+
+
+\begin{proposition}
+\index{ F@$\widehat{F}$ (lifting of the functor $F$)}
+\index{ U@$\widehat{U}$ (lifting of the functor $U$)}
+\index{adjunction!lifting of --}
+The $\mathcal{V}$-enriched adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ lifts to a split fibred adjunction $\widehat{F} \dashv\, \widehat{U} : \mathsf{s}_{\mathcal{V},\mathcal{C}} \longrightarrow \mathsf{s}_{\mathcal{V}}$.
+\end{proposition}
+
+\begin{proof}
+The functors $\widehat{F}$ and $\widehat{U}$ are given on objects by
+\[
+\widehat{F}(X,A) \defeq (X,F(A))
+\qquad
+\widehat{U}(X,\ul{C}) \defeq (X,U(\ul{C}))
+\]
+and on morphisms by
+\[
+\begin{array}{c}
+\widehat{F}(f,g) \defeq \big(f,\big(\zj {z \!:\! X \otimes\, F(A)} {\doto z {(x,z')} {} {F_{A,B}(\lambda\, y \!:\! A .\, g
+\, \langle x,y \rangle)(z')}} {F(B)}\big)\big)
+\\[2mm]
+\widehat{U}(f,h) \defeq \big(f, \big(\zj {x \!:\! X \times U(\ul{C})} {U_{\ul{C},\ul{D}}(\lambda\, z \!:\! \ul{C} .\, h\, \langle \fst x, z \rangle)(\snd x)} {U(\ul{D})}\big)\big)
+\end{array}
+\]
+where the two morphisms
+\[
+\zj {x \!:\! A \Rightarrow B} {F_{A,B}(x)} {F(A) \multimap F(B)}
+\qquad
+\zj {x \!:\! \ul{C} \multimap \ul{D}} {U_{\ul{C},\ul{D}}(x)} {U(\ul{C}) \Rightarrow U(\ul{D})}
+\]
+are given by the $\mathcal{V}$-enrichment of $F$ and $U$, respectively.
+
+It is straightforward to show that $\widehat{F}$ and $\widehat{U}$ preserve identities and composition---these properties follow from routine reasoning in the equational theory of EEC\raisebox{0.75pt}{+}, using the preservation of identities and composition by $F$ and $U$, respectively.
+We omit these proofs but show how to prove that both $\widehat{F}$ and $\widehat{U}$ preserve Cartesian morphisms on-the-nose, so as to illustrate the kinds of equational reasoning the proofs in this example are based on. 
+Specifically, given a morphism $f : X \longrightarrow Y$ in $\mathcal{V}$, we have 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \widehat{F}(\overline{f}(Y,B))
+\\
+=\,\, & \widehat{F}\big(f, \big(\zj {x \!:\! X \times B} {\snd\, x} {B}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {z \!:\! X \otimes\, F(B)} {\doto z {(x,z')} {} {F_{B,B}(\lambda\, y \!:\! B .\, \snd \langle x,y \rangle\big)(z')}} {F(B)}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {z \!:\! X \otimes\, F(B)} {\doto z {(x,z')} {} {F_{B,B}(\lambda\, y \!:\! B .\, y)(z')}} {F(B)}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {z \!:\! X \otimes\, F(B)} {\doto z {(x,z')} {} {(\lambda\, z'' \!:\! F(B) .\, z'')(z')}} {F(B)}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {z \!:\! X \otimes\, F(B)} {\doto z {(x,z')} {} {z'}} {F(B)}\big)\big)
+\\
+=\,\, & \overline{f}(Y,F(B))
+\\
+=\,\, & \overline{f}(\widehat{F}(Y,B))
+\end{align*}
+\end{fleqn}
+and 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \widehat{U}(\overline{f}(Y,\ul{D}))
+\\
+=\,\, & \widehat{U}\big(f, \big(\zj {z \!:\! X \otimes\, \ul{D}} {\doto z {(x,z')} {} {z'}} {\ul{D}}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {x \!:\! X \times U(\ul{D})} {U_{\ul{D},\ul{D}}(\lambda\, z \!:\! \ul{D} .\, \doto {\langle \fst x, z \rangle} {(x,z')} {} {z'})(\snd x)} {U(\ul{D})}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {x \!:\! X \times U(\ul{D})} {U_{\ul{D},\ul{D}}(\lambda\, z \!:\! \ul{D} .\, z)(\snd x)} {U(\ul{D})}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {x \!:\! X \times U(\ul{D})} {(\lambda\, y \!:\! U(\ul{D}) .\, y)(\snd x)} {U(\ul{D})}\big)\big)
+\\
+=\,\, &
+\big(f, \big(\zj {x \!:\! X \times U(\ul{D})} {\snd\, x} {U(\ul{D})}\big)\big)
+\\
+=\,\, & \overline{f}(Y,U(\ul{D}))
+\\
+=\,\, & \overline{f}(\widehat{U}(Y,\ul{D}))
+\end{align*}
+\end{fleqn}
+
+The unit and counit of the adjunction $\widehat{F} \dashv\, \widehat{U}$ are given by components
+\[
+\begin{array}{c}
+\eta_{(X,A)} \defeq \big(\id_X, \big(\zj {x \!:\! X \times A} {\eta^{F \,\dashv\,\, U}_A(\snd\, x)} {U(F(A))}\big)\big) 
+\\[2mm]
+\varepsilon_{(X,\ul{C})} \defeq \big(\id_X, \big(\zj {z \!:\! X \otimes\, F(U(\ul{C}))} {\doto z {(x,z')} {} {\varepsilon_{\ul{C}}^{F \,\dashv\,\, U}(z')}} {\ul{C}}\big)\big) 
+\end{array}
+\]
+where the two morphisms
+\[
+\zj {x \!:\! A} {\eta^{F \,\dashv\,\, U}_A(x)} {U(F(A))}
+\qquad
+\zj {z \!:\! F(U(\ul{C}))} {\varepsilon_{\ul{C}}^{F \,\dashv\,\, U}(z)} {\ul{C}}
+\]
+are given by the components of the unit and counit of the assumed adjunction $F \dashv U$.
+
+The naturality of $\eta$ and $\varepsilon$, and the two unit-counit laws are proved by straightforward equational reasoning in the equational theory of EEC\raisebox{0.75pt}{+}, using the naturality of $\eta^{F \,\dashv\, U}$ and $\varepsilon^{F \,\dashv\, U}$, and the commutativity of the corresponding unit-counit triangles.
+\end{proof}
+
+
+We proceed by showing that $\mathsf{s}_{\mathcal{V},\mathcal{C}}$ has split dependent $\mathsf{s}_{\mathcal{V}}$-products and $\mathsf{s}_{\mathcal{V}}$-sums. 
+
+
+\begin{proposition}
+\label{prop:eecsplitdependentproducts}
+$\mathsf{s}_{\mathcal{V},\mathcal{C}}$ has split dependent $\mathsf{s}_{\mathcal{V}}$-products.
+\end{proposition}
+
+\begin{proof}
+The functor 
+\[
+\Pi_{(X,A)} : \mathsf{s}(\!\mathcal{V},\mathcal{C})_{X \times A} \longrightarrow \mathsf{s}(\!\mathcal{V},\mathcal{C})_X
+\]
+is given on objects by 
+\[
+\begin{array}{c}
+\Pi_{(X,A)}(X \times A, \ul{C}) \defeq (X,A \Rightarrow \ul{C})
+\end{array}
+\]
+and on morphisms by
+\[
+\begin{array}{c}
+\hspace{-10.5cm} \Pi_{(X,A)}(\id_{X \times A},h) \defeq 
+\\[-0.5mm]
+\hspace{2cm} \big(\id_X, \big(\zj {z \!:\! X \otimes (A \Rightarrow \ul{C})} {\doto z {(x,z')} {} {\lambda\, y \!:\! A .\, h\, \langle \langle x , y \rangle , z' \rangle}} {A \Rightarrow \ul{D}}\big)\big)
+\end{array}
+\]
+where $h : (X \times A) \otimes\, \ul{C} \longrightarrow \ul{D}$.
+
+The unit and counit of the adjunction $\pi^*_{(X,A)} \dashv \Pi_{(X,A)}$ are given by components
+\[
+\begin{array}{c}
+\eta_{(X, \ul{C})} \defeq \big(\id_X, \big(\zj {z \!:\! X \otimes\, \ul{C}} {\doto {z} {(x,z')} {} {\lambda\, y \!:\! A .\, z'}} {A \Rightarrow \ul{C}}\big)\big) 
+\\[2mm]
+\varepsilon_{(X \times A,\ul{C})} \defeq \big(\id_{X \times A}, \big(\zj {z \!:\! (X \times A) \otimes (A \Rightarrow \ul{C})} {\doto {z} {(x,z')} {} {z'\, (\snd x)}} {\ul{C}}\big)\big) 
+\end{array}
+\vspace{0.15cm}
+\]
+
+The well-definedness of $\Pi_{(X,A)}$, the naturality of $\eta$ and $\varepsilon$, and the corresponding unit-counit laws are proved by straightforward equational reasoning in the equational theory of EEC\raisebox{0.75pt}{+}. We omit the details of these proofs but show how to prove that the split Beck-Chevalley condition holds. 
+%
+Specifically, given a Cartesian morphism 
+\[
+\overline{f}(Y,B) \defeq \big(f, (\vj {x \!:\! X \times B} {\snd x} {B})\big) : (X,B) \longrightarrow (Y,B)
+\]
+in $\mathsf{s}_{\mathcal{V}}$, we show that the canonical natural transformation given in Definition~\ref{def:splitdependentcompproducts} is an identity. 
+
+In particular, for the fibred adjunction model we are constructing in this example, the components of the canonical natural transformation given in Definition~\ref{def:splitdependentcompproducts} can be shown to be given by the composition of morphisms of the following form:
+\[
+\begin{array}{c}
+\hspace{-3cm} \big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x,z')} {} {\lambda\, y \!:\! B .\, z'}} {B \Rightarrow (B \Rightarrow \ul{C})} \big)\big) 
+\\[-1mm]
+\hspace{7.75cm} : (X,B \Rightarrow \ul{C}) \longrightarrow (X,B \Rightarrow (B \Rightarrow \ul{C}))
+\end{array}
+\]
+and
+\[
+\begin{array}{c}
+\hspace{-1cm} \big(\id_X, \big(\zj {z'' \!:\! X \otimes (B \Rightarrow (B \Rightarrow \ul{C}))} {\doto {z''} {(x',z''')} {} {\lambda\, y' \!:\! B .\, (z'''\, y')\,\, y'}} {B \Rightarrow \ul{C}}\big)\big)
+\\[-1mm]
+\hspace{7.75cm} : (X,B \Rightarrow (B \Rightarrow \ul{C})) \longrightarrow (X,B \Rightarrow \ul{C})
+\end{array}
+\]
+which we can then show to be equal to the identity morphism $\id_{(X,B \Rightarrow \ul{C})}$ by 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \big(\id_X, \big(\zj {z'' \!:\! X \otimes (B \Rightarrow (B \Rightarrow \ul{C}))} {\doto {z''} {(x',z''')} {} {\lambda\, y' \!:\! B .\, (z'''\, y')\,\, y'}} {B \Rightarrow \ul{C}}\big)\big) \,\, \comp \,\,
+\\[-1mm]
+& \hspace{2.9cm} \big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x,z')} {} {\lambda\, y \!:\! B .\, z'}} {B \Rightarrow (B \Rightarrow \ul{C})} \big)\big)
+\\
+=\,\, & 
+\big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x'',z'''')} {} {\\[-1.5mm] & \hspace{0.15cm} \big(\doto {\langle x'' , (\doto {\langle x'', z'''' \rangle} {(x,z')} {} {\lambda\, y \!:\! B .\, z' )\rangle}} {(x',z''')} {} {\lambda\, y' \!:\! B .\, (z'''\, y')\,\, y'}\big)}} {B \Rightarrow \ul{C}}\big)\big)
+\\
+=\,\, &
+\big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x'',z'''')} {} {\\[-1.5mm] & \hspace{3.9cm} \big(\doto {\langle x'' , \lambda\, y \!:\! B .\, z'''' \rangle} {(x',z''')} {} {\lambda\, y' \!:\! B .\, (z'''\, y')\,\, y'}\big)}} {B \Rightarrow \ul{C}}\big)\big)
+\\
+=\,\, &
+\big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x'',z'''')} {} {\lambda\, y' \!:\! B .\, ((\lambda\, y \!:\! B .\, z'''')\,\, y')\,\, y'}} {B \Rightarrow \ul{C}}\big)\big)
+\\
+=\,\, &
+\big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x'',z'''')} {} {\lambda\, y' \!:\! B .\, z''''\, y'}} {B \Rightarrow \ul{C}}\big)\big)
+\\
+=\,\, &
+\big(\id_X, \big(\zj {z \!:\! X \otimes (B \Rightarrow \ul{C})} {\doto z {(x'',z'''')} {} {z''''}} {B \Rightarrow \ul{C}}\big)\big)
+\\
+=\,\, &
+\id_{(X,B \Rightarrow \ul{C})}
+\end{align*}
+\end{fleqn}
+from which it then follows that the corresponding canonical natural transformation is an identity, as required.
+\end{proof}
+
+
+
+\begin{proposition}
+$\mathsf{s}_{\mathcal{V},\mathcal{C}}$ has split dependent $\mathsf{s}_{\mathcal{V}}$-sums.
+\end{proposition}
+
+\begin{proof}
+The functor 
+\[
+\Sigma_{(X,A)} : \mathsf{s}(\!\mathcal{V},\mathcal{C})_{X \times A} \longrightarrow \mathsf{s}(\!\mathcal{V},\mathcal{C})_X
+\]
+is given on objects by
+\[
+\begin{array}{c}
+\Sigma_{(X,A)}(X \times A, \ul{C}) \defeq (X, A \otimes\, \ul{C})
+\end{array}
+\]
+and on morphisms by
+\[
+\begin{array}{c}
+\hspace{-11cm} \Sigma_{(X,A)}(\id_{X \times A},h) \defeq 
+\\
+\hspace{0.5cm} \big(\id_X, \big(\zj {z \!:\! X \otimes (A \otimes\, \ul{C})} {\doto {z} {(x,z')} {} {(\doto {z'} {(y,z'')} {} {\big\langle y , h\, \langle \langle x , y \rangle , z'' \rangle\big\rangle})}} {A \otimes\, \ul{D}}\big)\big)
+\end{array}
+\]
+where $h : (X \times A) \otimes\, \ul{C} \longrightarrow \ul{D}$.
+
+The unit and counit of the adjunction $\Sigma_{(X,A)} \dashv \pi^*_{(X,A)}$ are given by components
+\[
+\begin{array}{c}
+\eta_{(X \times A , \ul{C})} \defeq \big(\id_{X \times A}, \big(\zj {z \!:\! (X \times A) \otimes\, \ul{C}} {\doto {z} {(x,z')} {} {\langle \snd x , z' \rangle}} {A \otimes\, \ul{C}}\big) \big)
+\\[2mm]
+\varepsilon_{(X,\ul{C})} \defeq \big(\id_X, \big(\zj {z \!:\! X \otimes (A \otimes\, \ul{C})} {\doto z {(x,z')} {} {(\doto {z'} {(y,z'')} {} {z''})}} {\ul{C}}\big)\big)
+\end{array}
+\vspace{0.15cm}
+\]
+
+The well-definedness of $\Sigma_{(X,A)}$, the naturality of $\eta$ and $\varepsilon$, and the corresponding unit-counit laws are proved by straightforward equational reasoning in the equational theory of EEC\raisebox{0.75pt}{+}. The proof that the split Beck-Chevalley condition holds is analogous to the corresponding proof we gave for the split dependent $\mathsf{s}_{\mathcal{V}}$-products earlier.
+\end{proof}
+
+
+Finally, we show that $\mathsf{s}_{\mathcal{V},\mathcal{C}}$ admits split fibred pre-enrichment in $\mathsf{s}_{\mathcal{V}}$.
+
+\begin{proposition}
+$\mathsf{s}_{\mathcal{V},\mathcal{C}}$ admits split fibred pre-enrichment in $\mathsf{s}_{\mathcal{V}}$.
+\end{proposition}
+
+\begin{proof}
+The functor
+\[
+\multimap\,\, : \int (X \mapsto \mathcal{C}^{\text{op}}_X \times \mathcal{C}_X) \longrightarrow \mathcal{V} 
+\]
+is given on objects by
+\[
+\begin{array}{c}
+\multimap (X, (X,\ul{C}), (X,\ul{D})) \defeq (X, \ul{C} \multimap \ul{D})
+\end{array}
+\]
+and on morphisms by 
+\[
+\begin{array}{c}
+\hspace{-9.5cm} \multimap (f, (\id_X, h), (\id_X, k)) \defeq 
+\\
+\hspace{0.75cm} \big(f, \big(\zj {x \!:\! X \times (\ul{C}_1 \multimap \ul{D}_1)} {\lambda\, z \!:\! \ul{C}_2 .\, k\, \langle \fst x , (\snd x)(h\, \langle \fst x , z \rangle) \rangle} {\ul{C}_2 \multimap \ul{D}_2}\big) \big)
+\end{array}
+\]
+where $h : X \otimes\, \ul{C}_2 \longrightarrow \ul{C}_1$ and $k : X \otimes\, \ul{D}_1 \longrightarrow \ul{D}_2$. 
+
+The isomorphisms $\xi_{X,(X,\ul{C}),(X,\ul{D})}$ between hom-sets are witnessed by functions
+\[
+\begin{array}{c}
+\xi_{X,(X,\ul{C}),(X,\ul{D})}(\id_X, f) \defeq \big(\id_X, \big(\zj {z \!:\! X \otimes\, \ul{C}} {\doto {z} {(x,z')} {} {(f\, \langle x , \star \rangle)\, z'}} {\ul{D}}\big)\big)
+\\[2mm]
+\xi_{X,(X,\ul{C}),(X,\ul{D})}^{-1}(\id_X, h) \defeq \big(\id_X, \big(\zj {x \!:\! X \times 1} {\lambda\, z \!:\! \ul{C} .\, h\, \langle \fst x , z \rangle} {\ul{C} \multimap \ul{D}}\big) \big)
+\end{array}
+\]
+where $f : X \times 1 \longrightarrow \ul{C} \multimap \ul{D}$ and $h : X \otimes\, \ul{C} \longrightarrow \ul{D}$.
+
+The well-definedness of the functor $\multimap$, the naturality of $\xi$ and $\xi^{-1}$ in $(X,\ul{C})$ and $(X,\ul{D})$, and their preservation under reindexing are proved by straightforward equational reasoning in the equational theory of EEC\raisebox{0.75pt}{+}. We thus omit these proofs.
+\end{proof}
+
+
+
+We conclude this example by summarising the above results in the next theorem.   
+
+
+\begin{theorem}
+\label{thm:eecfibadjmodels}
+\index{fibred adjunction model!-- built from model of EEC\raisebox{0.75pt}{+}}
+Given a model $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ of EEC\raisebox{0.75pt}{+} with weak natural numbers, we get a fibred adjunction model (without split intensional propositional equality) by letting $p \defeq \mathsf{s}_{\mathcal{V}}$ and $q \defeq \mathsf{s}_{\mathcal{V},\mathcal{C}}$, and by using the lifted adjunction $\widehat{F} \dashv\, \widehat{U} : \mathsf{s}_{\mathcal{V},\mathcal{C}} \longrightarrow \mathsf{s}_{\mathcal{V}}$.
+\end{theorem}
+
+\subsection{Families of sets fibration and liftings of adjunctions}
+\label{sect:fibadjmodelsfromfamiliesofsets}
+
+Our third example of fibred adjunction models is based on the \emph{families of sets fibration} 
+$\mathsf{fam}_{\Set} : \Fam(\Set) \longrightarrow \Set$, a prototypical model of dependent types. This split fibration is a $\Set$-valued instance of the families fibrations we discussed  in Example~\ref{ex:familiesfibration}. 
+
+\index{ fam@$\mathsf{fam}_{\Set}$ (families of sets fibration)}
+\index{fibration!families of sets --}
+First, we define the \SCCompC\, part of the fibred adjunction model by letting \linebreak $p \defeq \mathsf{fam}_{\Set}$. This gives us an \SCCompC\, because of the following well-known result. 
+
+\begin{proposition}[{\cite[Section~10.5]{Jacobs:Book}}]
+\label{prop:familiesofsetsissccompc}
+$\mathsf{fam}_{\Set}$ is an SCCompC.
+\end{proposition}
+
+In particular, the corresponding terminal object functor $1 : \Set \longrightarrow \Fam(\Set)$ and  comprehension functor $\ia - : \Fam(\Set) \longrightarrow \Set$ are given by
+\[
+1(X) \defeq (X , x \mapsto 1) \qquad
+\ia {(X,A)} \defeq \bigsqcup_{x \in X } A(x)
+\]
+where $1$ is the terminal object in $\Set$, i.e., a one-element set.
+
+\index{coproduct!set-indexed --}
+\index{product!set-indexed --}
+\index{ Coproduct@$\bigsqcup_{x \in  X}$ (set-indexed coproduct)}
+\index{ Product@$\bigsqcap_{x \in  X}$ (set-indexed product)}
+\index{ x@$\langle x , a \rangle$ ($x$'th injection into a set-indexed coproduct)}
+The split dependent products and strong split dependent sums are given by
+\[
+\Pi_{(X,A)}(\bigsqcup_{x \in X}\, A(x), B) \defeq (X , x \mapsto \bigsqcap_{a \in A(x)} B \,\langle x , a \rangle)
+\]
+\[
+\Sigma_{(X,A)}(\bigsqcup_{x \in X}\, A(x), B) \defeq (X , x \mapsto \bigsqcup_{a \in A(x)} B \,\langle x , a \rangle)
+\]
+where $\bigsqcap_{x \in  X}\, A(x)$ and $\bigsqcup_{x \in  X}\, A(x)$ denote $X$-indexed products and coproducts, respectively; and where $\langle x , a \rangle$ denotes the $x$'th injection into $\bigsqcup_{x \in  X}\, A(x)$. 
+
+Next, we note that $\mathsf{fam}_{\Set}$ also has all other structure we require in Definition~\ref{def:fibadjmodels}.
+
+
+\begin{proposition}
+$\mathsf{fam}_{\Set}$ has split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$, weak split fibred strong natural numbers, and split intensional propositional equality.
+\end{proposition}
+
+\begin{proof}
+All the structure mentioned in this proposition is given pointwise in terms of the corresponding set-theoretic structure. 
+
+First, the split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$ can be shown to be given by
+\[
+0_X \defeq (X , x \mapsto 0) 
+\qquad
+(X,A) +_X (X,B) \defeq (X, x \mapsto A(x) + B(x))
+\]
+where $0$ is the initial object in $\Set$, i.e., the empty set; and $A(x) + B(x)$ is the coproduct of the sets $A(x)$ and $B(x)$, i.e., the disjoint union of $A(x)$ and $B(x)$.
+
+\index{ N@$\mathbf{N}$ (set of natural numbers)}
+\index{ z@$\mathsf{z}$ (zero function associated with the set of natural numbers)}
+\index{ s@$\mathsf{s}$ (successor function associated with the set of natural numbers)}
+Second, the weak split fibred strong natural numbers can be shown to be given by
+\[
+\mathbb{N} \defeq (1, \star \mapsto \mathbf{N})
+\qquad
+\mathsf{zero} \defeq (\id_1 , \{\mathsf{z}\}_{\star \in 1})
+\qquad
+\mathsf{succ} \defeq (\id_1, \{\mathsf{s}\}_{\star \in 1})
+\]
+where $\mathsf{z} : 1 \longrightarrow \mathbf{N}$ and $\mathsf{s} : \mathbf{N} \longrightarrow \mathbf{N}$ are the zero and successor functions associated with the set $\mathbf{N}$ of natural numbers.
+
+Finally, split intensional propositional equality can be shown to be given by
+\[
+\Id_{(X,A)} \defeq \big(\bigsqcup_{\langle x , a \rangle \in\, \bigsqcup_{x \in X}\, A(x)}\, A(x) , \langle \langle x , a \rangle , a' \rangle \mapsto \ia {\star \vertbar a = a'}\big)
+\]
+
+Showing that these definitions indeed determine the required structure in $\mathsf{fam}_{\Set}$ amounts to straightforward set-theoretic reasoning, using the universal properties of the set-theoretic structure used in these definitions.
+\end{proof}
+
+Next, we recall a well-known result about lifting adjunctions to families fibrations.
+
+\begin{proposition}[{\cite[Example~1.8.7 (i)]{Jacobs:Book}}]
+\label{prop:liftingadjunctionstofamilies}
+\index{adjunction!lifting of --}
+\index{ F@$\widehat{F}$ (lifting of the functor $F$)}
+\index{ U@$\widehat{U}$ (lifting of the functor $U$)}
+Every adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \mathcal{V}$ lifts pointwise to a split fibred adjunction $\widehat{F} \dashv\, \widehat{U} : \mathsf{fam}_{\mathcal{C}} \!\longrightarrow\! \mathsf{fam}_{\mathcal{V}}$ as follows:
+\[
+\widehat{F}(X,A) \defeq (X, x \mapsto F(A(x)))
+\qquad
+\widehat{U}(X,\ul{C}) \defeq (X, x \mapsto U(\ul{C}(x)))
+\]
+\end{proposition}
+
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \Set$, we next give sufficient conditions   for $\mathsf{fam}_{\mathcal{C}}$ to have split dependent $\mathsf{fam}_{\Set}$-products and split dependent $\mathsf{fam}_{\Set}$-sums.
+
+\begin{proposition}
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \Set$, then if $\mathcal{C}$ has set-indexed products, the split fibration $\mathsf{fam}_{\mathcal{C}}$ has split dependent $\mathsf{fam}_{\Set}$-products.
+\end{proposition}
+
+\begin{proof}
+The split dependent $\mathsf{fam}_{\Set}$-products are defined analogously to how the split dependent products are defined in $\mathsf{fam}_{\Set}$, i.e., they are given on objects by
+\[
+\Pi_{(X,A)}(\bigsqcup_{x \in X}\, A(x), \ul{C}) \defeq (X , x \mapsto \bigsqcap_{a \in A(x)}\, \ul{C}\, \langle x , a \rangle)
+\]
+Defining $\Pi_{(X,A)}$ on morphisms and showing the existence of the corresponding adjunction $\pi_{(X,A)}^* \dashv \Pi_{(X,A)}$ amounts to straightforward set-theoretic reasoning.
+\end{proof}
+
+\begin{proposition}
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \Set$, then if $\mathcal{C}$ has set-indexed coproducts, the split fibration $\mathsf{fam}_{\mathcal{C}}$ has split dependent $\mathsf{fam}_{\Set}$-sums.
+\end{proposition}
+
+\begin{proof}
+The split dependent $\mathsf{fam}_{\Set}$-sums are defined analogously to how strong split dependent sums are defined in $\mathsf{fam}_{\Set}$, i.e., they are given on objects by
+\[
+\Sigma_{(X,A)}(\bigsqcup_{x \in X}\, A(x), \ul{C}) \defeq (X , x \mapsto \bigsqcup_{a \in A(x)}\, \ul{C}\, \langle x , a \rangle)
+\]
+Defining $\Sigma_{(X,A)}$ on morphisms and showing the existence of the corresponding adjunction $\Sigma_{(X,A)} \dashv \pi_{(X,A)}^*$ amounts to straightforward set-theoretic reasoning.
+\end{proof}
+
+Finally, we show that $\mathsf{fam}_{\mathcal{C}}$ admits split fibred pre-enrichment in $\mathsf{fam}_{\Set}$.
+
+\begin{proposition}
+\label{prop:familiesofsetsshallwoenrichment}
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \Set$, the split fibration $\mathsf{fam}_{\mathcal{C}}$ admits split fibred pre-enrichment in $\mathsf{fam}_{\Set}$.
+\end{proposition}
+
+\begin{proof}
+We define the functor 
+\[
+\multimap \,\,: \int (X \mapsto \Fam_X(\mathcal{C})^{\text{op}} \times \Fam_X(\mathcal{C})) \longrightarrow \Fam(\Set)
+\]
+pointwise by using the $\Set$-enrichment of $\mathcal{C}$, i.e., we define it as
+\[
+\begin{array}{c}
+\multimap (X,(X,\ul{C}),(X,\ul{D})) \defeq (X,x \mapsto \mathcal{C}(\ul{C}(x),\ul{D}(x)))
+\\[1mm]
+\multimap (f,(\id_X,h),(\id_X,k)) \defeq (f, \{l_x \mapsto k_x \comp l_x \comp h_x\}_{x \in X})
+\end{array}
+\]
+where $h_x : \ul{C}_2(f(x)) \longrightarrow \ul{C}_1(x)$, $k_x : \ul{D}_1(x) \longrightarrow \ul{D}_2(f(x))$,  and $l_x : \ul{C}_1(x) \longrightarrow \ul{D}_1(x)$. We omit the straightforward proofs showing that $\multimap$ preserves identities and composition but show how to prove that it preserves Cartesian morphisms on-the-nose:
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \multimap (f,(\id_X,\{\id_{\ul{C}(x)}\}_{x \in X}),(\id_X,\{\id_{\ul{D}(x)}\}_{x \in X})) 
+\\
+=\,\, &
+(f , \{l_x \mapsto \id_{\ul{D}(x)} \comp l_x \comp \id_{\ul{C}(x)}\}_{x \in X})
+\\
+=\,\, &
+(f , \{l_x \mapsto l_x\}_{x \in X})
+\\
+=\,\, &
+(f , \{\id_{\mathcal{C}(\ul{C}(x),\ul{D}(x))}\}_{x \in X})
+\end{align*}
+\end{fleqn}
+
+The isomorphisms $\xi_{X,(X,\ul{C}),(X,\ul{D})}$ between hom-sets are witnessed by functions
+\[
+\begin{array}{c}
+\xi_{X,(X,\ul{C}),(X,\ul{D})} (\id_X, f) \defeq (\id_X, \{f_x(\star)\}_{x \in X})
+\\[1mm]
+\xi_{X,(X,\ul{C}),(X,\ul{D})}^{-1} (\id_X, h) \defeq (\id_X, \{\star \mapsto h_x\}_{x \in X})
+\end{array}
+\]
+where $f_x : 1 \longrightarrow \mathcal{C}(\ul{C}(x),\ul{D}(x))$ and $h_x : \ul{C}(x) \longrightarrow \ul{D}(x)$. 
+
+The naturality of $\xi$ and $\xi^{-1}$ in $(X,\ul{C})$ and $(X,\ul{D})$, and their preservation under reindexing are proved using straightforward set-theoretic reasoning. 
+\end{proof}
+
+We summarise these results in the next theorem.
+
+\begin{theorem}
+\label{thm:liftedfibradjmodels}
+\index{fibred adjunction model!-- built from families fibration}
+Given an adjunction $F \dashv\, U : \mathcal{C} \longrightarrow \Set$ such that $\mathcal{C}$ has set-indexed products and set-indexed coproducts, then the families fibrations $\mathsf{fam}_{\Set}$ and $\mathsf{fam}_{\mathcal{C}}$, together with the lifting $\widehat{F} \dashv\, \widehat{U}$ of $F \dashv\, U$, give rise to a fibred adjunction model.
+\end{theorem}
+
+We conclude this section by highlighting some concrete examples of fibred adjunction models built from the families of sets fibration $\mathsf{fam}_{\Set}$. These examples follow as corollaries to Theorem~\ref{thm:liftedfibradjmodels} by instantiating the adjunction $F \dashv\, U$ appropriately. 
+
+The first two instances of Theorem~\ref{thm:liftedfibradjmodels} are based on the decompositions of two of Moggi's monads---the global state monad and the continuations monad---into resolutions other than their Eilenberg-Moore resolutions.
+
+\begin{corollary}
+Given a set $S$, the adjunction $(-) \times S \dashv S \Rightarrow (-) : \Set \longrightarrow \Set$ gives rise to a fibred adjunction model. 
+\end{corollary}
+
+\begin{corollary}
+\label{cor:continuationsmonad}
+Given a set $R$, the adjunction $(-) \Rightarrow R \dashv (-) \Rightarrow R : \Set^{\text{op}} \longrightarrow \Set$ gives rise to a fibred adjunction model. 
+\end{corollary}
+
+For Corollary~\ref{cor:continuationsmonad} to be an instance of Theorem~\ref{thm:liftedfibradjmodels}, it suffices to recall that  $\Set^{\text{op}}$ trivially has set-indexed products and coproducts---these are given by the set-indexed coproducts and set-indexed products in $\Set$, respectively.
+
+The next instance of Theorem~\ref{thm:liftedfibradjmodels} arises from the algebraic treatment of computational effects, namely, from countable Lawvere theories (see Section~\ref{sect:algebraictreatmentofeffects}).
+
+\begin{corollary}
+\label{cor:modelsoflawveretheories}
+Given a countable Lawvere theory $I : \aleph_{\!1}^{\text{op}} \longrightarrow \mathcal{L}$, the free model adjunction $F_{\mathcal{L}} \dashv\, U_{\mathcal{L}} : \mathsf{Mod}(\mathcal{L},\Set) \longrightarrow \Set$ gives rise to a fibred adjunction model. 
+\end{corollary}
+
+For Corollary~\ref{cor:modelsoflawveretheories} to be an instance of Theorem~\ref{thm:liftedfibradjmodels}, it suffices to recall that $\mathsf{Mod}(\mathcal{L},\Set)$ is both complete and cocomplete (see Proposition~\ref{prop:modelsoflawveretheoriesinsetcocomplete}), meaning that $\mathsf{Mod}(\mathcal{L},\Set)$ has all set-indexed products and set-indexed coproducts, as required.
+
+The final instance of Theorem~\ref{thm:liftedfibradjmodels} we present is based on one of the two standard ways of decomposing monads into adjunctions---the Eilenberg-Moore resolution.
+
+\begin{corollary}
+\label{cor:emadjunctionsofmonadsonset}
+Given a monad $\mathbf{T} = (T,\eta,\mu)$ on $\Set$, its Eilenberg-Moore resolution $F^{\mathbf{T}} \dashv\, U^{\mathbf{T}} : \Set^{\mathbf{T}} \longrightarrow \Set$ gives rise to a fibred adjunction model. 
+\end{corollary}
+
+For Corollary~\ref{cor:emadjunctionsofmonadsonset} to be an instance of Theorem~\ref{thm:liftedfibradjmodels}, it suffices to recall that $\Set^{\mathbf{T}}$ is both complete and cocomplete for any monad $\mathbf{T}$ on $\Set$ (see Proposition~\ref{prop:EMcategoryiscompletecocompleteandregular}), meaning that $\Set^{\mathbf{T}}$ has all set-indexed products and set-indexed coproducts. 
+%
+
+\subsection{Eilenberg-Moore fibrations of fibred monads}
+\label{sect:fibredmonadsandEMfibs}
+
+We continue our overview of examples of fibred adjunction models by investigating the conditions under which the Eilenberg-Moore fibration $p^{\mathbf{T}}$ of a split fibred monad ${\mathbf{T}} =(T,\eta,\mu)$ supports split dependent $p$-products and split dependent $p$-sums.
+To this end, we generalise some well-known results about the existence of limits and colimits in the EM-category of a monad (see Section~\ref{sect:modelsofeffects} for an overview) from products and coproducts to split dependent $p$-products and split dependent $p$-sums, respectively. 
+
+We begin by recalling a useful fact about the EM-algebras of a split fibred monad. This result later enables us to define split dependent $p$-products and $p$-sums in $p^{\mathbf{T}}$ using the functoriality of the corresponding structure in $p$.
+
+\begin{proposition}[{\cite[Exercise~1.7.9 (ii)]{Jacobs:Book}}]
+\label{prop:verticalEMalgebras}
+The structure map of every EM-algebra $(A,\alpha)$ of a split fibred monad $\mathbf{T} = (T,\eta,\mu)$ on a split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$ is vertical.
+\end{proposition}
+
+\begin{proof}
+The proof of this proposition is straightforward. All one needs to do is to consider the diagram relating $\eta$ and $\alpha$, and apply the functor $p$ to it, i.e., we have
+\[
+p(\alpha) = p(\alpha) \comp \id_{p(A)} = p(\alpha) \comp p(\eta_A) = p(\alpha \comp \eta_A) = p(\id_A) = \id_{p(A)}
+\]
+where $p(A) = p(T(A))$ holds because $T$ is assumed to be a fibred functor.
+\end{proof}
+
+Another observation we make about split fibred monads is that every split fibred monad on a split comprehension category with unit and strong split dependent sums comes equipped with a dependent notion of strength. 
+We use this dependent strength to impose one of the conditions under which $p^{\mathbf{T}}$ has split dependent $p$-sums.
+
+\begin{proposition}
+\label{prop:strengthofsplitfibredmonads}
+\index{monad!split fibred --!dependent strength of a --}
+\index{ sigma@$\sigma_A$ (dependent strength of a split fibred monad)}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with strong split dependent sums and a split fibred monad $\mathbf{T} = (T,\eta,\mu)$ on it, then there exists a family of natural transformations 
+\[
+\sigma_A : \Sigma_A \comp T \longrightarrow T \comp \Sigma_A \qquad\qquad\qquad (A \in \mathcal{V})
+\]
+collectively called the \emph{dependent strength} of $\mathbf{T}$, satisfying the following diagrams:
+
+\vspace{0.5cm}
+
+\[
+\xymatrix@C=4em@R=5em@M=0.5em{
+\Sigma_{1_{p(A)}}(\pi_{1_{p(A)}}^*(T(A))) \ar[r]^-{=} \ar[dr]_-{\varepsilon^{\Sigma_{1_{p(A)}} \dashv\,\, \pi_{1_{p(A)}}^*}_{T(A)}} & \Sigma_{1_{p(A)}}(T(\pi_{1_{p(A)}}^*(A))) \ar[r]^-{\sigma_{1_{p(A)},\pi_{1_{p(A)}}^*(A)}} & T(\Sigma_{1_{p(A)}}(\pi_{1_{p(A)}}^*(A))) \ar[dl]^-{T(\varepsilon^{\Sigma_{1_{p(A)}} \dashv\,\, \pi_{1_{p(A)}}^*}_A)}_-{(1)\qquad\qquad\qquad\quad\,\,\,\,}
+\\
+& T(A)
+}
+\]
+
+\vspace{0.3cm}
+
+\[
+\xymatrix@C=0.8em@R=5em@M=0.5em{
+\Sigma_{\Sigma_{A}(B)}(T(C)) \ar[rr]^-{\sigma_{\Sigma_{A}(B),T(C)}} \ar[d]_-{\alpha_{A,B,T(C)}} & & T(\Sigma_{\Sigma_{A}(B)}(C)) \ar[dd]^-{T(\alpha_{A,B,C})}_-{(2)\qquad\qquad\qquad\qquad\quad\,\,\,\,\,}
+\\
+\Sigma_{A}(\Sigma_{B}(\kappa_{A,B}^*(T(C)))) \ar[d]_-{=}
+\\
+\Sigma_{A}(\Sigma_{B}(T(\kappa_{A,B}^*(C)))) \ar[dr]_-{\Sigma_{A}(\sigma_{B,\kappa_{A,B}^*(C)})\quad\,\,\,\,} &  & T(\Sigma_{A}(\Sigma_{B}(\kappa_{A,B}^*(C))))
+\\
+& \Sigma_{A}(T(\Sigma_{B}(\kappa_{A,B}^*(C)))) \ar[ur]_-{\,\,\,\,\quad\sigma_{A,\Sigma_{B}(\kappa_{A,B}^*(C))}}
+}
+\]
+
+\vspace{0.3cm}
+
+\[
+\xymatrix@C=10em@R=6em@M=0.5em{
+\Sigma_A(B) \ar[r]^-{\Sigma_A(\eta_B)} \ar[dr]_-{\eta_{\Sigma_A(B)}} & \Sigma_A(T(B)) \ar[d]^-{\sigma_{A,B}}_<<<<<<<<{(3)\qquad\quad}
+\\
+& T(\Sigma_A(B))
+}
+\]
+
+\vspace{0.3cm}
+
+\[
+\xymatrix@C=5em@R=6em@M=0.5em{
+\Sigma_A(T(T(B))) \ar[r]^-{\sigma_{A,T(B)}} \ar[d]_-{\Sigma_A(\mu_B)} & T(\Sigma_A(T(B))) \ar[r]^-{T(\sigma_{A,B})} & T(T(\Sigma_A(B))) \ar[d]^-{\mu_{\Sigma_A(B)}}_-{(4)\qquad\qquad\qquad\qquad\qquad\quad\!\!\!\!}
+\\
+\Sigma_A(T(B)) \ar[rr]_-{\sigma_{A,B}} && T(\Sigma_A(B))
+}
+\]
+
+\noindent where 
+\[
+\alpha_{A,B} : \Sigma_{\Sigma_A(B)} \longrightarrow \Sigma_A \comp \Sigma_B \comp \kappa^*_{A,B} \qquad\qquad\qquad (A \in \mathcal{V}, B \in \mathcal{V}_{\ia A})
+\]
+\index{ ab@$\alpha_{A,B}$ (natural associativity isomorphism)}
+is a family of natural associativity isomorphisms, given by the following composites:
+\[
+\hspace{-0.075cm}
+\xymatrix@C=7.25em@R=4em@M=0.5em{
+\Sigma_{\Sigma_A(B)} \ar[r]^-{=} & \Sigma_{\Sigma_A(B)} \comp (\kappa^{-1}_{A,B})^* \comp \kappa^*_{A,B} \ar[d]^-{\Sigma_{\Sigma_A(B)} \,\comp\, (\kappa^{-1}_{A,B})^* \,\comp\, \eta^{\Sigma_A \,\comp\, \Sigma_B \,\dashv\, \pi^*_B \,\comp\, \pi^*_A} \,\comp\, \kappa^*_{A,B}}
+\\
+& \Sigma_{\Sigma_A(B)} \comp (\kappa^{-1}_{A,B})^* \comp \pi^*_B \comp \pi^*_A \comp \Sigma_A \comp \Sigma_B \comp \kappa^*_{A,B} \ar[d]^-{=}
+\\
+\Sigma_A \comp \Sigma_B \comp \kappa^*_{A,B} & \Sigma_{\Sigma_A(B)} \comp \pi^*_{\Sigma_A(B)} \comp \Sigma_A \comp \Sigma_B \comp \kappa^*_{A,B} \ar[l]^-{\varepsilon^{\Sigma_{\Sigma_A(B)} \,\dashv\, \pi^*_{\Sigma_A(B)}} \,\comp\, \Sigma_A \,\comp\, \Sigma_B \,\comp\, \kappa^*_{A,B}}
+}
+\]
+\end{proposition}
+
+We note that the second equality morphism used in the definition of $\alpha_{A,B}$ follows from the commutativity of the following diagram:
+\[
+\xymatrix@C=6em@R=7em@M=0.5em{
+\ia {B} \ar[r]_-{\ia {\eta^{\Sigma_A \,\dashv\, \pi^*_A}_B}} \ar[dr]_-{\pi_B} \ar@/^2.25pc/[rr]^-{\kappa_{A,B}}_{\dcomment{\text{def. of } \kappa_{A,B}}} & \ia {\pi^*_A(\Sigma_A(B))} \ar[r]_-{\ia {\overline{\pi_A}(\Sigma_A(B))}} \ar[d]^-{\pi_{\pi^*_A(\Sigma_A(B))}}_<<<<<<<<<<{\dcomment{\mathcal{P}(\eta^{\Sigma_A \,\dashv\, \pi^*_A}_B)}\,\,\,\,\,\,} & \ia {\Sigma_A(B)} \ar[d]^-{\pi_{\Sigma_A(B)}}_-{\dcomment{\mathcal{P}(\overline{\pi_A}(\Sigma_A(B)))}\quad\,\,\,\,\,} \ar@/_5.15pc/[ll]_-{\kappa^{-1}_{A,B}}^*+<0.5em>{\dcomment{\kappa_{A,B} \text{ is an iso.}}}
+\\
+& \ia A \ar[r]_-{\pi_A} & p(A)
+}
+\]
+
+\begin{proof}
+Due to its length, we postpone the proof of Proposition~\ref{prop:strengthofsplitfibredmonads} to Appendix~\ref{sect:proofofprop:strengthofsplitfibredmonads} and only note here that each of the natural transformations $\sigma_A$ is given by the composite 
+\[
+\xymatrix@C=2.15em@R=5em@M=0.5em{
+\Sigma_A \comp T \ar[rr]^-{\Sigma_A \,\comp\, T \,\comp\, \eta^{\Sigma_A \,\dashv\, \pi^*_A}} && \Sigma_A \comp T \comp \pi^*_A \comp \Sigma_A \ar[r]^-{=} & \Sigma_A \comp \pi^*_A \comp T \comp \Sigma_A \ar[rr]^-{\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A} \,\comp\, T \,\comp\, \Sigma_A} && T \comp \Sigma_A
+}
+\]
+\end{proof}
+
+We now proceed by investigating the conditions under which split dependent $p$-products and split dependent $p$-sums exist in $p^{\mathbf{T}}$.
+
+On the one hand, it can be easily seen that the EM-fibration of a split fibred monad on a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split dependent products always has split dependent $p$-products. 
+
+\begin{theorem}
+\label{thm:dependentproductsinEMfibration}
+\index{Eilenberg-Moore!-- fibration!split dependent $p$-products in --}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with split dependent products and a split fibred monad  $\mathbf{T} = (T,\eta,\mu)$ on it, then the corresponding EM-fibration $p^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{B}$ has split dependent $p$-products.
+\end{theorem}
+
+\begin{proof}
+\index{ Product@$\Pi^{\mathbf{T}}_A$ (split dependent $p$-product in $p^{\mathbf{T}}$)}
+\index{ b@$\beta_{\Pi^{\mathbf{T}}_A}$ (structure map of $\Pi^{\mathbf{T}}_A(B,\beta)$)}
+Due to its length, we postpone the proof of Theorem~\ref{thm:dependentproductsinEMfibration} to Appendix~\ref{sect:proofofthm:dependentproductsinEMfibration} and only note here that the split dependent $p$-products are given in the EM-fibration $p^{\mathbf{T}}$ by functors $\Pi^{\mathbf{T}}_A : \mathcal{V}^{\mathbf{T}}_{\ia A} \longrightarrow \mathcal{V}^{\mathbf{T}}_{p(A)}$ that are defined on an object $(B,\beta)$ of $\mathcal{V}^{\mathbf{T}}_{\ia A}$ by 
+\[
+\Pi^{\mathbf{T}}_A(B,\beta) \defeq (\Pi_A(B), \beta_{\Pi^{\mathbf{T}}_A})
+\]
+where the structure map $\beta_{\Pi^{\mathbf{T}}_A} : T(\Pi_A(B)) \longrightarrow \Pi_A(B)$ is given by the morphism
+\[
+\xymatrix@C=5em@R=0.25em@M=0.5em{
+T(\Pi_A(B)) \ar[r]^-{\eta^{\pi^*_A \,\dashv\, \Pi_A}_{T(\Pi_A(B))}} & \Pi_A(\pi^*_A(T(\Pi_A(B)))) \ar[dr]^-{=}
+\\
+& & \Pi_A(T(\pi^*_A(\Pi_A(B)))) \ar[dl]^-{\Pi_A(T(\varepsilon^{\pi^*_A \,\dashv\, \Pi_A}_B))}
+\\
+\Pi_A(B) & \Pi_A(T(B)) \ar[l]^-{\Pi_A(\beta)}
+}
+\]
+using the split dependent products in $p$, i.e., the adjunction $\pi^*_A \dashv \Pi_A : \mathcal{V}_{\ia A} \longrightarrow \mathcal{V}_{p(A)}$. We use Proposition~\ref{prop:verticalEMalgebras} in the definition of $\beta_{\Pi^{\mathbf{T}}_A}$ to ensure that $\beta$ is vertical.
+\end{proof}
+
+As split dependent products can be viewed as a natural generalisation of set-indexed products to products indexed by an arbitrary object in the total category $\mathcal{V}$, then it is not surprising that Theorem~\ref{thm:dependentproductsinEMfibration} and its proof are similar to the set-indexed products instance of Proposition~\ref{prop:limitsinEMcategory}.
+
+For constructing a fibred adjunction model based on the EM-fibration of a split fibred monad, 
+we have the following corollary to Theorem~\ref{thm:dependentproductsinEMfibration}.
+
+\begin{corollary}
+Given an SCCompC $p : \mathcal{V} \longrightarrow \mathcal{B}$ and a split fibred monad on it, then the corresponding EM-fibration has split dependent $p$-products.
+\end{corollary}
+
+On the other hand, the situation with the split dependent $p$-sums in the EM-fibration $p^{\mathbf{T}}$ of a split fibred monad $\mathbf{T}$ is analogous to the existence of coproducts in the EM-category of a monad. In particular, generally they can not be defined directly in terms of the split dependent sums in $p$. However, analogously to the existence of coproducts in the EM-category of a monad, under certain conditions the split dependent $p$-sums in $p^{\mathbf{T}}$ do exist and can be defined in terms of the split dependent sums in $p$. 
+
+In this thesis,  
+we investigate two such conditions for $p^{\mathbf{T}}$: i) when $\mathbf{T}$ preserves the split dependent sums in $p$ via its dependent strength (see Theorem~\ref{thm:dependentsumsinEMfibrationwhenmonadpreservesthem} below); and ii) when $p^{\mathbf{T}}$ has split fibred reflexive coequalizers (see Theorem~\ref{thm:dependentsumsinEMfibration} below). 
+
+\begin{theorem}
+\label{thm:dependentsumsinEMfibrationwhenmonadpreservesthem}
+\index{Eilenberg-Moore!-- fibration!split dependent $p$-sums in --}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with strong split dependent sums and a split fibred monad $\mathbf{T} = (T,\eta,\mu)$ on it, then the corresponding EM-fibration $p^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \!\longrightarrow\! \mathcal{B}$ has split dependent $p$-sums if the dependent strength of $\mathbf{T}$ is given by a family of natural isomorphisms, i.e., if for every $A$ in $\mathcal{V}$, $\sigma_A : \Sigma_A \comp T \longrightarrow T \comp \Sigma_A$ is a natural isomorphism.
+Furthermore, these split dependent $p$-sums are preserved on-the-nose by $U^{\mathbf{T}}$, i.e., we have $U^{\mathbf{T}}(\Sigma^{\mathbf{T}}_A(B,\beta)) = \Sigma_A(U^{\mathbf{T}}(B,\beta))$.
+\end{theorem}
+
+\begin{proof}
+Due to its length, we postpone the proof of Theorem~\ref{thm:dependentsumsinEMfibrationwhenmonadpreservesthem} to Appendix~\ref{sect:proofofthm:dependentsumsinEMfibrationwhenmonadpreservesthem} and only note here that the split dependent $p$-sums are given in the EM-fibration $p^{\mathbf{T}}$ by functors $\Sigma^{\mathbf{T}}_A : \mathcal{V}^{\mathbf{T}}_{\ia A} \longrightarrow \mathcal{V}^{\mathbf{T}}_{p(A)}$ that are defined on an object $(B,\beta)$ of $\mathcal{V}^{\mathbf{T}}_{\ia A}$ by %simply by letting
+\[
+\Sigma^{\mathbf{T}}_A(B,\beta) \defeq (\Sigma_A(B), \beta_{\Sigma^{\mathbf{T}}_A})
+\]
+\index{ Sigma@$\Sigma^{\mathbf{T}}_A$ (split dependent $p$-sum in $p^{\mathbf{T}}$)}
+\index{ b@$\beta_{\Sigma^{\mathbf{T}}_A}$ (structure map of $\Sigma^{\mathbf{T}}_A(B,\beta)$)}
+where the structure map $\beta_{\Sigma^{\mathbf{T}}_A} : T(\Sigma_A(B)) \longrightarrow \Sigma_A(B)$ is given by the morphism
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+T(\Sigma_A(B)) \ar[r]^-{\sigma^{-1}_{A,B}} & \Sigma_A(T(B)) \ar[r]^-{\Sigma_A(\beta)} & \Sigma_A(B)
+}
+\]
+using the split dependent sums in $p$, i.e., the adjunction $\Sigma_A \dashv \pi^*_A : \mathcal{V}_{p(A)} \longrightarrow \mathcal{V}_{\ia A}$.
+\end{proof}
+
+We note that Theorem~\ref{thm:dependentsumsinEMfibrationwhenmonadpreservesthem} is similar to Proposition~\ref{prop:colimitsinEMcategory1} where the existence of colimits in the EM-category of a monad followed from the preservation of colimits by that monad. 
+However, in contrast to Proposition~\ref{prop:colimitsinEMcategory1}, our preservation condition is formulated using a specific isomorphism, based on the dependent strength of $\mathbf{T}$. We note that this particular choice of the preservation isomorphism is crucial for our proof of this theorem to go through---see Appendix~\ref{sect:proofofthm:dependentsumsinEMfibrationwhenmonadpreservesthem} for details.
+
+For constructing a fibred adjunction model based on the EM-fibration of a split fibred monad, we have the following corollary to Theorem~\ref{thm:dependentsumsinEMfibrationwhenmonadpreservesthem}.
+
+\begin{corollary}
+Given an SCCompC $p : \mathcal{V} \longrightarrow \mathcal{B}$ and a split fibred monad on it, then the corresponding EM-fibration has split dependent $p$-sums if the dependent strength of this split fibred monad is given by a family of natural isomorphisms.
+\end{corollary}
+
+\begin{theorem}
+\label{thm:dependentsumsinEMfibration}
+\index{Eilenberg-Moore!-- fibration!split dependent $p$-sums in --}
+Given a split comprehension category with unit $p : \mathcal{V} \longrightarrow \mathcal{B}$ with strong split dependent sums and a split fibred monad $\mathbf{T} = (T,\eta,\mu)$ on it, then the corresponding EM-fibration $p^{\mathbf{T}} : \mathcal{V}^{\mathbf{T}} \longrightarrow \mathcal{B}$ has split dependent $p$-sums if $p^{\mathbf{T}}$ has split fibred reflexive coequalizers.
+\end{theorem}
+
+\begin{proof}
+\index{ e@$e_{A,(B,\beta)}$ (reflexive coequalizer used to define $\Sigma^{\mathbf{T}}_A(B,\beta)$)}
+Due to its length, we postpone the proof of Theorem~\ref{thm:dependentsumsinEMfibration} to Appendix~\ref{sect:proofofthm:dependentsumsinEMfibration} and only note here that the split dependent $p$-sums are given in the EM-fibration $p^{\mathbf{T}}$ by functors $\Sigma^{\mathbf{T}}_A : \mathcal{V}^{\mathbf{T}}_{\ia A} \longrightarrow \mathcal{V}^{\mathbf{T}}_{p(A)}$ that are defined on an object $(B,\beta)$ of $\mathcal{V}^{\mathbf{T}}_{\ia A}$ as the reflexive coequalizer
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+(T(\Sigma_A(B)), \mu_{\Sigma_A(B)}) \ar[r]^-{e_{A,(B,\beta)}} & \Sigma^{\mathbf{T}}_A(B,\beta)
+}
+\]
+of the following pair of morphisms in $\mathcal{V}^{\mathbf{T}}_{p(A)}$:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+(T(\Sigma_A(T(B))), \mu_{\Sigma_A(T(B))}) \ar[r]^-{T(\Sigma_A(\beta))} & (T(\Sigma_A(B)), \mu_{\Sigma_A(B)})
+}
+\]
+and
+\[
+\xymatrix@C=6em@R=3em@M=0.5em{
+(T(\Sigma_A(T(B))), \mu_{\Sigma_A(T(B))}) \ar[r]^-{T(\Sigma_A(T(\eta^{\Sigma_A \,\dashv\, \pi^*_A}_B)))} & (T(\Sigma_A(T(\pi^*_A(\Sigma_A(B))))), \mu_{\Sigma_A(T(\pi^*_A(\Sigma_A(B))))}) \ar[d]^-{=}
+\\
+& (T(\Sigma_A(\pi^*_A(T(\Sigma_A(B))))), \mu_{\Sigma_A(\pi^*_A(T(\Sigma_A(B))))}) \ar[d]^-{T(\varepsilon^{\Sigma_A \,\dashv\, \pi^*_A}_{T(\Sigma_A(B))})}
+\\
+(T(\Sigma_A(B)), \mu_{\Sigma_A(B)}) & \ar[l]^-{\mu_{\Sigma_A(B)}} (T(T(\Sigma_A(B))), \mu_{T(\Sigma_A(B))})
+}
+\]
+using the split dependent sums in $p$, i.e., the adjunction $\Sigma_A \dashv \pi^*_A : \mathcal{V}_{p(A)} \longrightarrow \mathcal{V}_{\ia A}$. 
+%
+\end{proof}
+
+We note that Theorem~\ref{thm:dependentsumsinEMfibration} is similar to Proposition~\ref{prop:colimitsinEMcategory2} where the existence of coproducts in the EM-category of a monad followed from the existence of reflexive coequalizers. 
+%
+In particular, as split dependent sums can be viewed as a natural generalisation of set-indexed coproducts to coproducts indexed by an arbitrary object in the total category $\mathcal{V}$, it is not surprising that Theorem~\ref{thm:dependentsumsinEMfibration} and its proof are similar to Proposition~\ref{prop:colimitsinEMcategory2}.
+
+For constructing a fibred adjunction model based on the EM-fibration of a split fibred monad, we have the following corollary to Theorem~\ref{thm:dependentsumsinEMfibration}.
+
+\begin{corollary}
+Given an SCCompC $p : \mathcal{V} \longrightarrow \mathcal{B}$ and a split fibred monad on it, then the corresponding EM-fibration has split dependent $p$-sums if the EM-fibration of this split fibred monad has split fibred reflexive coequalizers.
+\end{corollary}
+
+
+
+\subsection{Continuous families fibration and general recursion}
+\label{sect:continuousfamilies}
+
+We conclude our overview of examples of fibred adjunction models by presenting a domain-theoretic generalisation of the families of sets fibration based models from Section~\ref{sect:fibadjmodelsfromfamiliesofsets}. Furthermore, we show how to use this domain-theoretic  model to give a denotational semantics to an extension of eMLTT with general recursion.
+
+To improve the readability of this section, we have split it into three parts: i) in Section~\ref{sect:domaintheorypreliminaries}, we recall some preliminaries of domain theory; ii) in Section~\ref{sect:domaintheoreticfibredadjunctionmodel} we construct a domain-theoretic fibred adjunction model based on continuous families; and iii) in Section~\ref{sect:extensionofeMLTTwithrecursion}, we present an extension of eMLTT with general recursion, and show how to interpret it in our domain-theoretic fibred adjunction model.
+
+\subsubsection{Domain-theoretic preliminaries}
+\label{sect:domaintheorypreliminaries}
+
+In this section we give a brief overview of basic domain-theoretic concepts and results that we later use to construct a domain-theoretic fibred adjunction model. We refer the reader to~\cite{Gierz:ContinuousLattices,Plotkin:PisaNotes,Abramsky:DomainTheory} for a more detailed overview of the relevant domain theory. 
+
+\begin{definition}
+\index{partial order!$\omega$-complete --}
+\index{ cpo@cpo ($\omega$-complete partial order)}
+\index{ x@$\langle x_n \rangle$ (increasing $\omega$-chain $x_1 \leq_X x_2 \leq_X \ldots$)}
+\index{ V@$\bigvee_{\hspace{-0.05cm}n} \,x_n$ (least upper bound of an increasing $\omega$-chain $\langle x_n \rangle$)}
+\index{ @$\leq_X$ (partial order of a cpo $X$)}
+\index{ X@$\vert X \vert$ (underlying set of a cpo $X$)}
+\index{ X@$(\vert X \vert , \leq_X)$ (cpo)}
+An \emph{$\omega$-complete partial order} (cpo) is a partial order $X = (\vert X \vert , \leq_X)$ which has least upper bounds $\bigvee_{\!\!n} \,x_n$ of all increasing $\omega$-chains $\langle x_n \rangle \defeq x_1 \leq_X x_2 \leq_X \ldots$
+\end{definition}
+
+\begin{definition}
+\index{function!continuous --}
+A function $f : X \longrightarrow Y$ between cpos is \emph{continuous} if it is monotone and preserves the least upper bounds of increasing $\omega$-chains, i.e., when we have
+\[
+\begin{array}{c}
+x_1 \leq_X x_2 \implies f(x_1) \leq_Y f(x_2)
+\qquad
+f(\bigvee_{\!\!n} \,x_n) = \bigvee_{\!\!n}\, f(x_n)
+\end{array}
+\]
+\end{definition}
+
+\begin{proposition}
+\index{category!-- of cpos and continuous functions}
+\index{ CPO@$\CPO$ (category of cpos and continuous functions)}
+Cpos and continuous functions form the category $\CPO$.
+\end{proposition}
+
+\begin{definition}
+\index{partial order!$\omega$-complete --!discrete --}
+A cpo $X$ is \emph{discrete} if its partial order is given by equality.
+\end{definition}
+
+In particular, observe that every set $A$ trivially determines a discrete cpo $(A,=)$. 
+
+\begin{proposition}[{\cite[Section~2]{Plotkin:PisaNotes}}]
+$\CPO$ is Cartesian closed.
+\end{proposition}
+
+In particular, the terminal object $1$ is given by the unique cpo on a singleton set; the Cartesian product $X \times Y$ is given by the set $\vert X \vert \times \vert Y \vert$ and the component-wise  order
+\[
+\langle x_1 , y_1 \rangle \leq_{X \times Y} \langle x_2 , y_2 \rangle \text{~~iff~~} x_1 \leq_X x_2 ~~\wedge~~ y_1 \leq_Y y_2
+\]
+and the exponential $X \Rightarrow Y$ is given by the set of continuous functions from $X$ to $Y$ with the pointwise order
+\[
+f \leq_{X \Rightarrow Y} g \text{~~iff~~} \forall x \in \vert X \vert .\, f(x) \leq_Y g(x)
+\]
+
+\begin{proposition}[{\cite[Section~3]{Plotkin:PisaNotes}}]
+\label{prop:CPOhasfinitecoproducts}
+$\CPO$ has finite coproducts. 
+\end{proposition}
+
+In particular, the initial object $0$ is given by the unique cpo on the empty set; and the binary coproduct $X + Y$ is given by the set $\vert X \vert + \vert Y \vert$ with the disjoint order
+\[
+\mathsf{inl}~x_1 \leq_{X + Y} \mathsf{inl}~x_2 \text{~~iff~~} x_1 \leq_X x_2
+\qquad
+\qquad
+\mathsf{inr}~y_1 \leq_{X + Y} \mathsf{inr}~y_2 \text{~~iff~~} y_1 \leq_Y y_2
+\]
+
+
+An important variation of the category $\CPO$ we use is the category $\CPO^{\text{EP}}$ of embedding-projection pairs. For us, the embedding-projection pairs are essential to accommodate the contravariance arising in the definition of split dependent products.
+
+\begin{definition}
+\index{embedding-projection pair}
+\index{ f@$(f^e,f^p)$ (embedding-projection pair)}
+An \emph{embedding-projection pair} $(f^e,f^p) : X \longrightarrow Y$ between cpos $X$ and $Y$ is given by continuous functions $f^e : X \longrightarrow Y$ and $f^p : Y \longrightarrow X$, satisfying
+\[
+f^p \comp f^e = \id_X
+\qquad
+f^e \comp f^p \leq_Y \id_Y
+\]
+\end{definition}
+
+\begin{proposition}
+\index{category!-- of embedding-projection pairs between cpos}
+\index{ CPO@$\CPO^{\text{EP}}$ (category of embedding-projection pairs between cpos)}
+Cpos and embedding-projection pairs form the category $\CPO^{\text{EP}}$.
+\end{proposition}
+
+An important property of the category $\CPO^{\text{EP}}$ that we use pervasively in our proofs is the following instance of the well-known limit-colimit coincidence property for embed\-ding-projection pairs---see~\cite[Theorem~2]{Smyth:RecDomEqs} for more details.
+
+\begin{proposition}
+\label{prop:limitcolimitcoincidenceforcfam}
+\index{limit-colimit coincidence}
+Given a cpo $X$, a functor $A : X \longrightarrow \CPO^{\text{EP}}$, and an increasing $\omega$-chain $\langle x_n \rangle$, then the cocone $\alpha : J \longrightarrow \Delta(A(\bigvee_{\!\!n}\, x_n))$, given by components 
+\[
+\begin{array}{c}
+\alpha_{x_n} \defeq (A(x_n \leq_X \bigvee_{\!\!n}\, x_n)^e , A(x_n \leq_X \bigvee_{\!\!n}\, x_n)^p) : A(x_n) \longrightarrow A(\bigvee_{\!\!n}\, x_n)
+\end{array}
+\]
+is a colimit of the diagram $J : \langle x_n \rangle \longrightarrow \CPO^{\text{EP}}$, given by $J(x_n) \defeq A(x_n)$, if and only if 
+\[
+\begin{array}{c}
+\bigvee_{\!\!n}\, (A(x_n \leq_X \bigvee_{\!\!n}\, x_n)^e \comp A(x_n \leq_X \bigvee_{\!\!n}\, x_n)^p) = \id_{A(\bigvee_{\!\!n}\, x_n)} 
+\end{array}
+\]
+\end{proposition}
+
+
+
+\subsubsection{A domain-theoretic fibred adjunction model}
+\label{sect:domaintheoreticfibredadjunctionmodel}
+
+The domain-theoretic fibred adjunction model we construct below is based on lifting the EM-resolution of a suitable $\CPO$-enriched monad $\mathbf{T} = (T,\eta,\mu)$ on $\CPO$ to a split fibred adjunction. It is well-known that the corresponding EM-category $\CPO^{\mathbf{T}}$ and the adjunction $F^{\mathbf{T}} \dashv\, U^{\mathbf{T}} : \CPO^{\mathbf{T}} \longrightarrow \CPO$ are both  $\CPO$-enriched. In particular, the hom-cpo $\CPO^{\mathbf{T}}((A,\alpha),(B,\beta))$ is given by the cpo of continuous functions from $A$ to $B$ that additionally satisfy the condition of being an EM-algebra homomorphism. 
+
+\index{ O@$\Omega_{(A,\alpha)}$ (least zero-ary operation)}
+In order to be able to model general recursion, we assume that the monad $\mathbf{T}$ supports a least zero-ary operation, in the sense of~\cite[Section~6]{Plotkin:SemanticsForAlgOperations}. In more detail, this means that for every EM-algebra $(A,\alpha)$, there must exist an element $\Omega_{(A,\alpha)}$ in $\vert A \vert$ such that $\Omega_{(A,\alpha)} \leq_A a$, for all elements $a$ in $\vert A \vert$; and the continuous EM-algebra homomorphisms must strictly preserve these least elements.
+
+Further, in order to be able to define split dependent sums, we assume that $\CPO^{\mathbf{T}}$ has reflexive coequalizers---see Proposition~\ref{prop:cfamEMalgebrassplitdependentsums} for how they are used.
+
+We note that a monad $\mathbf{T}_{\!\mathcal{L}}$ satisfying these requirements is induced by any  discrete $\CPO$-enriched countable Lawvere theory $\mathcal{L}$ (see~\cite{Hyland:DiscreteLawTh} for details) that includes a least zero-ary operation. In particular, the monad is given by the functor $T_{\!\mathcal{L}} \defeq U_{\!\mathcal{L}} \comp F_{\mathcal{L}}$, and the category $\CPO^{\mathbf{T}_{\!\mathcal{L}}}$ is complete and cocomplete, and thus has reflexive coequalizers.
+
+\index{partial order!directed-complete --}
+\index{ dcpo@dcpo (directed-complete partial order)}
+We begin by defining a split fibration that is suitable for modelling eMLTT's value types, the \emph{fibration $\mathsf{cfam}_{\CPO} : \CFam(\CPO) \longrightarrow \CPO$ of continuous families}. This fibration is based on the analogous fibration of continuous families of directed-complete partial orders (dcpos) studied in~\cite[Section~10.6]{Jacobs:Book}. We discuss the reasons why we use continuous families of cpos instead of dcpos in Proposition~\ref{prop:dcposarenotpresentable}.
+
+\begin{definition}
+\label{def:catofcontfamilies}
+\index{category!-- of continuous families of cpos}
+\index{functor!continuous --}
+\index{ CFam@$\CFam(\CPO)$ (total category of the fibration of continuous families of cpos)}
+The objects of the category $\CFam(\CPO)$ are given by pairs $(X,A)$ of a cpo $X$ and a continuous functor $A : X \longrightarrow \CPO^{\text{EP}}$, i.e., a functor that preserves colimits of $\omega$-chains when we treat the cpo $X$ as a category. A morphism from $(X,A)$ to $(Y,B)$ is given by a pair $(f,\{g_x\}_{x \in \vert X \vert})$ of a continuous function $f : X \longrightarrow Y$ and a family of continuous functions $\{g_x : A(x) \longrightarrow B(f(x))\}_{x \in \vert X \vert}$, satisfying
+\vspace{-0.15cm}
+\[
+\hspace{-0.175cm}
+\begin{array}{c}
+x_1 \leq_X x_2 \implies B(f(x_1) \leq_Y f(x_2))^e \comp g_{x_1} \leq _{\CPO(A(x_1),B(f(x_2)))} 
+g_{x_2} \comp A(x_1 \leq_X x_2)^e
+\\[2mm]
+\langle x_n \rangle \text{~is incr.~} \omega \text{-chain} \implies g_{\bigvee_{\!n} x_n} = \bigvee_{\!n} \big(B(f(x_n) \leq_Y f(\bigvee_{\!n} x_n))^e \comp g_{x_n} \comp A(x_n \leq_X \bigvee_{\!n} x_n)^p\big)
+\end{array}
+\vspace{-0.1cm}
+\]
+These conditions express that $g$ is a continuously indexed natural transformation.
+\end{definition}
+
+For better readability, we often define the continuous functors $A : X \longrightarrow \CPO^{\text{EP}}$ using the $\mapsto$ notation, leaving the action of $A$ on $\leq_X$ implicit when it is clear from the context. To keep this example concise, we also omit details of some other definitions when they are analogous to those for the families of sets fibration $\mathsf{fam}_{\Set}$ at the level of the underlying sets, and when the additional order-theoretic proof obligations are straightforward (e.g., we only give the object parts of $\Pi_{(X,A)}$ and $\Sigma_{(X,A)}$). Further, we also omit the laborious but straightforward proofs of the propositions given below.
+
+\begin{proposition}
+\label{prop:continuousfamiliesfibration}
+\index{fibration!-- of continuous families of cpos}
+\index{ cfam@$\mathsf{cfam}_{\CPO}$ (fibration of continuous families of cpos)}
+The functor $\mathsf{cfam}_{\CPO} : \CFam(\CPO) \longrightarrow \CPO$ of \emph{continuous families of cpos}, given by
+\[
+\mathsf{cfam}_{\CPO}(X,A) \defeq X
+\qquad
+\mathsf{cfam}_{\CPO}(f,\{g_x\}_{x \in \vert X \vert}) \defeq f
+\]
+is a split fibration. In fact, it is a full split comprehension category with unit.
+\end{proposition}
+
+We refer the reader to the detailed proof of the dcpo-version of this proposition given in~\cite[Lemma~10.6.2]{Jacobs:Book}.
+
+In particular, given a continuous function $f : X \longrightarrow Y$, the chosen Cartesian morphism over $f$ in $\mathsf{cfam}_{\CPO}$ is given as in $\mathsf{fam}_{\Set}$, i.e., by
+\[
+\overline{f}(Y,A) \defeq (f , \{\id_{A(f(x))}\}_{x \in X}) : (X , A \comp f) \longrightarrow (Y,A)
+\]
+
+Further, the corresponding terminal object functor $1 : \CPO \longrightarrow \CFam(\CPO)$ and  comprehension functor $\ia - : \CFam(\CPO) \longrightarrow \CPO$ are given by
+\[
+1(X) \defeq (X , x \mapsto (1,=)) \qquad
+\ia {(X,A)} \defeq \bigsqcup_{X}\, A
+\]
+where the latter is defined using a \emph{cpo-indexed coproduct}, given by
+\index{coproduct!cpo-indexed --}
+\index{ Coproduct@$\bigsqcup_{X}$ (cpo-indexed coproduct)}
+\[
+\bigsqcup_{X}\, A \defeq (\bigsqcup_{x \in \vert X \vert}\!\! \vert A(x) \vert , \leq_{\bigsqcup_{X} A})
+\]
+and where the partial order $\leq_{\bigsqcup_{X} A}$ is given by
+\[
+\langle x_1,a_1 \rangle \leq_{\bigsqcup_{X} A} \langle x_2 , a_2 \rangle \text{~~iff~~} x_1 \leq_X x_2 ~~\wedge~~ A(x_1 \leq_X x_2)^e(a_1) \leq_{A(x_2)} a_2
+\]
+
+\index{ x@$\langle x , a \rangle$ ($x$'th injection into a cpo-indexed coproduct)}
+These cpo-indexed coproducts $\bigsqcup_{X}\, A$ come equipped with natural continuous injection and copairing morphisms, given by the injection and copairing morphisms of the underlying set-indexed coproducts of sets. Analogously to the set-indexed coproducts of sets, we write $\langle x , a \rangle$ for the $x$'th injection into the $X$-indexed coproduct $\bigsqcup_{X}\, A$. 
+
+Next, we show that $\mathsf{cfam}_{\CPO}$ has the structure one needs to model a version of eMLTT in which propositional equality is restricted to be over terms whose types denote families of discrete cpos---see the discussion later in this section. 
+
+
+As mentioned earlier, our proofs in this section rely on the limit-colimit coincidence for embedding-projection pairs (see~Proposition~\ref{prop:limitcolimitcoincidenceforcfam}). In particular, we use Proposition~\ref{prop:limitcolimitcoincidenceforcfam} pervasively to show that the second components of the objects of $\CFam(\CPO)$ we define below are continuous functors. An analogous property for dcpos had an important role in the corresponding proofs given in~\cite[Section~10.6]{Jacobs:Book}.
+
+
+
+\begin{proposition}
+\label{prop:cfamhassepproductsandsums}
+$\mathsf{cfam}_{\CPO}$ has split dependent products and strong split dependent sums.
+\end{proposition}
+
+In particular, the corresponding functors are given on objects by 
+\[
+\Pi_{(X,A)}(\bigsqcup_{X}\, A , B) \defeq (X , x \mapsto \bigsqcap_{A(x)} B\, \langle x , - \rangle)
+\]
+\[
+\Sigma_{(X,A)}(\bigsqcup_{X}\, A , B) \defeq (X , x \mapsto \bigsqcup_{A(x)} B\, \langle x , - \rangle)
+\]
+where the former is defined using a \emph{cpo-indexed product}, given by
+\index{product!cpo-indexed --}
+\index{ Product@$\bigsqcap_{X}$ (cpo-indexed product)}
+\[
+\bigsqcap_{A(x)} B\, \langle x , - \rangle \defeq (\{f : A(x) \longrightarrow \bigsqcup_{A(x)} B\, \langle x , - \rangle \vertbar \mathsf{fst} \comp f = \id_{A(x)}\} , \leq_{\bigsqcap_{A(x)} B\, \langle x , - \rangle})
+\]
+and where the partial order $\leq_{\bigsqcap_{A(x)} B\, \langle x , - \rangle}$ is given pointwise by
+\[
+f_1 \leq_{\bigsqcap_{A(x)} B\, \langle x , - \rangle} f_2 \text{~~iff~~} \forall a \in \vert A(x) \vert .\, f_1(a) \leq_{\bigsqcup_{A(x)} B\, \langle x , - \rangle} f_2(a)
+\]
+
+It is worth noting that the action of $x \mapsto \bigsqcap_{A(x)} B\, \langle x , - \rangle$ on the partial order $\leq_X$ crucially relies on $A$ being $\CPO^{\text{EP}}$-valued rather than $\CPO$-valued. In particular, the projections enable us to account for the contravariance arising from $\bigsqcap_{A(x)} B\, \langle x , - \rangle$. 
+
+Dcpo-versions of these definitions and the corresponding proofs can be found in~\cite[Section~10.6]{Jacobs:Book}. 
+
+Next, by combining Propositions~\ref{prop:continuousfamiliesfibration} and~\ref{prop:cfamhassepproductsandsums}, we get the following corollary.
+
+\begin{corollary}
+$\mathsf{cfam}_{\CPO}$ is a \SCCompC.
+\end{corollary}
+
+Next, we note that $\mathsf{cfam}_{\CPO}$ also has all other structure we require from $p$ in Definition~\ref{def:fibadjmodels}, except for split intensional propositional equality, which we here restrict to be over continuous families of discrete cpos, as explained below.
+
+\begin{proposition}
+$\mathsf{cfam}_{\CPO}$ has split fibred strong colimits of shape $\mathbf{0}$ and $\mathbf{2}$, and weak split fibred strong natural numbers.
+\end{proposition}
+
+\index{ N@$\mathbf{N}_=$ (discrete cpo on the set of natural numbers)}
+\index{ z@$\mathsf{z}$ (continuous zero function associated with the discrete cpo of natural numbers)}
+\index{ s@$\mathsf{s}$ (continuous successor function associated with the discrete cpo of natural numbers)}
+In particular, these split fibred strong colimits can be shown to be given by
+\[
+0_X \defeq (X , x \mapsto 0)
+\qquad
+(X,A) +_X (X,B) \defeq (X , x \mapsto A(x) + B(x))
+\]
+and the weak split fibred strong natural numbers can be shown to be given by
+\[
+\mathbb{N} \defeq (1, \star \mapsto \mathbf{N}_=)
+\qquad
+\mathsf{zero} \defeq (\id_1 , \{\mathsf{z}\}_{\star \in 1})
+\qquad
+\mathsf{succ} \defeq (\id_1, \{\mathsf{s}\}_{\star \in 1})
+\]
+where $\mathsf{z} : 1 \longrightarrow \mathbf{N}_=$ and $\mathsf{s} : \mathbf{N}_= \longrightarrow \mathbf{N}_=$ are the continuous zero and successor functions associated with the discrete cpo $\mathbf{N}_=$ on the set $\mathbf{N}$ of natural numbers. 
+
+
+As mentioned earlier, for split intensional propositional equality, we only consider continuous families $A : X \longrightarrow \CPO^{\text{EP}}$ where each $A(x)$ is a discrete cpo, so as to guarantee that the second component of $\Id_{(X,A)}$ we define below is a continuous functor. 
+
+\begin{proposition}
+$\mathsf{cfam}_{\CPO}$ has split intensional propositional equality over continuous families of discrete cpos.
+\end{proposition}
+
+In particular, the discreteness assumption allows us to define the split intensional propositional equality analogously to $\mathsf{fam}_{\Set}$, i.e., by
+\[
+\Id_{(X,A)} \defeq \big(\{\pi^*_{(X,A)}(X,A)\}, \langle \langle x , a \rangle , a' \rangle \mapsto (\{\star \vertbar a = a'\}, =)\big)
+\]
+
+Next, we define a fibration suitable for modelling computation types, the \emph{fibration $\mathsf{cfam}_{\CPO^{\mathbf{T}}} : \CFam(\CPO^{\mathbf{T}}) \longrightarrow \CPO$ of continuous families of continuous EM-algebras}, for the monad $\mathbf{T} = (T,\eta,\mu)$ we assumed earlier in this section.
+This is a natural domain-theoretic generalisation of the families of EM-algebras fibration used in Section~\ref{sect:fibadjmodelsfromfamiliesofsets}.
+
+\begin{definition}
+\index{category!-- of continuous families of continuous EM-algebras}
+\index{ CFam@$\CFam(\CPO^{\mathbf{T}})$ (total category of the fibration of continuous families of continuous EM-algebras)}
+The objects of the category $\CFam(\CPO^{\mathbf{T}})$ are given by pairs $(X,\ul{C})$ of a cpo $X$ and a continuous functor $\ul{C} : X \longrightarrow (\CPO^{\mathbf{T}})^{\text{EP}}$, i.e., a functor that preserves colimits of $\omega$-chains when we treat $X$ as a category. A morphism from $(X,\ul{C})$ to $(Y,\ul{D})$ is given by a pair $(f,\{h_x\}_{x \in \vert X \vert})$ of a continuous function $f : X \longrightarrow Y$ and a family of continuous EM-algebra homomorphisms $\{h_x : \ul{C}(x) \longrightarrow \ul{D}(f(x))\}_{x \in \vert X \vert}$, satisfying
+\vspace{-0.15cm}
+\[
+\hspace{-0.2cm}
+\begin{array}{c}
+x_1 \leq_X x_2 \implies \ul{D}(f(x_1) \leq_Y f(x_2))^e \comp h_{x_1} \leq _{\CPO^{\mathbf{T}}(\ul{C}(x_1),\ul{D}(f(x_2)))}
+h_{x_2} \comp \ul{C}(x_1 \leq_X x_2)^e
+\\[2mm]
+\langle x_n \rangle \text{~is incr.~} \omega \text{-chain} \implies h_{\bigvee_{\!n} x_n} = \bigvee_{\!n} \big(\ul{D}(f(x_n) \leq_Y f(\bigvee_{\!n} x_n))^e \comp h_{x_n} \comp \ul{C}(x_n \leq_X \bigvee_{\!n} x_n)^p\big)
+\end{array}
+\vspace{-0.1cm}
+\]
+These conditions express that $h$ is a continuously indexed natural transformation.
+\end{definition}
+
+\begin{proposition}
+\index{fibration!-- of continuous families of continuous EM-algebras}
+\index{ cfam@$\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ (fibration of continuous families of continuous EM-algebras)}
+The functor $\mathsf{cfam}_{\CPO^{\mathbf{T}}} : \CFam(\CPO^{\mathbf{T}}) \longrightarrow \CPO$ of \emph{continuous families of continuous EM-algebras}, given by
+\[
+\mathsf{cfam}_{\CPO^{\mathbf{T}}}(X,\ul{C}) \defeq X
+\qquad
+\mathsf{cfam}_{\CPO^{\mathbf{T}}}(f,\{h_x\}_{x \in \vert X \vert}) \defeq f
+\]
+is a split fibration.
+\end{proposition}
+
+\index{ CPO@$(\CPO^{\mathbf{T}})^{\text{EP}}$ (category of embedding-projection pairs between continuous EM-algebras)}
+\index{category!-- of embedding-projection pairs between continuous EM-algebras}
+We note that the category $(\CPO^{\mathbf{T}})^{\text{EP}}$ is given by \emph{embedding-projection pairs} of continuous homomorphisms between continuous EM-algebras for the monad $\mathbf{T}$. 
+
+It is worth noting that an analogue of Proposition~\ref{prop:limitcolimitcoincidenceforcfam} also holds for $(\CPO^{\mathbf{T}})^{\text{EP}}$.
+
+\begin{proposition}
+\label{prop:limitcolimitcoincidenceforEMalgebras}
+\index{limit-colimit coincidence}
+Given a cpo $X$, a functor $\ul{C} : X \longrightarrow (\CPO^{\mathbf{T}})^{\text{EP}}$, and an increasing $\omega$-chain $\langle x_n \rangle$, then the cocone $\alpha : J \longrightarrow \Delta(\ul{C}(\bigvee_{\!\!n}\, x_n))$, given by components 
+\[
+\begin{array}{c}
+\alpha_{x_n} \defeq (\ul{C}(x_n \leq_X \bigvee_{\!\!n}\, x_n)^e , \ul{C}(x_n \leq_X \bigvee_{\!\!n}\, x_n)^p) : \ul{C}(x_n) \longrightarrow \ul{C}(\bigvee_{\!\!n}\, x_n)
+\end{array}
+\]
+is a colimit of $J : \langle x_n \rangle \longrightarrow (\CPO^{\mathbf{T}})^{\text{EP}}$, given by $J(x_n) \defeq \ul{C}(x_n)$, if and only if 
+\[
+\begin{array}{c}
+\bigvee_{\!\!n}\, (\ul{C}(x_n \leq_X \bigvee_{\!\!n}\, x_n)^e \comp \ul{C}(x_n \leq_X \bigvee_{\!\!n}\, x_n)^p) = \id_{\ul{C}(\bigvee_{\!\!n}\, x_n)} 
+\end{array}
+\]
+\end{proposition}
+
+Analogously to Proposition~\ref{prop:limitcolimitcoincidenceforcfam}, Proposition~\ref{prop:limitcolimitcoincidenceforEMalgebras} also follows from the well-known limit-colimit coincidence property for embed\-ding-projection pairs---see~\cite[Theorem~2]{Smyth:RecDomEqs} for details.
+We use it pervasively to show that the second components of the objects of $\CFam(\CPO^{\mathbf{T}})$ we define below are continuous functors. 
+
+Next, analogously to lifting adjunctions to the families fibrations (see Proposition~\ref{prop:liftingadjunctionstofamilies}), we can lift the $\CPO$-enriched EM-adjunction ${F^{\mathbf{T}} \dashv\, U^{\mathbf{T}} : \CPO^{\mathbf{T}} \longrightarrow \CPO}$ to a corresponding split fibred adjunction $\widehat{F^{\mathbf{T}}} \dashv\, \widehat{U^{\mathbf{T}}} : \mathsf{cfam}_{\CPO^{\mathbf{T}}} \longrightarrow \mathsf{cfam}_{\CPO}$.
+
+\begin{proposition}
+\index{ F@$\widehat{F^{\mathbf{T}}}$ (lifting of the functor $F^{\mathbf{T}}$)}
+\index{ U@$\widehat{U^{\mathbf{T}}}$ (lifting of the functor $U^{\mathbf{T}}$)}
+\index{adjunction!lifting of --}
+The two split fibred functors ${\widehat{F^{\mathbf{T}}} : \mathsf{cfam}_{\CPO} \longrightarrow \mathsf{cfam}_{\CPO^{\mathbf{T}}}}$ and \linebreak $\widehat{U^{\mathbf{T}}} : \mathsf{cfam}_{\CPO^{\mathbf{T}}} \longrightarrow \mathsf{cfam}_{\CPO}$, given by a pointwise construction, i.e., by
+\[
+\widehat{F^{\mathbf{T}}}(X,A) \defeq (X , x \mapsto F^{\mathbf{T}}(A(x)))
+\qquad
+\widehat{U^{\mathbf{T}}}(X,\ul{C}) \defeq (X , x \mapsto U^{\mathbf{T}}(\ul{C}(x)))
+\]
+constitute a split fibred adjunction $\widehat{F^{\mathbf{T}}} \dashv\, \widehat{U^{\mathbf{T}}} : \mathsf{cfam}_{\CPO^{\mathbf{T}}} \longrightarrow \mathsf{cfam}_{\CPO}$.
+\end{proposition}
+
+Next, we show that $\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ has split dependent $\mathsf{cfam}_{\CPO}$-products and -sums. 
+
+\begin{proposition}
+$\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ has split dependent $\mathsf{cfam}_{\CPO}$-products.
+\end{proposition}
+
+The corresponding functor $\Pi_{(X,A)} : \CFam_{\ia {(X,A)}}(\CPO^{\mathbf{T}}) \longrightarrow \CFam_X(\CPO^{\mathbf{T}})$ is defined on objects as 
+\[
+\Pi_{(X,A)}(\bigsqcup_{X}\, A , \ul{C}) \defeq (X , x \mapsto \bigsqcap_{A(x)} \ul{C}\, \langle x , - \rangle)
+\]
+using a \emph{cpo-indexed product of continuous EM-algebras}, given by 
+\index{product!cpo-indexed --}
+\index{ Product@$\bigsqcap_{X}$ (cpo-indexed product)}
+\[
+\bigsqcap_{A(x)} \ul{C}\, \langle x , - \rangle \defeq (\,\bigsqcap_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle) , \alpha)
+\]
+where the continuous structure map 
+\[
+\alpha : T(\bigsqcap_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle)) \longrightarrow \bigsqcap_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle)
+\]
+is given by
+\[
+\alpha \defeq \langle \alpha_{\ul{C} \langle x , a \rangle} \comp T(\mathsf{proj}_a) \rangle_{a \in \vert A(x) \vert}
+\]
+using the continuous pairing and projection morphisms associated with the cpo-indexed products in $\CPO$, and where $\alpha_{\ul{C}(x)}$ denotes the structure map of $\ul{C}(x)$. 
+
+Observe that the use of cpo-indexed products in $\CPO$ to define cpo-indexed products in $\CPO^{\mathbf{T}}$ is analogous to how set-indexed products in $\mathcal{V}$ are used to define set-indexed products in $\mathcal{V}^{\mathbf{T}}$---see Proposition~\ref{prop:limitsinEMcategory} for more details.
+
+\begin{proposition}
+\label{prop:cfamEMalgebrassplitdependentsums}
+$\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ has split dependent $\mathsf{cfam}_{\CPO}$-sums.
+\end{proposition}
+
+The corresponding functor $\Sigma_{(X,A)} : \CFam_{\ia {(X,A)}}(\CPO^{\mathbf{T}}) \longrightarrow \CFam_X(\CPO^{\mathbf{T}})$ is defined on objects as 
+\[
+\Sigma_{(X,A)}(\bigsqcup_{X}\, A , \ul{C}) \defeq (X , x \mapsto \bigsqcup_{A(x)} \ul{C}\, \langle x , - \rangle)
+\]
+using a \emph{cpo-indexed coproduct of continuous EM-algebras}, given by 
+the reflexive coequalizer $e : F^{\mathbf{T}} (\bigsqcup_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle)) \longrightarrow \bigsqcup_{A(x)} \ul{C}\, \langle x , - \rangle$ of the pair of morphisms
+\index{coproduct!cpo-indexed --}
+\index{ Coproduct@$\bigsqcup_{X}$ (cpo-indexed coproduct)}
+\index{ e@$e$ (reflexive coequalizer used to define a cpo-indexed coproduct of continuous EM-algebras)}
+\vspace{-0.25cm}
+\[
+\hspace{-0.15cm}
+\xymatrix@C=3em@R=2em@M=0.5em{
+F^{\mathbf{T}} (\bigsqcup_{A(x)} (T \comp U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle)) \ar@<-0.8ex>[rrr]_-{\mu_{\bigsqcup_{A(x)} (U^{\mathbf{T}} \comp\,\, \ul{C}\, \langle x , - \rangle)} \comp F^{\mathbf{T}}([T(\mathsf{inj}_a)]_{a \in \vert A(x) \vert})} \ar@<0.8ex>[rrr]^-{F^{\mathbf{T}} ([\mathsf{inj}_a \,\,\comp\,\, \alpha_{\ul{C}\, \langle x , a \rangle}]_{a \in \vert A(x) \vert})} &&& F^{\mathbf{T}} (\bigsqcup_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle))
+}
+\]
+whose common section is given by 
+\[
+\xymatrix@C=4.5em@R=2em@M=0.5em{
+F^{\mathbf{T}} (\bigsqcup_{A(x)} (U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle)) \ar[rr]^-{F^T ([\mathsf{inj}_a \,\,\comp \,\, \eta_{U^{\mathbf{T}}(\ul{C}\, \langle x , a \rangle)}]_{a \in \vertbar A(x) \vertbar})} 
+&&
+F^{\mathbf{T}} (\bigsqcup_{A(x)} (T \comp U^{\mathbf{T}} \comp\, \ul{C}\, \langle x , - \rangle))
+}
+\]
+On morphisms, we define $\Sigma_{(X,A)}$ using the universal property of reflexive coequalizers. 
+
+Observe that the use of reflexive coequalizers to define cpo-indexed coproducts in $\CPO^{\mathbf{T}}$ is analogous to the use of reflexive coequalizers to define set-indexed coproducts in $\mathcal{V}^{\mathbf{T}}$---see Proposition~\ref{prop:colimitsinEMcategory2} for more details.
+Similar use of (split fibred) reflexive coequalizers also appears in our definition of split dependent sums in the EM-fibrations of split fibred monads---see the proof of Theorem~\ref{thm:dependentsumsinEMfibration} for details, e.g., for the definition of $\Sigma_{(X,A)}$ on morphisms using the universal property of reflexive coequalizers.
+
+
+The final ingredient for constructing a fibred adjunction model based on $\mathsf{cfam}_{\CPO}$ and $\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ is the split fibred pre-enrichment of $\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ in $\mathsf{cfam}_{\CPO}$.
+
+\begin{proposition}
+$\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ admits split fibred pre-enrichment in $\mathsf{cfam}_{\CPO}$.
+\end{proposition}
+
+The corresponding functor 
+\[
+\multimap \,\,: \int (X \mapsto \CFam_X({\CPO^{\mathbf{T}}})^{\text{op}} \times \CFam_X({\CPO^{\mathbf{T}}})) \longrightarrow \CFam(\CPO)
+\]
+is given on objects by 
+\[
+\begin{array}{c}
+\multimap (X,(X,\ul{C}),(X,\ul{D})) \defeq (X,x \mapsto \CPO^{\mathbf{T}}(\ul{C}(x),\ul{D}(x)))
+\end{array}
+\]
+using the $\CPO$-enrichment of $\CPO^{\mathbf{T}}$ discussed earlier in this section.
+
+
+We summarise these results in the next theorem.
+
+\begin{theorem}
+\label{thm:continuousfamiliesfibadjmodel}
+Given a $\CPO$-enriched monad $\mathbf{T} = (T,\eta,\mu)$ on $\CPO$ that supports a least zero-ary operation, in the sense of~\cite[Section~6]{Plotkin:SemanticsForAlgOperations}, such that $\CPO^{\mathbf{T}}$ has reflexive coequalizers, then the fibrations $\mathsf{cfam}_{\CPO}$ and $\mathsf{cfam}_{\CPO^{\mathbf{T}}}$ give rise to a split fibred adjunction model where propositional equality is restricted to families of discrete cpos.
+\end{theorem}
+
+It is worth noting that the existence of the least zero-ary operation is only required in order to use this domain-theoretic fibred adjunction model to give a denotational semantics to an extension of eMLTT with general recursion. This requirement can be dropped when giving a denotational semantics to eMLTT as defined in Chapter~\ref{chap:syntax}.
+
+A good source of such fibred adjunction models is the algebraic treatment of computational effects, as made precise in the following corollary to Theorem~\ref{thm:continuousfamiliesfibadjmodel}.
+
+\begin{corollary}
+\label{cor:fibredadjunctionmodelsfromdiscretelawveretheories}
+Given a discrete $\CPO$-enriched countable Lawvere theory $\mathcal{L}$ \linebreak (see~\cite{Hyland:DiscreteLawTh}) that includes a least zero-ary operation, the corresponding $\CPO$-enriched monad on $T \defeq U_{\!\mathcal{L}} \comp F_{\mathcal{L}}$ gives us a fibred adjunction model where propositional equality is restricted to families of discrete cpos. Here, $F_{\mathcal{L}} \dashv\, U_{\!\mathcal{L}} : \Mod(\!\mathcal{L},\CPO) \longrightarrow \CPO$.
+\end{corollary}
+
+In particular, in future work we plan to extend fibred algebraic effects and their handlers with inequations based on $\mathsf{cfam}_{\CPO}$ and discrete $\CPO$-enriched countable Lawvere theories, analogously to how $\mathsf{fam}_{\Set}$ and countable Lawvere theories are used to model equationally presented fibred algebraic effects and their handlers in Chapters~\ref{chap:fibalgeffects} and~\ref{chap:handlers}. We recall from~\cite{Hyland:DiscreteLawTh} that a key prerequisite for this to work, i.e., for the corresponding left adjoint $F_{\mathcal{L}}$ to exist, is that $\CPO$ is locally countably presentable (see~\cite[Example~1.18 (2)]{Adamek:LocallyPresentableCats}). 
+Unfortunately, this is not the case for the category of dcpos. 
+
+\begin{proposition}[{\cite[Example~1.18 (5)]{Adamek:LocallyPresentableCats}}]
+\label{prop:dcposarenotpresentable}
+The category of dcpos and continuous functions between them is not locally (countably) presentable. 
+\end{proposition}
+
+The failure of the category of dcpos to be locally countably presentable is the main reason why we use cpos instead of dcpos in this section, compared to the domain-theoretic fibrational model of dependent types given in~\cite[Section~10.6]{Jacobs:Book}.
+
+We conclude this section by explaining why we use $\mathsf{cfam}_{\CPO}$ instead of the other natural candidate, the codomain fibration $\mathsf{cod}_{\CPO} : \CPO^{\to} \longrightarrow \CPO$. 
+
+On the one hand, $\mathsf{cod}_{\CPO}$ is not split, but this can be overcome because every fibration is equivalent to a split one, see~\cite[Corollary~5.2.5]{Jacobs:Book}. On the other hand, for $\mathsf{cod}_{\CPO}$ to be a even a non-split CCompC, $\CPO$ must be locally Cartesian closed, see~\cite[Theorem~10.5.5 (ii)]{Jacobs:Book}. However, as the next result shows, this is not the case.
+
+\begin{theorem}
+$\CPO$ is not locally Cartesian closed.
+\end{theorem}
+
+\begin{proof}
+Recall that for $\CPO$ to be locally Cartesian closed, every base change functor $f^* : \CPO/Y \longrightarrow \CPO/X$ must have a right adjoint, meaning that $f^*$ itself has to be a left adjoint and thus it has to preserve colimits. In particular, $f^*$ has to preserve epimorphisms because they can be characterised as certain colimits. Specifically, it is well-known that $g : A \longrightarrow B$ is an epimorphism when $\id_B \comp g$ and $\id_B \comp g$ form a pushout.
+
+Below we show that this is not the case in $\CPO$ by giving an example of a particular base change functor and an epimorphism it does not preserve. The proof is essentially based on the fact that not all epimorphisms in $\CPO$ are given by surjective functions.
+
+\index{category!slice --}
+\index{ CPO@$\CPO/X$ (slice category of $\CPO$ over an object $X$)}
+Here, $\CPO/X$ is the \emph{slice category} of $\CPO$ over $X$. Its objects are given by continuous functions with codomain $X$.  A morphism in $\CPO/X$ from $f : Y \longrightarrow X$ to $g : Z \longrightarrow X$ is given by a continuous function $h : Y \longrightarrow Z$ such that $g \comp h = f$.
+
+\index{ N@$\mathbf{N}_{\omega}$ (cpo of natural numbers with the $\leq$ order and a top element)}
+We write $\mathbf{N}_=$ for the discrete cpo on the set of natural numbers and $\mathbf{N}_{\omega}$ for the cpo on the set of natural numbers extended with a top element $\omega$, where $\leq_{\mathbf{N}_{\omega}}$ is given by
+\[
+n \leq_{\mathbf{N}_{\omega}} m \text{~~iff~~} n,m \text{~are natural numbers} ~~\wedge~~ n \leq m
+\qquad\quad
+n \leq_{\mathbf{N}_{\omega}} \omega \text{~~for all~} n
+\]
+
+Next, recall that given a continuous function $f : X \longrightarrow Y$, the base change functor $f^* : \CPO/Y \longrightarrow \CPO/X$ is given by sending a continuous function $g : Z \longrightarrow Y$ to the continuous function $f^*(g) : f^*(Z) \longrightarrow X$ in the following pullback square:
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+f^*(Z) \ar[r] \ar[d]_{f^*(g)}^<{\,\big\lrcorner} & Z \ar[d]^{g}
+\\
+X \ar[r]_{f} & Y
+}
+\]
+On morphisms of $\CPO/Y$, $f^*$ is defined using the universal property of pullbacks.
+
+The particular epimorphism of interest to us in $\CPO$ is $e : \mathbf{N}_= \longrightarrow \mathbf{N}_{\omega}$, given by mapping $n$ to $n$. 
+It is easy to see that $e$ is an epimorphism: given two continuous functions $h_1 : \mathbf{N}_{\omega} \longrightarrow Y$ and $h_2 : \mathbf{N}_{\omega} \longrightarrow Y$, for some $Y$, such that $h_1 \comp e = h_2 \comp e$, then it suffices to show that $h_1(n) = h_2(n)$, for all natural numbers $n$, and that $h_1(\omega) = h_2(\omega)$, for the top element $\omega$. The proofs for these equations are straightforward:
+\[
+\begin{array}{c}
+h_1(n) = h_1(e(n)) = h_2(e(n)) = h_2(n)
+\\[3mm]
+h_1(\omega) = h_1(\bigvee_{\!\!n}\, n) = 
+\bigvee_{\!\!n}\, h_1(e(n)) = \bigvee_{\!\!n}\, h_2(e(n)) = 
+h_2(\bigvee_{\!\!n}\, n) = h_2(\omega) 
+\end{array}
+\]
+using the fact that $\omega$ is the least upper bound of the $\omega$-chain $\langle n \rangle \defeq 0 \leq 1 \leq \ldots$ 
+
+Importantly for us, $e$ also gives us an epimorphism in the slice category $\CPO/{\mathbf{N}_{\omega}}$: 
+\[
+\xymatrix@C=3em@R=2em@M=0.5em{
+\mathbf{N}_= \ar[rr]^-{e} \ar[dr]_-{e} & & \mathbf{N}_{\omega} \ar[dl]^-{\id_{\mathbf{N}_{\omega}}}
+\\
+& \mathbf{N}_{\omega}
+}
+\]
+
+Now, assuming a non-empty cpo $X$, let us consider the base change functor \linebreak $f_{\omega}^* : \CPO/{\mathbf{N}_{\omega}} \longrightarrow \CPO/X$ for a constant function $f_\omega : X \longrightarrow \mathbf{N}_{\omega}$ that is given by mapping every $x$ to $\omega$. If $\CPO$ were locally Cartesian closed, this base change functor must preserve colimits, in particular, the epimorphism in $\CPO/{\mathbf{N}_{\omega}}$  given by $e$. 
+
+When we apply $f_\omega^*$ to this epimorphism, we get the following morphism in $\CPO/X$:
+\[
+\xymatrix@C=3em@R=2em@M=0.5em{
+f_\omega^*(\mathbf{N}_=) \ar[rr]^-{g} \ar[dr]_-{f_\omega^*(e)} & & f_\omega^*(\mathbf{N}_\omega) \ar[dl]^-{f_\omega^*(\id_{\mathbf{N}_\omega})}
+\\
+& X
+}
+\]
+where $g : f_\omega^*(\mathbf{N}_=) \longrightarrow f_\omega^*(\mathbf{N}_\omega)$ is the result of the action of $f_\omega^*$ on the morphism $e$ in $\mathbf{N}_\omega$.
+By spelling out the definition of (the chosen) pullbacks in $\CPO$, we see that 
+\[
+\begin{array}{c}
+f_\omega^*(\mathbf{N}_=) = (\{\langle x , n \rangle \vertbar f_\omega(x) = e(n) \} , \leq) = (\{\langle x , n \rangle \vertbar \omega = n \} , \leq) = (\emptyset, =)
+\\[3mm]
+f_\omega^*(\mathbf{N}_\omega) = (\{\langle x , n \rangle \vertbar f_\omega(x) = n \}, \leq') = (\{\langle x , \omega \rangle \vertbar x \in \vert X \vert \}, \leq')
+\end{array}
+\]
+from which it follows that $g : f_\omega^*(\mathbf{N}_=) \longrightarrow f_\omega^*(\mathbf{N}_\omega)$ is not an epimorphism in $\CPO/X$. 
+
+For example, take $X$ to be the discrete cpo on the set $\{a,b\}$ and $Y$ to be the discrete cpo on the set $\{a,b,c\}$. Then, if we consider functions $h_1 : f_\omega^*(\mathbf{N}_\omega) \longrightarrow Y$ and \linebreak $h_2 : f_\omega^*(\mathbf{N}_\omega) \longrightarrow Y$, given by $h_1(a) \defeq h_2(a) \defeq a$, $h_1(b) \defeq b$, and $h_2(b) \defeq c$, we have
+\[
+\xymatrix@C=3em@R=3em@M=0.5em{
+f_\omega^*(\mathbf{N}_=) \ar[rr]^-{g} \ar@/_1pc/[drr]_-{f_\omega^*(e)} 
+& & 
+f_\omega^*(\mathbf{N}_\omega) \ar[d]^-{f_\omega^*(\id_{\mathbf{N}_\omega})}
+\ar@<.75ex>[rr]^-{h_1}
+\ar@<-.75ex>[rr]_-{h_2}
+& &
+Y
+\ar@/^1pc/[dll]^-{\quad a \,\mapsto\, a \,,\, b \,\mapsto\, b \,,\, c \,\mapsto\, b}
+\\
+& & X
+}
+\]
+where $h_1 \comp g = h_2 \comp g$ holds vacuously. However, we do not have that $h_1 = h_2$.
+\end{proof}
+
+
+
+\subsubsection{Extension of eMLTT with general recursion}
+\label{sect:extensionofeMLTTwithrecursion}
+
+We now show how the domain-theoretic fibred adjunction model we constructed in the previous section can be used to model an extension of eMLTT with general recursion.
+
+We note that the following discussion ought to be preceded by the definition of the interpretation of eMLTT in fibred adjunction models given in Section~\ref{sect:interpretation}. Therefore, we advise the reader to first read Section~\ref{sect:interpretation} and then the rest of this section.
+
+\index{general recursion}
+\index{type!value --!discrete --}
+\index{fixed point operation}
+\index{ A@$A_{\mathsf{disc}},B_{\mathsf{disc}},\ldots$ (discrete value types)}
+The version of eMLTT we consider in this section includes two changes compared to the definition given in Chapter~\ref{chap:syntax}. First, we restrict the types appearing in propositional equality to those that denote continuous families of \emph{discrete} cpos. More precisely, we only allow $V =_{A_{\mathsf{disc}}} W$ where $A_{\mathsf{disc}}$ is given by the following grammar:
+\[
+\begin{array}{r c l}
+A_{\mathsf{disc}},B_{\mathsf{disc}} & ::= & \Nat \vertbar 1 \vertbar \Sigma\, x \!:\! A_{\mathsf{disc}} .\, B_{\mathsf{disc}} \vertbar \Pi\, x \!:\! A .\, B_{\mathsf{disc}} \vertbar 0 \vertbar A_{\mathsf{disc}} + B_{\mathsf{disc}} \vertbar V =_{A_{\mathsf{disc}}} W
+\end{array}
+\]
+Second, we extend the grammar of eMLTT's computation terms with a \emph{fixed point operation}  $\mu\, x \!:\! U\ul{C} .\, M$, with the corresponding typing rule given by
+\[
+\mkrule
+{\cj \Gamma {\mu\, x \!:\! U\ul{C} .\, M} {\ul{C}}}
+{
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, x \!:\! U\ul{C}} M \ul{C}
+}
+\]
+Further, we extend eMLTT's equational theory with a congruence equation
+\[
+\mkrule
+{\ceq \Gamma {\mu\, x \!:\! U\ul{C} .\, M} {\mu\, x \!:\! U\ul{D} .\, N} \ul{D}}
+{\ljeq \Gamma {\ul{C}} {\ul{D}}
+\quad
+\ceq {\Gamma, x \!:\! U\ul{C}} M N {\ul{C}}}
+\]
+and an equation that describes the unfolding of fixed points:
+\[
+\mkrule
+{\ceq \Gamma {\mu\, x \!:\! U\ul{C} .\, M} {M[\thunk (\mu\, x \!:\! U\ul{C} .\, M)/x]} {\ul{C}}}
+{
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, x \!:\! U\ul{C}} M \ul{C}
+}
+\]
+
+We note that the meta-theory we established for eMLTT in Section~\ref{sect:metatheory} straightforwardly extends to this version of eMLTT. In particular, the fixed point operation and the corresponding definitional equations are treated analogously to other computation terms and definitional equations that involve variable bindings and type annotations. 
+
+\index{interpretation function}
+\index{ @$\sem{-}$ (interpretation function)}
+We can interpret this version of eMLTT in the fibred adjunction model defined in Theorem~\ref{thm:continuousfamiliesfibadjmodel} by extending the interpretation of eMLTT given in Section~\ref{sect:interpretation} with
+\[
+\mkrule
+{
+\begin{array}{l c l}
+\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_1 & \defeq & \id_{\sem{\Gamma}}
+\\
+(\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_2)_\gamma(\star) & \defeq & \mu\, (c  \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma , c \rangle}(\star))
+\end{array}
+}
+{
+\begin{array}{c}
+\sem{\Gamma; \ul{C}}_1 = \sem{\Gamma} \in \CPO
+\qquad
+\sem{\Gamma; \ul{C}}_2(\gamma) \in (\CPO^{\mathbf{T}})^{\text{EP}}
+\\
+\sem{\Gamma, x \!:\! U\ul{C};M}_1 = \id_{\sem{\Gamma, x : U\ul{C}}}
+\qquad
+(\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma , c \rangle} : 1 \longrightarrow U^{\mathbf{T}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\end{array}
+}
+\]
+where $c$ is an element of the set $\vert U^{\mathbf{T}}(\sem{\Gamma; \ul{C}}_2(\gamma)) \vert$.
+
+For better readability, we use subscripts to denote the first and second components of the objects and morphisms in $\CFam(\CPO)$ and $\CFam(\CPO^{\mathbf{T}})$. This notation is analogous to the conventions we adopt in Sections~\ref{sect:fibalgeffectsmodel} and~\ref{sect:interpretingemlttwithhandlers} for $\Fam(\Set)$.
+
+It is then straightforward to show that the soundness results presented in Section~\ref{sect:soundness} remain true for this extension of eMLTT, as discussed in detail below. 
+
+First, the least fixed points $\mu\, (c  \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma , c \rangle}(\star))$ are guaranteed to exist because our assumptions about $\mathbf{T}$ ensure that every $U^{\mathbf{T}}(\sem{\Gamma;\ul{C}}_2(\gamma))$ is a pointed cpo. 
+
+Next, showing that $\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}$ is indeed a morphism from $(\sem{\Gamma}, \gamma \mapsto 1)$ to $(\sem{\Gamma}, \gamma \mapsto U^{\mathbf{T}}(\sem{\Gamma; \ul{C}}_2(\gamma)))$ in $\CFam_{\sem{\Gamma}}(\CPO)$ amounts to showing that $\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_2$ is a continuously indexed natural transformation in the sense of Definition~\ref{def:catofcontfamilies}. 
+
+For the naturality of $\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_2$, we have to prove that $\gamma_1 \leq_{\sem{\Gamma}} \gamma_2$ implies
+\[
+\begin{array}{c}
+(U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^e\big(\mu\, (c_1 \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_1 , c_1 \rangle}(\star) )\big)
+\\[1.5mm]
+\leq_{U^{\mathbf{T}}(\sem{\Gamma;\ul{C}}_2(\gamma_2))}
+\\[1.5mm]
+\mu\, (c_2 \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_2 , c_2 \rangle}(\star))
+\end{array}
+\]
+
+We prove this inequation by first recalling a standard result in domain theory that the least fixed point operation is itself continuous, e.g., see~\cite[Section~2]{Plotkin:PisaNotes}. Then, using the fact that $\sem{\Gamma, x \!:\! U\ul{C};M}$ is assumed to be a morphism in $\CFam_{\sem{\Gamma, x : U\ul{C}}}(\CPO)$, i.e., \linebreak $\sem{\Gamma, x \!:\! U\ul{C};M}_2$ is natural in the sense of Definition~\ref{def:catofcontfamilies}, we get the inequation
+\[
+\hspace{-0.05cm}
+\begin{array}{c}
+\mu\, \big(c_2 \mapsto (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^e\big((\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_1 , (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^p(c_1) \rangle}(\star)\big)\big)
+\\[1.5mm]
+\leq_{U^{\mathbf{T}}(\sem{\Gamma;\ul{C}}_2(\gamma_2))}
+\\[1.5mm]
+\mu\, (c_2 \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_2 , c_2 \rangle}(\star))
+\end{array}
+\]
+meaning that we are left with proving that the following inequation holds:
+\[
+\hspace{-0.05cm}
+\begin{array}{c}
+(U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^e\big(\mu\, (c_1 \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_1 , c_1 \rangle}(\star) )\big)
+\\[1.5mm]
+\leq_{U^{\mathbf{T}}(\sem{\Gamma;\ul{C}}_2(\gamma_2))}
+\\[1.5mm]
+\mu\, \big(c_2 \mapsto (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^e\big((\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_1 , (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^p(c_1) \rangle}(\star)\big)\big)
+\end{array}
+\]
+
+We prove this last inequation below, using a natural deduction style presentation. In order to improve the readability of this proof, we use the following auxiliary notation:
+\[
+\begin{array}{c}
+E \defeq (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^e
+\\[1.5mm]
+P \defeq (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_1 \leq_{\sem{\Gamma}} \gamma_2)^p
+\\[1.5mm]
+f\, \langle \gamma , c \rangle \defeq (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma , c \rangle}(\star)
+\end{array}
+\]
+and omit the subscripts on $\leq$. The above inequation is then proved as follows:
+\[
+\mkrulelabel
+{
+E\big(\mu\, (c_1 \mapsto f\, \langle \gamma_1 , c_1 \rangle)\big) 
+\leq 
+\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))
+}
+{
+\mkrulelabel
+{
+E\big(\mu\, (c_1 \mapsto f\, \langle \gamma_1 , c_1 \rangle)\big) 
+\leq 
+E\big(f\, \big\langle \gamma_1 , P(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))) \big\rangle\big)
+}
+{
+\mkrulelabel
+{
+\mu\, (c_1 \mapsto f\, \langle \gamma_1 , c_1 \rangle)
+\leq 
+f\, \big\langle \gamma_1 , P(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))) \big\rangle
+}
+{
+\mkrulelabel
+{
+\begin{array}{c}
+f\, \big\langle \gamma_1 , f\, \big\langle \gamma_1 , P\big(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))\big) \big\rangle \big\rangle
+\\[-1.5mm]
+\leq
+\\[-1.5mm] 
+f\, \big\langle \gamma_1 , P(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))) \big\rangle
+\end{array}
+}
+{
+\mkrulelabel
+{
+\begin{array}{c}
+f\, \big\langle \gamma_1 , f\, \big\langle \gamma_1 , P\big(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))\big) \big\rangle \big\rangle
+\\[-1.5mm]
+\leq
+\\[-1.5mm] 
+f\, \big\langle \gamma_1 , P\big(E\big(f\, \big\langle \gamma_1, P\big(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))\big) \big\rangle\big)\big) \big\rangle
+\end{array}
+}
+{
+\begin{array}{c}
+f\, \big\langle \gamma_1 , f\, \big\langle \gamma_1 , P\big(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))\big) \big\rangle \big\rangle
+\\[-1.5mm]
+=
+\\[-1.5mm] 
+f\, \big\langle \gamma_1 , f\, \big\langle \gamma_1, P\big(\mu\, (c_2 \mapsto E(f\, \langle \gamma_1, P(c_2) \rangle))\big) \big\rangle \big\rangle
+\end{array}
+}
+{(e)}
+}
+{(d)}
+}
+{(c)}
+}
+{(b)}
+}
+{(a)}
+\]
+where $(a)$, $(c)$, and $(d)$ follow from properties of least fixed points; $(b)$ holds because $E$ is  monotone; and $(e)$ holds because $E$ and $P$ form an embedding-projection pair.
+
+For showing that $\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_2$ is continuously indexed, we have to prove  
+\[
+\begin{array}{c}
+\mu\, (c \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \bigvee_{\!n}\! \gamma_n , c \rangle}(\star))
+\\
+=
+\\
+\bigvee_{\!n}\, \big((U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e\big(\mu\, (c_n \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_n , c_n \rangle}(\star))\big)\big)
+\end{array}
+\]
+
+We prove this equation by again using the fact that the least fixed point operation is itself continuous and the fact that $\sem{\Gamma, x \!:\! U\ul{C};M}$ is assumed to be a morphism in $\CFam_{\sem{\Gamma, x : U\ul{C}}}(\CPO)$. These observations give us the following equations:
+\[
+\begin{array}{c}
+\mu\, (c \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \bigvee_{\!n}\! \gamma_n , c \rangle}(\star))
+\\[3mm]
+=
+\\[-3mm]
+\hspace{-13.25cm}
+\mu\, \big(c \mapsto 
+\\
+\hspace{0.25cm}
+\bigvee_{\!n}\, (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e\big((\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_n , (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^p(c) \rangle}(\star)\big)\big)
+\\[3mm]
+=
+\\[-3mm]
+\hspace{-12.65cm}
+\bigvee_{\!n} \big(\mu\, \big(c \mapsto 
+\\
+\hspace{0.6cm}
+(U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e\big((\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_n , (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^p(c) \rangle}(\star)\big)\big)\big)
+\end{array}
+\]
+meaning that we are left with showing that the following equation holds for all $n$:
+\[
+\begin{array}{c}
+\hspace{-13.25cm}
+\mu\, \big(c \mapsto 
+\\
+\hspace{0.75cm}
+(U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e\big((\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_n , (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^p(c) \rangle}(\star)\big)\big)
+\\
+=
+\\
+(U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e\big(\mu\, (c_n \mapsto (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma_n , c_n \rangle}(\star))\big)
+\end{array}
+\]
+
+We prove this last equation by showing that we have inequations in both directions. Similarly to the naturality proof, we use auxiliary notation in this proof, given by
+\[
+\begin{array}{c}
+E \defeq (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^e
+\\[1.5mm]
+P \defeq (U^{\mathbf{T}} \comp \sem{\Gamma;\ul{C}}_2)(\gamma_n \leq_{\sem{\Gamma}} \bigvee_{\!n} \gamma_n)^p
+\\[1.5mm]
+f\, \langle \gamma , c \rangle \defeq (\sem{\Gamma, x \!:\! U\ul{C};M}_2)_{\langle \gamma , c \rangle}(\star)
+\end{array}
+\]
+
+In the left-to-right direction, we have
+\[
+\mkrulelabel
+{
+\mu\, (c \mapsto E(f\, \langle \gamma_n, P(c) \rangle))
+\leq 
+E\big(\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)\big) 
+}
+{
+\mkrulelabel
+{
+E\big(f\, \big\langle \gamma_n, P\big(E\big(\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)\big)\big) \big\rangle\big)
+\leq 
+E\big(\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)\big) 
+}
+{
+\mkrulelabel
+{
+E\big(f\, \big\langle \gamma_n, \mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle) \big\rangle\big)
+\leq 
+E\big(\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)\big) 
+}
+{
+\mkrulelabel
+{
+f\, \big\langle \gamma_n, \mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle) \big\rangle
+\leq 
+\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)
+}
+{
+f\, \big\langle \gamma_n, \mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle) \big\rangle
+=
+f\, \big\langle \gamma_n, \mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle) \big\rangle
+}
+{(d)}
+}
+{(c)}
+}
+{(b)}
+}
+{(a)}
+\]
+where $(a)$ and $(d)$ follow from the properties of least fixed points; $(b)$ holds because $E$ and $P$ form an embedding-projection pair; and $(c)$ holds because $E$ is monotone. 
+
+In the right-to-left direction, we have to prove that the following inequation holds:
+\[
+E\big(\mu\, (c_n \mapsto f\, \langle \gamma_n , c_n \rangle)\big) 
+\leq 
+\mu\, (c \mapsto E(f\, \langle \gamma_n, P(c) \rangle))
+\]
+As the proof of this inequation has the same structure as the proof of the corresponding inequation in the earlier naturality proof for $\sem{\Gamma; \mu\, x \!:\! U\ul{C} .\, M}_2$, we omit its proof here.
+
+
+Finally, it is easy to see that the interpretation validates the fixed point unfolding equation, namely, because we have interpreted $\mu\, x \!:\! U\ul{C} .\, M$ using a least fixed point.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

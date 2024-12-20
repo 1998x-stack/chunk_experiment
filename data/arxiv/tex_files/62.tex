@@ -1,0 +1,219 @@
+\section{Optimal Solution With D2D} \label{sec:optimal_d2d}
+In this section, we formulate the optimization problem to compute
+the minimum sum spectrum $F^{\textsf{D2D}}$ when D2D communication
+is enabled. In this case, since the traffic can be directed
+to other BSs via inter-cell D2D links, all BSs are coupled with
+each other and need to be considered as a whole. We will first
+define the traffic scheduling policy with D2D and then formulate
+the problem as an LP.
+
+
+
+\subsection{Traffic Scheduling Policy} \label{sec:traffic}
+Given traffic demand set $\mathcal{J}$, we need to find a routing policy to
+forward each packet to BSs before the deadline, which is the
+\emph{traffic scheduling problem}.
+Since we should consider the traffic flow in each slot,
+we will use the \emph{time-expanded graph} to model the traffic flow over time \cite{Skutella09}.
+Specifically, denote $x_{u,v}^{j}(t)$ as the allocated
+spectrum (unit: Hz) for link $(u,v)$ at slot $t$ for demand $j \in \mathcal{J}$.
+Then the delivered traffic volume from node $u$ to node $v$ at slot $t$ for demand $j$
+is $x_{u,v}^{j}(t) R_{u,v}$.
+For ease of formulation, we set the self-link rate to be $R_{u,u}=1$.
+Then the self-link traffic
+i.e., $x_{u,u}^{j}(t)R_{u,u}=x_{u,u}^{j}(t)$,
+is the traffic volume stored in node $u$ at slot $t$ for demand $j$.
+But the allocated (virtual) spectrum for self-link traffic, i.e., $x_{u,u}^{j}(t)$, will
+not contribute to the spectrum requirements of BSs (see \eqref{equ:d2d_peak_cons2} later).
+All traffic flows over time are precisely captured by
+the time-expanded graph and $x_{u,v}^{j}(t)$.
+Then we  define the \emph{traffic scheduling policy} as follows.
+\begin{definition}
+A {traffic scheduling policy} is the set
+$\{x_{u,v}^{j}(t): (u,v) \in \mathcal{E}, j \in \mathcal{J},
+t \in [s_j, e_j]\} \cup \{x_{u,u}^{j}(t): u \in \mathcal{V},
+j \in \mathcal{J}, t \in [s_j, e_j]\}$
+such that
+\begin{subequations}
+\bee
+& \sum_{v\in \text{out}(u_j)}x_{u_j,v}^{j}(s_j)R_{u_j,v}= r_j, \forall j \in \mathcal{J} \label{equ_demand}\\
+&\sum_{b\in \mathcal{B}}\sum_{v\in \text{in}(b)}x_{v,b}^{j}(e_j)R_{v,b}= r_j, \forall j \in \mathcal{J} \label{equ_reach}\\
+& \sum_{v\in\text{in}(u)}x_{v,u}^{j}(t) R_{v,u}= \sum_{v\in \text{out}(u)}x_{u,v}^{j}(t+1)R_{u,v}, \nnb \\
+& \qquad \forall  j \in \mathcal{J}, u \in \mathcal{V}, t \in [s_j, e_j-1]
+\label{equ_conservation} \\
+%& \sum_{s \in \mathcal{U}}\sum_{\tau =1 }^{T} y_{uv}^{s\tau}(t) \leq R_{uv} \sum_{i=1}^{N_c} w_{uv}^i(t), \nnb \\
+%& \qquad \forall (u,v) \in \mathcal{E}, t \in [1, T]
+%\label{equ:feasible_naive_d} \\
+& x_{u,v}^{j}(t) \ge 0, \forall (u,v) \in \mathcal{E}, j \in \mathcal{J}, t \in [s_j, e_j]
+\label{equ:y_nonnegative} \\
+& x_{u,u}^{j}(t) \ge 0, \forall u \in \mathcal{V}, j \in \mathcal{J}, t \in [s_j, e_j]
+\label{equ:y_nonnegative_selflink}
+\eee
+\end{subequations}
+where $\text{in}(u)=\{v: (v,u) \in \mathcal{E}\} \cup  \{u\} $
+and $\text{out}(u)=\{v:(u,v) \in \mathcal{E}\}  \cup \{u\} $
+are the incoming neighbors and outgoing neighbors of
+node $u \in \mathcal{V}$ in the time-expanded graph.
+%respectively.
+\end{definition}
+
+Constraint (\ref{equ_demand}) shows the flow balance in the source node while (\ref{equ_reach})
+shows the flow balance in the destination nodes such that
+all traffic can reach BSs before their deadlines.
+Equality (\ref{equ_conservation}) is the flow conservation constraint
+for each intermediate node in the time-expanded graph.
+Here we assume that all BSs and all users have enough radios such that
+they can simultaneously transmit data to and receive data from multiple BSs (or users).
+%\emph{\textbf{(A little bit hard to justify this strong assumption!)}}
+This is a strong assumption for mobile users because current
+mobile devices are not equipped with enough radios. However,
+multi-radio mobile devices could be a trend and
+there are  substantial research work in multi-radio wireless systems (see a survey in \cite{Si10}
+and the references therein). We made this assumption here because
+\emph{wireless scheduling problem} for single-radio users is generally
+intractable and we want to avoid detracting our attention and focus
+on how to characterize the benefit of D2D load balancing and get
+a first-order understanding. We  remark that this assumption is also
+made in recent work \cite{Zhou20171000Cell} on spectrum reallocation in small-cell cellular networks.
+%To relax this assumption is our future work.
+
+%Constraint \eqref{equ:feasible_naive_d} depicts that at each slot, the traffic demand should not exceed the link capacity, i.e., the per-channel link rate  times the total number of allocated channels on this link. This constraint is important because it shows that the wireless scheduling problem and the traffic scheduling problem are coupled with each other.
+
+
+%Then we discuss how to specify the traffic for each BS at each slot.
+%Any traffic can be transmitted from one user to its BS or from one user to another user by the D2D link.
+%BS $i$ should be responsible for any traffic over the intra-cell link within itself.
+%That is to say, if user $u \in \mathcal{U}_i$ $(i \in \mathcal{B})$ at slot $t$ transmits traffic with volume $y$ to
+%its own BS $i$ directly or to another user in the same BS via the intra-cell D2D link, then BS $i$ is responsible for such traffic, i.e., $y$ is added to $v_i(t)$.
+%If user $u \in \mathcal{U}_i$ shifts traffic with volume $y$ to user $v \in \mathcal{U}_j$ $(j \in \mathcal{B})$ via inter-cell D2D link,
+%then BS $j$ is responsible for such traffic, i.e., $y$ is added to $v_j(t)$.
+%That is to say, the receiver's BS is responsible for the traffic transmitted by the inter-cell D2D link.
+%The reason is shown by contradiction.
+%Suppose BS $i$ is responsible for such traffic volume $y$ from user $u$ to user $v$ at slot $t$.
+%Then we let user $u$ transmit the same amount of traffic to BS $i$ directly at slot $t$.
+%Consequently, the traffic for BS $i$ at slot $t$, i.e., $v_i(t)$, remains unchanged,
+%but the traffic for BS $j$ at slot $t$, i.e., $v_j(t)$, becomes smaller.
+%This results in smaller or at least the same peak traffic for BS $j$.
+%Therefore, under the objective to minimize the sum spectrum,
+%we do not need to consider the case that the inter-cell D2D link consumes the traffic of the transmitter's BS.
+%%Likewise, we can use the similar argument to show that we do not need to consider the traffic in any intra-cell D2D link.
+%Likewise, we do not need to consider the traffic in any intra-cell D2D link.
+
+
+\subsection{Problem Formulation} \label{sec:problem_formulation_D2D}
+Then we formulate the problem of computing the minimum total spectrum to serve all demands in all cells with D2D,
+named as $\textsf{Min-Spectrum-D2D}$,
+\bse \label{equ:d2d-lp}
+\bee
+%& \textsf{PEAK-D2D}  \nnb \\
+& \min_{x^{j}_{u,v}(t), \alpha_b(t),  \beta_b(t), F_b \in \mathbb{R}^+}  \quad \sum_{b \in \mathcal{B}} F_b\\
+%\text{subject to} & \quad \eqref{equ:d2d_up_traffic_cons1}, \eqref{equ:d2d_up_traffic_cons2},
+%\eqref{equ:d2d_up_traffic_cons3}, \eqref{equ:d2d_up_traffic_cons4}, \nnb \\
+\text{s.t.} & \quad \eqref{equ_demand}, \eqref{equ_reach},
+\eqref{equ_conservation}, \eqref{equ:y_nonnegative}, \eqref{equ:y_nonnegative_selflink} \nnb \\
+& \quad \sum_{v \in \mathcal{U}_b} \sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,b}(t) = \alpha_b(t),   \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons1}\\
+& \quad \sum_{u \in \mathcal{U}_b} \sum_{v \in \text{in}\left( u \right)
+\backslash \left\{ u \right\}} \sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,u}(t) = \beta_b(t),  \nnb \\
+& \qquad \qquad \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons2}\\
+& \quad \alpha_b(t)+\beta_b(t) \le F_b,\forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons3}
+\eee
+\ese
+where the auxiliary variable $\alpha_b(t)$ is the total used spectrum  from users to BS $b$ at slot $t$,
+the auxiliary variable $\beta_b(t)$ is  the total used spectrum  dedicated to all users in BS $b$ at slot $t$,
+and $F_b$ is the allocated (peak) spectrum for BS $b$. Note that in our case with D2D load balancing,
+a user can adopt \emph{the D2D mode} to transmit to another user via a D2D link
+(e.g., $\sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,u}(t)$ is the allocated spectrum to the D2D link from user $v$ to user $u$ in slot $t$)
+and/or \emph{the cellular mode} to transmit to its BS via a user-to-BS link
+(e.g., $\sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,b}(t)$ is the allocated spectrum to the user-to-BS link from user $v$ to BS $b$ in slot $t$).
+In addition, note that we assume a \emph{receiver-takeover} scheme in the sense that
+any traffic will consume spectrum resources  of the receiver's BS.
+Equalities \eqref{equ:d2d_peak_cons1} and \eqref{equ:d2d_peak_cons2} show that
+BS $b$ is responsible for all traffic dedicated to itself and to its users except self-link (virtual) spectrum (see Sec.~\ref{sec:traffic}).
+We also remark that although spectrum sharing is one of the major benefits of D2D communication,
+in this work we do not model the spectrum sharing among D2D links and user-to-BS links to simplify the analysis. Later in Sec.~\ref{sec:simulation},
+we show that our D2D load balancing scheme can significantly reduce the spectrum requirement even without doing
+spectrum sharing among D2D links and user-to-BS links. If we further do spectrum sharing, the
+D2D load balancing has more gains.
+
+Given an optimal solution to \textsf{Min-Spectrum-D2D},
+we denote $F_b^\textsf{D2D}$ as the allocated spectrum for each BS $b$, and thus the
+total spectrum is $F^\textsf{D2D} = \sum_{b \in \mathcal{B}} F_b^\textsf{D2D}.$
+The total D2D traffic and total user-to-BS traffic are
+\be
+V^{\textsf{D2D}} = \sum_{t=1}^{T} \sum_{j \in \mathcal{J}: t \in [s_j, e_j-1]}
+\sum_{u \in \mathcal{U}} \sum_{v:v \in \mathcal{U}, (u,v) \in \mathcal{E}} x^{j}_{u,v}(t) {R_{u,v}},
+\label{equ:D2D-traffic}
+\ee
+\be
+V^{\textsf{BS}} = \sum_{t=1}^{T} \sum_{j \in \mathcal{J}: t \in [s_j, e_j]}
+\sum_{b\in \mathcal{B}} \sum_{u \in \mathcal{U}_b} x^{j}_{u,b}(t) {R_{u,b}},
+\label{equ:BS-traffic}
+\ee
+which are used to calculate the overhead ratio $\eta$ in \eqref{equ:overhead-ratio}.
+We further remark that since all traffic demands must reach any BSs, it is easy to see that
+the user-to-BS traffic is exactly the total volume of all traffic demands, i.e.,
+$
+V^{\textsf{BS}} = \sum_{j \in \mathcal{J}} r_j.
+$
+
+Given the optimal (minimum) total spectrum, i.e., $F^{\textsf{D2D}}$,
+we next minimize the overhead, named \textsf{Min-Overhead}, by solving the following LP\footnote{In other words, minimizing the
+total spectrum is our first-priority objective and minimizing the corresponding D2D traffic overhead (without exceeding
+the minimum total spectrum) is our second-priority objective.},
+\bse \label{equ:overhead-lp}
+\bee
+& \min_{\substack{x^{j}_{u,v}(t), \alpha_b(t), \\  \beta_b(t), F_b \in \mathbb{R}^+}}  \quad \sum_{t=1}^{T} \sum_{j \in \mathcal{J}: t \in [s_j, e_j-1]}
+\sum_{u \in \mathcal{U}} \sum_{ \substack{v:v \in \mathcal{U}, \\ (u,v) \in \mathcal{E}}} x^{j}_{u,v}(t) {R_{u,v}}\\
+& \text{s.t.}  \quad \eqref{equ_demand}, \eqref{equ_reach},
+\eqref{equ_conservation}, \eqref{equ:y_nonnegative}, \eqref{equ:y_nonnegative_selflink} \nnb \\
+& \quad \sum_{v \in \mathcal{U}_b} \sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,b}(t) = \alpha_b(t),  \forall b \in \mathcal{B}, t \in [T]
+\label{equ:overhead_peak_cons1}\\
+& \quad \sum_{u \in \mathcal{U}_b} \sum_{v \in \text{in}\left( u \right)
+\backslash \left\{ u \right\}} \sum_{j \in \mathcal{J}: t \in [s_j, e_j]} x^{j}_{v,u}(t) = \beta_b(t),  \nnb \\
+& \qquad \qquad  \forall b \in \mathcal{B}, t \in [T]
+\label{equ:overhead_peak_cons2}\\
+& \quad \alpha_b(t)+\beta_b(t) \le F_b,\forall b \in \mathcal{B}, t \in [T]
+\label{equ:overhead_peak_cons3} \\
+& \quad \sum_{b \in \mathcal{B}} F_b \le F^{\textsf{D2D}}
+\label{equ:overhead_peak_cons4}
+\eee
+\ese
+
+As compared to $\textsf{Min-Spectrum-D2D}$ in \eqref{equ:d2d-lp},
+\textsf{Min-Overhead} in \eqref{equ:overhead-lp} adds a constraint
+\eqref{equ:overhead_peak_cons4} for the \emph{given} total spectrum
+$F^{\textsf{D2D}}$ and changes the objective to be
+the total D2D traffic defined in \eqref{equ:D2D-traffic}.
+Note that even though we write \eqref{equ:overhead_peak_cons4}
+as an inequality, it must hold as an equality. This is because
+$F^{\textsf{D2D}}$ is  the optimal value of $\textsf{Min-Spectrum-D2D}$ in \eqref{equ:d2d-lp}
+and any solution in \textsf{Min-Overhead} in \eqref{equ:overhead-lp} is also feasible
+to $\textsf{Min-Spectrum-D2D}$ in \eqref{equ:d2d-lp}.
+
+The number of variables in \textsf{Min-Spectrum-D2D}  is
+$O(|\mathcal{J}|\cdot|\mathcal{E}|\cdot d_{\max} + |\mathcal{B}| \cdot T)$
+and the number of constraints in \textsf{Min-Spectrum-D2D}  is
+$O(|\mathcal{J}| \cdot (|\mathcal{V}|+|\mathcal{E}|) \cdot d_{\max} + |\mathcal{B}| \cdot T )$.
+The problem \textsf{Min-Overhead} has the same complexity as
+ \textsf{Min-Spectrum-D2D}.
+Solving the problem, even though it is an LP, incurs high complexity.
+We further discuss how to reduce the complexity without loss of optimality
+\ifx \ISTR \undefined
+in our technical report \cite{TR}.
+\else
+in Appendix~\ref{sec:time_space_complexity}.
+%in the supplementary materials.
+\fi
+Even with our optimized LP approach,
+later in our simulation in Sec.~\ref{sec:simulation}, we show that we cannot
+solve \textsf{Min-Spectrum-D2D} for  practical Smartone network
+with off-the-shell servers. Thus, we further propose a heuristic algorithm
+to solve \textsf{Min-Spectrum-D2D} with much lower complexity in Sec.~\ref{sec:heuristic}.
+We also provide performance guarantee for our heuristic algorithm.
+Before that, we show our theoretical results on the spectrum reduction ratio and the overhead ratio
+in next section.
+
+

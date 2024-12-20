@@ -1,0 +1,191 @@
+\section{Schwarz waveform relaxation domain decomposition method for the Schr\"odinger equation}\label{SWR}
+We first decompose $\R^{dN}\ni ({\bf x}_1,\cdots,{\bf x}_N)$, in $L^{dN}$ overlapping hypercubes $\Omega_i$ where $L$ is an integer parameter, $\cup_{i=1}^{L^{dN}}\Omega_i \subseteq \R^{dN}$ and apply a Schwarz waveform relaxation algorithm \cite{lorin-TBS,lorin-TBS2}. We present two different approaches. The first one leads to an a posteriori antisymmetric wavefunction, and second one ensures a priori Pauli's exclusion principle (see \ref{APXA}). In the following, we denote i) the artificial interfaces by $\Gamma_{i;j}=\partial \Omega_i \cap \Omega_j \subset \R^{dN-1}$, for any $i\neq j$, and ii) by $\omega_{i;j}$ the overlapping regions $\omega_{i;j}=\Omega_i\cap \Omega_j \subset \R^{dN}$, for any $(i,j) \in \{1,\cdots,L^{dN}\}^2$. For convenience, we also denote the Cartesian product $\R^{dN} = \R_1^d \times \R_{2}^d\cdots \times \R_N^d$, such that ${\bf x}_j \in \R^d_j$ for all $1\leq j\leq N$. We now denote by $\psi^{(k)}_i({\bf x}_1,\cdots,{\bf x}_N,t)$ the solution to the $N$-body TDSE in $\Omega_i$, at time $t$ and Schwarz iteration $k \geq 0$. For any $\Omega_i$, $1\leq i\leq L^{dN}$, we construct a basis of $K_i$ local basis functions (Gaussian functions or Slater's determinants) in $\Omega_i$, denoted by $\big\{v^i_j\big\}_{1\leq j\leq K_i}$ in order to compute $\psi_i^{(k)}$.   Basically, we will solve local time-dependent or time-independent local Schr\"odinger equations and reconstruct a global solution to the global Schr\"odinger equation. We then never compute the global solution from a global discrete Hamiltonian, but rather by computing $L^{dN}$ local wavefunctions (one per subdomain) using discrete local Hamiltonians, Figs. \ref{generalDDM}.  SWR algorithms are in particular, studied in \cite{halpern3,GanderHalpernNataf} and allow for a consistent decoupling on smaller subproblems of high dimensional (non-local) classical, quantum and relativistic wave equations.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{generalDDM.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{ddm_over.eps}
+\caption{(Left) Domain decomposition: Overlapping subdomains are represented in red. Blue subdomains do not overlap. (Right) Domain decomposition with overlapping region on $\Omega_i$ with $\Omega_{j,k,l,m}$ in $\R^2$}
+\label{generalDDM}
+\end{center}
+\end{figure}
+\subsection{Schwarz Waveform Relaxation algorithm for the TDSE}\label{SWR1}
+We detail the DDM algorithm first for 2 subdomains $\Omega_{i}$, $\Omega_j$ with $i\neq j$, then for zones where more than $2$ subdomains overlap.  \\
+\\
+\noindent{\bf Two-subdomain overlapping zones.} Assume first that $\psi_i^{(k=0)}$ is a given function. The Schwarz Waveform Relaxation algorithm (SWR) $\mathcal{P}_i^{(k)}$ with $1\leq i\leq L^{dN}$ and $k \geq 1$, reads in LG and for $2$ subdomains, as 
+\begin{eqnarray}\label{S1}
+\hspace*{1cm}\mathcal{P}_i^{(k)} \,: \qquad \left\{
+\begin{array}{lcll}
+{\tt i}\partial_t \psi_i^{(k)} &  = & \Big(H_0 + \sum_{i=1}^N{\bf x}_i\cdot {\bf E}(t)\Big)\psi_i^{(k)} & \hbox{ on } \Omega_i \times (0,T),\\
+\\
+\psi_i^{(k)}(\cdot,0) &  = & \psi_{0|\Omega_i} & \hbox{ on } \Omega_i,\\
+\\
+\mathcal{B}_{i;j}\psi_i^{(k)} & = & \mathcal{B}_{i;j}\psi_j^{(k-1)} &  \hbox{ on } \Gamma_{i;j}\times (0,T)
+\end{array}
+\right.
+\end{eqnarray}
+where $\mathcal{B}_{i;j}$ is a transmission operator defined at $({\bf x}_1\cdots,{\bf x}_N) \in \Gamma_{i;j}=\partial \Omega_i \cap \Omega_j$.  \\
+\\
+\noindent{\bf Multi-subdomain overlapping zones.} The proposed decomposition requires a special treatment in zones, generically denoted $\widetilde{\omega}_i \subseteq \Omega_i$ see Fig. \ref{ddm3} (Left), where more than 1 subdomain overlap with $\Omega_i$. We denote by $\mathcal{O}(\widetilde{\omega}_i)$ the set of indices of the subdomains, distinct from $\Omega_i$, sharing the zone $\widetilde{\omega}_{i}$ with $\Omega_i$.  Notice that for interior subdomains (that is excluding the subdomains of the external layer) $\textrm{Card}\mathcal{O}(\widetilde{\omega}_i)=2^{dN}-1$.  The approach which is proposed is actually an averaging process. Let us generically denote by $\widetilde{\Gamma}_{i}$ the interface of $\widetilde{\omega}_i$ involved in the transmission conditions. The condition we impose at $\widetilde{\Gamma}_i$, thanks to the operator $\widetilde{\mathcal{B}}_i$, is defined by:
+\begin{eqnarray*}
+\widetilde{\mathcal{B}}_{i}\psi^{(k)}_i=\cfrac{1}{\textrm{Card}\mathcal{O}(\widetilde{\omega}_i)}\sum_{j \in \mathcal{O}(\widetilde{\omega}_i)}\mathcal{B}_{i;j}\psi^{(k-1)}_j.
+\end{eqnarray*}
+ In order to clarify the process, let us detail the case $d=1$ and $N=2$, with a total of $L^2$ subdomains. At a given interface $\widetilde{\Gamma}_i$ of $\widetilde{\omega}_i$, located at the right$/$top of a given subdomain $\Omega_i$ with $i\leq L(L-1)-1$, we assume that there are $2^{2\times 1}-1=3$ subdomains involved in the transmission condition, namely $\Omega_{i+1},\Omega_{i+L},\Omega_{i+L+1}$, see Fig. \ref{ddm3}. Then we impose at $\widetilde{\Gamma}_i$:
+\begin{eqnarray*}
+\widetilde{\mathcal{B}}_{i}\psi^{(k)}_i=\cfrac{1}{3}\big(\mathcal{B}_{i;i+1}\psi^{(k-1)}_{i+1}+\mathcal{B}_{i;i-L+1}\psi^{(k-1)}_{i-L+1}+\mathcal{B}_{i;i+L+1}\psi^{(k-1)}_{i+L+1}\big) \, .
+\end{eqnarray*}
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{dd_manyover.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{dd_manyover2.eps}
+\caption{(Left) Domain decomposition with $d=1$ and $N=2$: treatment of transmission conditions on interfaces belonging to more than $2$ subdomains. The black segment belonging to $\Omega_{i},\Omega_{i+1},\Omega_{i \pm L}$. (Right) Domain decomposition with $d=1$ and $N=2$: smooth subdomain boundary}.
+\label{ddm3}
+\end{center}
+\end{figure}
+Notice also that a special treatment of the TC at the cross-points can improve the convergence deterioration at these locations. We do not explore this issue, but we refer to the related literature \cite{CP1,CP2}. A simple way to circumvent this difficulty consists in regularizing the corners of the subdomains, as shown in Fig. \ref{ddm3} (Right). In a Galerkin-method framework, managing such smooth regions is then straightforward. Another simple approach is presented in \cite{stcyr}, allows to avoid the discretization of the right-hand-side of the transmission conditions.
+\\
+\\
+\noindent{\bf Selection of the transmission conditions.} From the convergence and computational complexity points of view, the selection of the transmission operator $\mathcal{B}_{i;j}$, is of crucial matter \cite{lorin-TBS}, \cite{halpern2}. The usual types of transmission conditions (TC) are now shortly recalled. The most simple approach is a Dirichlet-based TC's, where $\mathcal{B}_{i;j}$ is an identity operator. That is, we impose:
+\begin{eqnarray*}
+\psi^{(k)}_i = \psi^{(k-1)}_j \qquad \hbox{ on } \Gamma_{i;j}\times(0,T).
+\end{eqnarray*}
+In the literature, this is referred as the Classical Schwarz Waveform Relaxation (CSWR) algorithm. CSWR is in general convergent, and trivial to implement, but unfortunately exhibits usually very slow convergence rate and possibly stability issues at the discrete level \cite{halpern2,halpern3,jsc}. The CSWR method also necessitates an overlapping between the subdomains. As a consequence, more appropriate TC's should be derived, such as Robin-based TC's. Denoting ${\bf n}_{ij} \in \R^{dN}$, the outward normal vector to $\Gamma_{i;j}$, and for $\mu_{ij} \in \R_+^*$ in imaginary time (heat equation \cite{halpern3}), and $\mu_{ij} \in {\tt i}\R_{-}^*$ (real time, Schr\"odinger equation \cite{halpern2}), the Robin TC's read:
+\begin{eqnarray}\label{RTC}
+\big(\partial_{{\bf n}_{ij}}+\mu_{ij}\big)\psi^{(k)}_i = \big(\partial_{{\bf n}_{ij}}+\mu_{ij}\big)\psi^{(k-1)}_j \qquad \hbox{ on } \Gamma_{i;j}\times(0,T).
+\end{eqnarray}
+In the numerical simulations, $\mu_{ij}$ will be taken interface-independent, and will simply be denoted by $\mu$. This method will be referred as the Robin-SWR method. Along this paper, the Robin-SWR we will be used, as it is known for allowing for a good compromise between convergence rate and computational complexity, see \cite{halpern2}. Robin-SWR can be seen as an approximation of Optimal SWR (OSWR) which are based on transparent or high order absorbing TC's and reads, at $\Gamma_{i;j}\times(0,T)$
+\begin{eqnarray*}
+\big(\partial_{{\bf n}_{ij}}+{\tt i}\Lambda^{\pm}_{ij}\big)\psi^{(k)}_i = \big(\partial_{{\bf n}_{ij}}+{\tt i}\Lambda^{\pm}_{ij}\big)\psi^{(k-1)}_j \qquad \hbox{ on } \Gamma_{i;j}\times(0,T)
+\end{eqnarray*}
+where $\Lambda^{\pm}_{ij}$ is a pseudodifferential Dirichlet-to-Neumann (DtN) operator, \cite{nir,hor1,hor2} and derived from the Nirenberg factorization: 
+\begin{eqnarray*}
+P = \big(\partial_{{\bf n}_{ij}}+{\tt i}\Lambda^{+}_{ij}\big)\big(\partial_{{\bf n}_{ij}}+{\tt i}\Lambda^{-}_{ij}\big) + R
+\end{eqnarray*}
+where $P$ is the time-dependent $N$-particle Schr\"odinger operator, $R\in$ OPS$^{-\infty}$, and $\Lambda^{\pm}_{ij}$ are operators associated to outgoing$/$incoming waves.  Robin-SWR then consists in approximating the pseudodifferential operators $\Omega_{ij}$ by a an algebraic operator $\mu_{ij}$. OSWR and quasi-OSWR are applied and analyzed to linear Schr\"odinger equations in \cite{halpern2,jsc}, and show much faster convergence than CSWR, but are also much more computationally complex to implement.
+\\
+Finally, a commun convergence criterion for the Schwarz DDM is set for all $i\neq j$ in $\{1,\cdots,L^{dN}\}$ by
+\begin{eqnarray}\label{CVTOT}
+\big\| \hspace{0.2cm} \sum_{i=1}^{L^{dN}}\|\psi^{(k)}_{i|\Gamma_{i;j}}-\psi^{(k)}_{j|\Gamma_{i;j}}\|_{L^2(\Gamma_{i;j})}\big\|_{L^{2}(0,T)} \leq  \delta^{\textrm{Sc}}.
+\end{eqnarray}
+ When the convergence of the whole iterative SWR algorithm is obtained at Schwarz iteration $k^{(\textrm{cvg})}$, then one gets the converged global solution 
+$\psi^{\textrm{cvg}}:=\psi^{(k^{\textrm{cvg}})}$, typically with $\delta^{\textrm{Sc}}=10^{-14}$ (''Sc'' for Schwarz). 
+\\
+\\
+\noindent{\bf Construction of the local approximate solutions.} The construction of approximate solutions to \eqref{S1} is now performed. The local wavefunction $\psi_i^{(k)}$ is expanded as follows:
+\begin{eqnarray}\label{exp2}
+\psi^{(k)}_i(\cdot,t) = \sum_{j=1}^{K_i}c_j^{i,(k)}(t)v_j^{i}
+\end{eqnarray}
+where $\big\{v_j^{i}\big\}_{1\leq j \leq K_i}$ are the local basis functions\footnote{constructed from $2M_i$ orbitals $\big\{\phi^i_j({\bf x})\big\}_{1\leq j\leq 2M_i}$, or as Gaussian functions, following the same strategy as presented in Subsections \ref{subsec:SLO}. When the local basis functions are chosen as local Slater's determinants, we should have $M_i \ll M$, where $M$ is the number of basis functions, for the 1-domain FCI.} associated to $\Omega_i$. In $c_j^{i,(k)}$ and $\psi^{(k)}_i$ the index $k$ refers to the Schwarz iteration, $i$ refers to the subdomain index, and $j$ to the basis function index. The expansions \eqref{exp2} lead to $L^{dN}$-independent linear systems of ODE's, $1\leq i\leq L^{dN}$
+\begin{eqnarray*}
+{\tt i}{\bf A}_i\dot{\bf c}^{i,(k)}(t) = \big(\widetilde{{\bf H}}_{i} + {\bf T}_i(t)\big){\bf c}^{i,(k)}(t)
+\end{eqnarray*}
+where ${\bf A}_{i} \in M_{K_i}(\R)$ stands for $A_{i;(j,l)} = \langle v^j_i , v^l_i\rangle$ and $\widetilde{{\bf H}}_{i} \in M_{K_i}(\R)$ stands for the discrete local Hamiltonian $\widetilde{H}_{i;(j,l)} = \langle v^j_i , (H_{0}+R_i) v^l_i\rangle$ including the contribution to the Robin transmission operator $R_i$, where $1\leq j,l \leq K_i$. For $d=3$, with ${\bf E}(t)=\big(E_x(t),E_y(t),E_z(t)\big)^T$ with $t\in (0,T)$, we have:
+\begin{eqnarray*}
+{\bf T}_i(t) = \widetilde{{\bf H}}_{i} + E_x(t){\bf Q}^{x}_i + E_y(t){\bf Q}^{y}_i + E_z(t){\bf Q}^{z}_i
+\end{eqnarray*}
+where 
+\begin{eqnarray}\label{Q}
+\left.
+\begin{array}{lcl}
+\big\{{\bf Q}^{x}_{i;(j,l)}\big\}_{1\leq j,l\leq K_i} & = & \Big\{\sum_{m=1}^N\langle x_m v_j^{i}, v_l^i\rangle\Big\}_{1\leq j,l\leq K_i}, \\
+ \big\{{\bf Q}^{y}_{i;(j,l)}\big\}_{1\leq j,l\leq K_i} & = & \Big\{\langle y_mv_j^{i}, v_l^i\rangle\Big\}_{1\leq j,l\leq K_i}, \\ 
+\big\{{\bf Q}^{z}_{i;(j,l)}\big\}_{1\leq j,l\leq K_i} & = & \Big\{\langle z_mv^i_{j}, v^i_l\rangle \Big\}_{1\leq j,l\leq K_i}.
+\end{array}
+\right.
+\end{eqnarray}
+Matrices ${\bf Q}_i^{x,y,z}$, $\widetilde{{\bf H}}_{i}$ are computed once for all, in each subdomain. Efficient computation of $\widetilde{{\bf H}}_{i}$ is presented in \cite{CAM15-09}, \cite{CAM15-10}.%, and will be recalled in \ref{APXB}.
+\subsection{Schwarz Waveform Relaxation algorithm for the TISE}\label{SWR2}
+The DDM which is proposed above for the time-dependent Schr\"odinger equation can be implemented for computing Schr\"odinger Hamiltonian's bound states, using the {\it imaginary time} method also referred in the literature as the {\it Normalized Gradient Flow} (NGF) method \cite{bao,lorin-TBS,lorin-TBS2}.  It basically consists of replacing {\it $t$ by ${\tt i}t$} in TDSE, {\it normalizing the solution} at each time iteration, which is finally convergent to an eigenfunction to $H_0$, by default the ground state. In the imaginary time framework, the SWR domain decomposition is similar as above, and the same notation as Sections \ref{SWR}, \ref{NAWF} and \ref{APXA}. In any subdomain $\Omega_i$, we define for $K_i \in \N^*$ % \leq {2M_i \choose N}$
+\begin{eqnarray}\label{exp3}
+\phi^{(k)}_i(\cdot,t) = \sum_{j=1}^{K_i}c_j^{i,(k)}(t)v_j^{i}
+\end{eqnarray}
+where $\big\{v^i_{j}\big\}_{1\leq j \leq K_i}$ are the local basis functions. Denoting the discrete times $t_{0}:=0<t_{1}<...<t_{n+1}<...$ with $t_{n+1}=t_n+\Delta t$ for some $\Delta t>0$, and the initial guess $\phi_{0}$, the SWR method $\mathcal{I}_i^{(k)}$ for $1\leq i\leq L^{dN}$, $1\leq j \leq L^{dN}$ with nonempty $\omega_{i;j}:=\Omega_i\cap \Omega_j$, and $k \geq 1$,  when only 2 subdomains overlap, then reads:
+\begin{eqnarray}\label{SIT}
+\hspace*{1cm}\mathcal{I}_i^{(k)} \,: \qquad \left\{
+\begin{array}{lcl}
+\partial_t \phi_i^{(k)} & = & -H_0 \phi_i^{(k)}, \, \hbox{ on }\Omega_i\times (t_{n},t_{n+1}), \\
+\\
+\mathcal{B}_{i;j}\phi_i^{(k)} & =& \mathcal{B}_{i;j}\phi_j^{(k-1)}, \, \hbox{ on } \Gamma_{i;j}\times (t_{n},t_{n+1}),\\
+\\
+\phi_i^{(k)}(\cdot,0) & = & \phi_0, \hbox{ on }\Omega_{i},\\
+\\
+\displaystyle \phi_i^{(k)}(\cdot,t_{n+1}) & =& \phi_i^{(k)}(\cdot,t^{+}_{n+1})=\frac{\phi_i^{(k)}(\cdot,t^{-}_{n+1})}{|| \sum_{j=1}^{L^{dN}}\tilde{\phi}_j^{(k)}(\cdot ,t^{-}_{n+1})||_{2}}, \, \hbox{ on }\Omega_i
+\end{array}
+\right.
+\end{eqnarray}
+where $\mathcal{B}_{i;j}$ is a transmission operator written in imaginary time, and defined at $({\bf x}_1\cdots,{\bf x}_N) \in \Gamma_{i;j}$, and  $\tilde{\phi}^{(k)}_i$ denotes the extension by $0$ to $\R^{dN}$ of $\phi^{(k)}_i$. As discussed in Subsection \ref{SWR1}, in the regions covered by more than $2$ subdomains, a special treatment of the transmission condition is necessary, but is strictly identical to the time-dependent case, see Section \ref{SWR1}.\\
+For a given Schwarz iteration $k$, we stop the NGF computations when the {\it reconstructed} approximate solution $\phi^{n+1,(k)}$ satisfies at time $t_{n+1}$
+\[
+|| \phi^{n+1,(k)} - \phi^{n,(k)}||\leq \delta \, .
+\]
+with $\delta$ a small parameter.  When the convergence is reached, then the stopping time is such that:
+$T^{(k)}:=T^{\textrm{cvg},(k)}=n^{\textrm{cvg},(k)}\Delta t$  for a converged solution $\phi^{\textrm{cvg},(k)}$ reconstructed from the $L^{dN}$ subdomain solutions $\phi_i^{\textrm{cvg},(k)}$. A convergence criterion for the Schwarz DDM is set, for all $i\neq j$ in $\{1,\cdots,L^{dN}\}$ by
+\begin{eqnarray}\label{CVTOT2}
+\big\| \hspace{0.2cm} \sum_{i=1}^{L^{dN}} \|\phi^{\textrm{cvg},(k)}_{i|\Gamma_{i;j}}-\phi^{\textrm{cvg},(k)}_{j|\Gamma_{i;j}}\|_{L^2(\Gamma_{i;j})}\big\|_{L^{2}(0,T^{(k^{\textrm{cvg}})})} \leq  \delta^{\textrm{Sc}} \,.
+\end{eqnarray}
+In the numerical experiments, we will use a bit different criterion. When the convergence of the whole iterative SWR$/$NGF algorithm is obtained at Schwarz iteration $k^{\textrm{cvg}}$ one then gets the converged global eigenstate $\phi^{\textrm{cvg}}:=\phi^{\textrm{cvg},(k^{\textrm{cvg}})}$ typically with $\delta^{\textrm{Sc}}=10^{-14}$.
+\subsection{Wavefunction reconstruction}\label{NAWF}
+The main weakness of the basic decomposition above is that by default, it does not ensure the antisymmetry of the overall wavefunction in $\R^{dN}$. Indeed, in each subdomain $\Omega_i$ and any time $t\in (0,T$)
+\begin{eqnarray*}
+\phi_i^{(k)}({\bf x}_1,\cdots,{\bf x}_N,t) = \sum_{j=1}^{K_i}v_j^i({\bf x}_1,\cdots,{\bf x}_N)c_j(t)
+\end{eqnarray*} 
+is a priori not antisymmetric, and a fortiori the reconstructed solution $\phi^{(k)}$ (in $\R^{dN}$). Indeed
+\begin{enumerate} 
+\item if $({\bf x}_1,\cdots,{\bf x}_N) \in \omega_{i;j}$ where $j$ is unique (that is zones where only two subdomains overlap), then 
+\begin{eqnarray*}
+\phi^{(k)}({\bf x}_1,\cdots,{\bf x}_N,t) = 
+\left\{
+\begin{array}{l}
+\phi_i^{(k)}({\bf x}_1,\cdots,{\bf x}_N,t), \, ({\bf x}_1,\cdots,{\bf x}_N) \in \Omega_i-\omega_{i;j}, \, \forall (i,j) \in \{1,\cdots,L^{dN}\}^2\\
+\\
+\cfrac{\phi_i^{(k)}+\phi_j^{(k)}}{2}({\bf x}_1,\cdots,{\bf x}_N,t), \, ({\bf x}_1,\cdots,{\bf x}_N) \in \omega_{i;j}, \, \forall (i,j) \in \{1,\cdots,L^{dN}\}^2.
+\end{array}
+\right.
+\end{eqnarray*}
+\item if $({\bf x}_1,\cdots,{\bf x}_N) \in \omega_{i;j}$ where $j$ is not unique, that is there exists a zone denoted by $\widetilde{\omega}_i$, where $\textrm{Card}\mathcal{O}(\widetilde{\omega}_i) \leq 2^{dN}-1$ subdomains, $\{\Omega_{i_j}\}_{j \in\mathcal{O}(\widetilde{\omega}_i)}$, have a common overlap with $\Omega_i$. Then for $({\bf x}_1,\cdots,{\bf x}_N) \in \widetilde{\omega}_{i}$
+\begin{eqnarray*}
+\phi^{(k)}({\bf x}_1,\cdots,{\bf x}_N,t) = \cfrac{1}{\textrm{Card}\mathcal{O}(\widetilde{\omega}_i)+1}\big(\phi_i^{(k)}+\sum_{j=1}^{\mathcal{O}(\widetilde{\omega}_i)}\phi_{i_j}^{(k)}\big)({\bf x}_1,\cdots,{\bf x}_N,t).
+\end{eqnarray*}
+In fact, if the local basis functions are Slater's determinants basis functions, then:
+\begin{eqnarray*}
+\phi^{(k)}({\bf x}_1,\cdots,{\bf x}_p,\cdots,{\bf x}_q,\cdots,{\bf x}_N,t) = -\phi^{(k)}({\bf x}_1,\cdots,{\bf x}_q,\cdots,{\bf x}_p,\cdots,{\bf x}_N,t)
+\end{eqnarray*}
+occurs only if $({\bf x}_1,\cdots,{\bf x}_p,\cdots,{\bf x}_q,\cdots,{\bf x}_N)$ {\it and} $({\bf x}_1,\cdots,{\bf x}_q,\cdots,{\bf x}_p,\cdots,{\bf x}_N)$ belong to $\Omega_i$. Then, even when local Slater's determinants are constructed, a more careful decomposition is then necessary to ensure a global antisymmetry.
+\end{enumerate}
+One possible approach is to antisymmetrize at each time step the reconstructed wavefunction, thanks to the operator $\mathcal{A}$ defined in Subsection \ref{ITM}. We also propose in \ref{APXA}, an algorithm to ensure the antisymmetry of the reconstructed wavefunction within the SWR formalism.
+\subsection{Numerical algorithm}\label{expcons}
+We give details about the explicit construction of the numerical solver. Let us denote by ${\boldsymbol \psi}_i^{n,(k)}(x_1,x_2) = \sum_{j=1}^{K_i}c_{j}^{i,n,(k)}v_j^i(x_1,x_2)$ the approximate solution in $\Omega_i$, at Schwarz iteration $k$, and time $t_n$. We denote by $\widetilde {\bf H}_i$ the discrete Hamiltonian in $\Omega_i$ including the transmission condition contribution. The discrete parallel algorithm in real (resp. imaginary) time reads as follows.\\
+\\
+\noindent Schwarz iteration loop, from $k=0$ to convergence $k=k^{\textrm{(cvg)}}$:
+\begin{enumerate}
+\item At initial real (resp. imaginary) time $t=0$, we restrict $\phi_0$ to $\Omega_i$, then project $\phi_{0|\Omega_i}$ onto the local basis functions $\big\{v^i_j\}$, where $i \in \{1,\cdots,L^{dN}\}$ is the subdomain index, and where $j \in \{1,\cdots,K_i\}$ is the local basis function index, in order to construct the local Cauchy data $\phi_{0;i}^{(k)} = \sum_{j=1}^{K_i}c_{j}^{i,0,(k)}v_j^i$. Additional details will also be presented in Subsection \ref{testA}.
+\item Real (resp. imaginary) time iterations, from $n=0$ to $n=n_T$ (resp. $n=0$ to $n=n^{\textrm{cvg},(k)}$), that is from time $t_0=0$ to time $t_{n_{T}}=T$ (resp. $t_{n^{\textrm{cvg},(k)}}=T^{\textrm{cvg},(k)}$) to update the basis coefficients ${\bf c}^{i,n+1,(k)} = \{c_{j}^{i,n+1,(k)}\}_{1 \leq j \leq K_i}$ (resp. $\widetilde{{\bf c}}^{i,n+1,(k)}$) from ${\bf c}^{i,n,(k)} = \{c_{j}^{i,n,(k)}\}_{1 \leq j \leq K_i}$ (resp. ${\bf c}^{i,n,(k)}$), by solving, in real time:
+\begin{eqnarray*}
+\Big({\bf A}_i+{\tt i}\cfrac{\Delta t}{2}\widetilde{{\bf H}}_i+{\tt i}\cfrac{\Delta t}{2}{\bf T}_i^{n+1}\Big){\bf c}^{i,n+1,(k)} = \Big({\bf A}_i-{\tt i}\cfrac{\Delta t}{2}\widetilde{{\bf H}}_i-{\tt i}\cfrac{\Delta t}{2}{\bf T}_i^{n}\Big){\bf c}^{i,n,(k)}
+\end{eqnarray*}
+(resp. imaginary time: $\Big({\bf A}_i+\Delta t\widetilde{{\bf H}}_i\Big)\widetilde{{\bf c}}^{i,n+1,(k)} = {\bf A}_i{\bf c}^{i,n,(k)}$)
+\item Reconstruction of the global TDSE wavefunction ${\boldsymbol \psi}^{i,n+1,(k)}$ (resp. $\widetilde{{\boldsymbol \phi}}^{n+1,(k)}$).
+\item In imaginary time, {\it only}:  $L^2$-normalization of the local wavefunctions in imaginary time, that is
+\begin{eqnarray*}
+{\bf c}^{i,n+1,(k)} = \cfrac{\widetilde{{\bf c}}^{i,n+1,(k)}}{\|\sum_{j=1}^{L^{dN}}\widetilde{{\boldsymbol \phi}}_j^{i,n+1,(k)}\|_{2}}
+\end{eqnarray*}
+and antisymmetrization, thanks to the operator $\mathcal{A}$, see Subsection \ref{ITM}.
+\item At final real (resp. imaginary) time $T$ (resp. $T^{\textrm{(cvg)},(k)}$) and Schwarz iteration $k$, we have determined $\psi^{n_T,(k)}$ (resp. $\phi^{n^{\textrm{(cvg)}},(k)}$).
+\end{enumerate}
+\noindent At convergence of the Schwarz algorithm, we get $\psi^{n_T,(k^{\textrm{(cvg)}})}$ (resp. $\phi^{n^{\textrm(cvg)},(k^{\textrm{(cvg)}})}$) which is then an approximation of $\psi(\cdot,T)$ (resp. ground state of $H_0$).\\
+\\
+Notice that i) the implicit Euler scheme guarantees the local unconditional stability of the imaginary time solver \cite{bao}, and ii) a Crank-Nicolson scheme guarantees also the unconditional stability, as well as the convergence at order $2$ in space and time, for the real time solver, see Step 2.
+\subsection{Convergence of the SWR algorithms}
+Although a rigorous analysis of the presented SWR-DDM solver applied to the $N$-body Schr\"odinger equation is out of reach, we can provide some useful references and some mathematical properties of the presented algorithms. We here summarize some of the known results about the convergence of SWR algorithm, as well as their rate of convergence for the Schr\"odinger equation in real and imaginary time. Notice that these results are usually established for two subdomains in 1-d. Basically, it consists of i) reformulating the SWR method as a fixed point algorithm, and when necessary ii)  using pseudodifferential calculus in order to derive the corresponding contraction factor, as a function of the overlap size and of the frequencies of the wavefunction. The principle of proof is similar in real and imaginary time, although a finer analysis is necessary in real time, as it requires a closer study of the contraction factor in three different zones (hyperbolic, elliptic glancing zones), see \cite{nir}. 
+In 1-d, it was proven in \cite{halpern2}, that the convergence of the Classical, Robin and q-Optimal Schwarz (CSWR, Robin-SWR, q-OSWR) methods for the real time Schr\"odinger equation, with differentiable and bounded potential with a bounded derivative. Notice, that unlike the CSWR method, the Robin and q-Optimal SWR do not require an overlap between the subdomains. These methods were used in \cite{jsc} in a laser-particle setting involving in particular recollision and ionization, where transmission conditions were derived from high order absorbing boundary conditions. We also refer to \cite{BesseXing} for some numerical implementation and performance of CSWR and Robin-SWR methods for the time-dependent Schr\"odinger equation in 2-d. In imaginary time with space-dependent potential, the convergence of the CSWR and q-OSWR methods have been established in 1-d for high frequency problems, as well as their rate of convergence as a function of the size  of the overlapping zone $\epsilon$, see \cite{lorin-TBS}. It was proven that in the case of the CSWR algorithm, the rate of convergence is (at first order) exponential in $-\epsilon \sqrt{|\tau|}$, where $\tau$ denotes the co-variable (frequency) associated to $t$ (time), and that for positive potentials accelerate the convergence of the algorithm. Quasi-OSWR methods are shown to accelerate the CSWR by a factor $|\tau|^{-p}$, for some $p \in \N^*$, dependent on the order of approximation $p$, of the q-OSWR method. In fine, we get
+\begin{eqnarray*}
+\hspace*{1cm}\lim_{k \rightarrow +\infty}\|\psi_{|\Omega_i} - \psi_i^{(k)}\|_{L^2(\Omega_i\times(0,T))} = 0 \, .
+\end{eqnarray*}
+The convergence of the CSWR in 2-d for two subdomains with smooth convex$/$concave boundary is established in imaginary time in \cite{lorin-TBS2}. As in the one-dimensional setting, the rate of convergence is exponential in $-\epsilon \sqrt{|\tau|}$, where $\epsilon$ characterizes the thickness of the overlapping region, but it is also established a deceleration effect of the interface curvature, suggesting that flat interfaces are preferable than curved ones. Similarly the rate of convergence for the CSWR, and q-OSWR methods can be established for the time dependent Schr\"odinger with space-dependent potentials \cite{lorin-TBS3}. In \ref{APXC}, we analyze the computational complexity of the SWR method applied to the TISE and TDSE. \\
+Notice that in order to accelerate the rate of convergence of the domain decomposition method, a multilevel approach should be coupled to the proposed method. Indeed, although to our knowlegde there is no rigorous proof, we expect that the larger the number of subdomains, the larger the number Schwarz iterations to converge, in particular in the time-dependent case. As it is was proposed in \cite{multilevel}, a multilevel strategy helps to accelerate the convergence of the SWR method for the Schr\"odinger equation. It was shown that in the case of the NGF method, a multilevel approach allows for an acceleration of the convergence of the NGF algorithm at each Schwarz iteration. Regarding the time-dependent case, a substantial acceleration of the Schwarz algorithm is observed.
+%\subsection{Selection of the basis functions}
+%We here discuss the fundamental question of the selection of basis functions in each $\Omega_i$. As explained above, in $\Omega_i$ a set of $K_i$ basis functions $\big\{v^i_j\big\}_{1 \leq j \leq K_i}$ is constructed from $M_i$ $1$-electron orbitals $\big\{\phi_j^i\big\}_{1\leq j \leq M_i}$ and then Slater's determinants. These orbitals $\big\{\phi_j^i\big\}_{1\leq j \leq M_i}$ should be carefully selected, depending on the location of the nuclei, as well as the strength of the external electric field. Basically, for subdomains containing and close to the nuclei, basis functions should mainly be derived from the first bound states. In the opposite,  far from the nuclei, the contribution from ground and low energy states are likely negligible, but orbitals corresponding to high energy states should likely be predominant, as low energy eigenfunction have almost compact support in the vicinity of the nuclei. This flexibility, compared to 1-domain problems, is of main interest as it allows for an spatial adaptation of orbitals. More specifically, in each $\Omega_i$, $1\leq i\leq L^{dN}$, we will select $K_i$ Slater's determinants basis functions $\big\{\chi^i_j\big\}_{1\leq j\leq K_i}$, such that
+%\begin{itemize}
+%\item If $\max_{1\leq l\leq L^{dN},1\leq A\leq P}$dist$\big({\bf x}_A,\Omega_i^l\big)$ is small enough, $\chi^j_{i}$ should be constructed from orbitals associated to $M_i$ first eigenfunctions.
+%\item If $\max_{1\leq l\leq L^{dN},1\leq A\leq P}$dist$\big({\bf x}_A,\Omega_i^l\big)$ is large enough, $\chi^j_{i}$ should be constructed from orbitals associated to high energy eigenfunctions.
+%\end{itemize}
+% It is also reasonable, to assume that the larger $\max_{1\leq l\leq L^{dN},1\leq A\leq P}$dist$\big({\bf x}_A,\Omega_i^l\big)$, the smaller $M_i$... TBC...

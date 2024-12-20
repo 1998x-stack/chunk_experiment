@@ -1,0 +1,3976 @@
+
+\chapter{Denotational semantics of eMLTT}
+\label{chap:interpretation}
+
+In this chapter we show how to interpret eMLTT in the fibred adjunction models we defined in Chapter~\ref{chap:fibadjmodels}; and we prove that this interpretation is sound and complete. 
+
+
+
+\section{Interpreting eMLTT in fibred adjunction models}
+\label{sect:interpretation}
+
+Following the standard approach in the literature on dependently typed languages, e.g., as advocated by Streicher~\cite{Streicher:Semantics} and Hoffmann~\cite{Hofmann:Thesis}, we define the interpretation function as an \emph{a priori} partial mapping $\sem{-}$ from the raw (i.e., not necessarily well-formed) expressions of eMLTT into a given fibred adjunction model. It is only afterwards that we prove in the soundness theorem that $\sem{-}$ is defined on well-formed expressions and, furthermore, that it validates the equational theory of eMLTT. In order to be able to define the interpretation function as a partial mapping, we have decorated the syntax of eMLTT with a range of additional type annotations, as discussed in Section~\ref{sect:syntax}.
+
+Analogously to the work of Streicher and Hoffmann, the main reason for defining $\sem{-}$ as a partial mapping is to avoid the coherence issues that arise when trying to define $\sem{-}$ directly on the derivations of well-formed expressions. In particular, as the typing derivations of eMLTT are not unique, due to the context and type conversion rules (see Section~\ref{sect:judgements}), defining the interpretation on the derivations of well-formed types and terms would require us to also simultaneously prove the coherence of the interpretation.
+Furthermore, as the context and type conversion rules contain definitional equations, 
+defining the interpretation on derivations would also require us to simultaneously prove that the interpretation validates the equational theory of eMLTT. 
+
+
+Throughout this section, we assume given a fibred adjunction model using the notation of Definition~\ref{def:fibadjmodels}, i.e., given by $p : \mathcal{V} \longrightarrow \mathcal{B}$, $q : \mathcal{C} \longrightarrow \mathcal{B}$, and $F \dashv\, U : q \longrightarrow p$.
+
+We begin by defining a notion of size for eMLTT's expressions and value contexts.
+
+\begin{definition}
+\index{size!-- of expression}
+\index{ size@$\mathsf{size}(E)$ (size of an expression $E$)}
+The \emph{size} of an expression $E$, written $\mathsf{size}(E)$, is defined by recursion on the structure of $E$ as follows:
+\[
+\begin{array}{l c l}
+\mathsf{size}(\Nat) & \defeq & 1
+\\[-1.5mm]
+& \ldots &
+\\[1.5mm]
+\mathsf{size}(x) & \defeq & 1
+\\[-1.5mm]
+& \ldots &
+\\[1.5mm]
+\mathsf{size}(\return V) & \defeq & \mathsf{size}(V) + 1
+\\
+\mathsf{size}(\doto M {y \!:\! A} {\ul{C}} N) & \defeq & \mathsf{size}(M) + \mathsf{size}(A) + \mathsf{size}(\ul{C}) + \mathsf{size}(N) + 1
+\\[-1.5mm]
+& \ldots &
+\\[1.5mm]
+\mathsf{size}(K(V)_{(y : A).\, \ul{C}}) & \defeq & \mathsf{size}(K) + \mathsf{size}(V) + \mathsf{size}(A) + \mathsf{size}(\ul{C}) + 1
+\\
+\mathsf{size}(V(K)_{\ul{C}, \ul{D}}) & \defeq & \mathsf{size}(V) + \mathsf{size}(K) + \mathsf{size}(\ul{C}) + \mathsf{size}(\ul{D}) + 1
+\end{array}
+\]
+\end{definition}
+
+\begin{definition}
+\index{size!-- of value context}
+\index{ size@$\mathsf{size}(\Gamma)$ (size of a value context $\Gamma$)}
+Given a value context $\Gamma$, its \emph{size}, written $\mathsf{size}(\Gamma)$, is defined as
+\[
+\mathsf{size}(\diamond) \,\,\,\defeq\,\,\, 0
+\qquad
+\mathsf{size}(\Gamma, x \!:\! A) \,\,\,\defeq\,\,\, \mathsf{size}(\Gamma) + \mathsf{size}(A)
+\]
+\end{definition}
+
+Using this notion of size, we now define the partial interpretation function $\sem{-}$.
+
+\begin{definition}
+\index{interpretation function}
+\index{ @$\sem{-}$ (interpretation function)}
+The \emph{a priori} partial \emph{interpretation function} $\sem{-}$ is defined by induction on the sum of the sizes of its arguments (see below) such that, if defined, it maps
+\begin{itemize}
+\item a value context $\Gamma$ to an object $\sem{\Gamma}$ in $\mathcal{B}$, 
+\item a pair of a value context $\Gamma$ and a value type $A$ to an object $\sem{\Gamma;A}$ in $\mathcal{V}_{\sem{\Gamma}}$, 
+\item a pair of a value context $\Gamma$ and a computation type $\ul{C}$ to an object $\sem{\Gamma;\ul{C}}$ in $\mathcal{C}_{\sem{\Gamma}}$, 
+\item a pair of a value context $\Gamma$ and a value term $V$ to an object $A$ in $\mathcal{V}_{\sem{\Gamma}}$ and a morphism $\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow A$ in $\mathcal{V}_{\sem{\Gamma}}$, 
+\item a pair of a value context $\Gamma$ and a computation term $M$ to an object $\ul{C}$ in $\mathcal{C}_{\sem{\Gamma}}$ and a morphism $\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\ul{C})$ in $\mathcal{V}_{\sem{\Gamma}}$, and
+\item a quadruple of a value context $\Gamma$, a computation variable $z$, a computation type \linebreak $\ul{C}$, and a homomorphism term $K$ to an object $\ul{D}$ in $\mathcal{C}_{\sem{\Gamma}}$ and a morphism \linebreak $\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\sem{\Gamma}}$.
+\end{itemize}
+
+Compared to how we defined $\sem{-}$ in~\cite{Ahman:FibredEffects}, we give its definition here in natural deduction style instead of using the Kleene equality $\simeq$.
+This makes it easier for the reader to follow the details of the definition, such as the domains and codomains of the interpretation of the subterms of a given term. 
+Specifically, we define $\sem{-}$ using rules whose premises describe the conditions we require to hold for the corresponding conclusions to be defined. For example, in the premise of the case for function application $V(W)_{(x : A) .\, B}$, we require the application of $\sem{-}$ on the given function term $V$ to be defined and its codomain to be an application of the $\Pi_{\sem{\Gamma;A}}$-functor. 
+Observe that it is precisely these kinds of conditions that make the definition of $\sem{-}$ partial. 
+
+In terms of notation, we write $\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}$ to mean that $\sem{\Gamma;A}$ is defined and given by an object in $\mathcal{V}_{\sem{\Gamma}}$, and similarly for computation types. Analogously, we write $\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow A$ to mean that $\sem{\Gamma;V}$ is defined and given by a morphism $1_{\sem{\Gamma}} \longrightarrow A$ in $\mathcal{V}_{\sem{\Gamma}}$, for some object $A$, and  similarly for computation and homomorphism terms.
+
+To improve the readability of the definition of $\sem{-}$, we leave some premises implicit if they can be inferred from others. For example, when we write $\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}$ in the premise of a rule, we implicitly assume that $\sem{\Gamma} \in \mathcal{B}$ and $\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}$.
+
+We now give the rules that define $\sem{-}$.
+
+\paragraph*{Value contexts}
+\mbox{}\\
+\[
+{\sem{\diamond} \defeq 1}
+\qquad
+\mkrule
+{\sem{\Gamma, x \!:\! A} \defeq \ia {\sem{\Gamma;A}}}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad x \not\in V\!ars(\Gamma)
+\end{array}
+}
+\]
+\end{definition}
+
+\paragraph*{Value types}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\Nat} \defeq !^*_{\sem{\Gamma}}(\mathbb{N})}
+{
+\begin{array}{c}
+\sem{\Gamma} \in \mathcal{B}
+\end{array}
+}
+\qquad
+\mkrule
+{\sem{\Gamma;1} \defeq 1_{\sem{\Gamma}}}
+{
+\begin{array}{c}
+\sem{\Gamma} \in \mathcal{B}
+\end{array}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\sem{\Gamma;\Sigma\, x \!:\! A .\, B} \defeq \Sigma_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;B})}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A;B} \in \mathcal{V}_{\ia {\sem{\Gamma;A}}}
+\end{array}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\sem{\Gamma;\Pi\, x \!:\! A .\, B} \defeq \Pi_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;B})}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A;B} \in \mathcal{V}_{\ia {\sem{\Gamma;A}}}
+\end{array}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\sem{\Gamma;0} \defeq 0_{\sem{\Gamma}}}
+{
+\begin{array}{c}
+\sem{\Gamma} \in \mathcal{B}
+\end{array}
+}
+\qquad
+\mkrule
+{\sem{\Gamma;A + B} \defeq \sem{\Gamma;A} +_{\sem{\Gamma}} \sem{\Gamma;B}}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma;B} \in \mathcal{V}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\vspace{-0.25cm}
+
+
+\[
+\mkrule
+{\sem{\Gamma; V =_A W} \defeq h^*(\Id_{\sem{\Gamma;A}})}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} \quad \sem{\Gamma;W} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}
+\end{array}
+}
+\]
+where $h$ is the unique mediating morphism in the following pullback situation:
+\[
+\xymatrix@C=5em@R=6em@M=0.5em{
+\sem{\Gamma} \ar@/_2pc/[dr]_{\mathsf{s}(\sem{\Gamma;V})} \ar@/^3.5pc/[rr]^{\mathsf{s}(\sem{\Gamma;W})} \ar@{-->}[r]_-{h} & \ia {\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})} \ar[d]_{\pi_{\pi^*_{\sem{\Gamma;A}}({\sem{\Gamma;A}})}}^<{\,\,\,\big\lrcorner} \ar[r]_-{\ia {\overline{\pi_{\sem{\Gamma;A}}}({\sem{\Gamma;A}})}} & \ia {\sem{\Gamma;A}} \ar[d]^{\pi_{\sem{\Gamma;A}}}_{\dcomment{\mathcal{P}(\overline{\pi_{\sem{\Gamma;A}}}({\sem{\Gamma;A}}))}\quad\,\,\,\,\,\,\,\,\,}
+\\
+& \ia {\sem{\Gamma;A}} \ar[r]_-{\pi_{\sem{\Gamma;A}}} & \sem{\Gamma}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{\sem{\Gamma;U\ul{C}} \defeq U(\sem{\Gamma;\ul{C}})}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\vspace{-0.25cm}
+
+\[
+\mkrule
+{\sem{\Gamma;\ul{C} \multimap \ul{D}} \defeq \sem{\Gamma;\ul{C}} \multimap_{\sem{\Gamma}} \sem{\Gamma;\ul{D}}}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}} \quad \sem{\Gamma;\ul{D}} \in \mathcal{C}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\paragraph*{Computation types}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;FA} \defeq F(\sem{\Gamma;A})}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\vspace{-0.25cm}
+
+\[
+\mkrule
+{\sem{\Gamma;\Sigma\, x \!:\! A .\, \ul{C}} \defeq \Sigma_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;\ul{C}})}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A;\ul{C}} \in \mathcal{C}_{\ia {\sem{\Gamma;A}}}
+\end{array}
+}
+\]
+
+\vspace{-0.25cm}
+
+\[
+\mkrule
+{\sem{\Gamma;\Pi\, x \!:\! A .\, \ul{C}} \defeq \Pi_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;\ul{C}})}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A;\ul{C}} \in \mathcal{C}_{\ia {\sem{\Gamma;A}}}
+\end{array}
+}
+\]
+
+\paragraph*{Value variables (case 1)}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma, x \!:\! A;x} $\\$ \defeq $\\$ 1_{\ia {\sem{\Gamma;A}}}$}
+\ar[dd]_-{\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{1_{\ia {\sem{\Gamma;A}}}}}
+\\
+\\
+\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})) 
+\ar[d]_-{=}
+\\
+\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))) 
+\ar[dd]_-{\pi^*_{\sem{\Gamma;A}}(\mathsf{fst})}
+\\
+\\
+\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad x \not\in V\!ars(\Gamma)
+\end{array}
+}
+\]
+
+
+\paragraph*{Value variables (case 2)}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma_1, x \!:\! A_1, \Gamma_2, y \!:\! A_2; x} $\\$ \defeq $\\$
+1_{\sem{\Gamma_1, x : A_1, \Gamma_2, y : A_2}}$}
+\ar[d]_-{=}
+\\
+1_{\ia {\sem{\Gamma_1, x : A_1, \Gamma_2; A_2}}}
+\ar[d]_-{=}
+\\
+\pi^*_{\sem{\Gamma_1, x : A_1, \Gamma_2;A_2}}(1_{\sem{\Gamma_1, x : A_1, \Gamma_2}}) 
+\ar[dd]_-{\pi^*_{\sem{\Gamma_1, x : A_1, \Gamma_2;A_2}}(\sem{\Gamma_1, x : A_1, \Gamma_2; x})}
+\\
+\\
+\pi^*_{\sem{\Gamma_1, x : A_1, \Gamma_2;A_2}}(B)
+}
+}
+{
+\begin{array}{c}
+y \not\in V\!ars(\Gamma_1, x \!:\! A_1, \Gamma_2)
+\\[1mm]
+\sem{\Gamma_1, x \!:\! A_1, \Gamma_2; A_2} \in \mathcal{V}_{\sem{\Gamma_1, x : A_1, \Gamma_2}} \quad
+\sem{\Gamma_1, x \!:\! A_1, \Gamma_2; x} : 1_{\sem{\Gamma_1, x : A_1, \Gamma_2}} \longrightarrow B
+\end{array}
+}
+\]
+
+
+\pagebreak
+
+\paragraph*{Zero}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\zero} \defeq 1_{\sem{\Gamma}} \overset{!^*_{\sem{\Gamma}}(\mathsf{zero})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} !^*_{\sem{\Gamma}}(\mathbb{N})}
+{
+\begin{array}{c}
+\sem{\Gamma} \in \mathcal{B}
+\end{array}
+}
+\]
+
+\paragraph*{Successor}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\succc\, V} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} !^*_{\sem{\Gamma}}(\mathbb{N}) \overset{!^*_{\sem{\Gamma}}(\mathsf{succ})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} !^*_{\sem{\Gamma}}(\mathbb{N})}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow !^*_{\sem{\Gamma}}(\mathbb{N})
+\end{array}
+}
+\]
+
+\paragraph*{Primitive recursion}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\natrec {x.\,A} {V_z} {y_1.\, y_2.\, V_s} {V}} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$} 
+\ar[d]_-{=} 
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(1_{\ia {!^*_{\sem{\Gamma}}(\mathbb{N})}}) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\mathsf{i}_{\sem{\Gamma, x : \Nat;A}}(\sem{\Gamma, V_z}, \sem{\Gamma, y_1 : \Nat, y_2 : A[y_1/x];V_s}))}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! \Nat;A})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow !^*_{\sem{\Gamma}}(\mathbb{N}) \quad \sem{\Gamma;V_z} : 1_{\sem{\Gamma}} \longrightarrow (\funsection(!_X^*(\mathsf{zero})))^*(\sem{\Gamma, x \!:\! \Nat; A}) 
+\\[1mm]
+\sem{\Gamma, y_1 \!:\! \Nat, y_2 \!:\! A[y_1/x];V_s} : 1_{\ia {\sem{\Gamma, x : \Nat; A}}} \longrightarrow \pi_{\sem{\Gamma, x : \Nat; A}}^*(\ia {!_X^*(\mathsf{succ})}^* ({\sem{\Gamma, x \!:\! \Nat; A}}))
+\end{array}
+}
+\]
+
+
+\paragraph*{Unit}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\star} \defeq 1_{\sem{\Gamma}} \overset{\id_{1_{\sem{\Gamma}}}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} 1_{\sem{\Gamma}}}
+{
+\begin{array}{c}
+\sem{\Gamma} \in \mathcal{B}
+\end{array}
+}
+\]
+
+\paragraph*{Pairing}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.75em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma; \langle V , W \rangle_{(x : A) .\, B} } $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[dd]_-{\sem{\Gamma;W}}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A; B}) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma, x : A;B}})}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; B}))) 
+\ar[d]_-{=}
+\\
+\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; B})
+}
+} 
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} \quad \sem{\Gamma;W} : 1_{\sem{\Gamma}} \longrightarrow (\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A; B})
+\end{array}
+}
+\]
+
+
+\paragraph*{Pattern-matching}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.75em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\pmatch V {(x_1 \!:\! A_1, x_2 \!:\! A_2)} {y.\, B} W} $\\$ \defeq $\\$ 
+1_{\sem{\Gamma}}$}
+\ar[d]_-{=} 
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*((\kappa^{-1})^*(1_{\ia {\sem{\Gamma, x_1 : A_1;A_2}}})) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*((\kappa^{-1})^*(\sem{\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2;W}))}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*((\kappa^{-1})^*(\kappa^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2);B}))) 
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2);B})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \Sigma_{\sem{\Gamma;A_1}} (\sem{\Gamma, x_1 \!:\! A_2;A_2})
+\\[1mm]
+\sem{\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2;W} : 1_{\ia {\sem{\Gamma, x_1 : A_1;A_2}}} \longrightarrow \kappa_{\sem{\Gamma;A_1},\sem{\Gamma, x_1 \!:\! A_1;A_2}}^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2);B})
+\end{array}
+}
+\]
+where we omit the subscripts in $\kappa_{\sem{\Gamma;A_1},\sem{\Gamma, x_1 \!:\! A_1;A_2}}$ and $\kappa_{\sem{\Gamma;A_1},\sem{\Gamma, x_1 \!:\! A_1;A_2}}^{-1}$ in the conclusion for better readability.
+
+
+\paragraph*{Lambda abstraction}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma; \lambda\, x \!:\! A .\, V} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[dd]_-{\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{1_{\sem{\Gamma}}}}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})) 
+\ar[d]_-{=} 
+\\
+\Pi_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}}) 
+\ar[dd]_-{\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;V})}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(B)
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A; V} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow B
+\end{array}
+}
+\]
+
+
+\paragraph*{Function application}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma; V(W)_{(x : A) .\, B}} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;W}))^*(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;W}))^*(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;V}))}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;W}))^*(\pi^*_{\sem{\Gamma;A}}(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;B}))) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;W}))^*(\varepsilon^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{\sem{\Gamma, x : A;B}})}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;W}))^*(\sem{\Gamma, x \!:\! A;B})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;B}) \quad \sem{\Gamma;W} :  1_{\sem{\Gamma}} \longrightarrow {\sem{\Gamma;A}}
+\end{array}
+}
+\]
+
+
+\paragraph*{Empty case analysis}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\absurd {x.\,A} V} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(1_{\ia {0_{\sem{\Gamma}}}}) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(?_{\sem{\Gamma, x : 0;A}})}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! 0;A})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma, x \!:\! 0;A} \in \mathcal{V}_{\ia {0_{\sem{\Gamma}}}} \quad \sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow 0_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\paragraph*{Binary case analysis}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma; \mathtt{case~} V \mathtt{~of}_{x.\,B} \mathtt{~} ({\inl {\!} {\!\!(y_1 \!:\! A_1)} \mapsto W_1} , {\inr {\!} {\!\!(y_2 \!:\! A_2)} \mapsto W_2})} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(1_{\ia {\sem{\Gamma;A_1} +_{\sem{\Gamma}} \sem{\Gamma;A_2}}}) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*([\sem{\Gamma, y_1 : A_1;W_1},\sem{\Gamma, y_2 : A_2;W_2}])}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A_1 + A_2;B})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A_1} +_{\sem{\Gamma}} \sem{\Gamma;A_2} 
+\\[1mm]
+\sem{\Gamma, y_1 \!:\! A_1;W_1} : 1_{\ia {\sem{\Gamma;A_1}}} \longrightarrow \ia {\mathsf{inl}}^*(\sem{\Gamma, x \!:\! A_1 + A_2;B})
+\\[1mm]
+\sem{\Gamma, y_2 \!:\! A_2;W_2} : 1_{\ia {\sem{\Gamma;A_2}}} \longrightarrow \ia {\mathsf{inr}}^*(\sem{\Gamma, x \!:\! A_1 + A_2;B})
+\end{array}
+}
+\]
+
+
+\paragraph*{Left injection}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\inl {A + B} V} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;A} \overset{\mathsf{inl}}{\,-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;A} +_{\sem{\Gamma}} \sem{\Gamma;B}}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} \quad \sem{\Gamma;B} \in \mathcal{V}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\paragraph*{Right injection}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\inr {A + B} V} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;B} \overset{\mathsf{inr}}{\,-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;A} +_{\sem{\Gamma}} \sem{\Gamma;B}}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;B}
+\end{array}
+}
+\]
+
+\paragraph*{Reflexivity of propositional equality}
+\mbox{}\\
+\[
+\mkrule
+{
+\sem{\Gamma;\refl A V} \defeq 1_{\sem{\Gamma}} \overset{=}{\,\longrightarrow\,} (\mathsf{s}(\sem{\Gamma;V}))^*(1_{\ia {A}}) \overset{(\mathsf{s}(\sem{\Gamma;V}))^*(\mathsf{r}_{A})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} (\mathsf{s}(\sem{\Gamma;V}))^*(\delta^*_{A}(\Id_{A}))
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow A
+\end{array}
+}
+\]
+
+
+\paragraph*{Elimination of propositional equality}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\pathind A {x_1.\, x_2.\, x_3.\, B} {y.\, W} {V_1} {V_2} {V_p}} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V_p}))^*(\ia {\overline{h}(\Id_{\sem{\Gamma;A}})}^*(1_{\ia {\Id_{\sem{\Gamma;A}}}})) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V_p}))^*(\ia {\overline{h}(\Id_{\sem{\Gamma;A}})}^*(\mathsf{i}(\sem{\Gamma, y : A;W})))}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V_p}))^*(\ia {\overline{h}(\Id_{\sem{\Gamma;A}})}^*(\sem{\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! (x_1 =_A x_2);B}))
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V_1} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} 
+\quad
+\sem{\Gamma;V_2} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} 
+\quad
+\sem{\Gamma;V_p} : 1_{\sem{\Gamma}} \longrightarrow h^*(\Id_{\sem{\Gamma;A}})
+\\[1mm]
+\hspace{-9.25cm}
+\sem{\Gamma, y \!:\! A;W} : 1_{\ia {\Id_{\sem{\Gamma;A}}}} \longrightarrow 
+\\
+\hspace{3cm}
+(\mathsf{s}(\mathsf{r}_{\sem{\Gamma;A}}))^*(\ia {\overline{\delta_{\sem{\Gamma;A}}}(\Id_{\sem{\Gamma;A}})}^*(\sem{\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! (x_1 =_A x_2);B}))
+\end{array}
+}
+\vspace{0.1cm}
+\]
+where we omit the subscripts in $\mathsf{i}_{\sem{\Gamma;A},\sem{\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! (x_1 =_A x_2);B}}$ in the conclusion; and \linebreak
+
+\pagebreak
+\noindent
+where $h$ is the unique mediating morphism in the following pullback situation:
+\vspace{0.1cm}
+\[
+\xymatrix@C=5em@R=6em@M=0.5em{
+\sem{\Gamma} \ar@/_2pc/[dr]_{\mathsf{s}(\sem{\Gamma;V_1})} \ar@/^3.5pc/[rr]^{\mathsf{s}(\sem{\Gamma;V_2})} \ar@{-->}[r]_-{h} & \ia {\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})} \ar[d]_{\pi_{\pi^*_{\sem{\Gamma;A}}({\sem{\Gamma;A}})}}^<{\,\,\,\big\lrcorner} \ar[r]_-{\ia {\overline{\pi_{\sem{\Gamma;A}}}({\sem{\Gamma;A}})}} & \ia {\sem{\Gamma;A}} \ar[d]^{\pi_{\sem{\Gamma;A}}}_{\dcomment{\mathcal{P}(\overline{\pi_{\sem{\Gamma;A}}}({\sem{\Gamma;A}}))}\quad\,\,\,\,\,\,\,\,\,\,\,\,\,}
+\\
+& \ia {\sem{\Gamma;A}} \ar[r]_-{\pi_{\sem{\Gamma;A}}} & \sem{\Gamma}
+}
+\]
+
+
+\paragraph*{Thunking a computation}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\thunk M} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\ul{C})}
+{
+\begin{array}{c}
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\ul{C})
+\end{array}
+}
+\]
+
+\paragraph*{Homomorphic lambda abstraction}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\lambda\, z \!:\! \ul{C} .\, K} \defeq 1_{\sem{\Gamma}} \overset{\xi^{-1}_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\ul{D}}(\sem{\Gamma;z : \ul{C};K})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;\ul{C}} \multimap_{\sem{\Gamma}} \ul{D} }
+{
+\begin{array}{c}
+\sem{\ul{C}} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \ul{D}
+\end{array}
+}
+\]
+
+\paragraph*{Returning a value}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\return V} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} A \overset{\eta^{F \,\dashv\, U}_A}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(F(A))}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow A
+\end{array}
+}
+\]
+
+\paragraph*{Sequential composition}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\doto M {x \!:\! A} {\ul{C}} N } $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[dd]_-{\sem{\Gamma;M}}
+\\
+\\
+U(F(\sem{\Gamma;A})) 
+\ar[dd]_-{U(F(\langle \id_{\sem{\Gamma;A}}, ! \rangle))}
+\\
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})))) 
+\ar[d]_-{=} 
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}}))) 
+\ar[dd]_-{U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;N})))}
+\\
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}))))) 
+\ar[d]_-{=}
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{C}}))))) 
+\ar[dd]_-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{C}})}))}
+\\
+\\
+U(F(U(\sem{\Gamma;\ul{C}}))) 
+\ar[dd]_-{U(\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{C}}})}
+\\
+\\
+U(\sem{\Gamma;\ul{C}})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} \quad \sem{\Gamma, x \!:\! A;N} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}))
+\end{array}
+}
+\]
+
+\pagebreak
+
+\pagebreak
+
+
+\paragraph*{Computational pairing}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.6em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\langle V , M \rangle_{(x : A).\, \ul{C}}} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[dd]_-{\sem{\Gamma;M}}
+\\
+\\
+U((\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A;\ul{C}})) 
+\ar[dd]_-{U((\mathsf{s}(\sem{\Gamma;V}))^*(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma, x \!:\! A;\ul{C}}}))}
+\\
+\\
+U((\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{C}})))) 
+\ar[d]_-{=}
+\\
+U(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{C}}))
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} \quad \sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U((\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A;\ul{C}}))
+\end{array}
+}
+\]
+
+
+\paragraph*{Computational pattern-matching}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.6em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\doto M {(x \!:\! A, z \!:\! \ul{C})} {\ul{D}} K} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$} 
+\ar[dd]_-{\sem{\Gamma;M}}
+\\
+\\
+U(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{C}})) 
+\ar[dd]_-{U(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;z : \ul{C};K}))}
+\\
+\\
+U(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}}))) 
+\ar[dd]_-{U(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma;\ul{D}}})}
+\\
+\\
+U(\sem{\Gamma;\ul{D}})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{C}})) 
+\\
+\sem{\Gamma, x \!:\! A;z \!:\! \ul{C};K} : \sem{\Gamma, x \!:\! A; \ul{C}} \longrightarrow \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}})
+\end{array}
+}
+\]
+
+
+
+
+\paragraph*{Computational lambda abstraction}
+\mbox{}\\[1cm]
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=3em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;\lambda \, x \!:\! A .\, M} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}$}
+\ar[dd]_-{\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{1_{\sem{\Gamma}}}}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})) 
+\ar[d]_-{=} 
+\\
+\Pi_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}}) 
+\ar[dd]_-{\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;M})}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(U(\ul{C})) 
+\ar[dd]_-{(\zeta^{-1}_{\Pi,\sem{\Gamma;A}})_{\ul{C}}}
+\\
+\\
+U(\Pi_{\sem{\Gamma;A}}(\ul{C}))
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A;M} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\ul{C})
+\end{array}
+}
+\vspace{1cm}
+\]
+where $\zeta_{\Pi,\sem{\Gamma;A}} : U \comp \Pi_{\sem{\Gamma;A}} \overset{\cong}{\,\longrightarrow\,} \Pi_{\sem{\Gamma;A}} \comp U$ is the natural isomorphism defined in Proposition~\ref{prop:UandFpreserveSigmaPi}.
+
+\newpage
+
+
+
+\paragraph*{Computational function application}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;M(V)_{(x : A).\,\ul{C}}} $\\$ \defeq $\\$ 1_{\sem{\Gamma}}  $}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;M}))} 
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(U(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; \ul{C}})))) 
+\ar[d]_-{=}
+\\
+U((\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; \ul{C}})))) 
+\ar[dd]_-{U((\mathsf{s}(\sem{\Gamma;V}))^*(\varepsilon^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{\sem{\Gamma, x \!:\! A; \ul{C}}}))}
+\\
+\\
+U((\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A; \ul{C}}))
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; \ul{C}})) \quad \sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}
+\end{array}
+}
+\]
+
+
+
+\paragraph*{Forcing a thunked computation}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;\force {\ul{C}} V} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}})}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\end{array}
+}
+\]
+
+\paragraph*{Homomorphic function application}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;V(M)_{\ul{C}, \ul{D}}} \defeq 1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma;V}))}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{D}})}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;\ul{C}} \multimap_{\sem{\Gamma}} \sem{\Gamma;\ul{D}} \quad \sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\end{array}
+}
+\]
+
+\paragraph*{Computation variables}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;z \!:\! \ul{C};z} \defeq \sem{\Gamma;\ul{C}} \overset{\id_{\sem{\Gamma;\ul{C}}}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;\ul{C}}}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}}
+\end{array}
+}
+\]
+
+\pagebreak
+
+\paragraph*{Sequential composition}
+\mbox{}\\[0.3cm]
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;z \!:\! \ul{C};\doto K {x \!:\! A} {\ul{D}} M} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}$}
+\ar[dd]_-{\sem{\Gamma;z : \ul{C};K}}
+\\
+\\
+F(\sem{\Gamma;A}) 
+\ar[dd]_-{F(\langle \id_{\sem{\Gamma;A}} , !\rangle)}
+\\
+\\
+F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))) 
+\ar[d]_-{=}
+\\
+F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})) 
+\ar[dd]_-{F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A ; M}))}
+\\
+\\
+F(\Sigma_{\sem{\Gamma;A}}(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}}))))
+\ar[d]_-{=}
+\\
+F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{D}})))) 
+\ar[dd]_-{F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{D}})})}
+\\
+\\
+F(U(\sem{\Gamma;\ul{D}})) 
+\ar[dd]_-{\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{D}}}}
+\\
+\\
+\sem{\Gamma;\ul{D}}
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}} 
+\quad
+\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow F(\sem{\Gamma;A}) 
+\\
+\sem{\Gamma, x \!:\! A ; M} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}}))
+\end{array}
+}
+\]
+
+\newpage
+
+
+\paragraph*{Computational pairing}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.5em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;z \!:\! \ul{C};\langle V , K \rangle_{(x : A) . \ul{D}}} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}$} 
+\ar[dd]_-{\sem{\Gamma;z : \ul{C};K}}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A;\ul{D}}) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma, x : A;\ul{D}}})}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{D}}))) 
+\ar[d]_-{=} 
+\\
+\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{D}})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}}
+\quad
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A} 
+\\
+\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow (\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x \!:\! A;\ul{D}})
+\end{array}
+}
+\]
+
+
+
+\paragraph*{Computational pattern-matching}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=1.5em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;z_1 \!:\! \ul{C};\doto K {(x \!:\! A, z_2 \!:\! \ul{D}_1)} {\ul{D}_2} L} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}$}
+\ar[dd]_-{\sem{\Gamma;z_1 : \ul{C};K}}
+\\
+\\
+\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; \ul{D}_1}) 
+\ar[dd]_-{\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A; z_2 : \ul{D}_1;L})}
+\\
+\\
+\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}_2})) 
+\ar[dd]_-{\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma;\ul{D}_2}}}
+\\
+\\
+\sem{\Gamma;\ul{D}_2}
+}
+} 
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}} \quad 
+\sem{\Gamma;z_1 \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A; \ul{D}_1}) 
+\\
+\sem{\Gamma, x \!:\! A; z_2 \!:\! \ul{D}_1;L} : \sem{\Gamma, x \!:\! A; \ul{D}_1} \longrightarrow \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}_2})
+\end{array}
+}
+\]
+
+
+
+\paragraph*{Computational lambda abstraction}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;z \!:\! \ul{C};\lambda \, x \!:\! A .\, K} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}$}
+\ar[dd]_-{\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{\sem{\Gamma;\ul{C}}}}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})) 
+\ar[dd]_-{\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A; z : \ul{C}; K})}
+\\
+\\
+\Pi_{\sem{\Gamma;A}}(\ul{D})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}} \quad \sem{\Gamma, x \!:\! A; z \!:\! \ul{C}; K} : \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}) \longrightarrow \ul{D}
+\end{array}
+}
+\]
+
+
+
+\paragraph*{Computational function application}
+\mbox{}\\
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=2em@M=0.5em{
+\txt<25pc>{$\sem{\Gamma;z \!:\! \ul{C};K(V)_{(x : A).\, \ul{D}}} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}$}
+\ar[d]_-{=}
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;z : \ul{C};K}))}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^*(\pi^*_{\sem{\Gamma;A}}(\Pi_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A; \ul{D}}))) 
+\ar[dd]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\varepsilon^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{\sem{\Gamma, x : A; \ul{D}}})}
+\\
+\\
+(\mathsf{s}(\sem{\Gamma;V}))^* (\sem{\Gamma, x \!:\! A; \ul{D}})
+}
+}
+{
+\begin{array}{c}
+\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}} 
+\quad
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}
+\\
+\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \Pi_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A; \ul{D}})
+\end{array}
+}
+\]
+
+
+\paragraph*{Homomorphic function application}
+\mbox{}\\
+\[
+\mkrule
+{\sem{\Gamma;z \!:\! \ul{C};V(K)_{\ul{D}_1, \ul{D}_2}} \defeq \sem{\Gamma;\ul{C}} \overset{\sem{\Gamma; z : \ul{C};K}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;\ul{D}_1} \overset{\xi_{\sem{\Gamma}, \sem{\Gamma;\ul{D}_1}, \sem{\Gamma;\ul{D}_2}}(\sem{\Gamma;V})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;\ul{D}_2}}
+{
+\begin{array}{c}
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;\ul{D}_1} \multimap_{\sem{\Gamma}} \sem{\Gamma;\ul{D}_2} \quad \sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{D}_1}
+\end{array}
+}
+\]
+
+\section{Soundness}
+\label{sect:soundness}
+
+In this section we show that the interpretation of eMLTT we defined in Section~\ref{sect:interpretation} is sound.
+%
+In particular, we prove that $\sem{-}$ is defined on well-formed expressions, and that it validates the equational theory of eMLTT. We state and prove this result in Theorem~\ref{thm:soundness}. However, before we do so, we first define semantic notions of weakening and substitution, and relate them to their syntactic counterparts, analogously to the soundness proofs for the denotational semantics of MLTT given in~\cite{Streicher:Semantics,Hofmann:Thesis}.
+
+First, we observe that if we assume that $\sem{\Gamma_1,\Gamma_2} \in \mathcal{B}$, then $\Gamma_1,\Gamma_2$ must be a valid value context to begin with, and thus $\Gamma_1$ and $\Gamma_2$ must be disjoint according to the definition of value contexts, namely, because the variables in $\Gamma_1,\Gamma_2$ are distinct. As a consequence, we do not need to include explicit disjointness requirements on value contexts in the propositions and theorems we prove in the rest of this section.
+
+Next, we define the semantic notions of weakening and substitution.
+ 
+\begin{definition}
+\label{def:semweakening}
+\index{morphism!semantic projection --}
+\index{ projb@$\sproj {\Gamma_1} x A {\Gamma_2}$ (semantic projection morphism)}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, and a value variable $x$ such that $\sem{\Gamma_1,\Gamma_2} \in \mathcal{B}$ and $\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}$, we define the \emph{semantic projection morphisms} as the \emph{a priori} partially defined family of morphisms
+\[
+\sproj {\Gamma_1} x A {\Gamma_2} : \sem{\Gamma_1, x \!:\! A, \Gamma_2} \longrightarrow \sem{\Gamma_1,\Gamma_2}
+\]
+that are defined by induction on the size of $\Gamma_2$, as follows:
+\[
+\begin{array}{c}
+\sproj {\Gamma_1} x A {\diamond} \defeq \ia {\sem{\Gamma_1;A}} \overset{\pi_{\sem{\Gamma_1;A}}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma_1}
+\\[5mm]
+\sproj {\Gamma_1} x A {\Gamma_2, y : B} \defeq \ia {\sproj {\Gamma_1} x A {\Gamma_2} ^*(\sem{\Gamma_1, \Gamma_2;B})} \overset{\ia {\overline{\sproj {\Gamma_1} x A {\Gamma_2}}(\sem{\Gamma_1, \Gamma_2;B})}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \ia {\sem{\Gamma_1, \Gamma_2;B}}
+\end{array}
+\]
+where the base case is always defined because the assumption $\sem{\Gamma_1, x \!:\! A} \in \mathcal{B}$ allows us to deduce $\sem{\Gamma_1;A} \in \mathcal{V}_{\sem{\Gamma_1}}$ from it; and
+ the step case is only defined when we have 
+ \[
+ \sem{\Gamma_1, x \!:\! A, \Gamma_2;B} = \sproj {\Gamma_1} x A {\Gamma_2} ^*(\sem{\Gamma_1, \Gamma_2;B})
+ \]
+\end{definition}
+
+\begin{definition}
+\label{def:semsubstitution}
+\index{morphism!semantic substitution --}
+\index{ subst@$\ssubst {\Gamma_1} x A {\Gamma_2} V$ (semantic substitution morphism)}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, a value variable $x$, and a value term $V$ such that $\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}$ and $\sem{\Gamma_1,\Gamma_2[V/x]} \in \mathcal{B}$, and such that $\sem{\Gamma_1;V} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;A}$, we define the \emph{semantic substitution morphisms} as the \emph{a priori} partially defined family of morphisms
+\[
+\ssubst {\Gamma_1} x A {\Gamma_2} V : \sem{\Gamma_1,\Gamma_2[V/x]} \longrightarrow \sem{\Gamma_1,x \!:\! A, \Gamma_2}
+\]
+that are defined by induction on the size of $\Gamma_2$, as follows:
+\[
+\begin{array}{c}
+\ssubst {\Gamma_1} x A {\diamond} V \defeq \sem{\Gamma_1} \overset{\sem{\Gamma;V}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \ia {\sem{\Gamma_1;A}}
+\\[5mm]
+\hspace{-11cm}
+\ssubst {\Gamma_1} x A {\Gamma_2, y : B} V \defeq 
+\\
+\ia {\ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A, \Gamma_2;B})} \overset{\ia {\overline{\ssubst {\Gamma_1} x A {\Gamma_2} V}(\sem{\Gamma_1, x : A, \Gamma_2;B})}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} 
+\ia {\sem{\Gamma_1, x \!:\! A, \Gamma_2;B}}
+\end{array}
+\]
+where the base case is always defined due to the assumption $\sem{\Gamma_1;V} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;A}$; and 
+where the step case is only defined when we have
+\[
+\sem{\Gamma_1, \Gamma_2[V/x]; B[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A, \Gamma_2;B})
+\]
+\end{definition}
+
+Intuitively, the family of morphisms $\sproj {\Gamma_1} x A {\Gamma_2}$ corresponds to projecting out the value context $\Gamma_1,\Gamma_2$ from $\Gamma_1, x \!:\! A, \Gamma_2$;
+and the family of morphisms $\ssubst {\Gamma_1} x A {\Gamma_2} V$ corresponds to substituting the value term $V$ for the value variable $x$ in $\Gamma_1, x \!:\! A, \Gamma_2$.
+%
+We make this intuition formal in the semantic weakening and substitution lemmas below.
+Simultaneously with these lemmas, we also prove that the \emph{a priori} partially defined families of morphisms $\sproj {\Gamma_1} x A {\Gamma_2}$ and $\ssubst {\Gamma_1} x A {\Gamma_2} V$ are in fact defined for all $\Gamma_2$.
+
+
+\begin{proposition}
+\label{prop:semweakening1}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, and a value variable $x$ such that $\sem{\Gamma_1,\Gamma_2} \in \mathcal{B}$ and $\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}$, then the \emph{a priori} partially defined semantic projection morphism $\sproj {\Gamma_1} x A {\Gamma_2} : \sem{\Gamma_1, x \!:\! A, \Gamma_2} \longrightarrow \sem{\Gamma_1,\Gamma_2}$
+is defined.
+\end{proposition}
+
+\begin{proof}
+We prove this proposition simultaneously with Proposition~\ref{prop:semweakening2}. 
+%
+The proof is straightforward---it proceeds induction on the size of $\Gamma_2$. As mentioned in the definition of $\sproj {\Gamma_1} x A {\Gamma_2}$, the base case is always defined because in this case we assume that $\sem{\Gamma_1, x \!:\! A} \in \mathcal{B}$, from which it follows that $\sem{\Gamma_1;A} \in \mathcal{V}_{\sem{\Gamma_1}}$ by inspecting the definition of $\sem{-}$ for $\Gamma_1, x \!:\! A$. For showing that the step case is defined, we use $(a)$ of Proposition~\ref{prop:semweakening2}, which gives us $\sem{\Gamma_1, x \!:\! A, \Gamma_2;B} = \sproj {\Gamma_1} x A {\Gamma_2} ^*(\sem{\Gamma_1, \Gamma_2;B}) \in \mathcal{V}_{\sem{\Gamma_1, x \!:\! A, \Gamma_2}}$.
+\end{proof}
+
+\begin{proposition}[Semantic weakening]
+\label{prop:semweakening2}
+\index{weakening theorem!semantic --}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, and a value variable $x$ such that $\sem{\Gamma_1,\Gamma_2} \in \mathcal{B}$ and $\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}$, then we have: 
+\begin{enumerate}[(a)]
+\item Given a value type $B$ such that $\sem{\Gamma_1,\Gamma_2;B} \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_2}}$, then 
+\[
+\sem{\Gamma_1, x \!:\! A,\Gamma_2;B} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;B}) \in \mathcal{V}_{\sem{\Gamma_1, x : A,\Gamma_2}}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{\Gamma_1,\Gamma_2;\ul{C}} \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_2}}$, then
+\[
+\sem{\Gamma_1, x \!:\! A,\Gamma_2;\ul{C}} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1, x : A,\Gamma_2}}
+\]
+\item Given a value term $V$ such that $\sem{\Gamma_1,\Gamma_2;V} : 1_{\sem{\Gamma_1,\Gamma_2}} \longrightarrow B$, then
+\[
+\sem{\Gamma_1, x \!:\! A,\Gamma_2;V} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;V}) : 1_{\sem{\Gamma_1, x : A,\Gamma_2}} \longrightarrow \sproj {\Gamma_1} x A {\Gamma_2}^*(B)
+\]
+\item Given a computation term $M$ such that $\sem{\Gamma_1,\Gamma_2;M} : 1_{\sem{\Gamma_1,\Gamma_2}} \longrightarrow U(\ul{C})$, then 
+\[
+\sem{\Gamma_1, x \!:\! A,\Gamma_2;M} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;M}) : 1_{\sem{\Gamma_1, x : A,\Gamma_2}} \longrightarrow U(\sproj {\Gamma_1} x A {\Gamma_2}^*(\ul{C}))
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{\Gamma_1, \Gamma_2; z \!:\! \ul{C}; K} : \sem{\Gamma_1,\Gamma_2;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\sem{\Gamma_1,\Gamma_2}}$, then
+
+\[
+\begin{array}{c}
+\hspace{-4.5cm}
+\sem{\Gamma_1, x \!:\! A, \Gamma_2; z \!:\! \ul{C}; K} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1, \Gamma_2; z \!:\! \ul{C}; K}) 
+\\
+\hspace{5.5cm}
+: \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1, \Gamma_2; \ul{C}}) \longrightarrow \sproj {\Gamma_1} x A {\Gamma_2}^*(\ul{D})
+\end{array}
+\]
+\end{enumerate}
+where we use the notation
+\[
+\sem{\Gamma_1, x \!:\! A,\Gamma_2;B} = \sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;B}) \in \mathcal{V}_{\sem{\Gamma_1, x : A,\Gamma_2}}
+\]
+to mean that $\sem{\Gamma_1, x \!:\! A,\Gamma_2;B}$ is defined and that it is equal to $\sproj {\Gamma_1} x A {\Gamma_2}^*(\sem{\Gamma_1,\Gamma_2;B})$ as an object of $\mathcal{V}_{\sem{\Gamma_1, x : A,\Gamma_2}}$. We also use analogous notation for terms and morphisms.
+\end{proposition}
+
+\begin{proof}
+We prove this proposition simultaneously with Proposition~\ref{prop:semweakening1}. We prove $(a)$--$(e)$ simultaneously, by induction on the sum of the sizes of the arguments to $\sem{-}$. We postpone the straightforward but laborious details of this proof to Appendix~\ref{sect:proofofprop:semweakening2}. 
+
+In the setting of contextual categories, a detailed proof of this proposition can be found for MLTT in~\cite[Chapter~III]{Streicher:Semantics}.
+\end{proof}
+
+
+\begin{proposition}
+\label{prop:semsubstitution1}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, a value variable $x$, and a value term $V$ such that $\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}$ and $\sem{\Gamma_1,\Gamma_2[V/x]} \in \mathcal{B}$, and \linebreak such that $\sem{\Gamma_1;V} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;A}$, then the \emph{a priori} partially defined semantic substitution morphism 
+$\ssubst {\Gamma_1} x A {\Gamma_2} V : \sem{\Gamma_1,\Gamma_2[V/x]} \longrightarrow \sem{\Gamma_1,x \!:\! A, \Gamma_2}$
+is defined.
+\end{proposition}
+
+\begin{proof}
+We prove this proposition simultaneously with Proposition~\ref{prop:semsubstitution2}. The proof is straightforward and very similar to the proof of Proposition~\ref{prop:semweakening1}---it proceeds by  induction on the size of $\Gamma_2$. As remarked in the definition of $\ssubst {\Gamma_1} x A {\Gamma_2} V$, the base case is always defined because we assume that $\sem{\Gamma_1,\Gamma_2;V} : 1_{\Gamma_1} \longrightarrow \sem{\Gamma_1;A}$. For showing that the step case is always defined, we use $(a)$ of Proposition~\ref{prop:semsubstitution2}, which gives us that $\sem{\Gamma_1,\Gamma_2[V/x];B[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;B}) \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_2[V/x]}}$.
+\end{proof}
+
+\begin{proposition}[Semantic value term substitution]
+\label{prop:semsubstitution2}
+\index{substitution theorem!semantic --!-- for value terms}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, a value type $A$, a value variable $x$, and a value term $V$ such that ${\sem{\Gamma_1, x \!:\! A, \Gamma_2} \in \mathcal{B}}$ and ${\sem{\Gamma_1,\Gamma_2[V/x]} \in \mathcal{B}}$, and such that $\sem{\Gamma_1;V} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;A}$, then we have:
+\begin{enumerate}[(a)]
+\item Given a value type $B$ such that $\sem{\Gamma_1, x \!:\! A,\Gamma_2;B} \in \mathcal{V}_{\sem{\Gamma_1, x : A,\Gamma_2}}$, then 
+\[
+\sem{\Gamma_1,\Gamma_2[V/x];B[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;B}) \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_2[V/x]}}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{\Gamma_1, x \!:\! A,\Gamma_2;\ul{C}} \in \mathcal{C}_{\sem{\Gamma_1, x : A,\Gamma_2}}$, then 
+\[
+\sem{\Gamma_1,\Gamma_2[V/x];\ul{C}[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_2[V/x]}}
+\]
+\item Given a value term $W$ such that $\sem{\Gamma_1, x \!:\! A,\Gamma_2;W} : 1_{\sem{\Gamma_1, x : A,\Gamma_2}} \longrightarrow B$, then 
+\[
+\begin{array}{c}
+\hspace{-3.65cm}
+\sem{\Gamma_1,\Gamma_2[V/x];W[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;W}) 
+\\
+\hspace{7.5cm}
+: 1_{\sem{\Gamma_1,\Gamma_2[V/x]}} \longrightarrow \ssubst {\Gamma_1} x A {\Gamma_2} V^*(B)
+\end{array}
+\]
+\item Given a computation term $M$ such that $\sem{\Gamma_1, x \!:\! A,\Gamma_2;M} : 1_{\sem{\Gamma_1, x : A,\Gamma_2}} \longrightarrow U(\ul{C})$, then 
+\[
+\begin{array}{c}
+\hspace{-3.5cm}
+\sem{\Gamma_1,\Gamma_2[V/x];M[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;M}) 
+\\
+\hspace{6.8cm}
+: 1_{\sem{\Gamma_1,\Gamma_2[V/x]}} \longrightarrow U(\ssubst {\Gamma_1} x A {\Gamma_2} V^*(\ul{C}))
+\end{array}
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{\Gamma_1, x \!:\! A,\Gamma_2; z \!:\! \ul{C};K} : \sem{\Gamma_1, x : A,\Gamma_2;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\sem{\Gamma_1, x : A,\Gamma_2}}$, then 
+\[
+\begin{array}{c}
+\hspace{-1.2cm}
+\sem{\Gamma_1,\Gamma_2[V/x];z \!:\! \ul{C}[V/x];K[V/x]} = \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;z \!:\! \ul{C};K}) 
+\\
+\hspace{4cm}
+: \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\sem{\Gamma_1, x \!:\! A,\Gamma_2;\ul{C}}) \longrightarrow \ssubst {\Gamma_1} x A {\Gamma_2} V^*(\ul{D})
+\end{array}
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We prove this proposition simultaneously with Proposition~\ref{prop:semsubstitution1}.
+We prove $(a)$--$(e)$ simultaneously, by induction on the sum of the sizes of the arguments to $\sem{-}$. We omit the lengthy proof of this proposition because it is analogous to the proof of Proposition~\ref{prop:semweakening2}, due to the similar use of the comprehension functor $\ia -$ and Cartesian morphisms in the definitions of $\ssubst {\Gamma_1} x A {\Gamma_2} V$ and $\sproj {\Gamma_1} x A {\Gamma_2}$. 
+
+\pagebreak
+
+Analogously to Proposition~\ref{prop:semweakening2}, in the setting of contextual categories, a detailed proof of this proposition can be found for MLTT in~\cite[Chapter~III]{Streicher:Semantics}.
+\end{proof}
+
+Next, we show that the semantic projection and substitution morphisms commute with each other.
+
+\begin{proposition}
+\label{prop:semweakeningandsubstitutioncommuting}
+Given value contexts $\Gamma_1$ and $\Gamma_2$, value variables $x$ and $y$, value types $A$ and $B$, and a value term $V$ such that $\sem{\Gamma_1,\Gamma_2[V/y]} \in \mathcal{B}$, $\sem{\Gamma_1, y \!:\! B, \Gamma_2} \in \mathcal{B}$, $\sem{\Gamma_1, x \!:\! A,\Gamma_2[V/y]} \in \mathcal{B}$, $\sem{\Gamma_1, x \!:\! A, y \!:\! B,\Gamma_2} \in \mathcal{B}$, and $\sem{\Gamma_1; V} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;B}$, then 
+\[
+\ssubst {\Gamma_1} {y} {B} {\Gamma_2} {V} \comp \sproj {\Gamma_1} {x} {A} {\Gamma_1[V/y]}
+=
+\sproj {\Gamma_1} {x} {A} {y : B, \Gamma_2} \comp \ssubst {\Gamma_1, x : A} y B {\Gamma_2} V 
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the length of $\Gamma_2$. Both the base case and the step case of induction are proved by straightforward diagram chasing. We postpone the details of this proof to Appendix~\ref{sect:proofofprop:semweakeningandsubstitutioncommuting}.
+\end{proof}
+
+
+Next, we recall from Section~\ref{sect:fibadjmodelsstructure} that the motivation for requiring the split dependent sums to be strong is to be able to model the type-dependency in the elimination form for $\Sigma\, x \!:\! A .\, B$. We make this informal motivation precise in the next proposition.
+
+\begin{proposition}
+\label{prop:reindexingalongkappaandpairing}
+Given a value context $\Gamma$, value variables $x_1$, $x_2$, and $y$, and \linebreak value types $A_1$, $A_2$, and $B$ such that $x_2 \not\in V\!ars(\Gamma) \cup \{y\}$, $\sem{\Gamma} \in \mathcal{B}$, $\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}$, \linebreak $\sem{\Gamma, x_1 \!:\! A_1;A_2} \in \mathcal{V}_{\sem{\Gamma, x_1 \!:\! A_1}}$, and $\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2) ; B} \in \mathcal{V}_{\sem{\Gamma, y : (\Sigma\, x_1 : A_1 .\, A_2)}}$, then we have
+\[
+\sem{\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2, B[\langle x_1, x_2 \rangle/y]} = \kappa_{\sem{\Gamma; A_1},\sem{\Gamma, x_1 : A_1; A_2}}^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2); B}) 
+\]
+\end{proposition}
+
+\begin{proof}
+We begin by noting that both sides of this equation can be rewritten. 
+
+On the one hand, the left-hand side of this equation can be rewritten as
+\[
+\begin{array}{c}
+\hspace{-8cm}
+(\mathsf{s}(\sem{\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2; \langle x_1 , x_2 \rangle}))^*(
+\\
+\hspace{-4cm}
+\ia{\overline{\pi_{\sem{\Gamma, x_1 : A_1 ; A_2}}}(\sem{\Gamma, x_1 \!:\! A_1; \Sigma\, x_1 \!:\! A_1 .\, A_2})}^*(
+\\
+\hspace{4cm}
+\ia{\overline{\pi_{\sem{\Gamma;A_1}}}(\sem{\Gamma; \Sigma\, x_1 \!:\! A_1 .\, A_2})}^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2); B})))
+\end{array}
+\]
+based on Propositions~\ref{prop:semweakening2} and~\ref{prop:semsubstitution2}, and the definition of morphisms $\sproj {\Gamma_1} {x} {A} {\Gamma_2}$.
+
+On the other hand, the right-hand side of this equation can be rewritten as
+\[
+\ia {\eta^{\Sigma_{\sem{\Gamma; A_1}} \,\dashv\, \pi^*_{\sem{\Gamma; A_1}}}_{\sem{\Gamma, x_1 : A_1; A_2}}}^*(\ia {\overline{\pi_{\sem{\Gamma;A_1}}}(\sem{\Gamma; \Sigma\, x_1 \!:\! A_1 .\, A_2})}^*(\sem{\Gamma, y \!:\! (\Sigma\, x_1 \!:\! A_1 .\, A_2); B}))
+\]
+based on the definitions of $\kappa_{\sem{\Gamma; A_1},\sem{\Gamma, x_1 : A_1; A_2}}$ and $\sem{\Gamma;\Sigma\, x_1 \!:\! A_1 .\, A_2}$.
+
+Now, as a result of $p : \mathcal{V} \longrightarrow \mathcal{B}$ being a split fibration, it suffices to show 
+\[
+\begin{array}{c}
+\ia{\overline{\pi_{\sem{\Gamma, x_1 : A_1 ; A_2}}}(\sem{\Gamma, x_1 \!:\! A_1; \Sigma\, x_1 \!:\! A_1 .\, A_2})} 
+\comp \mathsf{s}(\sem{\Gamma, x_1 \!:\! A_1, x_2 \!:\! A_2; \langle x_1 , x_2 \rangle})
+\\
+=
+\\
+\ia {\eta^{\Sigma_{\sem{\Gamma; A_1}} \,\dashv\, \pi^*_{\sem{\Gamma; A_1}}}_{\sem{\Gamma, x_1 : A_1; A_2}}}
+\end{array}
+\]
+for the required equation to be true. We show that these two morphisms are equal by straightforward diagram chasing. We postpone these details to Appendix~\ref{sect:proofofprop:reindexingalongkappaandpairing}.
+\end{proof}
+
+In addition to relating the substitution of value terms for value variables to its semantic counterpart, we also need to do the same for the substitution of computation and homomorphism terms for computation variables. To this end, we show in the next two propositions that these two kinds of substitution correspond to composition.
+
+
+\begin{proposition}[Semantic computation term substitution]
+\label{prop:semsubstitution3}
+\index{substitution theorem!semantic --!-- for computation terms}
+Given a value context $\Gamma$, a computation variable $z$, a computation type $\ul{C}$, a computation term $M$, and a homomorphism term $K$ such that $\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})$ and $\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \ul{D}$, then we have 
+\[
+\sem{\Gamma;K[M/z]} \quad = \quad 1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\sem{\Gamma;z : \ul{C};K})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\ul{D})
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the sum of the sizes of $\Gamma$, $\ul{C}$ and $K$. 
+
+First, by inspecting the definitions of substitution and $\sem{-}$ for homomorphism terms, we see that in most cases, the part of $K[M/z]$ that contains $M$ (i.e., the part of $K$ that contains $z$) is interpreted as first in a sequence of morphisms. As a result, the proofs for these cases consist of using the induction hypothesis on the part of $K[M/z]$ that contains $M$, the functoriality of $U$, and the definition of $\sem{-}$ under $U$. 
+
+The only exception to this general pattern is the case for computational lambda abstraction, where the part of $K[M/z]$ that contains $M$ is not interpreted first in a sequence of morphisms and, moreover, this part of $K[M/z]$ is interpreted under the $\Pi_{\sem{\Gamma;A}}$-functor. Therefore, we present a detailed proof of this case below. 
+
+We also present detailed proofs of the cases for computation variables and sequential composition as representative examples of the other more straightforward cases.
+
+\vspace{0.1cm}
+\noindent
+\textbf{Computation variables:}
+In this case, we need to show that 
+\[
+\sem{\Gamma;z[M/z]} \quad = \quad 1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\sem{\Gamma;z : \ul{C};z})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}})
+\]
+
+\pagebreak
+\noindent
+First, by inspecting the definition of substitution for $z$, we get that
+\[
+z[M/z] = M
+\]
+Secondly, by inspecting the definition of $\sem{-}$ for $z$, we get that
+\[
+\sem{\Gamma;z : \ul{C};z} = \id_{\sem{\Gamma;\ul{C}}} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{C}}
+\]
+Therefore, we are left with having to show that
+\[
+\sem{\Gamma;M} \quad = \quad 1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\id_{\sem{\Gamma;\ul{C}}})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}})
+\]
+which follows from the functoriality of $U$ and the properties of composition.
+
+\vspace{0.2cm}
+\noindent
+\textbf{Sequential composition:}
+In this case, we need to show that
+\[
+\begin{array}{c}
+\hspace{-8.5cm}
+\sem{\Gamma;(\doto K {x \!:\! A} {\ul{D}} N)[M/z]} = 
+\\[1mm]
+\hspace{3cm}
+1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\sem{\Gamma;z : \ul{C};\doto K {x : A} {\ul{D}} N})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{D}})
+\end{array}
+\]
+First, by inspecting the definition of $\sem{-}$ for $\doto K {x \!:\! A} {\ul{D}} N$, we get that 
+\[
+\begin{array}{c}
+\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow F(\sem{\Gamma;A})
+\\[2mm]
+\sem{\Gamma, x \!:\! A; N} : 1_{\sem{\Gamma, x : A}} \longrightarrow U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}}))
+\end{array}
+\]
+Next, by inspecting the definition of substitution for $\doto K {x \!:\! A} {\ul{D}} N$, we get that
+\[
+(\doto K {x \!:\! A} {\ul{D}} N)[M/z] = \doto {K[M/z]} {x \!:\! A} {\ul{D}} N
+\]
+Finally, we show that the required equation holds by proving that the following diagram commutes:
+\vspace{-0.1cm}
+\[
+\xymatrix@C=2.5em@R=3em@M=0.3em{
+\ar@{}[d]^-{\,\,\qquad\qquad\qquad\quad\dcomment{\text{use of the i.h. on } K}}
+\\
+1_{\sem{\Gamma}} \ar@/_9pc/[ddddddr]_>>>>>>>>>>>>>>>>>>{\sem{\Gamma;\doto {K[M/z]} {x : A} {\ul{D}} N}\quad\,\,} \ar[r]_-{\sem{\Gamma;K[M/z]}} \ar@/^4pc/[rr]^-{\sem{\Gamma;M}}
+& 
+U(F(\sem{\Gamma;A})) \ar[d]^-{U(F(\langle \id_{\sem{\Gamma;A}} , ! \rangle))}
+&
+U(\sem{\Gamma;\ul{C}}) \ar[l]^-{U(\sem{\Gamma; z : \ul{C}; K})} \ar@/^9pc/[ddddddl]^>>>>>>>>>>>>>>>>>>>>{\quad U(\sem{\doto {K} {x : A} {\ul{D}} N})}
+\\
+& 
+U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}})))) \ar[d]^-{=}^-{\,\,\,\,\qquad\dcomment{\text{def. of } \sem{\doto {K} {x \!:\! A} {\ul{D}} N}}}
+\\
+& 
+U(F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}}))) \ar[d]^-{U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;N})))}_-{\dcomment{\text{def. of } \sem{\Gamma;\doto {K[M/z]} {x \!:\! A} {\ul{D}} N}}\,\,\,\,\quad}
+\\
+& 
+U(F(\Sigma_{\sem{\Gamma;A}}(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{D}}))))) \ar[d]^-{=}^-{\quad\qquad\dcomment{\text{functoriality of } U}}
+\\
+& 
+U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{D}}))))) \ar[d]^-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{D}})}))}
+\\
+& 
+U(F(U(\sem{\Gamma;\ul{D}}))) \ar[d]^-{U(\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{D}}})}
+\\
+& 
+U(\sem{\Gamma;\ul{D}})
+}
+\]
+
+\vspace{0.2cm}
+\noindent
+\textbf{Computational lambda abstraction:}
+In this case, we need to show that 
+\[
+\begin{array}{c}
+\hspace{-9.5cm}
+\sem{\Gamma;(\lambda \, x \!:\! A .\, K)[M/z]} = 
+\\[1mm]
+\hspace{2.5cm}
+1_{\sem{\Gamma}} \overset{\sem{\Gamma;M}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\sem{\Gamma;\ul{C}}) \overset{U(\sem{\Gamma;z : \ul{C};\lambda \, x : A .\, K})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} U(\Pi_{\sem{\Gamma;A}}(\ul{D}))
+\end{array}
+\]
+First, by inspecting the definition of $\sem{-}$ for $\lambda \, x \!:\! A .\, K$, we get that
+\[
+\sem{\Gamma, x \!:\! A;z \!:\! \ul{C};K} : \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}) \longrightarrow \ul{D}
+\]
+Next, by inspecting the definition of substitution for $\lambda \, x \!:\! A .\, K$, we get that
+\[
+(\lambda \, x \!:\! A .\, K)[M/z] = \lambda \, x \!:\! A .\, (K[M/z])
+\]
+Finally, we show that the required equation holds by proving that the following diagram commutes:
+\[
+\hspace{-0.25cm}
+\xymatrix@C=7em@R=2.75em@M=0.3em{
+1_{\sem{\Gamma}} 
+\ar[r]^-{\sem{\Gamma;M}} \ar[ddd]^>>>>>>>>>>>>{\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{1_{\sem{\Gamma}}}}
+\ar@/_4.5pc/[ddddddd]_<<<<<<{\sem{\Gamma;\lambda\, x : A .\, K[M/z]}}
+\ar@{}[ddd]^>>>{\!\qquad\qquad\dcomment{\text{nat. of } \eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}}}
+& 
+U(\sem{\Gamma;\ul{C}})
+\ar@/_12pc/[ddd]_<<<<<<<<<<<<<<<<<{\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{C}})}\!\!\!\!\!\!\!\!\!\!\!\!}
+\ar[d]_>>>>{U(\eta^{\pi^*_{\sem{\Gamma;A}} \,\dashv\, \Pi_{\sem{\Gamma;A}}}_{\sem{\Gamma;\ul{C}}})}
+\ar@/^12pc/[ddddddd]^<<<<<<<<{U(\sem{\Gamma; z : \ul{C}; \lambda \, x : A .\, K})}_-{\dcomment{\text{def.}}\quad\!\!\!}
+\\
+\ar@{}[dd]_-{\dcomment{\text{def.}}\quad}
+& 
+\txt<5pc>{$U(\Pi_{\sem{\Gamma;A}}($ $\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))$} \ar[d]_-{(\zeta_{\Pi;\sem{\Gamma;A}})_{\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})}}
+\ar@/^8.5pc/[ddddd]_-{=}
+\ar@{}[dd]_-{\dcomment{\text{Proposition~\ref{prop:PiUnitCounitPreservedByU}}}\qquad\quad}
+\\
+& 
+\txt<5pc>{$\Pi_{\sem{\Gamma;A}}(U($ $\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))$} \ar[d]_-{=}^-{\,\,\,\quad\dcomment{\zeta \text{ is nat. iso.}}}
+\\
+\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))
+\ar[d]^-{=}^-{\qquad\qquad\dcomment{\text{Proposition~\ref{prop:semweakening2} } (d)}}
+\ar[r]_-{\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;M}))}
+&
+\txt<5pc>{$\Pi_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}($ $U(\sem{\Gamma;\ul{C}})))$}
+\ar[d]_-{=}^-{\,\,\,\dcomment{\text{Proposition~\ref{prop:semweakening2} } (a)}}
+\\
+\Pi_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})
+\ar[d]^>>>>{\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;K[M/z]})}^<<<{\quad\qquad\dcomment{\text{use of the i.h. on } K}}
+\ar[r]^-{\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;M})}
+&
+\Pi_{\sem{\Gamma;A}}(U(\sem{\Gamma, x \!:\! A;\ul{C}}))
+\ar@/^2pc/[dl]^>>>>>>>>>>{\,\,\,\quad\qquad\Pi_{\sem{\Gamma;A}}(U(\sem{\Gamma, x : A; z : \ul{C};K}))}
+\ar[dd]^<<<<<{(\zeta^{-1}_{\Pi,\sem{\Gamma;A}})_{\sem{\Gamma, x : A;\ul{C}}}}
+\\
+\Pi_{\sem{\Gamma;A}}(U(\ul{D}))
+\ar[dd]^-{(\zeta^{-1}_{\Pi,\sem{\Gamma;A}})_{\ul{D}}}^<<<<<<<<<<{\quad\qquad\qquad\dcomment{\text{nat. of } \zeta^{-1}_{\Pi,\sem{\Gamma;A}}}}
+\\
+& 
+U(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x \!:\! A;\ul{C}}))
+\ar[d]_-{U(\Pi_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;z : \ul{C};K}))}
+\\
+U(\Pi_{\sem{\Gamma;A}}(\ul{D}))
+&
+U(\Pi_{\sem{\Gamma;A}}(\ul{D})) \ar[l]^-{\id_{U(\Pi_{\sem{\Gamma;A}}(\ul{D}))}}
+}
+\vspace{-1cm}
+\]
+\end{proof}
+
+\begin{proposition}[Semantic homomorphism term substitution]
+\label{prop:semsubstitution4}
+\index{substitution theorem!semantic --!-- for homomorphism terms}
+Given a value \linebreak context $\Gamma$, computation variables $z_1$ and $z_2$, computation types $\ul{C}_1$ and $\ul{C}_2$, and \linebreak homomorphism terms $K$ and $L$ such that $\sem{\Gamma;z_1 \!:\! \ul{C}_1 ;K} : \sem{\Gamma;\ul{C}_1} \longrightarrow \sem{\Gamma;\ul{C}_2}$ and \linebreak $\sem{\Gamma;z_2 \!:\! \ul{C}_2;L} : \sem{\Gamma;\ul{C}_2} \longrightarrow \ul{D}$, then we have 
+\[
+\sem{\Gamma;z_1 \!:\! \ul{C}_1;L[K/z_2]} \quad = \quad \sem{\Gamma;\ul{C}_1} \overset{\sem{\Gamma;z_1 : \ul{C}_1;K}}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \sem{\Gamma;\ul{C}_2} \overset{\sem{\Gamma;z_2 : \ul{C}_2;L})}{\,-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!-\!\!\!\!\longrightarrow\,} \ul{D}
+\]
+\end{proposition}
+
+\begin{proof}
+We omit the proof of this proposition because it proceeds analogously to the proof of Proposition~\ref{prop:semsubstitution3} discussed above---by using the induction hypothesis on the part of $L[K/z]$ that contains $K$ and the definition of $\sem{-}$ for homomorphism terms.
+\end{proof}
+
+We also note that Propositions~\ref{prop:semweakening2} and~\ref{prop:semsubstitution2} also 
+extend to several value variables and value terms, as respectively shown in Propositions~\ref{prop:semweakening5} and~\ref{prop:semsubstitution5} below. 
+
+\begin{proposition}
+\label{prop:semweakening5}
+\index{ projb@$\mathsf{proj}$ (composition of semantic projection morphisms)}
+Given value contexts $\Gamma_1$ and $\Gamma_2$ and $\Gamma_3$ (for simplicity, we assume that $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$) such that $\sem{\Gamma_1,\Gamma_3} \in \mathcal{B}$ and $\sem{\Gamma_1, x_1 \!:\! A_1, \ldots, x_i \!:\! A_i, \Gamma_3} \in \mathcal{B}$, for all $1 \leq i \leq n$, then, using the following abbreviation:
+\[
+\mathsf{proj} \defeq \sproj {\Gamma_1} {x_1} {A_1} {\Gamma_3} \,\comp\, \ldots \,\comp\, \sproj {\Gamma_1, x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\Gamma_3}
+\]
+we have:
+\begin{enumerate}[(a)]
+\item Given a value type $A$ such that $\sem{\Gamma_1,\Gamma_3;A} \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_3}}$, then 
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3;A} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3;A}) \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{\Gamma_1,\Gamma_3;\ul{C}} \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3}}$, then
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3;\ul{C}} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}}
+\]
+\item Given a value term $V$ such that $\sem{\Gamma_1,\Gamma_3;V} : 1_{\sem{\Gamma_1,\Gamma_3}} \longrightarrow B$, then
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3;V} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3;V}) : 1_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}} \longrightarrow\,\, \mathsf{proj}^*(B)
+\]
+\item Given a computation term $M$ such that $\sem{\Gamma_1,\Gamma_3;M} : 1_{\sem{\Gamma_1,\Gamma_3}} \longrightarrow U(\ul{C})$, then 
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3;M} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3;M}) : 1_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}} \longrightarrow U(\mathsf{proj}^*(\ul{C}))
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{\Gamma_1,\Gamma_3; z \!:\! \ul{C}; K} : \sem{\Gamma_1,\Gamma_3;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\sem{\Gamma_1,\Gamma_3}}$, then
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3; z \!:\! \ul{C}; K} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3; z \!:\! \ul{C}; K}) : \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3; \ul{C}}) \longrightarrow\,\, \mathsf{proj}^*(\ul{D})
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We prove $(a)$--$(e)$ independently, by induction on the length of $\Gamma_2$. As all the cases are similar, we only consider $(b)$ in detail as a representative example.
+
+\vspace{0.1cm}
+
+\noindent\textit{Base case} (with $\Gamma_2 = \diamond$): 
+This case is trivial because we need to show 
+\[
+\sem{\Gamma_1,\Gamma_3; \ul{C}} = \sem{\Gamma_1,\Gamma_3; \ul{C}} \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3}}
+\]
+which follows directly from our assumptions.
+
+\vspace{0.1cm}
+
+\noindent\textit{Step case} (with $\Gamma_2 = x_1 \!:\! A_1, \Gamma$):
+First, we note that according to our assumptions, we know that $\sem{\Gamma_1,\Gamma_3} \in \mathcal{B}$ and $\sem{\Gamma_1, x_1 \!:\! A_1, \Gamma_3} \in \mathcal{B}$, which means that we can use $(b)$ of Propositon~\ref{prop:semweakening2} to get 
+\[
+\sem{\Gamma_1, x_1 \!:\! A_1,\Gamma_3;\ul{C}} = \sproj {\Gamma_1} {x_1} {A_1} {\Gamma_3}^*(\sem{\Gamma_1,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1, x_1 : A_1,\Gamma_3}}
+\]
+
+Next, we use the induction hypothesis on $\sem{\Gamma_1, x_1 \!:\! A_1,\Gamma_3;\ul{C}}$, with the three contexts chosen to be $\Gamma_1, x_1 \!:\! A_1$ and $\Gamma$ and $\Gamma_3$, to get
+\[
+\sem{\Gamma_1, x_1 \!:\! A_1,\Gamma,\Gamma_3;\ul{C}} = \mathsf{proj}'^*(\sem{\Gamma_1, x_1 \!:\! A_1,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1, x_1 : A_1,\Gamma,\Gamma_3}}
+\]
+where
+\[
+\mathsf{proj'} \defeq \sproj {\Gamma_1, x_1 : A_1} {x_2} {A_2} {\Gamma_3} \,\comp\, \ldots \,\comp\, \sproj {\Gamma_1, x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\Gamma_3}
+\]
+
+Next, by combining the previous two equations with $\Gamma_2 = x_1 \!:\! A_1, \Gamma$, we get
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3; \ul{C}} = \mathsf{proj}'^*(\sproj {\Gamma_1} {x_1} {A_1} {\Gamma_3}^*(\sem{\Gamma_1,\Gamma_3;\ul{C}})) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}}
+\]
+
+Finally, by observing that $\sproj {\Gamma_1} {x_1} {A_1} {\Gamma_3} \comp \mathsf{proj}' = \mathsf{proj}$, in combination with the fact that $p$ is a split fibration, we get the required equation
+\[
+\sem{\Gamma_1,\Gamma_2,\Gamma_3; \ul{C}} = \mathsf{proj}^*(\sem{\Gamma_1,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_2,\Gamma_3}}
+\]
+\end{proof}
+
+\begin{proposition}
+\label{prop:semsubstitution5}
+\index{ subst@$\mathsf{subst}$ (composition of semantic substitution morphisms)}
+Given value contexts $\Gamma_1$ and $\Gamma_2$ and $\Gamma_3$ (where, for simplicity, we assume that $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$) and value terms $V_i$ (for all $1 \leq i \leq n$) such that 
+ $\sem{\Gamma_1,\Gamma_2,\Gamma_3} \in \mathcal{B}$ and 
+\[
+\begin{array}{c}
+\sem{\Gamma_1, \Gamma_{2i}[V_1/x_1] \ldots [V_{i-1}/x_{i-1}], \Gamma_3[V_1/x_1] \ldots [V_{i-1}/x_{i-1}]} \in \mathcal{B}
+\\[2mm]
+\sem{\Gamma_1; V_i} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1; A_i[V_1/x_1] \ldots [V_{i-1}/x_{i-1}]}
+\end{array}
+\]
+where $\Gamma_{2i} = x_i \!:\! A_i, \ldots, x_n \!:\! A_n$, then, using the following abbreviation:
+\[
+\begin{array}{c}
+\hspace{-6.5cm}
+\mathsf{subst} \,\,\defeq\,\, \ssubst {\Gamma_1} {x_1} {A_1} {x_2 : A_2, \ldots, x_n : A_n,\Gamma_3} {V_1} 
+\\
+\hspace{4cm}
+\comp\, \ldots  \,\comp\, \ssubst {\Gamma_1} {x_n} {A_n[V_1/x_1] \ldots [V_{n-1}/x_{n-1}]} {\Gamma_3[V_1/x_1] \ldots [V_{n-1}/x_{n-1}]} {V_n}
+\end{array}
+\]
+we have:
+\begin{enumerate}[(a)]
+\item Given a value type $B$ such that $\sem{\Gamma_1, \Gamma_2,\Gamma_3;B} \in \mathcal{V}_{\sem{\Gamma_1, \Gamma_2,\Gamma_3}}$, then 
+\[
+\begin{array}{c}
+\hspace{-5cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];B[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{4.75cm}
+= \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;B}) \in \mathcal{V}_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}}
+\end{array}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{\Gamma_1, \Gamma_2,\Gamma_3;\ul{C}} \in \mathcal{C}_{\sem{\Gamma_1, \Gamma_2,\Gamma_3}}$, then 
+\[
+\begin{array}{c}
+\hspace{-5cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];\ul{C}[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{4.75cm}
+= \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}}
+\end{array}
+\]
+\item Given a value term $W$ such that $\sem{\Gamma_1, \Gamma_2,\Gamma_3;W} : 1_{\sem{\Gamma_1, \Gamma_2,\Gamma_3}} \longrightarrow B$, then 
+\[
+\begin{array}{c}
+\hspace{-4.85cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];W[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{2.25cm}
+= \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;W}) 
+: 1_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}} \longrightarrow \mathsf{subst}^*(B)
+\end{array}
+\]
+\item Given a computation term $M$ such that $\sem{\Gamma_1, \Gamma_2,\Gamma_3;M} : 1_{\sem{\Gamma_1, \Gamma_2,\Gamma_3}} \longrightarrow U(\ul{C})$, then 
+\[
+\begin{array}{c}
+\hspace{-4.85cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];M[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{1.6cm}
+= \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;M}) 
+: 1_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}} \longrightarrow U(\mathsf{subst}^*(\ul{C}))
+\end{array}
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{\Gamma_1, \Gamma_2,\Gamma_3; z \!:\! \ul{C};K} : \sem{\Gamma_1, \Gamma_2,\Gamma_3;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\sem{\Gamma_1, \Gamma_2,\Gamma_3}}$, then 
+\[
+\begin{array}{c}
+\hspace{-1.2cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];z \!:\! \ul{C}[V_1/x_1] \ldots [V_n/x_n];K[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{1cm}
+= \mathsf{subst}^*(\sem{\Gamma_1,\Gamma_2,\Gamma_3;z \!:\! \ul{C};K}) 
+: \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;\ul{C}}) \longrightarrow \mathsf{subst}^*(\ul{D})
+\end{array}
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We prove $(a)$--$(e)$ independently, by induction on the length of $\Gamma_2$. As all the cases are similar, we only consider $(b)$ in detail as a representative example below.
+
+\vspace{0.1cm}
+
+\noindent\textit{Base case} (with $\Gamma_2 = \diamond$): 
+This case is trivial because we need to show 
+\[
+\sem{\Gamma_1,\Gamma_3; \ul{C}} = \sem{\Gamma_1,\Gamma_3; \ul{C}} \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3}}
+\]
+which follows directly from our assumptions.
+
+\vspace{0.1cm}
+
+\noindent\textit{Step case} (with $\Gamma_2 = x_1 \!:\! A_1, \Gamma$):
+To begin with, we note that according to our assumptions, we know that ${\sem{\Gamma_1, x_1 \!:\! A_1, \Gamma, \Gamma_3} \in \mathcal{B}}$, $\sem{\Gamma_1, \Gamma[V_1/x_1],\Gamma_3[V_1/x_1]} \in \mathcal{B}$, and $\sem{\Gamma_1; V_1} : 1_{\sem{\Gamma_1}} \longrightarrow \sem{\Gamma_1;A_1}$, which means that we can use Proposition~\ref{prop:semsubstitution2} to get 
+\[
+\begin{array}{c}
+\hspace{-7.5cm}
+\sem{\Gamma_1, \Gamma[V_1/x_1], \Gamma_3[V_1/x_1]; \ul{C}[V_1/x_1]} 
+\\
+\hspace{2.5cm}
+= \ssubst {\Gamma_1} {x_1} {A_1} {\Gamma,\Gamma_3} {V_1}^*(\sem{\Gamma_1, x_1 \!:\! A_1, \Gamma, \Gamma_3; \ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1, \Gamma[V_1/x_1], \Gamma_3[V_1/x_1]}}
+\end{array}
+\]
+
+Next, we use the induction hypothesis on $\sem{\Gamma_1, \Gamma[V_1/x_1], \Gamma_3[V_1/x_1]; \ul{C}[V_1/x_1]}$, with the three contexts chosen to be $\Gamma_1$ and $\Gamma[V_1/x_1]$ and $\Gamma_3[V_1/x_1]$, to get
+\[
+\begin{array}{c}
+\hspace{-5cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];\ul{C}[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{1.75cm}
+= \mathsf{subst}'^*(\sem{\Gamma_1, \Gamma[V_1/x_1],\Gamma_3[V_1/x_1];\ul{C}[V_1/x_1]}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}}
+\end{array}
+\]
+where
+\[
+\begin{array}{c}
+\hspace{-2.5cm}
+\mathsf{subst'} \,\,\defeq\,\, \ssubst {\Gamma_1} {x_2} {A_2[V_1/x_1]} {x_3 : A_3[V_1/x_1], \ldots, x_n : A_n[V_1/x_1],\Gamma_3[V_1/x_1]} {V_2} 
+\\
+\hspace{4cm}
+\comp \ldots  \comp \ssubst {\Gamma_1} {x_n} {A_n[V_1/x_1] \ldots [V_{n-1}/x_{n-1}]} {\Gamma_3[V_1/x_1] \ldots [V_{n-1}/x_{n-1}]} {V_n}
+\end{array}
+\]
+
+Next, combining these two equations (where $\Gamma_2 = x_1 \!:\! A_1, \Gamma$), we get 
+\[
+\begin{array}{c}
+\hspace{-5cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];\ul{C}[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{1.75cm}
+= \mathsf{subst}'^*(\ssubst {\Gamma_1} {x_1} {A_1} {\Gamma,\Gamma_3} {V_1}^*(\sem{\Gamma_1, \Gamma_2, \Gamma_3; \ul{C}})) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}}
+\end{array}
+\]
+
+Finally, by observing that $\ssubst {\Gamma_1} {x_1} {A_1} {\Gamma,\Gamma_3} {V_1} \comp \mathsf{subst}' = \mathsf{subst}$, in combination with the fact that $p$ is a split fibration, we get the required equation
+\[
+\begin{array}{c}
+\hspace{-5cm}
+\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n];\ul{C}[V_1/x_1] \ldots [V_n/x_n]} 
+\\
+\hspace{4.75cm}
+= \mathsf{subst}^*(\sem{\Gamma_1, \Gamma_2,\Gamma_3;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma_1,\Gamma_3[V_1/x_1] \ldots [V_n/x_n]}}
+\end{array}
+\]
+\end{proof}
+
+Further, for the soundness results proved in Sections~\ref{sect:fibalgeffectsmodel} and~\ref{sect:interpretingemlttwithhandlers}, it is also useful to note that some special cases of Proposition~\ref{prop:semweakening5} admit more concise characterisations. In particular, we consider two such cases, where the type or term to be weakened is given in i) the empty value context or ii) a context containing only one variable.
+
+\begin{proposition}
+\label{prop:semweakening3}
+Given a value context $\Gamma$ such that $\sem{\Gamma} \in \mathcal{B}$, then we have: 
+\begin{enumerate}[(a)]
+\item Given a value type $A$ such that $\sem{\diamond;A} \in \mathcal{V}_1$, then 
+\[
+\sem{\Gamma;A} =\,\, !_{\sem{\Gamma}}^*(\sem{\diamond;A}) \in \mathcal{V}_{\sem{\Gamma}}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{\diamond;\ul{C}} \in \mathcal{C}_1$, then
+\[
+\sem{\Gamma;\ul{C}} =\,\, !_{\sem{\Gamma}}^*(\sem{\diamond;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma}}
+\]
+\item Given a value term $V$ such that $\sem{\diamond;V} : 1_1 \longrightarrow B$, then
+\[
+\sem{\Gamma;V} =\,\, !_{\sem{\Gamma}}^*(\sem{\diamond;V}) : 1_{\sem{\Gamma}} \longrightarrow\,\, !_{\sem{\Gamma}}^*(B)
+\]
+\item Given a computation term $M$ such that $\sem{\diamond;M} : 1_1 \longrightarrow U(\ul{C})$, then 
+\[
+\sem{\Gamma;M} =\,\, !_{\sem{\Gamma}}^*(\sem{\diamond;M}) : 1_{\sem{\Gamma}} \longrightarrow U(!_{\sem{\Gamma}}^*(\ul{C}))
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{\diamond; z \!:\! \ul{C}; K} : \sem{\diamond;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_1$, then
+\[
+\sem{\Gamma; z \!:\! \ul{C}; K} =\,\, !_{\sem{\Gamma}}^*(\sem{\diamond; z \!:\! \ul{C}; K}) :\,\, !_{\sem{\Gamma}}^*(\sem{\diamond; \ul{C}}) \longrightarrow\,\, !_{\sem{\Gamma}}^*(\ul{D})
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+%
+We prove $(a)$--$(e)$ independently, with all cases following the same pattern. 
+As all the cases are similar, we only consider $(b)$ in detail as a representative example below.
+For simplicity, we assume that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$. 
+
+First, we note that from the assumption $\sem{\Gamma} \in \mathcal{B}$, it follows that $\sem{\Gamma'} \in \mathcal{B}$ for every prefix $\Gamma'$ of $\Gamma$. 
+
+As a result, we can use Proposition~\ref{prop:semweakening5}, with the three contexts chosen to be $\diamond$ and $\Gamma$ and $\diamond$, to show that $\sem{\Gamma;\ul{C}}$ is equal to 
+\[
+(\sproj {\diamond} {x_1} {A_1} {\diamond} \,\comp\,  \ldots \,\comp\,  \sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond})^*(\sem{\diamond; \ul{C}})
+\]
+
+Next, according to the definition of semantic projection morphisms, the domain of the morphism $\sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond}$ is $\sem{\Gamma}$. Similarly, the codomain of the morphism $\sproj {\diamond} {x_1} {A_1} {\diamond}$ is $\sem{\diamond}$, which is equal to the terminal object $1$ by definition. 
+
+As a result, we have
+\[
+\sproj {\diamond} {x_1} {A_1} {\diamond} \,\comp\, \ldots \,\comp\, \sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond} : \sem{\Gamma} \longrightarrow 1
+\]
+
+Finally, using the universal property of the terminal object $1$, this composite must be equal to the unique such morphism, namely, to $!_{\sem{\Gamma}} : \sem{\Gamma}\longrightarrow 1$, meaning that  
+\[
+\sem{\Gamma;\ul{C}} =\,\, !^*_{\sem{\Gamma}}(\sem{\diamond; \ul{C}}) \in \mathcal{C}_{\sem{\Gamma}}
+\vspace{-0.5cm}
+\]
+\end{proof}
+
+\begin{proposition}
+\label{prop:semweakening4}
+Given a value context $\Gamma$, a value variable $x$, and a value type $A$ such that $x \not\in V\!ars(\Gamma)$ and $\sem{\Gamma} \in \mathcal{B}$, then we have: 
+\begin{enumerate}[(a)]
+\item Given a value type $B$ such that $\sem{x \!:\! A;B} \in \mathcal{V}_{\ia {\sem{\diamond; A}}}$, then 
+\[
+\sem{\Gamma, x \!:\! A;B} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A; B}) \in \mathcal{V}_{\ia {!_{\sem{\Gamma}}^*(\sem{\diamond;A})}}
+\]
+\item Given a computation type $\ul{C}$ such that $\sem{x \!:\! A;\ul{C}} \in \mathcal{C}_{\ia {\sem{\diamond; A}}}$, then
+\[
+\sem{\Gamma, x \!:\! A;\ul{C}} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A; \ul{C}}) \in \mathcal{C}_{\ia {!_{\sem{\Gamma}}^*(\sem{\diamond;A})}}
+\]
+\item Given a value term $V$ such that $\sem{x \!:\! A;V} : 1_{\ia {\sem{\diamond; A}}} \longrightarrow B$, then
+\[
+\sem{\Gamma, x \!:\! A;V} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A;V}) : 1_{\ia {!_{\sem{\Gamma}}^*(\sem{\diamond;A})}} \longrightarrow \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(B)
+\]
+\item Given a computation term $M$ such that $\sem{x \!:\! A;M} : 1_{\ia {\sem{\diamond; A}}} \longrightarrow U(\ul{C})$, then 
+\[
+\sem{\Gamma, x \!:\! A;M} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A;M}) : 1_{\ia {!_{\sem{\Gamma}}^*(\sem{\diamond;A})}} \longrightarrow U(\ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\ul{C}))
+\]
+\item Given a computation variable $z$, a computation type $\ul{C}$, and a homomorphism term $K$ such that $\sem{x \!:\! A; z \!:\! \ul{C}; K} : \sem{x\!:\! A;\ul{C}} \longrightarrow \ul{D}$ in $\mathcal{C}_{\ia {\sem{\diamond; A}}}$, then
+\[
+\begin{array}{c}
+\hspace{-5.6cm}
+\sem{\Gamma, x \!:\! A; z \!:\! \ul{C}; K} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A; z \!:\! \ul{C}; K}) 
+\\
+\hspace{5.1cm}
+: \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A; \ul{C}}) \longrightarrow \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\ul{D})
+\end{array}
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+%
+We prove $(a)$--$(e)$ independently, with all cases following the same pattern. 
+As all the cases are similar, we only consider $(b)$ in detail as a representative example.
+For simplicity, we assume that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$. 
+
+First, we note that from the assumption $\sem{\Gamma} \in \mathcal{B}$, it follows that $\sem{\Gamma'} \in \mathcal{B}$ for every prefix $\Gamma'$ of $\Gamma$. 
+
+As a result, we can use Proposition~\ref{prop:semweakening5}, with the three contexts chosen to be $\diamond$ and $\Gamma$ and $x \!:\! A$, to show that $\sem{\Gamma, x \!:\! A;\ul{C}}$ is equal to 
+\[
+(\sproj {\diamond} {x_1} {A_1} {x : A} \comp \ldots \comp \sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {x : A})^*(\sem{x \!:\! A; \ul{C}})
+\]
+
+Next, according to the definition of semantic projection morphisms and the functoriality of $\ia -$, the above reindexing functor is equal to reindexing along 
+\[
+\ia {\overline{\sproj \diamond {x_{1}} {A_{1}} {\diamond}}(\sem{\diamond ; A})
+\comp \ldots \comp 
+\overline{\sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond}}(\sem{x_1 \!:\! A_1, \ldots, x_{n-1} \!:\! A_{n-1} ; A})}
+\]
+which is equal to reindexing along the morphism that results from applying $\ia -$ to 
+\[
+\overline{\sproj \diamond {x_{1}} {A_{1}} {\diamond}}(\sem{\diamond ; A})
+\comp \ldots \comp 
+\overline{\sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond}}(\sem{x_1 \!:\! A_1, \ldots, x_{n-1} \!:\! A_{n-1} ; A})
+\]
+
+Next, by observing that this last morphism is the composition of Cartesian morphisms, we can make the following three observations: i) the domain of this composite morphism is $\sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond}^*(\sem{x_1 : A_1, \ldots, x_{n-1} : A_{n-1} ; A})$, which, according to Proposition~\ref{prop:semweakening2}, is the same as $\sem{\Gamma; A}$, and which, according to Proposition~\ref{prop:semweakening3} is the same as $!_{\sem{\Gamma}}^*(\sem{\diamond; A})$; ii) the codomain of this composite morphism is $\sem{\diamond; A}$; and iii) this composite morphism is itself Cartesian, according to Proposition~\ref{prop:cartesianmorphismscompose}. 
+
+As a result, according to the choice of Cartesian morphisms in $p$, this composite Cartesian morphism must be equal to $\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A}) : \,\, !_{\sem{\Gamma}}^*(\sem{\diamond; A}) \longrightarrow \sem{\diamond; A}$. 
+
+Finally, after applying $\ia -$ to this last morphism, we get that reindexing along 
+\[
+\ia {\overline{\sproj \diamond {x_{1}} {A_{1}} {\diamond}}(\sem{\diamond ; A})
+\comp \ldots \comp 
+\overline{\sproj {x_1 : A_1, \ldots, x_{n-1} : A_{n-1}} {x_n} {A_n} {\diamond}}(\sem{x_1 \!:\! A_1, \ldots, x_{n-1} \!:\! A_{n-1} ; A})}
+\]
+is equal to reindexing along $\ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}$, meaning that 
+\[
+\sem{\Gamma, x \!:\! A; \ul{C}} = \ia {\overline{!_{\sem{\Gamma}}}(\sem{\diamond; A})}^*(\sem{x \!:\! A; \ul{C}}) \in \mathcal{C}_{\ia {!_{\sem{\Gamma}}^*(\sem{\diamond;A})}}
+\vspace{-0.25cm}
+\]
+\end{proof}
+
+
+We now state and prove the soundness theorem\footnote{Using the terminology of~\cite{Streicher:Semantics}, Theorem~\ref{thm:soundness} could also be called the correctness theorem.} for the interpretation of eMLTT in fibred adjunction models. In particular, we show that for well-formed types and well-typed terms, the \emph{a priori} partially defined interpretation function $\sem -$ is in fact always defined, and that it maps definitionally equal contexts,  types, and terms to equal objects and morphisms.
+As noted in the beginning of this section, the proof of this theorem crucially relies on the semantic weakening and substitution lemmas we proved above.
+
+\begin{theorem}[Soundness]
+\label{thm:soundness}
+\index{soundness theorem}
+\mbox{}
+\begin{enumerate}[(a)]
+\item Given $\vdash \Gamma$, then $\sem{\Gamma} \in \mathcal{B}$.
+\item Given $\lj \Gamma A$, then $\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}$.
+\item Given $\lj \Gamma \ul{C}$, then $\sem{\Gamma;\ul{C}} \in \mathcal{C}_{\sem{\Gamma}}$.
+\item Given $\vj \Gamma V A$, then $\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}$.
+\item Given $\cj \Gamma M \ul{C}$, then $\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})$.
+\item Given $\hj \Gamma {z \!:\! \ul{C}} K \ul{D}$, then $\sem{\Gamma;z \!:\! \ul{C}; K} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{D}}$.
+\item Given $\vdash {\Gamma_1} = {\Gamma_2}$, then $\sem{\Gamma_1} = \sem{\Gamma_2} \in \mathcal{B}$.
+\item Given $\ljeq \Gamma A B$, then $\sem{\Gamma;A} = \sem{\Gamma;B} \in \mathcal{V}_{\sem{\Gamma}}$.
+\item Given $\ljeq \Gamma {\ul{C}} {\ul{D}}$, then $\sem{\Gamma;\ul{C}} = \sem{\Gamma;\ul{D}} \in \mathcal{C}_{\sem{\Gamma}}$.
+\item Given $\veq \Gamma V W A$, then $\sem{\Gamma;V} = \sem{\Gamma;W} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}$.
+\item Given $\ceq \Gamma M N \ul{C}$, then $\sem{\Gamma;M} = \sem{\Gamma;N} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})$.
+\item Given $\heq \Gamma {z \!:\! \ul{C}} K L \ul{D}$, then $\sem{\Gamma;z \!:\! \ul{C};K} = \sem{\Gamma; z \!:\! \ul{C}; L} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{D}}$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We prove $(a)$--$(l)$ simultaneously, by induction on the given derivations, using Propositions~\ref{prop:semweakening2},~\ref{prop:semsubstitution2},~\ref{prop:semsubstitution3},  and~\ref{prop:semsubstitution4} to relate syntactic weakening and substitution to reindexing along semantic projection and projection morphisms. 
+
+Similarly to the proofs of  Propositions~\ref{prop:semweakening2} and~\ref{prop:semsubstitution2}, in the setting of contextual categories, detailed proofs of the cases that involve the MLTT fragment of eMLTT can be found in~\cite[Chapter~III]{Streicher:Semantics}.
+We thus omit the proofs of these cases.
+
+We illustrate the eMLTT-specific cases of $(b)$ and $(c)$ by giving a detailed proof for the formation rule for the computational $\Sigma$-type. 
+
+We omit most of the cases of $(e)$ and $(f)$ (i.e., the cases concerning the computational $\Sigma$- and $\Pi$-types) because their proofs are analogous to the detailed proofs given for the corresponding terms in the MLTT fragment of eMLTT in~\cite[Chapter~III]{Streicher:Semantics}. For $(e)$ and $(f)$, we only present the proof for the typing rule for sequential composition. 
+
+Regarding $(k)$ and $(l)$, we again omit most of the cases and only present detailed proofs for the $\beta$- and $\eta$-equations for homomorphic lambda abstraction and function application, and for sequential composition. It is worth noting that the proofs for the cases of $(k)$ and $(l)$ that involve the computational $\Sigma$- and $\Pi$-types follow directly from the properties of the corresponding adjunctions $\Sigma_A \dashv \pi^*_{A}$ and  $\pi^*_{A} \dashv \Pi_A$, respectively.
+
+\vspace{0.2cm}
+\noindent
+\textbf{Computational $\Sigma$-type:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{\lj \Gamma {\Sigma\, x \!:\! A .\, \ul{C}}}
+{\lj \Gamma A 
+\qquad
+\lj {\Gamma, x \!:\! A} \ul{C}
+}
+\]
+and we need to show that
+\[
+\sem{\Gamma;\Sigma\, x \!:\! A .\, \ul{C}} \in \mathcal{C}_{\sem{\Gamma}}
+\]
+First, by using $(b)$ and the induction hypothesis on the two assumed derivations, we get that
+\[
+\sem{\Gamma;A} \in \mathcal{V}_{\sem{\Gamma}}
+\qquad
+\sem{\Gamma, x \!:\! A;\ul{C}} \in \mathcal{C}_{\sem{\Gamma, x : A}}
+\]
+Next, by inspecting the definition of $\sem{-}$ for $\Gamma, x \!:\! A$, we get that
+\[
+\sem{\Gamma, x : A} = \ia {\sem{\Gamma;A}}
+\]
+which means that we can use the existence of split dependent $p$-sums to get that
+\[
+\Sigma_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;\ul{C}}) \in \mathcal{C}_{\sem{\Gamma}}
+\]
+Finally, the required object in $\mathcal{C}_{\sem{\Gamma}}$ exists because by the definition of $\sem{-}$ we have that
+\[
+\sem{\Gamma;\Sigma\, x \!:\! A .\, \ul{C}} = \Sigma_{\sem{\Gamma;A}} (\sem{\Gamma, x \!:\! A;\ul{C}})
+\]
+
+
+\vspace{0.2cm}
+\noindent
+\textbf{Typing rule for sequential composition for computation terms:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{\cj \Gamma {\doto M {x \!:\! A} {\ul{C}} N} {\ul{C}}}
+{\cj \Gamma M {FA} \quad \lj \Gamma {\ul{C}} \quad \cj {\Gamma, x \!:\! A} N {\ul{C}}}
+\]
+and we need to show that
+\[
+\sem{\Gamma;\doto M {x \!:\! A} {\ul{C}} N} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\]
+First, by using the induction hypothesis on the two assumed derivations, we get that
+\[
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;FA})
+\qquad
+\sem{\Gamma, x \!:\! A;N} : 1_{\sem{\Gamma, x : A}} \longrightarrow U(\sem{\Gamma, x \!:\! A; \ul{C}})
+\]
+Next, by inspecting the definition of $\sem{-}$ for $\Gamma, x \!:\! A$ and $FA$, we get that
+\[
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(F(\sem{\Gamma;A}))
+\qquad
+\sem{\Gamma, x \!:\! A;N} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\sem{\Gamma, x \!:\! A; \ul{C}})
+\]
+Further, by using $(b)$ of Proposition~\ref{prop:semweakening2} and the definition of $\sproj \Gamma x A \diamond$, we get that
+\[
+\sem{\Gamma, x \!:\! A;N} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma; \ul{C}}))
+\]
+Finally, by inspecting the definition of $\sem{-}$ for $\doto M {x \!:\! A} {\ul{C}} N$, we see that $\sem{\Gamma;M}$ and $\sem{\Gamma, x \!:\! A;N}$ satisfy the corresponding pre-conditions. Therefore, we get that
+\[
+\sem{\Gamma;\doto M {x \!:\! A} {\ul{C}} N} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\]
+
+\vspace{0.2cm}
+\noindent
+\textbf{$\beta$-equation for homomorphic function application for computation terms:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{\ceq \Gamma {(\lambda \, z \!:\! \ul{C} .\, K)(M)_{\ul{C}, \ul{D}}} {K[M/z]} {\ul{D}}}
+{\cj \Gamma M \ul{C} \quad \hj \Gamma {z \!:\! \ul{C}} K {\ul{D}}}
+\]
+and we need to show that
+\[
+\sem{\Gamma;(\lambda \, z \!:\! \ul{C} .\, K)(M)_{\ul{C}, \ul{D}}} = \sem{\Gamma;K[M/z]} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{D}})
+\]
+By using $(e)$ and $(f)$ on the two assumed derivations, we get that
+\[
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\qquad
+\sem{\Gamma;z \!:\! \ul{C};K} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{D}}
+\]
+The required equation then follows from the commutativity of the following diagram:
+\[
+\xymatrix@C=16em@R=8em@M=0.3em{
+1_{\sem{\Gamma}} \ar@/^4pc/[dr]^-{\,\,\,\,\,\,\,\,\sem{\Gamma;K[M/z]}} \ar[d]_-{\sem{\Gamma;M}}^<<<<<<<<<<<<<{\qquad\qquad\dcomment{\text{Proposition~\ref{prop:semsubstitution3}}}} \ar@/_4pc/[dd]_-{\sem{\Gamma;(\lambda \, z : \ul{C} .\, K)(M)_{\ul{C}, \ul{D}}}} \ar@{}[dd]^-{\qquad\qquad\qquad\dcomment{\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}} \text{ is an iso.}}}
+\\
+U(\sem{\Gamma;\ul{C}}) \ar@/^2pc/[r]^-{U(\sem{\Gamma;z : \ul{C}; K})} \ar@/_2pc/[r]_-{U(\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\xi^{-1}_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma; z : \ul{C}; K})))}\ar[d]^>>>>>>>>>{U(\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma;\lambda \, z : \ul{C} .\, K}))}_<<<<<<<<<{\dcomment{\text{def.}}\quad\!\!\!\!}^-{\qquad\qquad\dcomment{\text{def. of } \sem{\Gamma;\lambda \, z \!:\! \ul{C} .\, K}}} & U(\sem{\Gamma;\ul{D}})
+\\
+U(\sem{\Gamma;\ul{D}}) \ar@/_4pc/[ur]_-{\id_{\sem{\Gamma;\ul{C}}}}
+}
+\]
+The case for the $\beta$-equation for homomorphic lambda abstraction for homomorphism terms is proved analogously.
+
+\vspace{0.2cm}
+\noindent
+\textbf{$\eta$-equation for homomorphic function application:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{\veq \Gamma V {\lambda\, z \!:\! \ul{C} .\, V(z)_{\ul{C}, \ul{D}}} {\ul{C} \multimap \ul{D}}}
+{\vj \Gamma V {\ul{C} \multimap \ul{D}}}
+\]
+and we need to show that
+\[
+\sem{\Gamma;V} = \sem{\Gamma;\lambda\, z \!:\! \ul{C} .\, V(z)_{\ul{C}, \ul{D}}} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;\ul{C}} \multimap_{\sem{\Gamma}} \sem{\Gamma;\ul{D}}
+\]
+First, by using $(d)$ on the assumed derivation, we get that
+\[
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;\ul{C} \multimap \ul{D}}
+\]
+Further, by inspecting the definition of $\sem{-}$ for $\ul{C} \multimap \ul{D}$, we get that
+\[
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;\ul{C}} \multimap_{\sem{\Gamma}} \sem{\Gamma;\ul{D}}
+\]
+Next, by inspecting the definition of $\sem{-}$ for $z$, we know that
+\[
+\sem{\Gamma;z \!:\! \ul{C};z} = \id_{\sem{\Gamma;\ul{C}}} : \sem{\Gamma;\ul{C}} \longrightarrow \sem{\Gamma;\ul{C}}
+\]
+Finally, the required equation follows from the commutativity of the following diagram:
+\vspace{-0.15cm}
+\[
+\hspace{-0.25cm}
+\xymatrix@C=15em@R=12em@M=0.3em{
+1_{\sem{\Gamma}} \ar@/^1.25pc/[r]^{\sem{\Gamma;V}} \ar@/_2pc/[r]_-{\xi^{-1}_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma;V}))} \ar@/_1.5pc/[d]_<<<<<<{\sem{\Gamma;\lambda\, z : \ul{C} .\, V(z)_{\ul{C}, \ul{D}}}}^-{\,\,\,\,\,\dcomment{\text{def.}}}^>>>>>>>>>>>>>>>>>>>>{\quad\qquad\qquad\qquad\dcomment{\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}} \text{ is an iso.}}} \ar@/^1.5pc/[d]^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{\xi^{-1}_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma;z : \ul{C};V(z)_{\ul{C}, \ul{D}}})}^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{\dcomment{\text{def. of } \sem{\Gamma;z \!:\! \ul{C};V(z)_{\ul{C}, \ul{D}}}}} \ar@/_2.5pc/[dr]^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{\!\!\quad\qquad\xi^{-1}_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\xi_{\sem{\Gamma},\sem{\Gamma;\ul{C}},\sem{\Gamma;\ul{D}}}(\sem{\Gamma;V}) \,\comp\, \sem{\Gamma;z : \ul{C};z})}^<<<<<<<<<<<<<<<<<<<<<<{\qquad\qquad\dcomment{\text{def. of } \sem{\Gamma;z \!:\! \ul{C}; z}}}^<<<<<<<<<<<<<<<<<<<<<<{\qquad\qquad\qquad\qquad\qquad\qquad\dcomment{\text{comp. with id.}}} & \sem{\Gamma;\ul{C}} \multimap \sem{\Gamma;\ul{D}}
+\\
+\sem{\Gamma;\ul{C}} \multimap \sem{\Gamma;\ul{D}} \ar[r]_-{\id_{\sem{\Gamma;\ul{C}} \multimap \sem{\Gamma;\ul{D}}}} & \sem{\Gamma;\ul{C}} \multimap \sem{\Gamma;\ul{D}} \ar@/_3pc/[u]_<<<<<<{\id_{\sem{\Gamma;\ul{C}} \multimap \sem{\Gamma;\ul{D}}}}
+}
+\]
+
+
+\pagebreak
+
+\noindent
+\textbf{$\beta$-equation for sequential composition for computation terms:}
+In this case, the given derivation ends with 
+\[
+\mkrule
+{\ceq \Gamma {\doto {\return V} {x \!:\! A} {\ul{C}} M} {M[V/x]} {\ul{C}}}
+{\vj \Gamma V {A} \quad \lj \Gamma {\ul{C}} \quad \cj {\Gamma, x \!:\! A} {M} {\ul{C}}}
+\]
+and we need to show that
+\[
+\sem{\Gamma;\doto {\return V} {x \!:\! A} {\ul{C}} M} = \sem{\Gamma;M[V/x]} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\]
+First, by using $(d)$ and $(e)$ on the assumed derivations, we get that
+\[
+\sem{\Gamma;V} : 1_{\sem{\Gamma}} \longrightarrow \sem{\Gamma;A}
+\qquad
+\sem{\Gamma, x \!:\! A;M} : 1_{\sem{\Gamma, x : A}} \longrightarrow U(\sem{\Gamma, x \!:\! A;\ul{C}})
+\]
+Next, by inspecting the definition of $\sem{-}$ for $\Gamma, x \!:\! A$, we get that
+\[
+\sem{\Gamma, x \!:\! A;M} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\sem{\Gamma, x \!:\! A;\ul{C}})
+\] 
+Further, by using $(b)$ of Proposition~\ref{prop:semweakening2} and the definition of $\sproj \Gamma x A \diamond$, we get that
+\[
+\sem{\Gamma, x \!:\! A;M} : 1_{\ia {\sem{\Gamma;A}}} \longrightarrow U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}))
+\] 
+Finally, the required equation follows from the commutativity of the following diagram:
+
+\pagebreak
+
+\mbox{}
+
+\vspace{0.5cm}
+
+\[
+\hspace{-0.6cm}
+\xymatrix@C=1.5em@R=2.5em@M=0.3em{
+1_{\sem{\Gamma}} 
+\ar[rr]^-{\sem{\Gamma;M[V/x]}}
+\ar[dr]^-{=}^>>>>>>>>>>{\quad\qquad\qquad\qquad\dcomment{\text{Proposition~\ref{prop:semsubstitution2}}}} \ar[dd]^>>>>>{\!\!\sem{\Gamma;V}}_>>>>>{\dcomment{\text{def.}}\,\,}
+\ar@/_3pc/[ddddr]^<<<<<<<<<<<<<<<{\eta^{F \,\dashv\, U}_{1_{\sem{\Gamma}}}}^>>>>{\,\,\,\qquad\dcomment{\text{nat. of } \eta^{F \,\dashv\, U}}}
+\ar@/_8pc/[dddddddddd]_<<<<{\sem{\Gamma;\doto {\return V} {x : A} {\ul{C}} M}}
+\ar@/_2.5pc/[dddd]_>>>>>>{\sem{\Gamma; \return V}}
+&&
+U(\sem{\Gamma;\ul{C}})
+\ar[dddddddddd]_-{\id_{U(\sem{\Gamma;\ul{C}})}}
+\\
+& 
+(\mathsf{s}(\sem{\Gamma;V}))^*(1_{\ia {\sem{\Gamma;A}}})
+\ar[d]_-{(\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x : A;M})}
+\\
+\sem{\Gamma;A}
+\ar[dd]^<<<<<<{\eta^{F \,\dashv\, U}_{\sem{\Gamma;A}}}^>>>>>>>>{\!\!\!\!\qquad\dcomment{\text{nat. of } \eta^{F \,\dashv\, U}}}
+& 
+(\mathsf{s}(\sem{\Gamma;V}))^*(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}}))) 
+\ar@/_2pc/[uur]^-{=}
+\ar@/^5pc/[ddddd]_<<<<<<{\eta^{F \,\dashv\, U}_{(\mathsf{s}(\sem{\Gamma;V}))^*(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))}\!\!\!\!\!}
+\\
+&
+\\
+U(F(\sem{\Gamma;A}))
+\ar[d]^-{U(F(\langle \id_{\sem{\Gamma;A}} , ! \rangle))}
+&
+U(F(1_{\sem{\Gamma}}))
+\ar[l]_-{U(F(\sem{\Gamma;V}))}
+\ar[d]_-{=}
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))))
+\ar[d]^-{=}_-{\dcomment{\text{def.}}\qquad\quad}
+&
+\txt<7pc>{$U(F((\mathsf{s}(\sem{\Gamma;V}))^*($\\$1_{\ia {\sem{\Gamma;A}}})))$}
+\ar[dd]_<<<<<{U(F((\mathsf{s}(\sem{\Gamma;V}))^*(\sem{\Gamma, x : A;M})))}
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))
+\ar[d]^-{U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A; M})))}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($ $\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))))$}
+\ar[d]^-{=}^-{\,\,\,\,\,\,\,\qquad\quad\dcomment{\text{Corollary~\ref{cor:semsubstintoweakenedterm2}}}}
+&
+\txt<8pc>{$U(F((\mathsf{s}(\sem{\Gamma;V}))^*($\\$U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))))$}
+\ar[d]_-{=}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}($ $U(\sem{\Gamma;\ul{C}})))))$}
+\ar[d]^-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{C}})}))}
+&
+\txt<8pc>{$U(F((\mathsf{s}(\sem{\Gamma;V}))^*($\\$\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{C}})))))$}
+\ar@/^2pc/[dl]^-{=}^-{\qquad\qquad\qquad\qquad\qquad\qquad\dcomment{F \,\dashv\, U}}
+\\
+\txt<5pc>{$U(F(U($\\$\sem{\Gamma;\ul{C}})))$}
+\ar[d]^-{U(\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{C}}})}
+\\
+U(\sem{\Gamma;\ul{C}})
+&&
+U(\sem{\Gamma;\ul{C}})
+\ar[ll]^-{\id_{U(\sem{\Gamma;\ul{C}})}}
+}
+\]
+
+\pagebreak
+ 
+\noindent
+\textbf{$\eta$-equation for sequential composition for computation terms:}
+In this case, the given derivation ends with 
+\[
+\mkrule
+{\ceq \Gamma {\doto M {x \!:\! A} {\ul{C}} {K[\return x/z]}} {K[M/z]} {\ul{C}}}
+{\cj \Gamma M {FA} \quad \lj \Gamma {\ul{C}} \quad \hj {\Gamma} {z \!:\! FA} {K} {\ul{C}}}
+\]
+and we need to show that
+\[
+\sem{\Gamma;\doto M {x \!:\! A} {\ul{C}} {K[\return x/z]}} = \sem{\Gamma;K[M/z]} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;\ul{C}})
+\]
+First, by using $(e)$ and $(f)$ on the assumed derivations, we get that
+\[
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(\sem{\Gamma;FA})
+\qquad
+\sem{\Gamma;z \!:\! FA;K} : \sem{\Gamma;FA} \longrightarrow \sem{\Gamma;\ul{C}}
+\]
+Further, by using the definition of $\sem{-}$ for $FA$, we get that
+\[
+\sem{\Gamma;M} : 1_{\sem{\Gamma}} \longrightarrow U(F(\sem{\Gamma;A}))
+\qquad
+\sem{\Gamma;z \!:\! FA;K} : F(\sem{\Gamma;A}) \longrightarrow \sem{\Gamma;\ul{C}}
+\]
+Next, by using $(e)$ of Proposition~\ref{prop:semweakening2} and the definition of $\sproj \Gamma x A \diamond$, we get that
+\[
+\sem{\Gamma, x \!:\! A; z \!:\! FA; K} = \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma, z \!:\! FA;K}) : \pi^*_{\sem{\Gamma;A}}(F(\sem{\Gamma;A})) \longrightarrow \pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})
+\]
+Finally, the required equation follows from the commutativity of the following diagram:
+
+\mbox{}
+
+\vspace{0.2cm}
+
+\[
+\hspace{0.5cm}
+\xymatrix@C=2em@R=3.5em@M=0.3em{
+1_{\sem{\Gamma}} 
+\ar[rr]^-{\sem{\Gamma;K[M/z]}}
+\ar[dr]_-{\sem{\Gamma;M}}
+\ar@/_8pc/[ddddddddd]
+\ar@{}[d]^<<<<{\qquad\qquad\qquad\qquad\dcomment{\text{Proposition~\ref{prop:semsubstitution3}}}}
+&
+\ar@{}[dd]_>>>>>>>>>>>>>{\sem{\Gamma; \doto M {x : A} {\ul{C}} {K[\return x/z]}}\qquad\quad}_>>>>>>>>>>>>>>>>>>>>{\dcomment{\text{def.}}\qquad\qquad\qquad\quad}
+& 
+U(\sem{\Gamma;\ul{C}})
+\ar@/^5.25pc/[ddddddddd]
+\\
+& U(F(\sem{\Gamma;A})) 
+\ar[ur]_-{\quad U(\sem{\Gamma; z : FA; K})}
+\ar@/^1pc/[dl]^<<<<<{\,U(F(\langle \id_{\sem{\Gamma;A}}, ! \rangle))}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))))$}
+\ar@/_3pc/[ddd]_-{=}
+&
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}($\\$\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))))$}
+\ar@/^2pc/[d]^-{U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\mathsf{fst}))))}_-{\dcomment{\text{def.}}\quad}
+&
+\\
+&
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))))$}
+\ar[dr]^-{U(F(\Sigma_{\sem{\Gamma;A}}(\eta^{F \,\dashv\, U}_{\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})})))}
+\\
+& 
+&
+\txt<9pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$F(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))))))$}
+\ar[dd]^-{=}_<<<<<<<<<{\dcomment{\text{def. of } \sem{\Gamma, x \!:\! A;\return x}}\qquad\qquad\quad}
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))
+\ar[d]^-{U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A; K[\return x / z]})))}^>{\qquad\qquad\qquad\dcomment{\text{Proposition~\ref{prop:semsubstitution3}}}}
+\ar@/^2pc/[drr]^<<<<<<<<<<<<<<<{\qquad\quad U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A; \return x})))}
+\ar[uur]_-{U(F(\Sigma_{\sem{\Gamma;A}}(\sem{\Gamma, x : A;x})))}
+\ar[uuur]^>>>>>>>>>>>{U(F(\Sigma_{\sem{\Gamma;A}}(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{1_{\ia {\sem{\Gamma;A}}}})))\!\!\!}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))))$}
+\ar[d]_-{=}
+\ar@{}[dd]^-{\quad\qquad\qquad\qquad\qquad\qquad\dcomment{(*)}}
+&&
+\txt<9pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$\pi^*_{\sem{\Gamma;A}}(F(\sem{\Gamma;\ul{C}}))))))$}
+\ar[ll]^-{U(F(\Sigma_{\sem{\Gamma;A}}(U(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma; z : FA; K})))))}
+\\
+\txt<8.5pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{C}})))))$}
+\ar[d]^-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{C}})}))}
+&&
+\\
+\txt<7pc>{$U(F(U($\\$\sem{\Gamma;\ul{C}})))$}
+\ar[d]^-{U(\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{C}}})}
+&&
+\\
+U(\sem{\Gamma;\ul{C}})
+&&
+U(\sem{\Gamma;\ul{C}})
+\ar@{}[uuu]_>>>>>>>>>>>>>>>>>>>>>>>{\id_{U(\sem{\Gamma;\ul{C}})}}
+\ar[ll]_-{\id_{U(\sem{\Gamma;\ul{C}})}}
+}
+\]
+
+\noindent
+where we show that the subdiagram marked with $(*)$ commutes as follows:
+\[
+\hspace{-0.5cm}
+\xymatrix@C=1em@R=4em@M=0.3em{
+&
+U(F(\sem{\Gamma;A}))
+\ar[dl]_-{U(F(\langle \id_{\sem{\Gamma;A}} , ! \rangle))}
+\ar[ddr]^-{\id_{U(F(\sem{\Gamma;A}))}}
+\ar[ddd]^-{U(F(\eta^{F \,\dashv\, U}_{\sem{\Gamma;A}}))}^>>>>>>>>>>>>>>>>>>>>>>>>>>{\qquad\dcomment{F \,\dashv\, U}}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))))$}
+\ar[d]_-{=}^-{\,\,\,\,\dcomment{\text{functoriality of } U \,\comp\, F \text{ on } (**)}}
+\\
+U(F(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))
+\ar[d]_-{U(F(\Sigma_{\sem{\Gamma;A}}(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{1_{\ia {\sem{\Gamma;A}}}})))}
+&
+&
+U(F(\sem{\Gamma;A}))
+\ar[d]^-{U(\sem{\Gamma; z : FA;K})}_>>>>>{\dcomment{\text{nat. of } \varepsilon^{F \,\dashv\, U}}\quad}
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}($\\$\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))))$}
+\ar[d]_-{U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\mathsf{fst}))))}
+&
+U(F(UF(\sem{\Gamma;A})))
+\ar@/^2.5pc/[dr]
+\ar[ur]^-{U(\varepsilon^{F \,\dashv\, U}_{F(\sem{\Gamma;A})})}
+&
+U(\sem{\Gamma;\ul{C}})
+\\
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))))$}
+\ar[d]_-{U(F(\Sigma_{\Gamma;A}(\eta^{F \,\dashv\, U}_{\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})})))}^-{\qquad\!\dcomment{U , F \text{ are s. fib.}}}
+&
+\txt<9pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}($\\$U(F(\sem{\Gamma;\ul{A}}))))))$}
+\ar@/^2.5pc/[dr]_>>>>>>>{U(F(\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;z : FA;K})))))\!\!\!}
+\ar[u]^-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(F(\sem{\Gamma;A}))}))}_<<<<{\qquad\,\,\, U(F(U(\sem{\Gamma; z : FA; K})))}_>>>>>>>>>>>{\,\,\,\,\dcomment{\text{nat. of } \varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}}}
+&
+U(F(U(\sem{\Gamma;\ul{C}})))
+\ar[u]_-{U(\varepsilon^{F \,\dashv\, U}_{\sem{\Gamma;\ul{C}}})}
+\\
+\txt<9pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$F(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))))))$}
+\ar[d]_-{=}
+\ar@/^2.5pc/[ur]^-{=}
+&
+&
+\txt<8.5pc>{$U(F(\Sigma_{\sem{\Gamma;A}}($\\$\pi^*_{\sem{\Gamma;A}}(U(\sem{\Gamma;\ul{C}})))))$}
+\ar[u]_-{U(F(\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(\sem{\Gamma;\ul{C}})}))}
+\\
+\txt<9pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$\pi^*_{\sem{\Gamma;A}}(F(\sem{\Gamma;\ul{A}}))))))$}
+\ar[rr]_-{U(F(\Sigma_{\Gamma;A}(U(\pi^*_{\Gamma;A}(\sem{\Gamma;z : FA;K})))))}
+\ar[uur]_-{=}
+&&
+\txt<7pc>{$U(F(\Sigma_{\sem{\Gamma;A}}(U($\\$\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;\ul{C}})))))$}
+\ar[u]_-{=}^-{\dcomment{U \text{ is split fibred}}\qquad\qquad\qquad}
+}
+\]
+\pagebreak
+
+\noindent
+and where the diagram we refer to as $(**)$ commutes because we have
+\[
+\xymatrix@C=1em@R=5em@M=0.3em{
+\\
+\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(1_{\sem{\Gamma}}))
+\ar[d]_-{=}^-{\qquad\qquad\qquad\dcomment{\mathsf{fst} \,\comp\, \langle \id_{\sem{\Gamma;A}} , ! \rangle = \id_{\sem{\Gamma;A}}}}
+&
+&
+\sem{\Gamma;A}
+\ar[ll]_-{\langle \id_{\sem{\Gamma;A}} , ! \rangle}
+\ar[ddd]^-{\eta^{F \,\dashv\, U}_{\sem{\Gamma;A}}}_>>>>>>{\dcomment{\text{nat. of } \varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}}\qquad\quad}
+\ar@/^2pc/@{<-}[ddl]^-{\id_{\sem{\Gamma;A}}}
+\\
+\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})
+\ar[d]_-{\Sigma_{\sem{\Gamma;A}}(\eta^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{1_{\ia {\sem{\Gamma;A}}}})}^<<<<<{\!\!\!\!\!\!\quad\dcomment{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}}^>>>>{\qquad\qquad\dcomment{\text{nat. of } \varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}}}
+\ar[r]^-{\id_{\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})}}
+&
+\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})
+\ar@/^2.5pc/[d]^-{\mathsf{fst}}
+\\
+\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})))
+\ar[d]_-{\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\mathsf{fst}))}
+\ar[ur]_>>>>>>>{\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\Sigma_{\sem{\Gamma;A}}(1_{\ia {\sem{\Gamma;A}}})}}
+&
+\sem{\Gamma;A}
+\\
+\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))
+\ar[d]_-{\Sigma_{\sem{\Gamma;A}}(\eta^{F \,\dashv\, U}_{\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A})})}^>>>>{\,\,\,\,\,\,\,\dcomment{\eta^{F \,\dashv\, U} \text{ is a split fib. nat. transformation}}}
+\ar[ur]_-{\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{\sem{\Gamma;A}}}
+\ar[drr]^-{\quad\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(\eta^{F \,\dashv\, U}_{\sem{\Gamma;A}}))}
+&
+&
+U(F(\sem{\Gamma;A}))
+\\
+\Sigma_{\sem{\Gamma;A}}(U(F(\pi^*_{\sem{\Gamma;A}}(\sem{\Gamma;A}))))
+\ar[rr]_-{=}
+&&
+\Sigma_{\sem{\Gamma;A}}(\pi^*_{\sem{\Gamma;A}}(U(F(\sem{\Gamma;A}))))
+\ar[u]_-{\varepsilon^{\Sigma_{\sem{\Gamma;A}} \,\dashv\, \pi^*_{\sem{\Gamma;A}}}_{U(F(\sem{\Gamma;A}))}}
+}
+\]
+\end{proof}
+
+\section{Completeness}
+\label{sect:completeness}
+
+We now demonstrate that eMLTT is complete for fibred adjunction models.
+We do so by proving that the well-formed syntax of eMLTT itself forms a fibred adjunction model, the \emph{classifying fibred adjunction model}. We construct this model by building on and extending the classifying \SCCompC\, construction for MLTT, as sketched in~\cite[Sections~10.3--10.5]{Jacobs:Book}. 
+%
+More specifically, we show in this section how to use  
+well-formed\linebreak 
+
+\pagebreak
+
+\noindent contexts, types, and terms to construct the categorical structure depicted in
+\vspace{-2.1cm}
+\[
+\xymatrix@C=4em@R=5em@M=0.5em{
+\ar@{}[dd]^-{\!\!\quad\qquad\qquad\perp}
+\\
+\mathcal{V} \ar@/_1.75pc/[d]_-{p} \ar@{}[d]_-{\dashv\,\,\,\,\,} \ar@{}[d]^-{\,\,\,\,\,\,\,\dashv} \ar@/^1.75pc/[d]^-{\ia {-}} \ar@/^1.25pc/[rr]^-{F} &  &  \mathcal{C} \ar@/^1.25pc/[ll]^-{U} \ar@/^1pc/[dll]^-{q}
+\\
+\mathcal{B} \ar[u]_-{\!1}
+}
+\]
+together with the structure we use to model eMLTT's value and computation types.
+
+In order to make our discussion about the computational fragment of this classifying model easier to follow, we begin by recalling the core details of the classifying \SCCompC\, construction from op. cit., comprising the adjunctions $p \dashv 1$ and $1 \dashv \ia -$. 
+
+To this end, we first show how to extend the unary substitutions we defined in Definition~\ref{def:substvaluevariables} (and the corresponding results thereafter)
+to simultaneous substitutions. 
+Of course, unary substitutions are just a special case of these simultaneous substitutions.
+
+\begin{definition}
+\label{def:simultaneoussubstvaluevariables}
+\index{substitution!simultaneous --}
+The $n$-ary \emph{simultaneous substitution} of value terms $V_1, \ldots, V_n$ 
+for distinct value variables $x_1, \ldots, x_n$ in an expression $E$, written $E[V_1/x_1, \ldots, V_n/x_n]$ 
+(or $E[\overrightarrow{V_i}/\overrightarrow{x_i}]$ for short), 
+\index{ E@$E[V_1/x_1, \ldots, V_n/x_n]$ (simultaneous substitution)}
+\index{ E@$E[\overrightarrow{V_i}/\overrightarrow{x_i}]$ (simultaneous substitution)}
+is defined by recursion on the structure of $E$ as follows:
+\[
+\begin{array}{l c l}
+\Nat[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & \Nat
+\\
+& \ldots &
+\\
+x_i[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & V_i
+\\
+y[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & y \qquad\qquad\qquad\qquad\qquad\qquad (\text{if~} y \not\in \{x_1, \ldots, x_n\})
+\\
+& \ldots &
+\\
+(\return W)[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & \return (W[\overrightarrow{V_i}/\overrightarrow{x_i}])
+\\
+(\doto M {y \!:\! A} {\ul{C}} N)[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & \doto {M[\overrightarrow{V_i}/\overrightarrow{x_i}]} {y \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} {N[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\\
+& \ldots &
+\\
+(K(W)_{(y : A).\, \ul{C}})[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & (K[\overrightarrow{V_i}/\overrightarrow{x_i}])(W[\overrightarrow{V_i}/\overrightarrow{x_i}])_{(y : A[\overrightarrow{V_i}/\overrightarrow{x_i}]).\, \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\\
+(W(K)_{\ul{C}, \ul{D}})[\overrightarrow{V_i}/\overrightarrow{x_i}] & \defeq & (W[\overrightarrow{V_i}/\overrightarrow{x_i}])(K[\overrightarrow{V_i}/\overrightarrow{x_i}])_{\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}], \ul{D}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\end{array}
+\]
+where, according to our adopted variable conventions, the bound value variables are assumed to be different from the variables $x_1, \ldots, x_n$ we are substituting $V_1, \ldots, V_n$ for.
+\end{definition}
+
+Below, we list some useful properties of simultaneous substitutions that we use 
+for constructing the classifying fibred adjunction model for eMLTT; many of them are natural generalisations of the properties we proved for unary substitutions in Chapter~\ref{chap:syntax}.
+
+\pagebreak 
+
+\begin{proposition}
+\label{prop:freevariablesofsubsstitutionsimultaneous}
+Given an expression $E$, then 
+\index{ FVV@$FVV(E)$ (set of free value variables of $E$)}
+\[
+FVV(E[\overrightarrow{V_i}/\overrightarrow{x_i}]) \subseteq (FVV(E) - \{x_1, \ldots, x_n\}) \,\cup\, FVV(V_1) \,\cup\, \ldots \,\cup\, FVV(V_n)
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:valuesubstlemma1simultaneous}
+Given an expression $E$ such that $x_i \not\in FVV(E)$, then 
+\[
+E[V_1/x_1, \ldots, V_i/x_i, \ldots, V_n/x_n] = E[V_1/x_1, \ldots, V_{i-1}/x_{i-1}, V_{i+1}/x_{i+1}, \ldots, V_n/x_n]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:valuesubstlemma2simultaneous}
+Given an expression $E$, then 
+\[
+E[V_1/x_1, \ldots, x_i/x_i, \ldots, V_n/x_n] = E[V_1/x_1, \ldots, V_{i-1}/x_{i-1}, V_{i+1}/x_{i+1}, \ldots, V_n/x_n]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:valuesubstlemma3simultaneous}
+Given an expression $E$ such that $\{x_1, \ldots, x_n\} \cap \{y_1, \ldots, y_m\} = \emptyset$ and 
+$\{x_1, \ldots, x_n\} \cap (FVV(W_1) \cup \ldots \cup FVV(W_m)) = \emptyset$, then 
+\[
+E[\overrightarrow{V_i}/\overrightarrow{x_i}][\overrightarrow{W_j}/\overrightarrow{y_j}] = 
+E[\overrightarrow{W_j}/\overrightarrow{y_j}][\overrightarrow{V_i[\overrightarrow{W_j}/\overrightarrow{y_j}]}/\overrightarrow{x_i}]
+\]
+%
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:simultaneoussubstlemma2}
+Given an expression $E$ such that $\{x_1, \ldots, x_n\} \cap \{y_1, \ldots, y_m\} = \emptyset$ 
+and $\{y_1, \ldots, y_m\} \cap (FVV(V_1) \cup \ldots \cup FVV(V_n)) = \emptyset$, then 
+\[
+E[\overrightarrow{V_i}/\overrightarrow{x_i}][\overrightarrow{W_j}/\overrightarrow{y_j}] = E[\overrightarrow{V_i}/\overrightarrow{x_i},\overrightarrow{W_j}/\overrightarrow{y_j}]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$. 
+\end{proof}
+
+\begin{proposition}
+\label{prop:simultaneoussubstlemma1}
+Given an expression $E$ such that $FVV(E) \subseteq \{x_1, \ldots, x_n\}$, then 
+\[
+E[\overrightarrow{V_i}/\overrightarrow{x_i}][\overrightarrow{W_j}/\overrightarrow{y_j}] = E[\overrightarrow{V_i[\overrightarrow{W_j}/\overrightarrow{y_j}]}/\overrightarrow{x_i}]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$. 
+\end{proof}
+
+\begin{proposition}
+\label{prop:simultaneoussubstlemma3}
+Given an expression $E$ such that $\{x'_1, \ldots, x'_n\} \cap FVV(E) = \emptyset$, then 
+\[
+E[\overrightarrow{V_i}/\overrightarrow{x_i}] = E[\overrightarrow{x'_i}/\overrightarrow{x_i}][\overrightarrow{V_i}/\overrightarrow{x'_i}]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $E$.
+\end{proof}
+
+\begin{proposition}
+Given a homomorphism term $K$ with $FCV(K) = z$, then 
+\[
+K[M/z][\overrightarrow{V_i}/\overrightarrow{x_i}] = K[\overrightarrow{V_i}/\overrightarrow{x_i}][M[\overrightarrow{V_i}/\overrightarrow{x_i}]/z]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $K$.
+\end{proof}
+
+\begin{proposition}
+Given homomorphism terms $K$ and $L$ with $FCV(L) = z$, then 
+\[
+L[K/z][\overrightarrow{V_i}/\overrightarrow{x_i}] = L[\overrightarrow{V_i}/\overrightarrow{x_i}][K[\overrightarrow{V_i}/\overrightarrow{x_i}]/z]
+\]
+\end{proposition}
+
+\begin{proof}
+By induction on the structure of $K$.
+\end{proof}
+
+Finally, we show that in addition to unary substitutions (Theorem~\ref{thm:substitution}), eMLTT's judgements are 
+are also closed under simultaneous substitutions of 
+Definition~\ref{def:simultaneoussubstvaluevariables}.
+
+\begin{theorem}[Simultaneous value term substitution] 
+\label{thm:simultaneoussubstitution}
+\index{substitution theorem!syntactic --!-- for value terms}
+Given $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$ and value terms 
+$\vj {\Gamma_1} {V_1} {A_1}$, $\ldots$, 
+$\vj {\Gamma_1} {V_n} {A_n[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]}$, then we have:
+\begin{enumerate}[(a)]
+\item Given $\lj {\Gamma_2} B$, then $\lj {\Gamma_1} B[\overrightarrow{V_i}/\overrightarrow{x_i}]$.
+\item Given $\ljeq {\Gamma_2} {B_1} {B_2}$, then $\ljeq {\Gamma_1} {B_1[\overrightarrow{V_i}/\overrightarrow{x_i}]} {B_2[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\lj {\Gamma_2} \ul{C}$, then $\lj {\Gamma_1} \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]$.
+\item Given $\ljeq {\Gamma_2} {\ul{C}} {\ul{D}}$, then $\ljeq {\Gamma_1} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{D}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\vj {\Gamma_2} W B$, then $\vj {\Gamma_1} {W[\overrightarrow{V_i}/\overrightarrow{x_i}]} {B[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\veq {\Gamma_2} {W_1} {W_2} B$, then $\veq {\Gamma_1} {W_1[\overrightarrow{V_i}/\overrightarrow{x_i}]} {W_2[\overrightarrow{V_i}/\overrightarrow{x_i}]} {B[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\cj {\Gamma_2} M \ul{C}$, then $\cj {\Gamma_1} {M[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\ceq {\Gamma_2} M N \ul{C}$, then $\ceq {\Gamma_1} {M[\overrightarrow{V_i}/\overrightarrow{x_i}]} {N[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\hj {\Gamma_2} {z \!:\! \ul{C}} K \ul{D}$, then $\hj {\Gamma_1} {z \!:\! \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} {K[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{D}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\item Given $\heq {\Gamma_2} {z \!:\! \ul{C}} K L \ul{D}$, then $\heq {\Gamma_1} {z \!:\! \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} {K[\overrightarrow{V_i}/\overrightarrow{x_i}]} {L[\overrightarrow{V_i}/\overrightarrow{x_i}]} {\ul{D}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We prove $(a)$--$(j)$ using the combination of Theorems~\ref{thm:weakening} and~\ref{thm:substitution}, and other results we established earlier. For example, for $(c)$ the proof proceeds as follows.
+
+To begin with, we use Proposition~\ref{prop:wellformedcomponentsofjudgements} with 
+$\lj {\Gamma_2} \ul{C}$ to get that $\lj {} {\Gamma_2}$, whose derivation also gives us that 
+$\lj {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} A_i$, for all $1 \leq i \leq n$. 
+In addition, we use Proposition~\ref{prop:freevariablesofwellformedexpressions}
+to get the inclusion $FVV(\ul{C}) \subseteq V\!ars(\Gamma_2) = \{x_1, \ldots, x_n\}$.
+
+Next, we choose distinct value variables $x'_1, \ldots, x'_n$ such that they are disjoint from 
+the variables of $\Gamma_1$ and $\Gamma_2$. We write $\widehat{\Gamma_2}$ for the 
+``fresh" version of $\Gamma_2$, given by
+\[
+x'_1 \!:\! A_1, x'_2 \!:\! A_2[x'_1/x_1], \ldots, x'_n \!:\! A_n[x'_1/x_1]\ldots[x'_{n-1}/x_{n-1}]
+\]
+with Theorems~\ref{thm:weakening} and~\ref{thm:substitution}
+allowing us to show that for all $1 \leq i \leq n$, we have 
+\[
+\lj {x'_1 \!:\! A_1, \ldots, x'_{i-1} \!:\! A_{i-1}[x'_1/x_1] \ldots [x'_{i-2}/x_{i-2}]} {A_i[x'_1/x_1] \ldots [x'_{i-1}/x_{i-1}]}
+\]
+and as $\{x_1, \ldots, x_n\} \cap \{x'_1, \ldots, x'_n\} = \emptyset$, we can use 
+Proposition~\ref{prop:simultaneoussubstlemma2} to show that
+\[
+\lj {x'_1 \!:\! A_1, \ldots, x'_{i-1} \!:\! A_{i-1}[x'_1/x_1, \ldots ,x'_{i-2}/x_{i-2}]} {A_i[x'_1/x_1, \ldots ,x'_{i-1}/x_{i-1}]}
+\]
+
+Furthermore, by using Proposition~\ref{prop:freevariablesofwellformedexpressions}, we get that
+$FVV(A_i) \subseteq \{x_1, \ldots, x_{i-1}\}$, for all $1 \leq i \leq n$, and thus 
+we have for all $1 \leq i \leq n$ that $\{x'_1, \ldots, x'_n\} \cap FVV(A_i) = \emptyset$. 
+As a consequence, we can use Proposition~\ref{prop:simultaneoussubstlemma3} with $A_i$ (for all $1 \leq i \leq n$) to get that
+\[
+A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}] = A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}][V_1/x'_1, \ldots, V_{i-1}/x'_{i-1}]
+\]
+and then Proposition~\ref{prop:simultaneoussubstlemma2} (as $FVV(V_i) \subseteq V\!ars(\Gamma_1)$ by Proposition~\ref{prop:freevariablesofwellformedexpressions}) to get that 
+\[
+\begin{array}{c}
+A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}][V_1/x'_1, \ldots, V_{i-1}/x'_{i-1}]
+\\
+=
+\\ 
+A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}][V_1/x'_1]\ldots[V_{i-1}/x'_{i-1}]
+\end{array}
+\]
+from which it follows that the assumed derivations of $V_i$ are also derivations of
+\[
+\vj {\Gamma_1} {V_i} {A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}][V_1/x'_1]\ldots[V_{i-1}/x'_{i-1}]}
+\]
+
+Next, we repeatedly use Theorem~\ref{thm:weakening} to get a derivation of 
+$\lj {\widehat{\Gamma_2},\Gamma_2} {\ul{C}}$ from that of $\lj {\Gamma_2} {\ul{C}}$, and then  
+Theorem~\ref{thm:substitution} to get a derivation of 
+$\lj {\widehat{\Gamma_2}} {\ul{C}[x'_1/x_1]\ldots[x'_n/x_n]}$. \linebreak 
+However, as $\{x_1, \ldots, x_n\} \cap \{x'_1, \ldots, x'_n\} = \emptyset$, we can use 
+Proposition~\ref{prop:simultaneoussubstlemma2} to get that 
+\[
+{\ul{C}[x'_1/x_1]\ldots[x'_n/x_n]} = {\ul{C}[x'_1/x_1, \ldots, x'_n/x_n]}
+\]
+
+
+Finally, we repeatedly use Theorem~\ref{thm:weakening} to get  
+$\lj {\Gamma_1, \widehat{\Gamma_2}} {\ul{C}[x'_1/x_1, \ldots, x'_n/x_n]}$ from the derivation of 
+$\lj {\widehat{\Gamma_2}} {\ul{C}[x'_1/x_1, \ldots, x'_n/x_n]}$, and then 
+Theorem~\ref{thm:substitution} to get that 
+\[
+\lj {\Gamma_1} {\ul{C}[x'_1/x_1, \ldots, x'_n/x_n]}[V_1/x'_1]\ldots[V_n/x'_n]
+\]
+However, as we know that $FVV(\ul{C}) \subseteq \{x_1, \ldots, x_n\}$ and $FVV(V_i) \subseteq V\!ars(\Gamma_1)$, for all $1 \leq i \leq n$, 
+then we can use 
+Propositions~\ref{prop:simultaneoussubstlemma1} and~\ref{prop:valuesubstlemma1} to respectively get that 
+\[
+\ul{C}[x'_1/x_1, \ldots, x'_n/x_n][V_1/x'_1]\ldots[V_n/x'_n]
+=
+\ul{C}[\overrightarrow{x'_i[V_1/x'_1]\ldots[V_n/x'_n]}/\overrightarrow{x_i}]
+=
+\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]
+\]
+giving us the required derivation of
+\[
+\lj {\Gamma_1} {\ul{C}[V_1/x_1, \ldots, V_n/x_n]}
+\]
+\end{proof}
+
+
+\subsection*{Base category $\mathcal{B}$ of value contexts}
+
+The objects of $\mathcal{B}$ are given by equivalence classes $[\, \vdash \Gamma\, ]$ of well-formed value contexts $\vdash \Gamma$, where the equivalence relation is given by 
+\[
+\mkrule
+{\vdash \Gamma_1 ~\equiv~ \vdash \Gamma_2}
+{\ljeq {} {\Gamma_1} {\Gamma_2}}
+\]
+
+In order to improve the readability of the material presented in this section, we follow the standard convention of referring to the various equivalence classes we use by their representatives, i.e., we write $\vdash \Gamma$ for $[\, \vdash \Gamma\, ]$. To see that this simplification is valid, we observe that by definition the well-formed types, terms, and definitional equations are closed under context and type conversions.
+Furthermore, according to Theorems~\ref{thm:weakening},~\ref{thm:substitution},~\ref{thm:compsubstitution}, and~\ref{thm:simultaneoussubstitution}, well-formed contexts, types, terms, and definitional equations are also closed under weakening and substitution. 
+
+To further improve the readability of this section, we also omit the turnstile symbol when referring to  well-formed contexts, and simply write $\Gamma$ instead of $\vdash \Gamma$ (and $[\,\vdash \Gamma\,]$).
+
+Given well-formed value contexts $\Gamma_1$ and $\Gamma_2$ such that $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, a morphism $\Gamma_1 \longrightarrow \Gamma_2$ in $\mathcal{B}$ is given by an equivalence class of tuples $( V_1, \ldots, V_n )$ of well-typed value terms, where $\vj {\Gamma_1} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$, for all $1 \leq i \leq n$; and where the equivalence relation on such tuples of value terms is given component-wise:
+\[
+\mkrule
+{{(V_1, \ldots, V_n)} \equiv {(W_1, \ldots, W_n)} : \Gamma_1 \longrightarrow \Gamma_2}
+{\veq {\Gamma_1} {V_i} {W_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} \qquad (1 \leq i \leq n)}
+\]
+Throughout this section, we often abbreviate tuples $(V_1, \ldots, V_n)$ of value terms as $\overrightarrow{V_i}$.
+\index{ V@$\overrightarrow{V_i}$ (shorthand for $(V_1, \ldots, V_n)$)}
+
+Next, the composition of any two morphisms of the form
+\[
+(V_1, \ldots, V_n) : \Gamma_1 \longrightarrow \Gamma_2
+\qquad
+(W_1, \ldots, W_m) : \Gamma_2 \longrightarrow \Gamma_3
+\]
+is given by simultaneous substitution of value terms for value variables, namely, by
+\[
+(W_1, \ldots, W_m) \comp (V_1, \ldots, V_n) \defeq (W_1[\overrightarrow{V_i}/\overrightarrow{x_i}], \ldots, W_m[\overrightarrow{V_i}/\overrightarrow{x_i}]) 
+\]
+assuming that $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$.
+
+Further, given any well-formed value context $\Gamma$ such that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, the identity morphism $\id_{\Gamma}$ is given by the variables of $\Gamma$, namely, by  
+\[
+\id_\Gamma \defeq (x_1, \ldots, x_n) : \Gamma \longrightarrow \Gamma
+\]
+
+The associativity and identity laws for composition follow from the properties we established about simultaneous substitutions in 
+the beginning of this section.
+
+Finally, this category also has a terminal object, given by the empty context $\diamond$, with the corresponding unique morphisms $\Gamma \longrightarrow \diamond$ given by the empty tuple of value terms.
+
+\subsection*{Category $\mathcal{V}$ of value types}
+
+The objects of $\mathcal{V}$ are given by equivalence classes of well-formed value types $\lj \Gamma A$. 
+Given two value types $\lj {\Gamma_1} A$ and $\lj {\Gamma_2} B$ such that $\Gamma_2 =  x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, a morphism $\lj {\Gamma_1} A \longrightarrow \lj {\Gamma_2} B$ is given by an equivalence class of tuples $(V_1, \ldots, V_n, x.\,V)$, where $\vj {\Gamma_1} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$, for all $1 \leq i \leq n$, as above, and where \linebreak $\vj {\Gamma_1, x \!:\! A} V {B[\overrightarrow{V_i}/\overrightarrow{x_i}]}$. In $(V_1, \ldots, V_n, x.\,V)$, the value variable $x$ is bound in the value term $V$. The equivalence relation is again given component-wise, namely, by
+\[
+\mkrule
+{{(V_1, \ldots, V_n, x.\,V)} \equiv {(W_1, \ldots, W_n, x.\,W)} : \lj {\Gamma_1} A \longrightarrow \lj {\Gamma_2} B}
+{
+\begin{array}{c}
+\veq {\Gamma_1} {V_i} {W_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} \quad (1 \leq i \leq n)
+\\
+\veq {\Gamma_1, x \!:\! A} {V} {W} {B[V_1/x_1, \ldots, V_n/x_n]}
+\end{array}
+}
+\]
+
+Analogously to $\mathcal{B}$, the composition of morphisms is given by simultaneous substitution of value terms for value variables. 
+Further, given any value type $\lj \Gamma A$ such that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, the identity morphism $\id_{\lj {\Gamma\,} {\,A}}$ is given by a tuple of variables: 
+\[
+\id_{\lj {\Gamma\,} {\,A}} \defeq (x_1, \ldots, x_n, x.\,x) : \lj \Gamma A \longrightarrow \lj \Gamma A
+\]
+
+Finally, the associativity and identity laws for composition follow from the properties we established 
+about simultaneous substitutions in the beginning of this section.
+
+\subsection*{Split fibration $p : \mathcal{V} \longrightarrow \mathcal{B}$}
+
+We define the functor $p$ by mapping a well-formed value type to its context, given by
+\[
+p(\lj \Gamma A) \defeq \Gamma
+\qquad
+p(V_1, \ldots, V_n, x.\,V) \defeq (V_1, \ldots, V_n)
+\]
+We omit the proofs showing that $p$ preserves identity morphisms and composition of morphisms. We also omit analogous proofs for all other functors defined in this section. 
+ 
+Given a morphism $\overrightarrow{V_i} : \Gamma_1 \longrightarrow \Gamma_2$ and a value type  $\lj {\Gamma_2} A$, the morphism
+\[
+(\overrightarrow{V_i}, x.\,x) : \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]} \longrightarrow \lj {\Gamma_2} A
+\]
+is Cartesian over $\overrightarrow{V_i} : \Gamma_1 \longrightarrow p(\lj {\Gamma_2} A)$, with the unique mediating morphism in
+\[
+\xymatrix@C=4.25em@R=3em@M=0.5em{
+\lj {\Gamma_3} B \ar@/^2pc/[rr]^-{(\overrightarrow{W_i}, x.W)} \ar@{-->}[r] & \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]} \ar[r]_-{(\overrightarrow{V_i}, x.\,x)} & \lj {\Gamma_2} A & \text{in} & \mathcal{V} \ar[d]^-{p}
+\\
+\Gamma_3 \ar[r]^-{\overrightarrow{V'_j}} \ar@/_2pc/[rr]_{p(\overrightarrow{W_i}, x.W)}  & \Gamma_1 \ar[r]^{\overrightarrow{V_i}} & \Gamma_2 & \text{in} & \mathcal{B}
+}
+\]
+given by
+\[
+(V'_1, \ldots, V'_m, x.\,W) : \lj {\Gamma_3} B \longrightarrow \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+
+This morphism is well-formed because the commutativity of the lower diagram in $\mathcal{B}$ means that we must have
+\[
+\veq {\Gamma_3} {W_i} {V_i[\overrightarrow{V'_j}/\overrightarrow{y_j}]} {A_i[W_1/x_1, \ldots, W_{i-1}/x_{i-1}]}
+\]
+for all $1 \leq i \leq n$. 
+
+In addition, the two value types that are assigned to $W$ in the two morphisms containing it are definitionally equal because of the properties we established about simultaneous substitutions 
+in the beginning of this section. Concretely, we have
+\[
+\ljeq {\Gamma_3} {A[\overrightarrow{V_i}/\overrightarrow{x_i}][\overrightarrow{V'_j}/\overrightarrow{y_j}]} {A[V_1[\overrightarrow{V'_j}/\overrightarrow{y_j}]/x_1, \ldots, V_n[\overrightarrow{V'_j}/\overrightarrow{y_j}]/x_n]}
+\]
+
+The uniqueness of $(\overrightarrow{V'_j}, x.\,W) : \lj {\Gamma_3} B \longrightarrow \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]}$ is also easy to prove. Specifically, given any other morphism $(\overrightarrow{W'_j}, x.\, W') : \lj {\Gamma_3} B \longrightarrow \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]}$ that makes the previous two diagrams commute, this commutativity means that we have
+\[
+\veq {\Gamma_3, x \!:\! B} {W'} {W} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+and that for all $1 \leq j \leq m$, we also have
+\[
+\veq {\Gamma_3} {W'_j} {V'_j} {A'_i[V'_1/y_1, \ldots, V'_{j-1}/y_{j-1}]}
+\]
+As a result, we get the required equation
+\[
+(W'_1, \ldots, W'_m, x.\, W') = (V'_1, \ldots, V'_m, x.\,W)
+\]
+
+The definition of the chosen Cartesian morphisms also tells us how the induced reindexing functors $(V_1, \ldots, V_n)^* : \mathcal{V}_{\Gamma_2} \longrightarrow \mathcal{V}_{\Gamma_1}$ are defined. They are given on objects by
+\vspace{-0.25cm}
+\[
+(\overrightarrow{V_i})^*(\lj {\Gamma_2} A) \defeq \lj {\Gamma_1} A[\overrightarrow{V_i}/\overrightarrow{x_i}]
+\]
+and on morphisms $(\overrightarrow{x_i}, x.\,V) : \lj {\Gamma_2} {A} \longrightarrow \lj {\Gamma_2} {B}$ by
+\[
+(\overrightarrow{V_i})^*(\overrightarrow{x_i}, x.\,V) \defeq (\overrightarrow{y_j}, x.\,V[\overrightarrow{V_i}/\overrightarrow{x_i}])
+: \lj {\Gamma_1} A[\overrightarrow{V_i}/\overrightarrow{x_i}] \longrightarrow \lj {\Gamma_1} B[\overrightarrow{V_i}/\overrightarrow{x_i}]
+\]
+
+Finally, we show that $p$ is a split fibration. On the one hand, we observe that for any well-formed value context $\Gamma$ such that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$ we have
+\[
+\id_{\Gamma}^*(\lj \Gamma A) = (\overrightarrow{x_i})^*(\lj \Gamma A) = \lj \Gamma A[\overrightarrow{x_i}/\overrightarrow{x_i}] = \lj \Gamma A
+\]
+On the other hand, given any two morphisms $\overrightarrow{V_i} : \Gamma_1 \longrightarrow \Gamma_2$ and $\overrightarrow{W_j} : \Gamma_2 \longrightarrow \Gamma_3$ in $\mathcal{B}$ such  that $\Gamma_2 = x_1 \!:\! B_1, \ldots, x_n \!:\! B_n$ and $\Gamma_3 = y_1 \!:\! B'_1, \ldots, y_m \!:\! B'_m$, we have
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& (\overrightarrow{W_j} \comp \overrightarrow{V_i})^*(\lj {\Gamma_3} A) 
+\\
+=\,\, &
+(W_1[\overrightarrow{V_i}/\overrightarrow{x_i}], \ldots, W_m[\overrightarrow{V_i}/\overrightarrow{x_i}])^*(\lj {\Gamma_3} A)
+\\
+=\,\, & \lj {\Gamma_1} {A[W_1[\overrightarrow{V_i}/\overrightarrow{x_i}]/y_1, \ldots, W_m[\overrightarrow{V_i}/\overrightarrow{x_i}]/y_m]}
+\\
+=\,\, & \lj {\Gamma_1} {A[\overrightarrow{W_j}/\overrightarrow{y_j}][\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\\
+=\,\, & (\overrightarrow{V_i})^*(\lj {\Gamma_2} {A[\overrightarrow{W_j}/\overrightarrow{y_j}]})
+\\
+=\,\, & (\overrightarrow{V_i})^*((\overrightarrow{W_j})^*(\lj {\Gamma_3} A))
+\end{align*}
+\end{fleqn}
+
+\subsection*{Split fibred terminal object functor $1 : \mathcal{B} \longrightarrow \mathcal{V}$}
+
+We define the terminal object functor $1$ in terms of the unit type, by 
+\[
+1 (\Gamma) \defeq \lj \Gamma 1
+\qquad
+1 (V_1, \ldots, V_n) \defeq (V_1, \ldots, V_n, x.\,x)
+\]
+
+We proceed by showing that $1$ is split fibred. On the one hand, we trivially have that $p \comp 1 = \id_{\mathcal{B}}$. On the other hand, we also see that $1$ preserves Cartesian morphisms on-the-nose---in $\id_{\mathcal{B}} : \mathcal{B} \longrightarrow \mathcal{B}$, every morphism in the total category is Cartesian.
+
+The unit and counit of the adjunction $p \dashv 1$ are given by components
+\[
+\eta_{\lj {\Gamma\,} {\,A}} \defeq (\overrightarrow{x_i}, x.\,\star) : \lj \Gamma A \longrightarrow \lj \Gamma 1
+\qquad
+\varepsilon_{\Gamma} \defeq \overrightarrow{x_i} : \Gamma \longrightarrow \Gamma 
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$.
+
+We omit the proofs of the naturality of $\eta$ and $\varepsilon$. 
+We also omit the naturality proofs for all other natural transformations we define in the rest of this section. Finally, we note that the two unit-counit laws hold because both $\eta$ and $\varepsilon$ are defined as identities on contexts; and every well-formed value term of type $1$ is definitionally equal to $\star$.
+
+\subsection*{Comprehension functor $\ia - : \mathcal{V} \longrightarrow \mathcal{B}$}
+
+We define $\ia -$ in terms of context extension.
+To facilitate this, we fix a choice of a fresh value variable $\mathsf{fresh}(X)$ for every finite set 
+$X$ of value variables, and then define
+\index{ f@$\mathsf{fresh}(X)$ (a choice of a fresh value variable for a finite set $X$ of value variables)}
+\[
+\ia {\lj \Gamma A} \defeq \Gamma, x \!:\! A
+\qquad
+\ia {(\overrightarrow{V_i}, y.\, V)} \defeq (\overrightarrow{V_i}, V[y_1/y]) : \Gamma_1, y_1 \!:\! A \longrightarrow \Gamma_2, y_2 \!:\! B
+\]
+where $(\overrightarrow{V_i}, y.\, V) : \lj {\Gamma_1} A \longrightarrow \lj {\Gamma_2} B$ and 
+$x \defeq \mathsf{fresh}(V\!ars(\Gamma))$, with $y_1$ and $y_2$ chosen similarly.
+In the rest of this chapter, we often leave the uses of $\mathsf{fresh}(X)$ implicit.
+
+The unit and counit of the adjunction $1 \dashv \ia -$ are given by components
+\[
+\eta_{\Gamma} \defeq (\overrightarrow{x_i}, \star) : \Gamma \longrightarrow \Gamma, x \!:\! 1
+\qquad
+\varepsilon_{\lj {\Gamma\,} {\,A}} \defeq (\overrightarrow{x_i}, y.\, x) : \lj {\Gamma, x \!:\! A} 1 \longrightarrow \lj \Gamma A
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$. 
+
+We conclude by showing that the two unit-counit laws hold for these $\eta$ and $\varepsilon$.
+
+On the one hand, we observe that the first unit-counit triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\ia - \ar[r]^-{\eta \,\comp\, \ia -} \ar[dr]_{\id_{\ia -}} & \ia - \comp 1 \comp \ia - \ar[d]^-{\ia - \,\comp\, \varepsilon}
+\\
+& \ia -
+}
+\]
+can be rewritten for each well formed value type $\lj \Gamma A$ (with $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$) as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\Gamma, x \!:\! A \ar[r]^-{(\overrightarrow{x_i}, x, \star)} \ar[dr]_{(\overrightarrow{x_i}, x)} & \Gamma, x \!:\! A, y \!:\! 1 \ar[d]^-{(\overrightarrow{x_i}, x)}
+\\
+& \Gamma, x \!:\! A
+}
+\]
+It is now easy to verify that this triangle commutes, simply by using the simultaneous substitution based definition of the composition of morphisms in $\mathcal{B}$. 
+
+On the other hand, we observe that the second unit-counit triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+1 \ar[r]^-{1 \,\comp\, \eta} \ar[dr]_{\id_1} & 1 \comp \ia - \comp 1 \ar[d]^-{\varepsilon \,\comp\, 1}
+\\
+& 1
+}
+\]
+can be rewritten for each well-formed value context $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$ as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj \Gamma 1 \ar[r]^-{(\overrightarrow{x_i}, \star, y. y)} \ar[dr]_{(\overrightarrow{x_i}, x. x)} & \lj {\Gamma, x \!:\! 1} 1 \ar[d]^-{(\overrightarrow{x_i}, y'\!\!. x)}
+\\
+& \lj \Gamma 1
+}
+\]
+Similarly to the other unit-counit triangle, it is now easy to verify that this triangle commutes, simply by using the definition of the composition of morphisms in $\mathcal{B}$, and the fact that every well-typed term of type $1$ is definitionally equal to $\star$.
+
+\subsection*{The induced split full comprehension category $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^{\to}$}
+
+We begin by recalling that we showed how the comprehension category $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^{\to}$ is derived from the adjunction $1 \dashv\, \ia -$ in Proposition~\ref{prop:comprehensioncategorywithunit}. In this classifying fibred adjunction model, the functor $\mathcal{P} : \mathcal{V} \longrightarrow \mathcal{B}^{\to}$ can be shown to be given on objects by
+\[
+\mathcal{P}(\lj \Gamma A) \defeq (x_1, \ldots, x_n) : \Gamma, x \!:\! A \longrightarrow \Gamma
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, with $x \defeq \mathsf{fresh}(V\!ars(\Gamma))$; and on morphisms by
+\[
+\xymatrix@C=6em@R=4em@M=0.5em{
+\Gamma_1, y_1 \!:\! A 
+\ar[d]_-{\txt<14pc>{$\mathcal{P}(\overrightarrow{V_j}, x.\, V) \qquad \defeq $}}_-{\overrightarrow{x_i}}
+\ar[r]^-{(\overrightarrow{V_j}, V[y_1/x])}
+&
+\Gamma_2, y_2 \!:\! B
+\ar[d]^-{\overrightarrow{x'_j}}
+\\
+\Gamma_1
+\ar[r]_-{\overrightarrow{V_j}}
+&
+\Gamma_2
+}
+\]
+where $(\overrightarrow{V_j}, x.\, V) : \lj {\Gamma_1} A \longrightarrow \lj {\Gamma_2} B$. Further, for better readability, we  
+assume in the previous diagram that $\Gamma_1 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$ and $\Gamma_2 = x'_1 \!:\! B_1, \ldots, x'_m \!:\! B_m$. 
+
+In order to show that this comprehension category is full, we need to prove that the functor $\mathcal{P}$ is fully-faithful. We do so by first constructing a mapping 
+\[
+\mathcal{P}^{-1}_{\lj {\Gamma_1} A, \lj {\Gamma_2} B} : \mathcal{B}^{\to}(\mathcal{P}(\lj {\Gamma_1} A) , \mathcal{P}(\lj {\Gamma_2} B)) \longrightarrow \mathcal{V}(\lj {\Gamma_1} A , \lj {\Gamma_2} B)
+\]
+for any two well-formed value types $\lj {\Gamma_1} A$ and $\lj {\Gamma_2} B$. In particular, given a morphism 
+\[
+\xymatrix@C=6em@R=4em@M=0.5em{
+\Gamma_1, y_1 \!:\! A 
+\ar[d]_-{\overrightarrow{x_i}}
+\ar[r]^-{(\overrightarrow{W_j}, W)}
+&
+\Gamma_2, y_2 \!:\! B
+\ar[d]^-{\overrightarrow{x'_j}}
+\\
+\Gamma_1
+\ar[r]_-{\overrightarrow{V_j}}
+&
+\Gamma_2
+}
+\]
+in $\mathcal{B}^{\to}(\mathcal{P}(\lj {\Gamma_1} A) , \mathcal{P}(\lj {\Gamma_2} B))$, we first observe that the commutativity of the above square entails $\veq {\Gamma_1} {W_j} {V_j} {B_j[\overrightarrow{W_k}/\overrightarrow{x'_k}]}$, for all $1 \leq j \leq m$. Therefore, we can  define 
+\[
+\mathcal{P}^{-1}_{\lj {\Gamma_1} A, \lj {\Gamma_2} B}((\overrightarrow{W_j}, V),\overrightarrow{V_j}) \defeq (\overrightarrow{V_j}, y_1.\, W)
+\]
+
+Now, verifying that $\mathcal{P}$ is fully-faithful is straightforward: on the one hand, we have 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \mathcal{P}(\mathcal{P}^{-1}_{\lj {\Gamma_1} A, \lj {\Gamma_2} B}((\overrightarrow{W_j}, V),\overrightarrow{V_j})) 
+\\
+=\,\, &
+\mathcal{P}(\overrightarrow{V_j}, y_1.\, W)
+\\
+=\,\, &
+((\overrightarrow{V_j},W[y_1/y_1]) , \overrightarrow{V_j})
+\\
+=\,\, &
+((\overrightarrow{V_j},W) , \overrightarrow{V_j})
+\\
+=\,\, &
+((\overrightarrow{W_j},W) , \overrightarrow{V_j})
+\end{align*}
+\end{fleqn}
+and on the other hand, we have 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \mathcal{P}^{-1}_{\lj {\Gamma_1} A, \lj {\Gamma_2} B}(\mathcal{P}(\overrightarrow{V_j}, x .\, V))
+\\
+=\,\, &
+\mathcal{P}^{-1}_{\lj {\Gamma_1} A, \lj {\Gamma_2} B}((\overrightarrow{V_j}, V[y_1/x]),(\overrightarrow{V_j}))
+\\
+=\,\, &
+(\overrightarrow{V_j}, y_1.\,V[y_1/x])
+\\
+=\,\, &
+(\overrightarrow{V_j}, x .\,V)
+\end{align*}
+\end{fleqn}
+
+\subsection*{Category $\mathcal{C}$ of computation types}
+
+The category $\mathcal{C}$ of computation types is defined similarly to the category $\mathcal{V}$ of value types. First, the objects of $\mathcal{C}$ are given by well-formed computation types $\lj \Gamma \ul{C}$. Secondly, given two well-formed computation types $\lj {\Gamma_1} \ul{C}$ and $\lj {\Gamma_2} \ul{D}$ such that \linebreak $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, a morphism $\lj {\Gamma_1} \ul{C} \longrightarrow \lj {\Gamma_2} \ul{D}$ is given by an equivalence \linebreak class of tuples $(V_1, \ldots, V_n, z.\, K)$ of well-typed value and homomorphism terms, \linebreak where $\vj {\Gamma_1} {V_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$, for all $1 \leq i \leq n$, as before; and where \linebreak $\hj {\Gamma_1} {z \!:\! \ul{C}} {K} {\ul{D}[\overrightarrow{V_i}/\overrightarrow{x_i}]}$. In $(V_1, \ldots, V_n, z.\,K)$, the computation variable $z$ is bound in the homomorphism term $K$.
+The equivalence relation on such tuples of well-typed value and homomorphism terms is again given component-wise, namely, by
+\[
+\mkrule
+{{(V_1, \ldots, V_n, z.\,K)} \equiv {(W_1, \ldots, W_n, z.\,L)} : \lj {\Gamma_1} \ul{C} \longrightarrow \lj {\Gamma_2} \ul{D}}
+{
+\begin{array}{c}
+\veq {\Gamma_1} {V_i} {W_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]} \qquad (1 \leq i \leq n)
+\\
+\heq {\Gamma_1} {z \!:\! \ul{C}} {K} {L} {\ul{D}[V_1/x_1, \ldots, V_n/x_n]}
+\end{array}
+}
+\]
+
+Analogously to $\mathcal{V}$, the composition of morphisms is again defined using simultaneous substitutions, but this time by also using the substitution of homomorphism terms for computation variables. In detail, the composition of any two morphisms
+\[
+(V_1, \ldots, V_n, z_1.\, K) : \lj {\Gamma_1} {\ul{C}_1} \longrightarrow \lj {\Gamma_2} {\ul{C}_2}
+\qquad
+(W_1, \ldots, W_m, z_2.\, L) : \lj {\Gamma_2} {\ul{C}_2} \longrightarrow \lj {\Gamma_3} {\ul{C}_3}
+\]
+is given by
+\[
+\hspace{-0.1cm}
+(W_1, \ldots, W_m, z_2.\, L) \comp (V_1, \ldots, V_n, z_1.\, K) \defeq (W_1[\overrightarrow{V_i}/\overrightarrow{x_i}], \ldots, W_m[\overrightarrow{V_i}/\overrightarrow{x_i}], z_1.\, L[\overrightarrow{V_i}/\overrightarrow{x_i}][K/z_2])
+\]
+where we assume that $\Gamma_2 =  x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$. 
+
+For any well-formed computation type $\lj \Gamma \ul{C}$, the identity morphism $\id_{\lj {\Gamma\,} {\,\ul{C}}}$ is again given by a tuple of variables, namely, by
+\[
+\id_{\lj {\Gamma\,} {\,\ul{C}}} \defeq (x_1, \ldots, x_n, z.\, z) : \lj \Gamma \ul{C} \longrightarrow \lj \Gamma \ul{C}
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$.
+
+Finally, analogously to $\mathcal{V}$, the associativity and identity laws for composition follow  from the properties we established about simultaneous substitutions of value terms for value variables in the beginning of this section, 
+and the results we established in Section~\ref{sect:syntax} about substituting homomorphism terms for computation variables.
+
+\subsection*{Split fibration $q : \mathcal{C} \longrightarrow \mathcal{B}$}
+
+We define the functor $q$ by mapping a well-formed computation type to its context:
+\[
+q(\lj \Gamma A) \defeq \Gamma
+\qquad
+q(V_1, \ldots, V_n, z.\, K) \defeq (V_1, \ldots, V_n)
+\]
+where $(V_1, \ldots, V_n, z.\, K) : \lj {\Gamma_1} {\ul{C}} \longrightarrow \lj {\Gamma_2} {\ul{D}}$. 
+
+
+Given a morphism $\overrightarrow{V_i} : \Gamma_1 \longrightarrow \Gamma_2$ in $\mathcal{B}$ and a well-formed computation type $\lj {\Gamma_2} {\ul{C}}$, we note that the morphism given by
+\[
+(\overrightarrow{V_i}, z.\,z) : \lj {\Gamma_1} {\ul{C}[V_1/x_1, \ldots, V_n/x_n]} \longrightarrow \lj {\Gamma_2} {\ul{C}}
+\]
+is Cartesian over $\overrightarrow{V_i} : \Gamma_1 \longrightarrow q(\lj {\Gamma_2} \ul{C})$, with the unique mediating morphism in
+\[
+\xymatrix@C=4.25em@R=3em@M=0.5em{
+\lj {\Gamma_3} \ul{D} \ar@/^2pc/[rr]^-{(\overrightarrow{W_i}, z.K)} \ar@{-->}[r] & \lj {\Gamma_1} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} \ar[r]_-{(\overrightarrow{V_i}, z.\,z)} & \lj {\Gamma_2} \ul{C} & \text{in} & \mathcal{V} \ar[d]^-{p}
+\\
+\Gamma_3 \ar[r]^-{\overrightarrow{V'_j}} \ar@/_2pc/[rr]_{q(\overrightarrow{W_i}, z.K)}  & \Gamma_1 \ar[r]^{\overrightarrow{V_i}} & \Gamma_2 & \text{in} & \mathcal{B}
+}
+\]
+given by
+\[
+(\overrightarrow{V'_j}, z.\,K) : \lj {\Gamma_3} \ul{D} \longrightarrow \lj {\Gamma_1} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+
+Analogously to the chosen Cartesian morphisms in $p$, this mediating morphism is well-defined because of the commutativity of the lower diagram in $\mathcal{B}$; and because of the properties we established about simultaneous substitutions of value terms for value variables in the beginning of this section, and the results we established in Section~\ref{sect:syntax} about substituting homomorphism terms for computation variables.
+The uniqueness of this mediating morphism is then proved analogously to the uniqueness of the corresponding mediating morphisms in $p$, as discussed in detail earlier in this section.
+
+The induced reindexing functors $(V_1, \ldots, V_n)^* : \mathcal{C}_{\Gamma_2} \longrightarrow \mathcal{C}_{\Gamma_1}$ are given analogously to the corresponding functors for $p$: on objects, they are given by
+\[
+(\overrightarrow{V_i})^*(\lj {\Gamma_2} \ul{C}) \defeq \lj {\Gamma_1} {\ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+and on morphisms $(x_1, \ldots, x_n, z.\, K) : \lj {\Gamma_2} {\ul{C}} \longrightarrow \lj {\Gamma_2}  {\ul{D}}$, they are given by
+\[
+(\overrightarrow{V_i})^*(x_1, \ldots, x_n, z .\, K) \defeq (y_1, \ldots, y_m, z .\, K[\overrightarrow{V_i}/\overrightarrow{x_i}])
+\]
+
+Finally, we note that analogously to the fibration $p$ defined earlier, $q$ is also split.
+
+\subsection*{$p$ has split dependent products and strong split dependent sums}
+
+We omit a detailed discussion about these properties of $p$ because we discuss analogous properties for $q$ in detail later in this section.
+We only note that the split dependent products are defined in terms of the value $\Pi$-type $\Pi\, x\!:\! A .\, B$; and the strong split dependent sums in terms of the value $\Sigma$-type $\Sigma\, x \!:\! A .\, B$. The strength of the latter is witnessed by isomorphisms $\kappa_{(\Gamma \,\vdash\, A),\, ({\Gamma, x : A} \,\vdash\, B)} : \Gamma, x \!:\! A, y \!:\! B \overset{\cong}{\longrightarrow} \Gamma, y' \!:\! \Sigma\, x \!:\! A .\, B$, given by 
+\[
+\kappa_{(\Gamma \,\vdash\, A),\, ({\Gamma, x : A} \,\vdash\, B)} \defeq (\overrightarrow{x_i}, \langle x , y \rangle)
+\qquad
+\kappa_{(\Gamma \,\vdash\, A),\, ({\Gamma, x : A} \,\vdash\, B)}^{-1} \defeq (\overrightarrow{x_i}, \fst y' , \snd y')
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$.
+
+\subsection*{$p$ has strong fibred colimits of shape $\mathbf{0}$}
+
+Given any diagram of the form $J : \mathbf{0} \longrightarrow \mathcal{V}_\Gamma$, we define the vertex $\mathsf{\ul{colim}}(J)$ as
+\[
+\mathsf{\ul{colim}}(J) \defeq \lj \Gamma 0
+\]
+and note that the cocone $\mathsf{\ul{in}}^J : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$ is given vacuously as a natural transformation between functors with empty domains. It is easy to verify that both $\mathsf{\ul{colim}}(J)$ and $\mathsf{\ul{in}}^J$ are preserved by reindexing, i.e., substituting  value terms for value variables.
+
+Next, we observe that for any diagram of the form $J : \mathbf{0} \longrightarrow \mathcal{V}_\Gamma$, we have 
+\[
+\mathsf{lim}(\widehat{J}) = \mathbf{1}
+\]
+where the diagram $\widehat{J} : \mathbf{0}^{\text{op}} \longrightarrow \mathsf{Cat}$ is derived from $J$ trivially. 
+
+As a consequence of the above observation about $\mathsf{lim}(\widehat{J})$, the unique mediating functor $\langle \{\mathsf{\ul{in}}^J_D\}^*_{D \,\in\, \mathbf{0}} \rangle : \mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}} \longrightarrow \mathsf{lim}(\widehat{J})$ turns out to be the trivially constant functor with codomain $\mathbf{1}$. Therefore, showing that $\langle \{\mathsf{\ul{in}}^J_D\}^*_{D \,\in\, \mathbf{0}} \rangle$ is fully-faithful simplifies to showing that there is exactly one morphism between every pair of objects in $\mathcal{V}_{\Gamma,\, x : 0}$, which is straightforward. In particular, assuming  $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, any morphism
+\[
+(\overrightarrow{x_i}, x, y.\,V) : \lj {\Gamma, x \!:\! 0} A \longrightarrow \lj {\Gamma, x \!:\! 0} B
+\]
+in $\mathcal{V}_{\Gamma,\, x : 0}$ can be shown to be equal to
+\[
+(\overrightarrow{x_i}, x, y.\,\absurd {} x)
+\]
+using the $\eta$-equation for empty case analysis. 
+
+\subsection*{$p$ has strong fibred colimits of shape $\mathbf{2}$}
+
+Given any diagram of the form $J : \mathbf{2} \longrightarrow \mathcal{V}_\Gamma$, we define the vertex $\mathsf{\ul{colim}}(J)$ as
+\[
+\mathsf{\ul{colim}}(J) \defeq \lj \Gamma {J(0) + J(1)}
+\]
+and the cocone $\mathsf{\ul{in}}^J : J \longrightarrow \Delta(\mathsf{\ul{colim}}(J))$ by 
+\[
+\begin{array}{c}
+\mathsf{\ul{in}}^J_0 \defeq (\overrightarrow{x_i}, x.\, \inl {} x) : \lj \Gamma {J(0)} \longrightarrow \lj \Gamma {J(0) + J(1)}
+\\[1mm]
+\mathsf{\ul{in}}^J_1 \defeq (\overrightarrow{x_i}, x.\, \inr {} x) : \lj \Gamma {J(1)} \longrightarrow \lj \Gamma {J(0) + J(1)}
+\end{array}
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$.
+Similarly to the strong fibred colimits of shape $\mathbf{0}$, it is again easy to verify that both $\mathsf{\ul{colim}}(J)$ and $\mathsf{\ul{in}}^J$ are preserved by reindexing.
+
+Next, we observe that for any diagram of the form $J : \mathbf{2} \longrightarrow \mathcal{V}_\Gamma$, we have 
+\[
+\mathsf{lim}(\widehat{J}) = \mathcal{V}_{\Gamma,\, y_0 : J(0)} \times \mathcal{V}_{\Gamma,\, y_1 : J(1)}
+\]
+where the diagram $\widehat{J} : \mathbf{2}^{\text{op}} \longrightarrow \mathsf{Cat}$ is derived from $J$ as in Definition~\ref{def:strongcolimits}. 
+
+As a consequence of this observation about $\mathsf{lim}(\widehat{J})$, the unique mediating functor \linebreak $\langle \{\mathsf{\ul{in}}^J_D\}^*_{D \,\in\, \mathbf{2}} \rangle : \mathcal{V}_{\ia {\mathsf{\ul{colim}}(J)}} \longrightarrow \mathsf{lim}(\widehat{J})$ sends any morphism
+\[
+(\overrightarrow{x_i}, x, y .\, V) : \lj {\Gamma, x \!:\! J(0) + J(1)}{A} \longrightarrow \lj {\Gamma, x \!:\! J(0) + J(1)}{B} 
+\]
+in $\mathcal{V}_{\Gamma,\, x : J(0) \,+\, J(1)}$ to a pair of morphisms
+\[
+\begin{array}{c}
+(\overrightarrow{x_i}, y_0, y .\, V[\inl {} {y_0}/x]) : \lj {\Gamma, y_0 \!:\! J(0)}{A[\inl {} {y_0}/x]} \longrightarrow \lj {\Gamma, y_0 \!:\! J(0)}{B[\inl {} {y_0}/x]}
+\\[1mm]
+(\overrightarrow{x_i}, y_1, y .\, V[\inr {} {y_1}/x]) : \lj {\Gamma, y_1 \!:\! J(1)}{A[\inr {} {y_1}/x]} \longrightarrow \lj {\Gamma, y_1 \!:\! J(1)}{B[\inr {} {y_1}/x]}
+\end{array}
+\]
+in $\mathcal{V}_{\Gamma,\, y_0 : J(0)}$ and $\mathcal{V}_{\Gamma,\, y_1 : J(1)}$, respectively.
+We note that for better readability, we use different names ($y_0$ and $y_1$) for the variable $x \defeq \mathsf{fresh}(V\!ars(\Gamma))$ in the last two morphisms.
+
+In order to show that $\langle \{\mathsf{\ul{in}}^J_D\}^*_{D \,\in\, \mathbf{2}} \rangle$ is fully-faithful, we first define the mapping of morphisms in the reverse direction: we send any pair of morphisms
+\[
+\begin{array}{c}
+(\overrightarrow{x_i}, y_0, y .\, W_0) : \lj {\Gamma, y_0 \!:\! J(0)}{A[\inl {} {y_0}/x]} \longrightarrow \lj {\Gamma, y_0 \!:\! J(0)}{B[\inl {} {y_0}/x]}
+\\[1mm]
+(\overrightarrow{x_i}, y_1, y .\, W_1) : \lj {\Gamma, y_1 \!:\! J(1)}{A[\inr {} {y_1}/x]} \longrightarrow \lj {\Gamma, y_1 \!:\! J(1)}{B[\inr {} {y_1}/x]}
+\end{array}
+\]
+in $\mathcal{V}_{\Gamma,\, y_0 : J(0)}$ and $\mathcal{V}_{\Gamma,\, y_1 : J(1)}$, respectively, to a morphism
+\[
+\begin{array}{c}
+\hspace{-1.25cm} \big(\overrightarrow{x_i}, x, y.\big(\mathtt{case~} x \mathtt{~of}_{} \mathtt{~} ({\inl {\!} {\!\!(y_0 \!:\! J(0))} \mapsto \lambda y' \!:\! A[\inl {} {y_0}/x] .\, W_0[y'/y]} , 
+\\[-1mm]
+\hspace{3.025cm} {\inr {\!} {\!\!(y_1 \!:\! J(1))} \mapsto \lambda y' \!:\! A[\inr {} {y_1}/x] .\, W_1[y'/y]})\big)\,\, y\big)
+\end{array}
+\]
+in $\mathcal{V}_{\Gamma,\, x : J(0) \,+\, J(1)}$, with $y'$ chosen fresh. 
+
+Now, to show that the round-trip (on morphisms) from $\mathcal{V}_{\Gamma,\, x : J(0) \,+\, J(1)}$ to the product $\mathcal{V}_{\Gamma,\, y_0 : J(0)} \times \mathcal{V}_{\Gamma,\, y_1 : J(1)}$ and back is an identity, it suffices to observe that any morphism 
+\[
+(\overrightarrow{x_i}, x, y .\, V) : \lj {\Gamma, x \!:\! J(0) + J(1)}{A} \longrightarrow \lj {\Gamma, x \!:\! J(0) + J(1)}{B} 
+\]
+in $\mathcal{V}_{\Gamma,\, x : J(0) \,+\, J(1)}$ can be shown to be equal to
+\[
+\begin{array}{c}
+\hspace{-0.85cm} \big(\overrightarrow{x_i}, x, y.\big(\mathtt{case~} x \mathtt{~of}_{} \mathtt{~} ({\inl {\!} {\!\!(y_0 \!:\! J(0))} \mapsto \lambda y' \!:\! A[\inl {} {y_0}/x] .\, V[y'/y][\inl {} {y_0}/x]} , 
+\\[-1mm]
+\hspace{3.425cm} {\inr {\!} {\!\!(y_1 \!:\! J(1))} \mapsto \lambda y' \!:\! A[\inr {} {y_1}/x] .\, V[y'/y][\inr {} {y_1}/x]})\big)\,\, y\big)
+\end{array}
+\]
+using 
+the $\eta$-equation for binary case analysis. 
+
+Showing that the other round-trip (on morphisms) from $\mathcal{V}_{\Gamma,\, y_0 : J(0)} \times \mathcal{V}_{\Gamma,\, y_1 : J(1)}$ to $\mathcal{V}_{\Gamma,\, x : J(0) \,+\, J(1)}$ and back is an identity is similarly straightforward, by using the respective $\beta$-equations for binary case analysis and function application.
+
+\subsection*{$p$ has weak split fibred strong natural numbers}
+
+We define the weak split fibred strong natural numbers in $p$ by 
+\[
+\begin{array}{c}
+\mathbb{N} \defeq \lj \diamond \Nat
+\\[1mm]
+\mathsf{zero} \defeq (x.\, \zero) : \lj \diamond 1 \longrightarrow \lj \diamond \Nat
+\\[1mm]
+\mathsf{succ} \defeq (x.\, \suc x) : \lj \diamond \Nat \longrightarrow \lj \diamond \Nat
+\end{array}
+\]
+Next, if we assume that $\Gamma =  x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, then given any pair of morphisms 
+\[
+\begin{array}{c}
+f_z \defeq (\overrightarrow{x_i}, \zero, y.\, V_z) : \lj {\Gamma, x \!:\! 1} 1 \longrightarrow \lj {\Gamma, x \!:\! \Nat} A
+\\[1mm]
+f_s \defeq (\overrightarrow{x_i}, \suc x, y.\, V_s) : \lj {\Gamma, x \!:\! \Nat} A \longrightarrow \lj {\Gamma, x \!:\! \Nat} A
+\end{array}
+\]
+in $\mathcal{V}$, the mediating morphism $\mathsf{rec}(f_z,f_s) : \Gamma, x \!:\! \Nat \longrightarrow \Gamma, x \!:\! \Nat, y \!:\! A$ is defined as
+\[
+\mathsf{rec}(f_z,f_s) \defeq 
+\big(\overrightarrow{x_i}, x, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}\big)  
+\]
+with $y_1$ and $y_2$ chosen fresh.
+
+As $\mathsf{rec}(f_z,f_s)$ is clearly a section of $(\overrightarrow{x_i}, x) : \Gamma, x \!:\! \Nat, y \!:\! A \longrightarrow \Gamma, x \!:\! \Nat$, we are left with showing that the diagram of ``$\beta$-equations" given in Definition~\ref{def:strongsplitfibredweaknaturals} commutes. To this end, we show that the two squares in the above-mentioned diagram commute, by first observing that these squares can be rewritten in this classifying model as
+\[
+\xymatrix@C=6em@R=4em@M=0.5em{
+\Gamma, x \!:\! 1 \ar[r]^-{(\overrightarrow{x_i}, \zero)} \ar[d]_-{(\overrightarrow{x_i}, x\!, \star)} & \Gamma, x \!:\! \Nat \ar[d]^-{\mathsf{rec}(f_z,f_s)}
+\\
+\Gamma, x \!:\! 1, y \!:\! 1 \ar[r]_-{(\overrightarrow{x_i}, \zero, V_z)} & \Gamma, x \!:\! \Nat, y \!:\! A
+}
+\]
+and
+\[
+\xymatrix@C=6em@R=4em@M=0.5em{
+\Gamma, x \!:\! \Nat \ar[d]_-{\mathsf{rec}(f_z,f_s)} & \Gamma, x \!:\! \Nat \ar[l]_-{(\overrightarrow{x_i}, \suc x)} \ar[d]^-{\mathsf{rec}(f_z,f_s)}
+\\
+\Gamma, x \!:\! \Nat, y \!:\! A & \Gamma, x \!:\! \Nat, y \!:\! A \ar[l]^-{(\overrightarrow{x_i}, \suc x, V_s)}
+}
+\vspace{0.25cm}
+\]
+It is now straightforward to show that these squares commute, by
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \big(\overrightarrow{x_i}, x, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}\big) \comp (\overrightarrow{x_i}, \zero)
+\\
+=\,\, & \big(\overrightarrow{x_i}, \zero, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {\zero}\big)
+\\
+=\,\, &
+(\overrightarrow{x_i}, \zero, V_z[\star/x][\star/y])
+\\
+=\,\, &
+(\overrightarrow{x_i}, \zero, V_z[\star/y])
+\\
+=\,\, &
+(\overrightarrow{x_i} , \zero, V_z) \comp (\overrightarrow{x_i} , x\!, \star)
+\end{align*}
+\end{fleqn}
+and
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \big(\overrightarrow{x_i}, x, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}\big) \comp (\overrightarrow{x_i}, \suc x)
+\\
+=\,\, & \big(\overrightarrow{x_i}, \suc x, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {\suc x}\big)
+\\
+=\,\, &
+(\overrightarrow{x_i}, \suc x, V_s[y_1/x][y_2/y][x/y_1]
+\\[-2mm]
+&
+\hspace{2.4cm} \big[\natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}/y_2\big])
+\\
+=\,\, &
+(\overrightarrow{x_i}, \suc x, V_s\big[\natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}/y\big])
+\\
+=\,\, &
+(\overrightarrow{x_i}, \suc x, V_s) \comp \big(\overrightarrow{x_i}, x, \natrec {} {V_z[\star/x][\star/y]} {y_1.\, y_2.\, V_s[y_1/x][y_2/y]} {x}\big)
+\end{align*}
+\end{fleqn}
+
+\subsection*{$p$ has split intensional propositional equality}
+
+We define the object $\Id_{\lj {\Gamma\,} {\,A}}$ in $\mathcal{V}_{\Gamma, x : A, y : A}$ as
+\[
+\Id_{\lj {\Gamma\,} {\,A}} \defeq \lj {\Gamma, x \!:\! A, y \!:\! A} {x =_A y}
+\]
+and the morphism $\mathsf{r}_A : \lj {\Gamma, x \!:\! A} 1 \longrightarrow \lj {\Gamma, x \!:\! A} {x =_A x}$ as
+\[
+\mathsf{r}_A \defeq (\overrightarrow{x_i}, x, y.\, \refl {} x)
+\]
+
+Next, given a well-formed value type $\lj {\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! x_1 =_A x_2} {B}$ and a morphism 
+\[
+f \defeq (\overrightarrow{x_i} , x , y.\, V) : \lj {\Gamma, x \!:\! A} 1 \longrightarrow \lj {\Gamma, x \!:\! A} {B[x/x_1][x/x_2][\refl {} x/x_3]}
+\]
+we define the morphism 
+\[
+\begin{array}{c}
+\hspace{-9cm}
+\mathsf{i}_{\lj {\Gamma\,} {\,A} \,,\, \lj {\Gamma, x_1 : A, x_2 : A, x_3 : x_1 =_A x_2\,} {\,B}}(f) 
+\\
+\hspace{2cm}
+: \lj {\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! x_1 =_A x_2} 1 \longrightarrow \lj {\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! x_1 =_A x_2} B
+\end{array}
+\]
+as
+\[
+(\overrightarrow{x_i} , x_1, x_2, x_3 , y .\, \pathind A {x_1.\, x_2.\, x_3.\, B} {x.\, V} {x_1} {x_2} {x_3})
+\]
+We note that for better readability, we write $x_1$ and $x_2$ for the freshly chosen value variables $x \defeq \mathsf{fresh}(V\!ars(\Gamma))$ and $y \defeq \mathsf{fresh}(V\!ars(\Gamma) \cup \{x\})$ in the above definition.
+
+Next, we note that in this classifying model, the equation relating the morphisms $\mathsf{r}_A$ and $\mathsf{i}_{\lj {\Gamma\,} {\,A} \,,\, \lj {\Gamma, x_1 \!:\! A, x_2 \!:\! A, x_3 \!:\! x_1 =_A x_2\,} {\,B}}(f)$, as given in Definition~\ref{def:strongpropequality}, amounts to showing
+\[
+\begin{array}{c}
+(\overrightarrow{x_i} , x , y .\, \pathind A {x_1.\, x_2.\, x_3.\, B} {x.\, V} {x} {x} {\refl {} x}) = (\overrightarrow{x_i} , x , y.\, V)
+\end{array}
+\]
+which follows straightforwardly from the $\beta$-equation for propositional equality.
+
+Finally, we note that all the structure we defined above is also preserved on-the-nose by reindexing, as required in Definition~\ref{def:strongpropequality}, because the type- and term-formers used in these definitions are all preserved on-the-nose by substitution. 
+
+
+\subsection*{Split fibred adjunction $F \dashv\, U$}
+
+We define the functor $F : \mathcal{V} \longrightarrow \mathcal{C}$ on objects using the type of free computations:
+\[
+F(\lj \Gamma A) \defeq \lj \Gamma FA
+\]
+and on morphisms using sequential composition:
+\[
+F(\overrightarrow{V_i}, x.\, V) \defeq (\overrightarrow{V_i}, z.\, \doto z {x \!:\! A} {} {\return V})
+\]
+where $(\overrightarrow{V_i}, x.\, V) : \lj {\Gamma_1} {A} \longrightarrow \lj {\Gamma_2} B$.
+
+
+
+We proceed by showing that $F$ is split fibred. On the one hand, we observe that $F$ does not alter the context $\Gamma$ of the given well-formed value type $\lj \Gamma A$ (or a morphism between them). On the other hand, $F$ preserves Cartesian morphisms on-the-nose:
+\[
+F(\overrightarrow{V_i}, x.\, x) = (\overrightarrow{V_i}, z.\, \doto z {x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}]} {} {\return x}) = (\overrightarrow{V_i}, z.\, z)
+\]
+where $(\overrightarrow{V_i}, x.\, x) : \lj {\Gamma_1} {A[V_1/x_1, \ldots, V_n/x_n]} \longrightarrow \lj {\Gamma_2} A$.
+
+We define the functor $U$ on objects using the type of thunked computations:
+\[
+U(\lj \Gamma \ul{C}) \defeq \lj \Gamma U\ul{C}
+\]
+and on morphisms using thunking and forcing:
+\[
+U(\overrightarrow{V_i}, z.\, K) \defeq (\overrightarrow{V_i}, x.\, \thunk (K[\force {\ul{C}} x/z]))
+\]
+with $x$ chosen fresh; and 
+where $(\overrightarrow{V_i}, z.\, K) : \lj {\Gamma_1} {\ul{C}} \longrightarrow \lj {\Gamma_2} {\ul{D}}$.
+
+Showing that $U$ is split fibred is also straightforward. On the one hand, $U$ does not alter the context $\Gamma$ of the given well-formed computation type $\lj \Gamma {\ul{C}}$ (or a morphism between them). On the other hand, $U$ preserves Cartesian morphisms on-the-nose:
+\[
+U(\overrightarrow{V_i}, z.\, z) = (\overrightarrow{V_i}, x.\, \thunk (z[\force {\ul{C}} x / z])) = (\overrightarrow{V_i}, x.\,  \thunk (\force {\ul{C}} x)) = (\overrightarrow{V_i}, x.\, x)
+\]
+where $(\overrightarrow{V_i}, z.\, z) : \lj {\Gamma_1} {\ul{C}[V_1/x_1, \ldots, V_n/x_n]} \longrightarrow \lj {\Gamma_2} \ul{C}$.
+
+Next, the unit and counit of the adjunction $F \dashv\, U$ are given by components
+\[
+\begin{array}{c}
+\eta_{\lj {\Gamma\,} {\,A}} \defeq (\overrightarrow{x_i}, x.\, \thunk (\return x)) : \lj \Gamma A \longrightarrow \lj \Gamma {UFA}
+\\[2mm]
+\varepsilon_{\lj {\Gamma\,} {\,\ul{C}}} \defeq (\overrightarrow{x_i}, z.\, \doto z {y \!:\! U\ul{C}} {} \force {\ul{C}} y) : \lj \Gamma {FU\ul{C}} \longrightarrow \lj \Gamma \ul{C}
+\end{array}
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, and where $x$,$y$, and $z$ are chosen fresh. 
+
+Finally, we show that the two unit-counit laws hold. 
+
+On the one hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+U \ar[r]^-{\eta \,\comp\, U} \ar[dr]_{\id_{U}} & U \comp F \comp U \ar[d]^-{U \,\comp\, \varepsilon}
+\\
+& U
+}
+\]
+can be rewritten for each well-formed computation type $\lj \Gamma \ul{C}$ as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj \Gamma U\ul{C} \ar[r]^-{f} \ar[dr]_{(\overrightarrow{x_i}, x. x)} & \lj \Gamma UFU\ul{C} \ar[d]^-{g}
+\\
+& \lj \Gamma U\ul{C}
+}
+\]
+where the morphisms $f$ and $g$ are given by
+\[
+\begin{array}{c}
+f \defeq (\overrightarrow{x_i}, x.\,  \thunk (\return x))
+\\[2mm]
+g \defeq \big(\overrightarrow{x_i}, x' .\,  \thunk \big(\doto {(\force {FU\ul{C}} x')} {y \!:\! U\ul{C}} {} \force {\ul{C}} y\big)\big)
+\end{array}
+\]
+It is now straightforward to show that this triangle commutes, by
+\begin{fleqn}[0.3cm]
+\begin{align*}
+&
+\big(\overrightarrow{x_i}, x' .\,  \thunk \big(\doto {(\force {FU\ul{C}} x')} {y \!:\! U\ul{C}} {} \force {\ul{C}} y\big)\big) \comp (\overrightarrow{x_i}, x.\,  \thunk (\return x))
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, x.\,  \thunk \big(\doto {(\force {FU\ul{C}} (\thunk (\return x)))} {y \!:\! U\ul{C}} {} \force {\ul{C}} y\big)\big)
+\\
+=\,\, & 
+\big(\overrightarrow{x_i}, x.\,  \thunk \big(\doto {(\return x)} {y \!:\! U\ul{C}} {} \force {\ul{C}} y\big)\big)
+\\
+=\,\, & 
+(\overrightarrow{x_i}, x.\,  \thunk (\force {\ul{C}} x))
+\\
+=\,\, & 
+(\overrightarrow{x_i}, x.\,  x)
+\end{align*}
+\end{fleqn}
+
+On the other hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the  triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+F \ar[r]^-{F \,\comp\, \eta} \ar[dr]_{\id_F} & F \comp U \comp F \ar[d]^-{\varepsilon \,\comp\, F}
+\\
+& F
+}
+\]
+can be rewritten for each well-formed value type $\lj \Gamma A$ as follows
+\[
+\hspace{-0.1cm}
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj \Gamma FA \ar[r]^-{h} \ar[dr]_{(\overrightarrow{x_i}, z. z)} & \lj \Gamma FUFA \ar[d]^-{k}
+\\
+& \lj \Gamma FA
+}
+\]
+where the morphisms $h$ and $k$ are given by
+\[
+\begin{array}{c}
+h \defeq \big(\overrightarrow{x_i}, z.\,  \doto z {x \!:\! A} {} {\return (\thunk (\return x))}\big)
+\\[2mm]
+k \defeq (\overrightarrow{x_i}, z'\! .\,  \doto {z'} {y \!:\! UFA} {} {\force {FA} y})
+\end{array}
+\]
+It is now straightforward to show that this triangle commutes, by
+\begin{fleqn}[0.3cm]
+\begin{align*}
+&
+(\overrightarrow{x_i}, z'\!.\,  \doto {z'} {y : UFA} {} {\force {FA} y}) \,\,\comp 
+\\[-2mm]
+&
+\hspace{4.7cm} \big(\overrightarrow{x_i}, z.\,  \doto z {x : A} {} {\return (\thunk (\return x))}\big)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, z.\,  \doto {\big(\doto z {x : A} {} {\return (\thunk (\return x))}\big)} {y : UFA} {} {\force {FA} y}\big)
+\\
+=\,\,&
+\big(\overrightarrow{x_i}, z .\,  \doto z {x : A} {} {\big(\doto {\return (\thunk (\return x))} {y : UFA} {} {\force {FA} y}\big)}\big)
+\\
+=\,\,&
+\big(\overrightarrow{x_i}, z .\,  \doto z {x : A} {} {\force {FA} (\thunk (\return x))}\big)
+\\
+=\,\,&
+(\overrightarrow{x_i}, z .\,  \doto z {x : A} {} {\return x})
+\\
+=\,\,&
+(\overrightarrow{x_i}, z .\,  z)
+\end{align*}
+\end{fleqn}
+
+\subsection*{$q$ has split dependent $p$-products}
+
+We define the functor 
+$
+\Pi_{\lj {\Gamma\,} {\,A}} : \mathcal{C}_{\Gamma, x : A} \longrightarrow \mathcal{C}_{\Gamma}
+$
+on objects by 
+\[
+\Pi_{\lj {\Gamma\,} {\,A}}(\lj {\Gamma, x \!:\! A} \ul{C}) \defeq \lj \Gamma {\Pi\, x \!:\! A .\, \ul{C}}
+\]
+and on morphisms by
+\[
+\Pi_{\lj {\Gamma\,} {\,A}}(\overrightarrow{x_i}, x, z.\,  K) \defeq (\overrightarrow{x_i}, z'\!.\,  \lambda\, x \!:\! A .\, K[z'\, x/z])
+\]
+with $z'$ chosen fresh.
+
+Next, we note that in this classifying model, the projection morphisms are given by
+\[
+\pi_{\lj {\Gamma\,} {\,A}} \defeq \overrightarrow{x_i}: \Gamma, x \!:\! A \longrightarrow \Gamma
+\]
+assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, with $x \defeq \mathsf{fresh}(V\!ars(\Gamma))$. 
+
+As a result, the weakening functors $\pi^*_{\lj {\Gamma\,} {\,A}}$
+can be shown to be given by syntactic weakening, both on objects and morphisms:
+\[
+\pi^*_{\lj {\Gamma\,} {\,A}}(\lj \Gamma \ul{C}) \defeq \lj {\Gamma, x \!:\! A} \ul{C}
+\qquad
+\pi^*_{\lj {\Gamma\,} {\,A}}(\overrightarrow{x_i}, z.\, K) \defeq (\overrightarrow{x_i}, x, z.\, K)
+\]
+
+Next, the unit and counit of the adjunction $\pi^*_{\lj {\Gamma\,} {\,A}} \dashv\, \Pi_{\lj {\Gamma\,} {\,A}}$ are given by components
+\[
+\begin{array}{c}
+\eta_{\lj {\Gamma\,} {\,\ul{C}}} \defeq (\overrightarrow{x_i}, z.\,  \lambda\, x \!:\! A .\, z) : \lj \Gamma \ul{C} \longrightarrow \lj \Gamma {\Pi\, x \!:\! A .\, \ul{C}}
+\\[2mm]
+\varepsilon_{\lj {\Gamma, x : A\,} {\ul{C}}} \defeq (\overrightarrow{x_i}, x, z .\,  z\,\, x) : \lj {\Gamma, x \!:\! A} {\Pi\, y \!:\! A .\, \ul{C}[y/x]} \longrightarrow \lj {\Gamma, x \!:\! A} {\ul{C}}
+\end{array}
+\]
+with $z$ chosen fresh in both definitions. 
+
+Next, we show that the split Beck-Chevalley condition holds. First, we observe that the components of the corresponding natural transformation are given by morphisms
+\[
+\begin{array}{c}
+\hspace{-7cm}
+\big(\overrightarrow{y_{\!j}}, z.\, \lambda x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, ((\lambda y \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, z)\, x)\, x\big) 
+\\[1mm]
+\hspace{2.5cm}
+: \lj {\Gamma_1} {\Pi\, x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} \longrightarrow \lj {\Gamma_1} {\Pi\, x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\end{array}
+\]
+for any Cartesian morphism $(\overrightarrow{V_i},x.\, x) : \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]} \longrightarrow \lj {\Gamma_2} {A}$ and $\lj {\Gamma_2, x \!:\! A} {\ul{C}}$.
+Then, it is easy to verify that the above components are equal to identity, i.e., $(\overrightarrow{y_{\!j}}, z.\, z)$; namely, by using the $\beta$- and $\eta$-equations for computational function application.
+
+Finally, we show that the two unit-counit laws hold. 
+
+On the one hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\Pi_{\lj {\Gamma\,} {\,A}} \ar[r]^-{\eta \,\comp\, \Pi_{\lj {\Gamma\,} {\,A}}} \ar[dr]_{\id_{\Pi_{\lj {\Gamma\,} {\,A}}}} & \Pi_{\lj {\Gamma\,} {\,A}} \comp \pi^*_{\lj {\Gamma\,} {\,A}} \comp \Pi_{\lj {\Gamma\,} {\,A}} \ar[d]^-{\Pi_{\lj {\Gamma\,} {\,A}} \,\comp\, \varepsilon}
+\\
+& \Pi_{\lj {\Gamma\,} {\,A}}
+}
+\]
+can be rewritten for each computation type $\lj {\Gamma, x \!:\! A} \ul{C}$ as follows
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj {\Gamma} \Pi\, x \!:\! A .\, \ul{C} \ar[r]^-{(\overrightarrow{x_i}, z.  \lambda x : A . z)} \ar[dr]_{(\overrightarrow{x_i}, z. z)} & \lj {\Gamma} {\Pi\, x \!:\! A .\, \Pi\, y \!:\! A .\, \ul{C}[y/x]} \ar[d]^-{(\overrightarrow{x_i}, z'\! .  \lambda x : A . (z'\, x)\,x)}
+\\
+& \lj {\Gamma} \Pi\, x \!:\! A .\, \ul{C}
+}
+\]
+which commutes because we have
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& (\overrightarrow{x_i}, z'\! .\,  \lambda\, x \!:\! A .\, (z'\, x)\, x) \comp (\overrightarrow{x_i}, z.\,  \lambda\, x \!:\! A .\, z) 
+\\
+=\,\, &
+(\overrightarrow{x_i}, z .\,  \lambda\, x \!:\! A .\, ((\lambda\, y \!:\! A .\, z)\, x)\, x)
+\\
+=\,\, &
+(\overrightarrow{x_i}, z .\,  \lambda\, x \!:\! A .\, (z[x/y])\, x)
+\\
+=\,\, &
+(\overrightarrow{x_i}, z .\,  \lambda\, x \!:\! A .\, z\,\, x)
+\\
+=\,\, &
+(\overrightarrow{x_i}, z .\,  z)
+\end{align*}
+\end{fleqn}
+
+On the other hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\pi^*_{\lj {\Gamma\,} {\,A}} \ar[r]^-{\pi^*_{\lj {\Gamma\,} {\,A}} \,\comp\, \eta} \ar[dr]_{\id_{\pi^*_{\lj {\Gamma\,} {\,A}}}} & \pi^*_{\lj {\Gamma\,} {\,A}} \comp \Pi_{\lj {\Gamma\,} {\,A}} \comp \pi^*_{\lj {\Gamma\,} {\,A}} \ar[d]^-{\varepsilon \,\comp\, \pi^*_{\lj {\Gamma\,} {\,A}}}
+\\
+& \pi^*_{\lj {\Gamma\,} {\,A}}
+}
+\]
+can be rewritten for each computation type $\lj \Gamma \ul{C}$ as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj {\Gamma, x \!:\! A} \ul{C} \ar[r]^-{(\overrightarrow{x_i}, x, z. \lambda y : A . z)} \ar[dr]_{(\overrightarrow{x_i}, x, z.z)} & \lj {\Gamma, x \!:\! A} {\Pi\, y \!:\! A .\, \ul{C}} \ar[d]^-{(\overrightarrow{x_i}, x, z'\!. z'\, x)}
+\\
+& \lj {\Gamma, x \!:\! A} \ul{C}
+}
+\]
+which commutes because we have
+\[
+(\overrightarrow{x_i}, x, z'\! .\, z'\, x) \comp (\overrightarrow{x_i}, x, z.\,  \lambda\, y \!:\! A .\, z)
+=
+(\overrightarrow{x_i}, x, z.\,  (\lambda\, y \!:\! A .\, z)\, x)
+=
+(\overrightarrow{x_i}, x, z.\, z[x/y])
+=
+(\overrightarrow{x_i}, x, z.\, z)
+\]
+
+\subsection*{$q$ has split dependent $p$-sums}
+
+We define the functor 
+$
+\Sigma_{\lj {\Gamma\,} {\,A}} : \mathcal{C}_{\Gamma, x : A} \longrightarrow \mathcal{C}_{\Gamma}
+$
+on objects by 
+\[
+\Sigma_{\lj {\Gamma\,} {\,A}}(\lj {\Gamma, x \!:\! A} \ul{C}) \defeq \lj \Gamma {\Sigma\, x \!:\! A .\, \ul{C}}
+\]
+and on morphisms by
+\[
+\Sigma_{\lj {\Gamma\,} {\,A}}(\overrightarrow{x_i}, x, z.\, K) \defeq (\overrightarrow{x_i}, z'\! .\, \doto {z'} {(x \!:\! A, z'' \!:\! \ul{C})} {} {\langle x , K[z''/z] \rangle})
+\]
+with $z'$ and $z''$ chosen fresh. 
+
+Next, the unit and counit of the adjunction $\Sigma_{\lj {\Gamma\,} {\,A}} \dashv\, \pi^*_{\lj {\Gamma\,} {\,A}}$ are given by components
+\[
+\begin{array}{c}
+\eta_{\lj {\Gamma, x : A\,} {\,\ul{C}}} \defeq (\overrightarrow{x_i}, x, z.  \langle x , z \rangle) : \lj {\Gamma, x \!:\! A} \ul{C} \longrightarrow \lj {\Gamma, x \!:\! A} {\Sigma\, y \!:\! A .\, \ul{C}[y/x]}
+\\[2mm]
+\varepsilon_{\lj {\Gamma\,} {\ul{C}}} \defeq (\overrightarrow{x_i}, z .\,  \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {z'}) : \lj {\Gamma} {\Sigma\, x \!:\! A .\, \ul{C}} \longrightarrow \lj {\Gamma} {\ul{C}}
+\end{array}
+\]
+with $z$ and $z'$ chosen fresh.
+
+Next, we show that the split Beck-Chevalley condition holds. First, we observe that the components of the corresponding natural transformation are given by morphisms
+\[
+\begin{array}{c}
+\hspace{-5.5cm}
+(\overrightarrow{y_{\!j}}, z.\, \doto {z} {(x ,z')} {} {(\doto {\langle x , \langle x , z' \rangle \rangle} {(y,z'')} {} {z''})}) 
+\\[1mm]
+\hspace{2.5cm}
+: \lj {\Gamma_1} {\Sigma\, x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]} \longrightarrow \lj {\Gamma_1} {\Sigma\, x \!:\! A[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, \ul{C}[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\end{array}
+\]
+for any Cartesian morphism $(\overrightarrow{V_i},x.\, x) : \lj {\Gamma_1} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]} \longrightarrow \lj {\Gamma_2} {A}$ and $\lj {\Gamma_2, x \!:\! A} {\ul{C}}$.
+Then, it is easy to verify that the above components are equal to identity, i.e., $(\overrightarrow{y_{\!j}}, z.\, z)$; namely, by using the $\beta$- and $\eta$-equations for computational pattern-matching.
+
+Finally, we show that the two unit-counit laws hold. 
+
+On the one hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\pi^*_{\lj {\Gamma\,} {\,A}} \ar[r]^-{\eta \,\comp\, \pi^*_{\lj {\Gamma\,} {\,A}}} \ar[dr]_{\id_{\pi^*_{\lj {\Gamma\,} {\,A}}}} & \pi^*_{\lj {\Gamma\,} {\,A}} \comp \Sigma_{\lj {\Gamma\,} {\,A}} \comp \pi^*_{\lj {\Gamma\,} {\,A}} \ar[d]^-{\pi^*_{\lj {\Gamma\,} {\,A}} \,\comp\, \varepsilon}
+\\
+& \pi^*_{\lj {\Gamma\,} {\,A}}
+}
+\]
+can be rewritten for each computation type $\lj \Gamma \ul{C}$ as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj {\Gamma, x \!:\! A} \ul{C} \ar[r]^-{(\overrightarrow{x_i}, x, z. \langle x , z \rangle)} \ar[dr]_{(\overrightarrow{x_i}, x, z.z)} & \lj {\Gamma, x \!:\! A} {\Sigma\, y \!:\! A .\, \ul{C}} \ar[d]^-{h}
+\\
+& \lj {\Gamma, x \!:\! A} \ul{C}
+}
+\]
+where the morphism $h$ is given by
+\[
+h \defeq \big(\overrightarrow{x_i}, x, z'\! .\, \doto {z'} {(y : A, z'' : \ul{C})} {} {z''}\big)
+\]
+It is now straightforward to show that this triangle commutes, by
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& 
+\big(\overrightarrow{x_i}, x, z'\! .\, \doto {z'} {(y : A, z'' : \ul{C})} {} {z''}\big) \comp (\overrightarrow{x_i}, x, z. \langle x , z \rangle)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, x, z. \doto {\langle x , z \rangle} {(y : A, z'' : \ul{C})} {} {z''}\big)
+\\
+=\,\, &
+(\overrightarrow{x_i}, x, z.\, z''[z/z''])
+\\
+=\,\, &
+(\overrightarrow{x_i}, x, z.\, z)
+\end{align*}
+\end{fleqn}
+
+On the other hand, assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we observe that the triangle
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\Sigma_{\lj {\Gamma\,} {\,A}} \ar[r]^-{\Sigma_{\lj {\Gamma\,} {\,A}} \,\comp\, \eta} \ar[dr]_{\id_{\Sigma_{\lj {\Gamma\,} {\,A}}}} & \Sigma_{\lj {\Gamma\,} {\,A}} \comp \pi^*_{\lj {\Gamma\,} {\,A}} \comp \Sigma_{\lj {\Gamma\,} {\,A}} \ar[d]^-{\varepsilon \,\comp\, \Sigma_{\lj {\Gamma\,} {\,A}}}
+\\
+& \Sigma_{\lj {\Gamma\,} {\,A}}
+}
+\]
+can be rewritten for every computation type $\lj {\Gamma, x \!:\! A} \ul{C}$ as follows:
+\[
+\xymatrix@C=5em@R=5em@M=0.5em{
+\lj \Gamma {\Sigma\, x \!:\! A .\, \ul{C}} \ar[r]^-{k} \ar[dr]_{(\overrightarrow{x_i}, z.z)} & \lj \Gamma {\Sigma\, y \!:\! A .\, \Sigma\, x \!:\! A.\, \ul{C}} \ar[d]^-{l}
+\\
+& \lj \Gamma {\Sigma\, x \!:\! A .\, \ul{C}}
+}
+\]
+where the morphisms $k$ and $l$ are given by
+\[
+\begin{array}{c}
+k \defeq \big(\overrightarrow{x_i}, z.\, \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {\langle x , \langle x , z' \rangle \rangle}\big)
+\\[2mm]
+l \defeq \big(\overrightarrow{x_i}, z''.\, \doto {z''} {(y \!:\! A, z''' \!:\! \Sigma\, x \!:\! A .\, \ul{C})} {} {z'''}\big)
+\end{array}
+\]
+It is now straightforward to show that this triangle commutes, by
+\begin{fleqn}[0.3cm]
+\begin{align*}
+&
+\big(\overrightarrow{x_i}, z''.\, \doto {z''} {(y \!:\! A, z''' \!:\! \Sigma\, x \!:\! A .\, \ul{C})} {} {z'''}\big) \comp \big(\overrightarrow{x_i}, z.\, \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {\langle x , \langle x , z' \rangle \rangle}\big)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, z.\, \doto {\big(\doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {\langle x , \langle x , z' \rangle \rangle}\big)} {(y \!:\! A, z''' \!:\! \Sigma\, x \!:\! A .\, \ul{C})} {} {z'''}\big)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, z.\, \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {\big(\doto {\langle x , \langle x , z' \rangle \rangle} {(y \!:\! A, z''' \!:\! \Sigma\, x \!:\! A .\, \ul{C})} {} {z'''}\big)}\big)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, z.\, \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {z'''[\langle x , z' \rangle/z''']}\big)
+\\
+=\,\, &
+\big(\overrightarrow{x_i}, z.\, \doto {z} {(x \!:\! A, z' \!:\! \ul{C})} {} {\langle x , z' \rangle}\big)
+\\
+=\,\, &
+(\overrightarrow{x_i}, z.\, z)
+\end{align*}
+\end{fleqn}
+
+\subsection*{$q$ admits split fibred pre-enrichment in $p$}
+
+We define the functor $\multimap \,\,: \bigintsss (\Gamma \mapsto \mathcal{C}^{\text{op}}_\Gamma \times \mathcal{C}_\Gamma) \longrightarrow \mathcal{V}$ on objects by
+\[
+\multimap (\Gamma, \lj \Gamma \ul{C}, \lj \Gamma \ul{D}) \defeq \lj \Gamma {\ul{C} \multimap \ul{D}}
+\]
+and on morphisms by
+\[
+\multimap (\overrightarrow{V_i}, z.\, K, z'\! .\, L) \defeq (\overrightarrow{V_i}, x.\, \lambda\, z'' \!:\! \ul{C}_2[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, L[x\, K[z''/z]/z'])
+\]
+where $\overrightarrow{V_i} : \Gamma_1 \longrightarrow \Gamma_2$, and $\hj {\Gamma_1} {z \!:\! \ul{C}_2[\overrightarrow{V_i}/\overrightarrow{x_i}]} K \ul{C}_1$, and $\hj {\Gamma_1} {z' \!:\! \ul{D}_1} L \ul{D}_2[\overrightarrow{V_i}/\overrightarrow{x_i}]$; where $x$ and $z''$ are chosen fresh; and where we assume that $\Gamma_2 = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$. 
+
+It is easy to verify that the functor $\multimap$ is split fibred. On the one hand, $\multimap$ does not alter the context part of the given objects and morphisms. On the other hand, $\multimap$ preserves Cartesian morphisms on-the-nose because we have 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+& \multimap (\overrightarrow{V_i}, z.\, z, z'\! .\, z') 
+\\
+=\,\, &
+(\overrightarrow{V_i}, x.\, \lambda\, z'' \!:\! \ul{C}_2[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, z'[x\,\, z[z''\!/z]/z']) 
+\\
+=\,\, &
+(\overrightarrow{V_i}, x.\, \lambda\, z'' \!:\! \ul{C}_2[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, x\,\, z[z''\!/z]) 
+\\
+=\,\, &
+(\overrightarrow{V_i}, x.\, \lambda\, z'' \!:\! \ul{C}_2[\overrightarrow{V_i}/\overrightarrow{x_i}] .\, x\,\, z'')
+\\
+=\,\, &
+(\overrightarrow{V_i}, x.\, x)
+\end{align*}
+\end{fleqn}
+
+Finally, the isomorphisms $\xi_{\Gamma,\lj {\Gamma\,} {\,\ul{C}}, \lj {\Gamma\,} {\,\ul{D}}}$ between hom-sets are witnessed by the following functions:
+\[
+\begin{array}{c}
+\xi_{\Gamma,\lj {\Gamma\,} {\,\ul{C}}, \lj {\Gamma\,} {\,\ul{D}}}(\overrightarrow{x_i}, x.\, V) \defeq (\overrightarrow{x_i}, z.\, (V[\star/x])\, z)
+\\[1mm]
+\xi^{-1}_{\Gamma,\lj {\Gamma\,} {\,\ul{C}}, \lj {\Gamma\,} {\,\ul{D}}}(\overrightarrow{x_i}, z.\, K) \defeq (\overrightarrow{x_i}, y.\, \lambda\, z' \!:\! \ul{C} .\, K[z'/z])
+\end{array}
+\]
+where $z$ is chosen fresh in the former; and $y$ and $z'$ are chosen fresh in the latter. 
+
+\subsection*{The completeness theorem}
+
+To begin with, we first summarise the above definitions and results in the next theorem.
+
+\begin{theorem}
+\label{thm:classifyingmodel}
+\index{fibred adjunction model!classifying --}
+The above definitions, based on the well-formed syntax of eMLTT, constitute a fibred adjunction model, called the \emph{classifying fibred adjunction model}.
+\end{theorem}
+
+Next, we show that  
+the interpretation function $\sem{-}$ maps eMLTT's types and terms to 
+their respective equivalence classes 
+in this classifying fibred adjunction model.
+
+\pagebreak
+
+\begin{proposition}
+\label{prop:classifyingmodelinterpretation2} 
+Assuming that $\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n$, we have:
+\mbox{}
+\begin{enumerate}[(a)]
+\item If    
+$\sem{\Gamma} = \Gamma' \in \mathcal{B}$, then $\Gamma' = x'_1 \!:\! A'_1, \ldots, x'_n \!:\! A'_n$ and for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x'_1 \!:\! A'_1, \ldots, x'_{i-1} \!:\! A'_{i-1}} {A'_i} {A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}]}
+\]
+\item If  
+$\sem{\Gamma;A} = \lj {\sem{\Gamma}} A' \in \mathcal{V}_{\sem{\Gamma}}$, then $\ljeq {\sem{\Gamma}} {A'} {A[x'_1/x_1, \ldots, x'_n/x_n]}$.
+\item If   
+$\sem{\Gamma;\ul{C}} = \lj {\sem{\Gamma}} \ul{C}' \in \mathcal{C}_{\sem{\Gamma}}$, then $\ljeq {\sem{\Gamma}} {\ul{C}'} {\ul{C}[x'_1/x_1, \ldots, x'_n/x_n]}$.
+\item If $\sem{\Gamma;V} = (x'_1, \ldots, x'_n, y.\,V') : \lj {\sem{\Gamma}} 1 \longrightarrow \lj {\sem{\Gamma}} {A'}$, then  
+\[
+\veq {\sem{\Gamma}} {V'} {V[x'_1/x_1,\ldots,x'_n/x_n]} {A'}
+\]
+\item If $\sem{\Gamma;M} = (x'_1, \ldots, x'_n, y.\,V_M) : \lj {\sem{\Gamma}} 1 \longrightarrow \lj {\sem{\Gamma}} {U\ul{C}'}$, then  
+\[
+\veq {\sem{\Gamma}} {\force {\ul{C}'} V_M} {M[x'_1/x_1,\ldots,x'_n/x_n]} {\ul{C}'}
+\]
+\item If $\sem{\Gamma;z \!:\! \ul{C};K} = (x'_1, \ldots, x'_n, z.\, K') : \lj {\Gamma} {\ul{C}} \longrightarrow \lj {\Gamma} {\ul{D}'}$, then 
+\[
+\heq {\sem{\Gamma}} {z \!:\! \ul{C}[x'_1/x_1,\ldots,x'_n/x_n]} {K'} {K[x'_1/x_1,\ldots,x'_n/x_n]} {\ul{D}'}
+\]
+\end{enumerate}
+
+\noindent
+\end{proposition}
+
+
+\begin{proof}
+We prove $(a)$--$(f)$ simultaneously, by induction on sum of the sizes of 
+the arguments to $\sem{-}$. 
+As two representative examples, we present the cases corresponding to the computational 
+$\Sigma$-type and the sequential composition of computation terms.
+
+\vspace{0.1cm}
+\noindent
+\textbf{The computational $\Sigma$-type:} 
+In this case, we have that $\ul{C} = {\Sigma\, x \!:\! A .\, \ul{D}}$.
+
+First, by inspecting the definition of $\sem{-}$ for the computational $\Sigma$-type, we get that 
+\[
+\sem{\Gamma;{\Sigma\, x \!:\! A .\, \ul{D}}} = \lj {\sem{\Gamma}} {{\Sigma\, x'' \!:\! A' .\, \ul{D}'}} \in \mathcal{C}_{\sem{\Gamma}}
+\]
+with $\sem{\Gamma;A} = \lj {\sem{\Gamma}} {A'} \in \mathcal{V}_{\sem{\Gamma}}$ and $\sem{\Gamma,x\!:\! A;\ul{D}} = \lj {\sem{\Gamma},x''\!:\! A'} \ul{D}' \in \mathcal{C}_{\sem{\Gamma},x'' :  A'}$.
+
+As a result, we can use $(b)$ and the induction hypothesis to get that 
+\[
+\ljeq {\sem{\Gamma}} {A'} {A[x'_1/x_1, \ldots, x'_n/x_n]} 
+\qquad
+\ljeq {\sem{\Gamma},x'' :  A'} {\ul{D}'} {\ul{D}[x'_1/x_1, \ldots, x'_n/x_n,x''/x]}
+\]
+
+Finally, by using the congruence equation for the computational $\Sigma$-type, we get that
+\[
+\ljeq {\sem{\Gamma}} {\Sigma\, x'' \!:\! A' .\, \ul{D}'} {\Sigma\, x'' \!:\! A[x'_1/x_1, \ldots, x'_n/x_n] .\, \ul{D}[x'_1/x_1, \ldots, x'_n/x_n,x''/x]}
+\]
+which, according to our chosen variable conventions, is in fact the proof of 
+\[
+\ljeq {\sem{\Gamma}} {\Sigma\, x'' \!:\! A' .\, \ul{D}'} {\Sigma\, x \!:\! A[x'_1/x_1, \ldots, x'_n/x_n] .\, \ul{D}[x'_1/x_1, \ldots, x'_n/x_n]}
+\]
+and which, according to the definition of simultaneous substitutions, is the proof of  
+\[
+\ljeq {\sem{\Gamma}} {\Sigma\, x'' \!:\! A' .\, \ul{D}'} {(\Sigma\, x \!:\! A .\, \ul{D})[x'_1/x_1, \ldots, x'_n/x_n]}
+\]
+
+\vspace{0.1cm}
+\noindent
+\textbf{Sequential composition:}
+In this case, we have that $M = {\doto {N_1} {x \!:\! A} {\ul{C}} {N_2}}$. 
+
+First, by unfolding the definition of $\sem{-}$ for sequential composition, we get that 
+\[
+\begin{array}{c}
+\sem{\Gamma;\doto {N_1} {x \!:\! A} {\ul{C}} {N_2}}
+\\
+=
+\\
+\big(\overrightarrow{x'_i}, y_{11}.\, \thunk \big(\doto {(\force {} {y_{11}})} {y_{12} \!:\! U\ul{C}'} {} {(\force {} {y_{12}})}\big)\big)
+\\
+\comp
+\\
+\hspace{-6.1cm}
+\big(\overrightarrow{x'_i}, y_7.\, \thunk \big(\doto {(\force {} y_7)} {y_8 \!:\! A' \times U\ul{C}'} {} {\\[-1mm] \hspace{5.3cm} \return (\pmatch {y_8} {(y_9 \!:\! A',y_{10} \!:\! U\ul{C}')} {} {y_{10}})}\big)\big)
+\\
+\comp
+\\
+\hspace{-6.5cm}
+\big(\overrightarrow{x'_i}, y_4.\, \thunk \big(\doto {(\force {} y_4)} {y_5 \!:\! A' \times 1} {} {\\[-1mm] \hspace{5cm} \return (\pmatch {y_5} {(x'' \!:\! A',y_6 \!:\! 1)} {} {\langle x'' , V_{N_2} \rangle})}\big)\big)
+\\
+\comp 
+\\
+\big(\overrightarrow{x'_i}, y_2.\, \thunk \big(\doto {(\force {} y_2)} {y_3 \!:\! A'} {} {\return \langle y_3, \star \rangle}\big)\big)
+\\
+\comp
+\\
+(\overrightarrow{x'_i}, y_1.\, V_{N_1})
+\\[0.5mm]
+=
+\\[-1mm]
+\big(\overrightarrow{x'_i}, y_1.\, V_{(\doto {N_1\!} {\!x : A\!} {\ul{C}} {\!N_2})}\big)
+\end{array}
+\]
+as a morphism $\lj {\sem{\Gamma}} 1 \longrightarrow \lj {\sem{\Gamma}} {U\ul{C}'}$ in $\mathcal{V}_{\sem{\Gamma}}$, with  
+\[ 
+\begin{array}{c}
+\sem{\Gamma;A} = \lj {\sem{\Gamma}} {A'} \in \mathcal{V}_{\sem{\Gamma}}
+\qquad
+\sem{\Gamma;\ul{C}} = \lj {\sem{\Gamma}} \ul{C}' \in \mathcal{C}_{\sem{\Gamma}}
+\\[2mm]
+\sem{\Gamma;N_1} = (x'_1, \ldots, x'_n, y_1.\,V_{N_1}) : \lj {\sem{\Gamma}} 1 \longrightarrow \lj {\sem{\Gamma}} {A'} 
+\\[2mm]
+\sem{\Gamma, x\!:\! A;N_2} = (x'_1, \ldots, x'_n, x'', y_6.\,V_{N_2}) : \lj {\sem{\Gamma}, x'' : A'} 1 \longrightarrow \lj {\sem{\Gamma},x'' \!:\! A'} {U\ul{C}'}
+\end{array}
+\]
+
+As a result, we can use $(b)$, $(c)$, and the induction hypothesis to get that 
+\[
+\begin{array}{c}
+\ljeq {\sem{\Gamma}} {A'} {A[\overrightarrow{x'_i}/\overrightarrow{x_i}]}
+\qquad
+\ljeq {\sem{\Gamma}} {\ul{C}'} {\ul{C}[\overrightarrow{x'_i}/\overrightarrow{x_i}]}
+\\[2mm]
+\veq {\sem{\Gamma}} {\force {\ul{FA}'} V_{N_1}} {N_1[\overrightarrow{x'_i}/\overrightarrow{x_i}]} {FA'}
+\\[2mm]
+\veq {\sem{\Gamma},x''\!:\! A'} {\force {\ul{C}'} V_{N_2}} {N_2[\overrightarrow{x'_i}/\overrightarrow{x_i},x''/x]} {\ul{C}'}
+\end{array}
+\]
+
+Finally, we note that the required equation
+\[
+\veq {\sem{\Gamma}} {\force {\ul{C}'} V_{(\doto {N_1\!} {\!x : A\!} {\ul{C}} {\!N_2})}} {(\doto {N_1} {x \!:\! A} {\ul{C}} {N_2})[\overrightarrow{x'_i}/\overrightarrow{x_i}]} {\ul{C}'}
+\]
+follows by straightforward equational reasoning, based on the definitional equations we just derived, in combination with the unfolding of $\sem{\Gamma;\doto {N_1} {x \!:\! A} {\ul{C}} {N_2}}$.
+\end{proof}
+
+
+
+Finally, we prove the completeness of fibred adjunction models for eMLTT.
+
+\begin{theorem}[Completeness] 
+\label{thm:completeness}
+\index{completeness theorem}
+If we assume given contexts $\Gamma_1 = y_1 \!:\! B_1, \ldots, y_n \!:\! B_n$ and 
+$\Gamma_2 = y'_1 \!:\! B'_1, \ldots, y'_m \!:\! B'_m$, then we have:
+%
+\begin{enumerate}[(a)]
+\item If $\sem{\Gamma_1;A} = \sem{\Gamma_2;B}$ in all fibred adjunction models, then $n = m$ and  
+\[
+\begin{array}{c}
+\ljeq \Gamma {A[x_1/y_1,\ldots,x_n/y_n]} {B[x_1/y'_1,\ldots,x_n/y'_n]}
+\end{array}
+\]
+for some $\Gamma = x_1\!:\! A_1, \ldots, x_n \!:\! A_n$ such that for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+%
+\item If $\sem{\Gamma_1;\ul{C}} = \sem{\Gamma_2;\ul{D}}$ in all fibred adjunction models, then $n = m$ and  
+\[
+\begin{array}{c}
+\ljeq \Gamma {\ul{C}[x_1/y_1,\ldots,x_n/y_n]} {\ul{D}[x_1/y'_1,\ldots,x_n/y'_n]}
+\end{array}
+\]
+for some $\Gamma = x_1\!:\! A_1, \ldots, x_n \!:\! A_n$ such that for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+%
+\item If $\sem{\Gamma_1;V} = \sem{\Gamma_2;W}$ in all fibred adjunction models, then $n = m$ and  
+\[
+\begin{array}{c}
+\veq \Gamma {V[x_1/y_1,\ldots,x_n/y_n]} {W[x_1/y'_1,\ldots,x_n/y'_n]} {A}
+\end{array}
+\]
+for some $A$ and $\Gamma = x_1\!:\! A_1, \ldots, x_n \!:\! A_n$ such that for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+%
+\item If $\sem{\Gamma_1;M} = \sem{\Gamma_2;N}$ in all fibred adjunction models, then $n = m$ and  
+\[
+\begin{array}{c}
+\ceq \Gamma {M[x_1/y_1,\ldots,x_n/y_n]} {N[x_1/y'_1,\ldots,x_n/y'_n]} {\ul{C}}
+\end{array}
+\]
+for some $\ul{C}$ and $\Gamma = x_1\!:\! A_1, \ldots, x_n \!:\! A_n$ such that for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+%
+\item If $\sem{\Gamma_1;z_1\!:\!\ul{C}_1;K} = \sem{\Gamma_2;z_2\!:\!\ul{C}_2;L}$ in all fibred adjunction models, then $n = m$ and  
+\[
+\begin{array}{c}
+\heq \Gamma {z_1 \!:\! \ul{C}_1[x_1/y_1,\ldots,x_n/y_n]} {K[x_1/y_1,\ldots,x_n/y_n]} {L[x_1/y'_1,\ldots,x_n/y'_n][z_1/z_2]} {\ul{D}}
+\end{array}
+\]
+for some $\ul{D}$ and $\Gamma = x_1\!:\! A_1, \ldots, x_n \!:\! A_n$ such that for all $1 \leq i \leq n$, we have 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+\end{enumerate}
+\noindent
+\end{theorem}
+
+\begin{proof}
+We prove $(a)$--$(e)$ simultaneously, following the same general pattern of using the 
+interpretation in the classifying fibred adjunction model, in combination with Proposition~\ref{prop:classifyingmodelinterpretation2}.
+As a representative example, we present the proof of $(d)$ below.
+
+First, we observe that if $\sem{\Gamma_1;M} = \sem{\Gamma_2;N}$ in all fibred adjunction models, 
+then \linebreak $\sem{\Gamma_1;M} = \sem{\Gamma_2;N}$ in the classifying fibred adjunction model. 
+As a result, we have 
+\[
+\begin{array}{c}
+\sem{\Gamma_1;M} = (x_1,\ldots, x_n, x.\, V_M) : \lj {\sem{\Gamma_1}} 1 \longrightarrow \lj {\sem{\Gamma_1}} U\ul{D}
+\\[2mm]
+\sem{\Gamma_2;N} = (x_1,\ldots, x_n, x.\, V_N) : \lj {\sem{\Gamma_2}} 1 \longrightarrow \lj {\sem{\Gamma_2}} U\ul{D}'
+\end{array}
+\]
+such that (as contexts, types, and terms are identified in the classifying fibred adjunction model when they are definitionally equal---see the definitions of $\mathcal{B}$, $\mathcal{V}$, and $\mathcal{C}$)
+\[
+\ljeq {} {\sem{\Gamma_1}} {\sem{\Gamma_2}}
+\qquad
+\ljeq {\sem{\Gamma_1}} {U\ul{D}} {U\ul{D}'}
+\qquad
+\veq {\sem{\Gamma_1}, x \!:\! 1} {V_M} {V_N} {U\ul{D}}
+\]
+from which it follows that $n = m$. As a result, we can consider $\sem{\Gamma_1;M}$ and $\sem{\Gamma_1;N}$ as 
+\[
+\begin{array}{c}
+\sem{\Gamma_1;M} = (x_1,\ldots, x_n, x.\, V_M) : \lj {\sem{\Gamma_1}} 1 \longrightarrow \lj {\sem{\Gamma_1}} U\ul{D}
+\\[2mm]
+\sem{\Gamma_2;N} = (x_1,\ldots, x_n, x.\, V_N) : \lj {\sem{\Gamma_1}} 1 \longrightarrow \lj {\sem{\Gamma_1}} U\ul{D}
+\end{array}
+\]
+and choose $\ul{C} \defeq \ul{D}$.
+
+Next, we choose $\Gamma \defeq \sem{\Gamma_1}$ and then use $(a)$ of Proposition~\ref{prop:classifyingmodelinterpretation2} to get that 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+for all $1 \leq i \leq n$, which, when combined with Proposition~\ref{prop:valuesubstlemma2simultaneous}, gives us that 
+\[
+\ljeq {x_1 \!:\! A_1, \ldots, x_{i-1} \!:\! A_{i-1}} {A_i} {B_i[x_1/y_1, \ldots, x_{i-1}/y_{i-1}]} = {B'_i[x_1/y'_1, \ldots, x_{i-1}/y'_{i-1}]}
+\]
+for all $1 \leq i \leq n$.
+
+
+Next, by using $(e)$ of Proposition~\ref{prop:classifyingmodelinterpretation2}, we get that 
+\[
+\begin{array}{c}
+\veq {\sem{\Gamma_1}} {\force {\ul{D}} V_M} {M[x_1/y_1,\ldots,x_n/y_n]} {\ul{D}}
+\\[2mm]
+\veq {\sem{\Gamma_1}} {\force {\ul{D}} V_N} {N[x_1/y'_1,\ldots,x_n/y'_n]} {\ul{D}}
+\end{array}
+\]
+
+Next, we use Propositions~\ref{prop:freevariablesofwellformedexpressions} and~\ref{prop:wellformedcomponentsofjudgements} to get that $x \not\in FVV(V_M)$, $x \not\in FVV(V_N)$, and $x \not\in FVV(\ul{D})$. As a result, we get a proof of the following definitional equation:
+\[
+\veq {\sem{\Gamma_1}} {V_M} {V_N} {\ul{D}}
+\]
+by substituting $\star$ for $x$ in $\veq {\sem{\Gamma_1}, x \!:\! 1} {V_M} {V_N} {\ul{D}}$, and by using Proposition~\ref{prop:valuesubstlemma1}.
+
+Finally, the required equation now follows by using the rules of symmetry and transitivity, and the congruence rule for forcing thunked computations, giving us 
+\[
+\ceq {\sem{\Gamma_1}} {M[x_1/y_1,\ldots,x_n/y_n]} {N[x_1/y'_1,\ldots,x_n/y'_n]} {\ul{D}}
+\]
+\end{proof}
+

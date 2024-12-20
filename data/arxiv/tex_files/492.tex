@@ -1,0 +1,186 @@
+\section{Pertubation tolerance} \label{sec:perturb}
+%\Anote{$\sigma$ in some theorems, but none in others... Needs to be consolidated.}
+
+In the previous sections, we argued that we can sample from distributions of the form $\tilde{p}(x) \propto \exp(\tilde{f(x)})$, where $\tilde{f}$ is as \eqref{eq:tildef}. In this section, the goal we be to argue that we can sample from distributions of the form $p(x) \propto \exp(f(x))$, where $f$ is as \eqref{eq:A0}. 
+
+Our main theorem is the following. 
+\begin{thm}[Main theorem with perturbations]\label{thm:main-perturb}
+Suppose $f(x)$ and $\tilde{f}(x)$ satisfy \eqref{eq:tildef} and \eqref{eq:A0}. Then, algorithm~\ref{a:mainalgo} with parameters given by Lemma~\ref{lem:a1-correct-perturb} produces a sample from a distribution $p'$ with $\ve{p-p'}_1\le \ep$ in time $\poly\pa{w_{\min}, D, d, \frac{1}{\ep}, e^{\dellarge}, \delsmall}$.
+\end{thm}
+
+The theorem will follow immediately from Lemma \ref{lem:a1-correct-perturb}, which is a straightforward analogue of \ref{lem:a1-correct}. More precisely: 
+
+\begin{lem}\label{lem:a1-correct-perturb}
+Suppose that Algorithm~\ref{a:stlmc} is run on temperatures $0<\be_1<\cdots< \be_\ell\le 1$, $\ell\le L$ with partition function estimates $\wh{Z_1},\ldots, \wh{Z_\ell}$ satisfying
+\begin{align}\label{eq:Z-ratio-correct}
+\ab{\fc{\wh{Z_i}}{Z_i} - \fc{\wh{Z_1}}{Z_1}}\le \pa{1+\rc L}^{i-1}
+\end{align} 
+for all $1\le i\le \ell$
+and with parameters satisfying
+\begin{align}
+\label{eq:beta1-perturb}
+\be_1 &= O\left(\min\left(\frac{\si^2}{D^2}, \dellarge \right)\right)\\
+\label{eq:beta-diff-perturb}
+\be_i-\be_{i-1} &= 
+%O\prc{\pf{D}{\si}^2 + \fc{d}{\be_{i-1}} + \rc{\be_{i-1}} \ln \prc{w_{\min}}}\\
+O \left(\min\left( \frac{\si^2}{D^2\pa{d+\ln \prc{w_{\min}}}} , \dellarge \right)\right)\\
+T&=\Om\pa{D^2\ln \prc{w_{\min}}}\\
+t&=\Omega \left(\frac{D^8 \left(d^4 + \ln\left(\frac{1}{w_{\min}}\right)^4 \right)}{\sigma^8 w^4_{\min}} \ln\left(\frac{1}{\epsilon} \max\left(\frac{D^2 d \ln\left(1/w_{\min}\right)}{\sigma^8 w_{\min}}, e^{\Delta}\right)\right) \max\left(\frac{D^2}{\sigma^2}, \frac{m^{16}}{\ln(1/w_{\min})^4}\right)\right)\\
+%t &=\Om\pa{ \fc{D^8\ln \prc\ep}{w_{\min}^4\si^8}\min\bc{e^{\Delta} \fc{m^{16}}{\pa{\ln \rc{w_{\min}}}^4}, \fc{\si^2}{\min(D^2, \Delta)}}}\\
+%\Om\pf{\ln \prc{\ep}m^8}{w_{\min}^2D^2}\fixme{\de^2} w_{\min}^4D^8\\
+\eta &= %O\pa{\si^2\min\bc{ \fc{\si}{tD \sqrt{\fc{D}{\si}+d} \sqrt{\ln (1/w_{\min})}}, \rc d}}.
+O\pf{\ep \si^2}{dtT \delsmall^2}.
+\end{align}
+Let $q^0$ be the distribution $\pa{N\pa{0,\fc{\si^2}{\be_1}}, 1}$ on $\R^d\times [\ell]$. 
+The distribution $q^t$ after running for $t$ steps satisfies $
+\ve{p-q^t}_1\le \ep
+$.
+Setting $\ep = O\prc{L}$ above and taking $m=\Om\pa{\ln \prc{\de}}$ samples, with probability $1-\de$ the estimate 
+\begin{align}\wh Z_{\ell+1}&=
+\wh Z_\ell \pa{\rc{m}\sumo jm e^{(-\be_{\ell+1} + \be_\ell)f_i(x_j)}}
+\end{align} also satisfies~\eqref{eq:Z-ratio-correct}.
+\end{lem}
+
+The way we prove this theorem is to prove the tolerance of each of the proof ingredients to perturbations to $f$.
+
+\subsection{Mixing time of the tempering chain} 
+
+We first show that the mixing time of the tempering chain that uses the continous Langevin transition $P_T$ for $p(x) \propto \exp(f(x))$ is comparable to that of $\tilde{p}(x) \propto \exp(\tilde{f}(x))$. Keeping in mind the statement of Lemma~\ref{lem:any-partition}, the following lemma suffices:  
+
+\begin{lem}\label{lem:poincare-liy}
+Suppose $\ve{f_1-f_2}_\iy\le \frac{\dellarge}{2}$ and $p_1\propto e^{-f_1}$, $p_2\propto e^{-f_2}$ are probability distributions on $\R^d$. Then the following hold.
+\begin{enumerate}
+\item
+\begin{align}
+\fc{\cE_{p_1}(g)}{\ve{g}_{p_1}^2} \ge e^{-\dellarge} \fc{\cE_{p_2}(g)}{\ve{g}_{p_2}^2}.
+\end{align}
+\item
+Letting $\sL_1,\sL_2$ be the generators for Langevin diffusion on $p_1,p_2$,
+\begin{align}
+\la_n(-\sL_1) &\ge e^{-\dellarge} \la_n(-\sL_2).
+\end{align}
+\item
+If a Poincar\'e inequality holds for $p_1$ with constant $C$, then a Poincar\'e inequality holds for $p_2$ with constant $Ce^{\dellarge}$.
+\end{enumerate}•
+\end{lem}
+Note that if we are given probability distributions $p_1,p_2$ such that $p_1\in [1,e^{\dellarge}]p_2R$ for some $R$, then the conditions of the lemma are satisfied.
+\begin{proof}
+%Let $Z_i=\int_{\R^d} e^{-f_i(x)}\dx$ for $i=1,2$. Then
+\begin{enumerate}
+\item
+The ratio between $p_1$ and $p_2$ is at most $e^{\Delta}$, so 
+\begin{align}
+%\fc{\cE_{p_1}(g)}{\Var_{p_1}(g)} =
+\fc{\int_{\R^d} \ve{\nb g}^2p_1\dx}{\int_{\R^d} \ve{g}^2 p_1\dx}
+&\ge 
+\fc{ e^{-\dellarge}\int_{\R^d} \ve{\nb g}^2p_2\dx}{e^{\dellarge}\int_{\R^d} \ve{g}^2 p_2\dx}
+%=e^{-\ep} \fc{\cE_{p_2}(g)}{\Var_{p_2}(g)}.
+\end{align}
+\item
+Use the first part along with the variational characterization \begin{align}\la_{m}(-\sL) = \maxr{\text{closed subspace }S\subeq L^2(p)}{\dim(S^{\perp})=m-1} \min_{g\in S} \fc{-\an{g,\sL g}}{\ve{g}_p^2}.\end{align}
+\item
+Use the second part for $m=2$; a Poincar\'e inequality is the same as a lower bound on $\la_2$.
+\end{enumerate}•
+
+\end{proof}
+
+\subsection{Mixing time at highest temperature} 
+
+We show that we can use the same highest temperature corresponding to $f(x)$ for $\tilde{f}(x)$ as well, at the cost of $e^{\dellarge}$ in the mixing time. Namely, since $\|\tilde{f} - f\|_{\infty} \leq \dellarge$, from Lemma \ref{lem:hitemp}, we immediately have: 
+\begin{lem} 
+If $f$ and $\tilde{f}$ satisfy \eqref{eq:A0} and \eqref{eq:tildef}, there exists a 1/2 strongly-convex function $g$, s.t. $\|f-g\|_{\infty} \leq D^2 + \dellarge$. 
+\end{lem} 
+
+As a consequence, the proof of Lemma~\ref{lem:hitempmix} implies 
+\begin{lem}  
+If $f$ and $\tilde{f}$ satisfy \eqref{eq:A0} and \eqref{eq:tildef}, Langevin diffusion on $\be f(x)$ satisfies a Poincar\'e inequality with constant $\fc{ 16e^{2\be (D^2 + \dellarge)}}{\be}$.
+\label{l:hitempmix-perturb}
+\end{lem} 
+
+
+\subsection{Discretization} 
+
+The proof of Lemma~\ref{l:reachcontinuous}, combined with the fact that $\ve{\nabla \tilde{f} - \nabla f}_{\infty} \leq \Delta$ gives
+
+\begin{lem}[Perturbed reach of continuous chain] Let $P^{\beta}_T(X)$ be the Markov kernel corresponding to evolving Langevin diffusion 
+\begin{equation*}\frac{dX_t}{\mathop{dt}} = - \beta \nabla f(X_t) + \mathop{d B_t}\end{equation*} 
+with $f$ and $D$ are as defined in \ref{eq:A0} for time $T$. Then, 
+\begin{equation*}\E[\|X_t - x^*\|^2] \lesssim \E[\|X_0 - x^*\|^2] + (\beta (D+ \delsmall)^2  + d)T \end{equation*} 
+\end{lem} 
+\begin{proof} 
+The proof proceeds exactly the same as Lemma~\ref{l:reachcontinuous}, noting that $\ve{\nabla \tilde{f} - \nabla f}_{\infty} \leq \delsmall$  implies
+$$ - \langle X_t - x^*, X_t - \mu_i \rangle \leq -\|X_t\|^2 + \|X_t\| (\|\mu_i\| + \|x^*\| + \delsmall) + \|x^*\| (\|\mu_i\| + \delsmall) $$  
+\end{proof} 
+
+Furthermore, since $\nabla^2 \tilde{f}(x) \preceq \nabla^2 f(x) + \delsmall I, \forall x \in \mathbb{R}^d$, from Lemma~\ref{l:hessianbound}, we get
+
+\begin{lem}[Perturbed Hessian bound] %Let $p(x) = \sum_{i=1}^n w_i \frac{e^{-f_i}(x)}{Z}$, where $f_i(x) = \frac{(x - \mu_i)^2}{\sigma^2}$ and $Z = \int_{\mathbb{R}^d} e^{-f_i} \dx$ and $\tilde{f}(x) = - \log p(x)$, we have
+$$\nabla^2 f(x) \preceq \left(\frac{2}{\sigma^2} + \delsmall\right)I , \forall x \in \mathbb{R}^d$$ 
+\end{lem}
+
+As a consequence, the analogue of Lemma~\ref{l:intervaldrift} gives: 
+\begin{lem}[Bounding interval drift] In the setting of Lemma~\ref{l:intervaldrift}, let $x \in \mathbb{R}^d, i \in [L]$, and let $\eta \leq \frac{(\frac{1}{\sigma} + \delsmall)^2}{\alpha}$. Then,
+$$\mbox{KL}(P_T(x, i) || \widehat{P_T}(x,i)) \lesssim \frac{\eta^2 (\frac{1}{\sigma^2} + \delsmall)^3 \alpha}{ 2\alpha - 1} \left(\|x - x^*\|_2^2) + Td\right) + d T \eta\left(\frac{1}{\sigma^2} + \delsmall\right)^2$$
+\end{lem}    
+
+Putting these together, we get the analogue of Lemma~\ref{l:maindiscretize}: 
+\begin{lem}  Let $p^t, q^t: \mathbb{R}^d \times [L]  \to \mathbb{R}$ be the distributions after running the simulated tempering chain for $t$ steps, where in $p^t$, for any temperature $i \in L$, the Type 1 transitions are taken according to the (discrete time) Markov kernel $P_T$: running Langevin diffusion for time $T$; in $q^t$, the Type 1 transitions are taken according to running $\frac{T}{\eta}$ steps of the discretized Langevin diffusion, using $\eta$ as the discretization granularity, s.t. $\eta \leq \frac{1}{2\left(\frac{1}{\sigma^2} + \delsmall\right)}$.  
+Then, 
+\begin{align*} \mbox{KL} (p^t || q^t) \lesssim \eta^2 \left(\frac{1}{\sigma^2} + \delsmall\right)^3 \left((D + \delsmall)^2+d\right) T t^2 + \eta^2 \left(\frac{1}{\sigma^2} + \delsmall\right)^3  \max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 + \eta\left(\frac{1}{\sigma^2} + \delsmall\right)^2  d t T  \end{align*} 
+\label{l:maindiscretize-perturb}
+\end{lem} 
+
+\subsection{Putting things together} 
+
+Finally, we prove Theorem \ref{lem:a1-correct-perturb}
+\begin{proof}[Proof of \ref{lem:a1-correct-perturb}] 
+ 
+The proof is analogous to the one of Lemma~\ref{lem:a1-correct} in combination with the Lemmas from the previous subsections. 
+
+For the analysis of the simulated tempering chain, consider the same partition $\cal P_i$ we used in Lemma~\ref{lem:a1-correct}. 
+Then, by Lemma~\ref{lem:poincare-liy}, 
+\begin{align}
+\Gap(M_{i}|_A) \ge \Omega \left( e^{-\dellarge}\pf{(\ln \rc{w_{\min}})^4}{m^{16}} \right).
+\end{align} 
+
+For the highest temperature, by Lemma~\ref{l:hitempmix-perturb}, we have
+\begin{align}
+\Gap(M_1) &=\Om\left(\be_1 e^{-2\be_1 \left(D^2 + \dellarge\right)}\right) = \Omega(\min(\frac{1}{\dellarge},\frac{1}{D^2})). 
+\end{align}
+
+Furthermore, by Lemma~\ref{lem:delta}, since the condition on $\be_i-\be_{i-1}$ is satisfied, $\de((\cal P_i)_{i=1}^\ell)=\Om(1)$. Then, same as in Lemma~\ref{lem:a1-correct}, the spectral gap of the simulated tempering chain 
+\begin{align}
+G:=\Gap(M_{\st}) =  e^{-\dellarge} \fc{w_{\min}^4}{\ell^4}\pf{{\ln \left( \rc{w_{\min}}\right)}^4}{m^{16}}.
+\end{align}
+As in Lemma~\ref{lem:a1-correct}, since $t=\Om\pf{\ln (\frac{1}{\epsilon} \max(\frac{l}{w_{\min}}, e^{\dellarge}))}G$, 
+\begin{align}\label{eq:chi-sq-final}
+\ve{\tilde{p}-q^t}_1&= O\pf{\ep w_{\min}}{\ell}\chi^2(\tilde{p}||q^0)
+%=\fc{\ep}{3}.
+\end{align}
+
+By triangle inequality,  
+\begin{align*} 
+\chi^2(\tilde{p}||q^0) &\leq \chi^2(\tilde{p}||p) + \chi^2(p||q^0)
+\end{align*}  
+
+The proof of Lemma~\ref{lem:a1-correct} bounds $\chi^2(p||q^0) = O\pf{\ell}{w_{\min}} $, and 
+\begin{align*} \chi^2(\tilde{p}||p) &= \int_{x \in \mathbb{R}^d} \left( \frac{\tilde{p}(x) - p(x)}{p(x)} \right)^2 p(x) dx \\ 
+&\leq \left( \frac{e^{\dellarge} p(x) - p(x)}{p(x)} \right)^2 p(x)  \\ 
+&\leq e^{\dellarge} \end{align*}
+
+From this, we get $\ve{\tilde{p}-q^t}_1 \leq \frac{\epsilon}{3}$. 
+
+For the term $\ve{p^t-q^t}_1$, use Pinsker's inequality and Lemma~\ref{l:maindiscretize-perturb} to get
+\begin{align}
+\ve{\tilde{p}^t-q^t}_1 \le \sqrt{2\KL(\tilde{p}^t||q^t)} \le \fc{\ep}3
+\end{align}
+for %$\eta = O\pa{\min\bc{ \rc{tD \sqrt{D+d} \sqrt{\ln (1/w_{\min})}}, \rc d}}$. 
+$\eta = O\pa{\ep \min\bc{\rc{\sqrt T t \delsmall^{3/2} (D+\sqrt d + \delsmall)}, \rc{\delsmall^2 dtT}}} = O(\frac{\ep}{\delsmall^2 dtT})$. 
+
+This gives $\ve{\tilde{p}-q^t}_1 \le \ep$. 
+
+The proof of the second part of the Lemma proceeds exactly as \ref{l:maindiscretize-perturb}.
+
+\end{proof}  
+
+

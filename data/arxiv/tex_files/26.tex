@@ -1,0 +1,508 @@
+In this section, we present a new dense initialization and demonstrate
+how it is naturally well-suited for trust-region methods defined by
+the shape-changing infinity norm. Finally, we present a full
+trust-region algorithm that uses the dense initialization, consider
+its computational cost, and prove global convergence.
+
+
+\subsection{Dense initial matrix $ \widehat{\vec{B}}_0 $}
+\label{subsec:denseinitial}
+In this section, we propose a new dense initialization for
+quasi-Newton methods.  Importantly, in order to retain the efficiency
+of quasi-Newton methods the dense initialization matrix and
+subsequently updated quasi-Newton matrices are never explicitly
+formed.  This initialization can be used with any quasi-Newton update
+for which there is a compact representation; however, for simplicity,
+we continue to refer to the {\small BFGS} update throughout this
+section.  For notational purposes, we use the initial matrix $B_0$ to
+represent the usual initialization
+and $\widehat{\vec{B}}_0$ to denote the proposed dense initialization.
+Similarly, $\{B_k\}$ and $\{\widehat{\vec{B}}_k\}$ will be used to
+denote the sequences of matrices obtained using the
+initializations $B_0$ and $\widehat{\vec{B}}_0$, respectively.
+
+Our goal in choosing an alternative initialization is
+four-fold:
+(i) to be able to treat subspaces differently depending on whether
+curvature information is available or not,
+(ii) to preserve properties of symmetry and positive-definiteness,
+(iii) to be able to efficiently compute products with the resulting quasi-Newton matrices,
+and
+(iv) to be able to efficiently solve linear systems 
+involving the resulting quasi-Newton matrices.  The initialization proposed
+in this paper leans upon two different parameter choices that can be viewed
+as an 
+estimate of the curvature of $\nabla^2 f(x_k)$ in two subspaces:
+one spanned by the columns
+of $P_\parallel$ and another 
+ spanned by the columns of $P_\perp$.  
+
+
+The usual initialization for a {\small BFGS} matrix $B_k$ is $B_0=\gamma_k I$,
+where $\gamma_k>0$.
+Note that this initialization is equivalent to
+$$	\vec{B}_0 = \gamma_kPP^T=\gamma_k\vec{P}_{\parallel} \vec{P}^T_{\parallel} + \gamma_{k} \vec{P}_{\perp} \vec{P}^T_{\perp}.$$
+In contrast, for a given $\gamma_k, \gamma^\perp_k \in \Re$, consider the
+following symmetric, and in general, dense initialization matrix:
+\begin{equation}\label{eq:denseB0}
+	\widehat{\vec{B}}_0 = \gamma_k\vec{P}_{\parallel} \vec{P}^T_{\parallel} + \gamma^\perp_k \vec{P}_{\perp} \vec{P}^T_{\perp},
+\end{equation} 
+where $P_\parallel$ and $P_\perp$ are the matrices of eigenvectors 
+defined in Section~\ref{subsec:eigen}.  We now derive the
+eigendecomposition of $\widehat{B}_k$.
+
+\begin{theorem}\label{eqn-thm1}
+Let $\widehat{\vec{B}}_0$ be defined as in \eqref{eq:denseB0}.  
+Then $\widehat{\vec{B}}_k$ generated using (\ref{eq:recursion})
+has the eigendecomposition
+\begin{equation}\label{eq:Bkhat_eig}
+	\widehat{\vec{B}}_k 
+	 =
+	\left[ \vec{P}_{\parallel} \,\, \vec{P}_{\perp}\right]
+	\left[ 
+		\begin{array}{c c}
+			\hat{\vec{\Lambda}} +\gamma_k \vec{I}_r 	& 			\\
+														&	\gamma^\perp_k\vec{I}_{n-r}
+		\end{array}
+	\right]
+	\left[ \vec{P}_{\parallel} \,\,  \vec{P}_{\perp}\right]^T,
+\end{equation}
+where $P_\parallel, P_\perp,$ and $\hat{\Lambda}$ are given in
+(\ref{eqn-pparallel}), (\ref{eqn-P}), and (\ref{eqn-lambdahat}), respectively.
+\end{theorem}
+\begin{proof}
+First note that the columns of $S_k$ are in
+$\text{Range}(\Psi_k)$, where $\Psi_k$ is defined in (\ref{eqn-PsiM}).  From
+(\ref{eqn-pparallel}), $\text{Range} (\vec{\Psi}_k) = \text{Range}
+(\vec{P}_{\parallel})$; 
+thus,
+$P_\parallel P_\parallel^T S_k = S_k$ and $P_\perp^TS_k = 0$.
+This gives that
+\begin{equation}\label{eqn-B0Bhat}
+	\widehat{\vec{B}}_0 \vec{S}_k 
+	= \gamma_k \vec{P}_{\parallel}\vec{P}^T_{\parallel} \vec{S}_k 
+	+ \gamma^\perp_k \vec{P}_{\perp} \vec{P}^T_{\perp}\vec{S}_k
+	= \gamma_k \vec{S}_k 
+	= \vec{B}_0 \vec{S}_k.
+\end{equation}
+Combining the compact representation of $\widehat{B}_k$ ((\ref{eq:comactlbfgs})
+and (\ref{eqn-PsiM}))
+together with (\ref{eqn-B0Bhat}) yields
+\begin{eqnarray*}
+	\widehat{\vec{B}}_k 
+	&=&  
+	\widehat{\vec{B}}_0 - 
+	\left[ 
+		\widehat{\vec{B}}_0\vec{S}_k \,\, \vec{Y}_k 
+	\right] 
+	\left[ 
+	\begin{array}{c c}
+		\vec{S}^T_k	\widehat{\vec{B}}_0 \vec{S}_k 		& \vec{L}_k \\
+		\vec{L}^T_k 								& -\vec{D}_k
+	\end{array}
+	\right]^{-1}
+	\left[ 
+	\begin{array}{c}
+		\vec{S}^T_k	\widehat{\vec{B}}_0	\\
+		\vec{Y}^T_k
+	\end{array}
+	\right ] \\
+	&=&  
+	\widehat{\vec{B}}_0 - 
+	\left[ 
+		{\vec{B}}_0\vec{S}_k \,\, \vec{Y}_k 
+	\right] 
+	\left[ 
+	\begin{array}{c c}
+		\vec{S}^T_k{\vec{B}}_0 \vec{S}_k 		& \vec{L}_k \\
+		\vec{L}^T_k 								& -\vec{D}_k
+	\end{array}
+	\right]^{-1}
+	\left[ 
+	\begin{array}{c}
+		\vec{S}^T_k{\vec{B}}_0	\\
+		\vec{Y}^T_k
+	\end{array}
+	\right ] \\
+	&=&
+	 \gamma_k\vec{P}_{\parallel} \vec{P}^T_{\parallel} + \gamma^\perp_k \vec{P}_{\perp} \vec{P}^T_{\perp} 
+	 +
+	 \vec{P}_{\parallel}  \hat{\vec{\Lambda}} \vec{P}^T_{\parallel}
+	 \\
+	 &=&
+	  \vec{P}_{\parallel} \left( \hat{\Lambda} + \gamma_k \vec{I}_r \right) \vec{P}^T_{\parallel} + \gamma^\perp_k \vec{P}_{\perp}\vec{P}^T_{\perp},
+\end{eqnarray*}
+which is equivalent to
+\eqref{eq:Bkhat_eig}. $\square$
+\end{proof}
+
+\medskip
+
+It can be easily verified that (\ref{eq:Bkhat_eig}) holds also for
+$P_\parallel$ defined in~\cite{BurdakovLMTR16} for possibly
+rank-deficient $\Psi_k$.  (Note that (8) 
+applies only to the special case when $\Psi_k$ is full-rank.)
+
+\medskip
+
+Theorem~\ref{eqn-thm1} shows that the matrix $\widehat{\vec{B}}_k$ that results from using
+the initialization (\ref{eq:denseB0}) shares the same eigenvectors as
+$B_k$, generated using $B_0=\gamma_k I$.  Moreover, the eigenvalues
+corresponding to the eigenvectors stored in the columns of $P_\parallel$
+are the same for $\widehat{B}_k$ and $B_k$.  The only difference
+in the eigendecompositions of $\widehat{B}_k$ and $B_k$ is in the
+eigenvalues corresponding to the eigenvectors stored in the columns of
+$P_\perp$.  This is summarized in the following corollary.
+
+\begin{corollary}\label{eqn-cor1}
+Suppose $B_k$ is a {\small BFGS} matrix initialized with
+  $B_0=\gamma_kI$ and $\widehat{\vec{B}}_k$ is a {\small BFGS} matrix
+  initialized with (\ref{eq:denseB0}).  Then $B_k$ and
+  $\widehat{\vec{B}}_k$ have the same eigenvectors; moreover, these
+  matrices have $r$ eigenvalues in common given by
+  $\lambda_i\defined\hat{\lambda}_i+\gamma_k$ where $\hat{\Lambda}=\diag(
+  \hat{\lambda}_1, \ldots, \hat{\lambda}_r)$.  \end{corollary} 
+\begin{proof} The corollary
+follows immediately by comparing (\ref{eq:eiglbfgs}) with \eqref{eq:Bkhat_eig}. $\square$
+\end{proof}
+
+\medskip
+
+The results of Theorem~\ref{eqn-thm1} and Corollary~\ref{eqn-cor1} may seem surprising at
+first since every term in the compact representation
+((\ref{eq:comactlbfgs}) and (\ref{eqn-PsiM})) depends on the
+initialization; moreover, $\widehat{B}_0$ is, generally speaking, a dense
+matrix while $B_0$ is a diagonal matrix.  However, viewed from the
+perspective of (\ref{eq:denseB0}), the parameter $\gamma^\perp_k$ only plays
+a role in scaling the subspace spanned by the columns of $P_\perp$.
+
+\medskip
+
+The initialization $\widehat{B}_0$ allows for two separate curvature
+approximations for the {\small BFGS} matrix: one in the space spanned by
+columns of $P_\parallel$ and another in the space spanned by the columns of
+$P_\perp$. 
+In the next subsection, we show that this initialization 
+is naturally well-suited for solving trust-region
+subproblems defined by the shape-changing infinity norm.
+
+
+\subsection{The trust-region subproblem} \label{subsec-decoupled}
+Here we will show that the use of 
+$\widehat{B}_0$ provides the same subproblem separability as
+$B_0$ does in the case of the shape-changing infinity norm.
+
+\medskip
+
+For $\widehat{\vec{B}}_0$ given by
+\eqref{eq:denseB0}, consider the objective function of the trust-region
+subproblem (\ref{eq:subprobsc}) resulting from the change of variables
+(\ref{eqn-varchange}):
+\begin{eqnarray*}
+	Q ( \vec{P}\vec{v} )
+	&= & 
+g_k^TPv + \frac{1}{2}v^TP^T\widehat{B}_kPv \\
+& = & 
+\vec{g}^T_{\parallel} \vec{v}_{\parallel}
+	+ \frac{1}{2} \vec{v}^T_{\parallel} \left( 
+	\hat{\vec{\Lambda}} +\gamma_k \vec{I}_r   \right) \vec{v}_{\parallel} 
+	+ \vec{g}^T_{\perp} \vec{v}_{\perp} 
+	+ \frac{1}{2}\gamma^\perp_k \left\| \vec{v}_{\perp} \right\|^2_2.
+\end{eqnarray*}
+Thus, (\ref{eq:subprobsc}) decouples into two subproblems: The
+corresponding subproblem for $q_{\parallel}(\vec{v}_{\parallel})$ remains (\ref{eqn-sub1}) and the subproblem for $q_{\perp}(\vec{v}_{\perp})$ becomes
+\begin{equation}\label{eq:q_perp2}
+	\underset{ \left\| \vec{v}_{\perp} \right\|_{2} \le \Delta_k }{\text{ minimize }} q_{\perp}\left(\vec{v}_{\perp}\right) \defined \vec{g}^T_{\perp} \vec{v}_{\perp} + 
+	\frac{1}{2}\gamma^\perp_k \left\| \vec{v}_{\perp} \right\|^2_2.
+\end{equation}
+The solution to (\ref{eq:q_perp2}) is now given by
+\begin{equation}
+\label{eq:subsolnperp2}
+\vec{v}^*_{\perp} = \widehat{\beta} \vec{g}_{\perp},
+\end{equation}
+where
+\begin{equation}
+\label{eq:subsolnbeta2}
+\widehat{\beta} =
+\begin{cases}			
+	-\frac{1}{\gamma^\perp_k} 							& \text{ if } \gamma^\perp_k > 0 \text{ and }  \left \| \vec{g}_{\perp} \right \|_2 \le \Delta_k |\gamma^\perp_k|, \\
+-\frac{ \Delta_k}{\| \vec{g}_{\perp} \|_2}     & \text{ otherwise. }			
+\end{cases}
+\end{equation}
+
+Thus, the solution  
+$p^*$ can be expressed as
+\begin{equation}\label{eqn-Roummel}
+	p^* = \widehat{\beta} g + P_{\parallel}(v_{\parallel}^* - \widehat{\beta} g_{\parallel}),
+\end{equation}
+which can computed as efficiently as the solution in \eqref{eq:pstar} for conventional initial matrices
+since they differ only by the scalar 
+($\widehat{\beta}$ in (\ref{eqn-Roummel}) versus $\beta$ in (\ref{eq:pstar})).
+
+
+
+\subsection{Determining the parameter $\gamma^\perp_k$}\label{subsec:gammaperp}
+The values $\gamma_k$ and $\gamma^\perp_k$ can be updated at each iteration.
+Since we have little information about the underlying function $f$ in the
+subspace spanned by the columns of $P_\perp$, it is reasonable to make
+conservative (i.e., large) choices  for $\gamma^\perp_k$.  Note that in the case that
+$\gamma^\perp_k > 0 \text{ and } \left \| \vec{g}_{\perp} \right \|_2 \le
+\Delta_k |\gamma^\perp_k|$, the parameter $\gamma^\perp_k$ scales the
+solution $v_\perp^*$ (see \ref{eq:subsolnbeta2}); thus, large values of
+$\gamma^\perp_k$ will reduce these step lengths in the space spanned by
+$P_\perp$.  Since the space $P_\perp$ does not explicitly use information
+produced by past iterations, it seems desirable to choose $\gamma^\perp_k$
+to be large.  However, the larger that $\gamma^\perp_k$ is chosen, 
+the closer $v^*_\perp$ will be to the zero vector.
+Also note that if
+$\gamma^\perp_k<0$ then the solution to the subproblem (\ref{eq:q_perp2})
+will always lie on the boundary, and thus, the actual value of
+$\gamma^\perp_k$ becomes irrelevant.  Moreover,
+for values $\gamma^\perp_k<0$, $\widehat{B}_k$ is not guaranteed to 
+be positive definite. 
+For these reasons, we suggest
+sufficiently large and positive values for $\gamma^\perp_k$
+related to the 
+curvature information gathered in $\gamma_1, \ldots, \gamma_k$.
+  Specific
+choices for $\gamma^\perp_k$ are presented in the numerical results
+section.
+
+\subsection{Implementation details} \label{sec-algorithm}
+In this section, we describe how we incorporate the dense initialization
+within the existing
+{\small LMTR} algorithm~\cite{BurdakovLMTR16}.  
+At the beginning of each iteration, the 
+{\small LMTR} algorithm with dense initialization
+checks if the
+unconstrained minimizer 
+(also known as the \emph{full quasi-Newton trial step}), 
+\begin{equation}\label{eqn-pstar2}
+p_u^* = - \hat{B}_k^{-1} g_k
+\end{equation}
+lies inside the trust region defined by the two-norm. 
+Because our
+proposed method uses a dense initialization, the
+so-called ``two-loop recursion'' [6] is not applicable for computing
+the unconstrained minimizer $p_u^*$ in (\ref{eqn-pstar2}).  
+However, products with
+$\hat{B}_k^{-1}$ can be performed using the compact representation
+without involving a partial 
+eigendecomposition. %, i.e.,
+Specifically, if   $V_k = \left[S_k \ Y_k\right]$
+with Cholesky factorization $V_k^TV_k = R_k^TR_k$, then
+%\begin{equation}\label{eqn-32}
+%\hat{B}_k^{-1} = \frac{1}{\gamma_k^{\perp}}I +
+%V_k \hat{M}_k V_k^T,
+%\end{equation}
+%where $V_k = \left[S_k \ Y_k\right]$,
+%$$
+%\hat{M}_k =
+%\left[
+%\begin{matrix}
+%T_k^{-T}(D_k + \gamma_k^{-1}Y_k^TY_k)T_k^{-1} & -\gamma_k^{-1}T_k^{-T}\\
+%-\gamma_k^{-1}T_k^{-1} & 0_m
+%\end{matrix}
+%\right] + \alpha_k \left(V_k^T V_k\right)^{-1},
+%$$
+\begin{equation}\label{eqn-32}
+\hat{B}_k^{-1} = \frac{1}{\gamma_k^{\perp}}I +
+V_k \hat{M}_k V_k^T,
+\end{equation}
+where 
+$$
+\hat{M}_k =
+\left[
+\begin{matrix}
+T_k^{-T}(D_k + \gamma_k^{-1}Y_k^TY_k)T_k^{-1} & -\gamma_k^{-1}T_k^{-T}\\
+-\gamma_k^{-1}T_k^{-1} & 0_m
+\end{matrix}
+\right] + \alpha_k R_k^{-1} R_k^{-T},
+$$
+$\displaystyle \alpha_k = \left(\frac{1}{\gamma_k}
+- \frac{1}{\gamma_k^{\perp}}\right)$, $T_k$ is the upper triangular
+part of the matrix $S_k^TY_k$, and $D_k$ is its diagonal.
+Thus, the inequality 
+\begin{equation}\label{eqn-unconstrainedmin}
+    \|p_u^*\|_2 \le \Delta_k
+\end{equation}
+is easily verified without explicitly forming $p_u^*$ 
+using the identity
+\begin{equation}\label{eqn-pustar}
+\|p_u^*\|_2^2 = g_k^T \hat{B}_k^{-2} g_k = 
+\gamma_k^{-2}\|g_k\|^2 + 2\gamma_k^{-1} u_k^T \hat{M}_k u_k + u_k^T \hat{M}_k (R_k^T R_k) \hat{M}_k u_k.
+\end{equation}
+Here, as in the LMTR algorithm, the vector $u_k = V_k^T g_k$ 
+and $\| g_k \|^2$ can be computed efficiently at each iteration
+(see \cite{BurdakovLMTR16} for details).
+%when updating the matrix $V_k^TV_k$. 
+Thus, the computational cost of $\|p_u^*\|_2$ is low because 
+\eqref{eqn-pustar} involves linear algebra operations in a small $2m$-dimensional space,
+the most expensive of which are related to solving triangular systems with $T_k$ and $R_k$.
+These operations grow in proportion to $m^2$ while the number of operations in 
+\eqref{eqn-pstar2}-\eqref{eqn-32} grows in proportion to $mn$. Thus, the 
+computational complexity ratio between using \eqref{eqn-pustar}  and
+\eqref{eqn-pstar2}-\eqref{eqn-32} is  $m^2/(nm) = m/n \ll 1$ since we assume that $m \ll n$.
+%the matrices $V_k^T V_k$ and $\hat{M}_k$ are small in size.  
+%\je{In particular, computing $\| p_u^* \|_2^2$ in (34) only requires $n + 8m^2+4m+4$ multiplications 
+%and $n+8m^2-3$ additions.  In contrast, forming $p_u^*$ explicitly in (31) using (32) requires
+%$(2m+1)n+4m^2$ multiplications and $2mn+4m^2-2m$ additions.  Since $n \gg m$,
+%the cost of using (34) is about $1/(2m+1)$ the cost of forming $p_u^*$ in (31).}
+The norm
+equivalence for the shape-changing infinity norm studied
+in~\cite{BurdakovLMTR16} guarantees that (\ref{eqn-unconstrainedmin})
+implies that the inequality $\|p_u^*\|_{P,\infty} \le \Delta_k$ is
+satisfied; in this case, $p_u^*$ is the exact solution of the
+trust-region subproblem defined by the shape-changing infinity
+norm. 
+
+
+If (\ref{eqn-unconstrainedmin}) holds, the algorithm computes
+$p_u^*$ for generating the trial point $x_k + p_u^*$.   It can be
+easily seen that the cost of computing $p_u^*$ is $4mn$ operations,
+i.e. it is the same as for computing search direction in the line
+search L-BFGS algorithm [6].
+
+On the other hand, if (\ref{eqn-unconstrainedmin})
+does not hold, then for producing a trial point, the partial
+eigendecomposition is computed, and the trust-region subproblem is
+decoupled and solved exactly as described in Section \ref{subsec-decoupled}.
+
+
+
+
+
+
+\subsection{The algorithm and its properties}
+In Algorithm~\ref{alg}, we present a basic trust-region method that
+uses the proposed dense initialization. In this setting, we consider
+the computational cost of the proposed method, and we prove global
+convergence of the overall trust-region method.  Since $P$ may change
+every iteration, the corresponding norm $\|\cdot\|_{P,\infty}$ may
+change each iteration.  Note that initially there are no stored
+quasi-Newton pairs $\{s_j,y_j\}$.  In this case, we assume $P_{\perp}
+= I_n$ and $P_{\parallel}$ does not exist, i.e., $\hat{B}_0=\gamma_0^\perp
+I$.
+
+\begin{algorithm}[htp]
+\caption{An L-BFGS trust-region method with dense initialization} \label{alg}
+\begin{algorithmic}[1]
+\REQUIRE $x_0\in R^n$, \ $\Delta_0>0$, \ $\epsilon > 0$, \ $\gamma_0^{\perp}>0$\
+, \ $0 \leq \tau_1 < \tau_2< 0.5 < \tau_3<1$, \\
+$0<\eta_1<\eta_2\leq 0.5<\eta_3<1<\eta_4$, $0 < c_3 < 1 $
+\STATE Compute $g_0$
+\FOR{$k=0,1,2,\ldots$}
+        \IF{$\|g_k\|\leq\epsilon$}
+        \RETURN
+        \ENDIF
+        \STATE %\je{Compute the unconstrained minimizer $p_u^*$ }
+        Compute $\| p_u^* \|_2$ using \eqref{eqn-pustar}
+        \IF{ $\|p_u^*\|_2 > \Delta_k$} 
+              \STATE Compute $p^*$ for $\hat{B}_k$ using (\ref{eqn-Roummel}), where $\widehat{\beta}$ is computed using (\ref{eq:subsolnbeta2}) and $\vec{v}^*_{\parallel}$ as in (\ref{eqn:solution_vparallel})
+        \ELSE
+           \STATE Compute $p_u^*$ using \eqref{eqn-pstar2}-\eqref{eqn-32} and set $p^*\gets p_u^*$
+        \ENDIF
+        \STATE Compute the ratio $\rho_k = \frac{f(x_k+p^*)-f(x_k)}{Q(p^*)}$
+        \IF{$\rho_k {\geq \tau_1}$}
+                \STATE $x_{k+1}=x_k+p^*$
+                \STATE Compute $g_{k+1}$, $s_k$, $y_k$, $\gamma_{k+1}$ and $\gamma_{k+1}^{\perp}$
+        \STATE Choose at most $m$ pairs $\{s_j, y_j\}$ such that $ s_j^Ty_j > c_3 \| s_j \| \| y_j \| $
+        \STATE Compute $\Psi_{k+1}, R^{-1}, M_{k+1}, W, \hat{\Lambda}$ and $\Lambda$ 
+as described in Section~\ref{sec:background}
+
+        \ELSE
+                \STATE $x_{k+1} = x_k$
+        \ENDIF
+        \IF{$\rho_k < \tau_2$}
+                \STATE $\Delta_{k+1} = \min \left({\eta_1}\Delta_k, {\eta_2}\|s_k\|_{P,\infty} \right)$
+        \ELSE
+                \IF{$\rho_k \geq \tau_3$ \AND $\|s_k\|_{P,\infty}\geq {\eta_3} \Delta_k$\
+}
+                        \STATE $\Delta_{k+1} = {\eta_4} \Delta_k$
+                \ELSE
+                        \STATE{$\Delta_{k+1}=\Delta_k$}
+                \ENDIF
+        \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+The only difference between Algorithm~\ref{alg} and the %proposed
+{\small LMTR} algorithm in~\cite{BurdakovLMTR16} is the initialization
+matrix.  Computationally speaking, the use of a dense initialization
+in lieu of a diagonal initialization plays out only in the computation
+of $p^*$ by (\ref{eqn-finalsolution}).  However, there is no
+computational cost difference: The cost of computing the value for
+$\beta$ using (\ref{eq:subsolnbeta2}) in Algorithm~\ref{alg} instead
+of (\ref{eq:subsolnbeta}) in the {\small LMTR} algorithm is the same.
+Thus, the dominant cost per iteration for both Algorithm~\ref{alg} and
+the {\small LMTR} algorithm is $4mn$ operations
+(see~\cite{BurdakovLMTR16} for details).  Note that this is the same
+cost-per-iteration as the line search \LBFGS{}
+algorithm~\cite{ByrNS94}.
+
+\medskip
+
+In the next result, we provide a global convergence result for
+Algorithm~\ref{alg}.  This result is based on the convergence analysis
+presented in~\cite{BurdakovLMTR16}.
+
+\begin{theorem}\label{th_conv}
+Let  $f:R^n\rightarrow R$ be twice-continuously differentiable and bounded below on $R^n$. Suppose that there exists a scalar $c_1>0$ such that 
+\begin{equation}\label{bound_hessian}
+\|\nabla^2f(x)\|\leq c_1, \ \forall x \in R^n.
+\end{equation}
+Furthermore, suppose for $\hat{B}_0$ defined by (\ref{eq:denseB0}), that there exists a positive scalar $c_2$ such that
+\begin{equation}\label{bound_gamma}
+\gamma_k , \gamma_k^{\perp} \in (0,c_2], \ \forall k\ge 0,
+\end{equation}
+and there exists a scalar $c_3 \in (0,1)$ such that the inequality
+\begin{equation}\label{bound_sy}
+s_j^T y_j >   c_3 \|s_j\| \|y_j\|
+\end{equation} 
+holds for each quasi-Newton pair $\{s_j, y_j\}$. 
+%$\hat{B}_k$ by formula Algorithm~\ref{alg}(L213').
+Then, if the
+stopping criteria is suppressed, the infinite sequence $\{x_k\}$
+generated by Algorithm~\ref{alg}
+satisfies \begin{equation}\label{conv}
+\lim _{k\rightarrow \infty} \|\nabla f(x_k)\| = 0.
+\end{equation}
+\end{theorem}
+\begin{proof}
+From \eqref{bound_gamma}, we have 
+$\|\hat{B}_0\| \le c_2,$ which
+holds for each $k \ge 0$.  Then,
+by~\cite[Lemma~3]{BurdakovLMTR16}, there exists $c_4 > 0$ such that 
+$$
+\|\hat{B}_k\| \le c_4.
+$$
+Then, \eqref{conv} follows from~\cite[Theorem~1]{BurdakovLMTR16}. $\square$
+\end{proof}
+
+\bigskip
+
+In the following section, we consider 
+$\gamma_k^{\perp}$ parameterized by two scalars, $c$ and $\lambda$:
+\begin{equation}\label{eqn-gammaperp1}
+\gamma_k^{\perp}(c,\lambda) = \lambda c \gamma_k^{\max} + (1 - \lambda)\gamma_k,
+\end{equation}
+where $c \ge 1, \lambda \in [0,1]$, and
+$$
+ \gamma_k^{\text{max}}\defined \underset{1 \le i \le k}{ \text{ max } \gamma_i },
+ $$
+where  $\gamma_k$ is taken to be
+the conventional initialization given by (\ref{eqn-B0-usual}).  
+(This choice for $\gamma_k^\perp$ will be further discussed
+in Section \ref{sec:numexp}.)  We now show that Algorithm \ref{alg}
+converges for these choices of $\gamma_k^\perp$.  Assuming that
+(\ref{bound_hessian}) and (\ref{bound_sy}) hold, it remains to show that
+(\ref{bound_gamma}) holds for these choices of $\gamma_k^\perp$.  To see
+that (\ref{bound_gamma}) holds, notice that in this case, $$\gamma_k
+= \frac{y_k^Ty_k}{s_k^Ty_k}\le \frac{y_k^Ty_k}{c_3\|s_k\|\|y_k\|}
+\le \frac{\|y_k\|}{c_3\|s_k\|}.$$  Substituting in for the definitions of $y_k$ and $s_k$ yields that
+$$
+\gamma_k \le \frac{\|\nabla f(x_{k+1})-\nabla f(x_k)\|}{c_3\|x_{k+1}-x_k\|},$$
+implying that (\ref{bound_gamma}) holds.  Thus, Algorithm~\ref{alg} converges
+for these choices for $\gamma_k^\perp$.
+

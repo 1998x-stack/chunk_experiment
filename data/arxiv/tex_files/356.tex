@@ -1,0 +1,221 @@
+\section{Background on Markov chains}
+\label{a:markovchain}
+\subsection{Discrete time Markov chains}
+
+%\Hnote{Do I want to use $P(x,y)$ or $P(x,\dy)$ notation?}
+
+\begin{df}
+A (discrete time) Markov chain is $M=(\Om,P)$, where $\Om$ is a measure space and $P(x,y)\dy$ is a probability measure for each $x$.
+%\footnote{All chains we will consider will be absolutely continuous with respect to $\R^n$, so we use the notation $p(x)\dx$ rather than $d\mu(x)$, and $P(x,y)\dy$ rather than $P(x,dy)$.}  
+\footnote{For simplicity of notation, in this appendix we consider chains absolutely continuous with respect to $\R^n$, so we use the notation $p(x)\dx$ rather than $d\mu(x)$, and $P(x,y)\dy$ rather than $P(x,dy)$. The same results and definitions apply with the modified notation if this is not the case.}
+It defines a random process $(X_t)_{t\in \N_0}$ as follows. If $X_s=x$, then 
+\begin{align}
+\Pj(X_{s+1}\in A) = P(x,A) :&=\int_A p(x,y)\dy. 
+\end{align}
+
+A \vocab{stationary distribution} is $p(x)$ such that if $X_0\sim p$, then $X_t\sim p$ for all $t$; equivalently, $\int_\Om p(x) P(x,y) \dx = p(y)$. 
+
+A chain is \vocab{reversible} if $p(x)P(x,y) = p(y) P(y,x)$. 
+\end{df}
+%Any irreducible aperiodic Markov chain has a unique stationary distribution.
+
+\begin{df}
+For a discrete-time Markov chain $M=(\Om, P)$, let $P$ operate on functions as
+\begin{align}
+(Pg)(x) = \E_{y\sim P(x,\cdot)} g(y) = \int_{\Om} g(x)P(x,y)\dy.
+\end{align}
+
+Suppose $M=(\Om, P)$ has unique stationary distribution $p$.
+Let
+$\an{g,h}_p :=\int_{\Om} g(x)h(x)p(x)\dx$ and define the Dirichlet form and variance by
+%, and spectral gap by
+\begin{align}
+\cal E_M(g,h) &= \an{g, (I-P)h}_p \\
+%&= \int_{\Om} f(I-P)f\,d\mu\\
+\Var_p(g) &= \ve{g-\int_{\Om} gp\dx}_p^2
+\end{align}
+Write $\cal E_M(g)$ for $\cal E_M(g,g)$. 
+Define the eigenvalues of $M$, $0=\la_1\le \la_2\le \cdots$ to be the eigenvalues of $I-P$ with respect to the norm $\ved_{p}$. 
+
+Define the spectral gap by
+\begin{align}
+\Gap(M) &= \inf_{g\in L^2(p)} \fc{\cal E_M(g)}{\Var_p(g)}.
+\end{align}
+\end{df}
+Note that 
+\begin{align}
+\cal E_M(g) &= \rc 2 \iint_{\Om\times \Om}(g(x)-g(y))^2 p(x)P(x,y)\dx\dy
+\end{align}
+and that 
+\begin{align}
+\Gap(M) = \inf_{g\in L_2(p), g\perp_p \one} \fc{\cal E_M(g}{\ve{g}_p^2} = \la_2(I-P).
+\end{align}
+
+\begin{rem}
+The normalized Laplacian of a graph is defined as $\cL = I-D^{-\rc 2} A D^{-\rc 2}$, where $A$ is the adjacency matrix and $D$ is the diagonal matrix of degrees. 
+
+A change of scale by $\sqrt{p(x)}$ turns $\cL$ into $I-P$, where $P$ has the transition matrix of the random walk of the graph, so the eigenvalues of $\cL$ are equal to the eigenvalues of the Markov chain defined here.
+\end{rem}
+
+The spectral gap controls mixing for the Markov chain. Define the $\chi^2$ distance between $p,q$ by
+\begin{align}
+\chi_2(p||q) &= \int_\Om \pf{q(x)-p(x)}{p(x)}^2p(x)\dx
+= \int_\Om \pf{q(x)^2}{p(x)} - 1.
+\end{align}
+Let $p^0$ be any initial distribution and $p^t$ be the distribution after running the Markov chain for $t$ steps. Then
+\begin{align}\label{eq:gap-mix}
+\chi_2(p||p^t) \le (1-G')^t \chi(p||p^0)
+\end{align}•
+where $G'=\min(\la_2, 2-\la_{\max})$. 
+
+
+\subsection{Restricted and projected Markov chains}
+
+Given a Markov chain on $\Om$, we define two Markov chains associated with a partition of $\Om$.
+\begin{df}\label{df:assoc-mc}
+For a Markov chain $M=(\Om, P)$, and a set $A\subeq \Om$, define the \vocab{restriction of $M$ to $A$} to be the Markov chain $M|_A = (A, P|_{A})$, where
+$$
+P|_A(x,B) = P(x,B) + \one_B(x) P(x,A^c).
+$$
+(In words, $P(x,y)$ proposes a transition, and the transition is rejected if it would leave $A$.)
+
+Suppose the unique stationary distribution of $M$ is $p$. 
+Given a partition $\cal P = \set{A_j}{j\in J}$, define the \vocab{projected Markov chain with respect to $\cal P$} to be $\ol M^{\cal P} = (J, \ol P^{\cal P})$, where
+$$
+\ol P^{\cal P} (i,j) = 
+%\rc{\mu(A_i)} \int_{A_i}\int_{A_j} P(x,dy)\mu(dx).
+\rc{p(A_i)} \int_{A_i}\int_{A_j} P(x,y)p(x)\dx.
+$$
+(In words, $\ol P(i,j)$ is the ``total probability flow'' from $A_i$ to $A_j$.)
+
+We omit the superscript $\cal P$ when it is clear.
+\end{df}
+
+The following theorem lower-bounds the gap of the original chain in terms of the gap of the projected chain and the minimum gap of the restrictioned chains.
+\begin{thm}[Gap-Product Theorem\cite{madras2002markov}]\label{thm:gap-product}
+Let $M=(\Om, P)$ be a Markov chain with stationary distribution $p$. 
+
+Let $\cal P=\set{A_j}{j\in J}$ be a partition of $\Om$ such that $p(A_j)>0$ for all $j\in J$. %For $P$ nonnegative definite \Hnote{(What's with this condition?)},  
+%\Rnote{I checked the paper and did not find this condition, it doesn't make sense anyways}
+$$
+\rc 2 \Gap(\ol M^{\cal P}) \min_{j\in J}\Gap(M|_{A_j}) \le \Gap(M) \le \Gap(\ol M^{\cal P}).
+$$
+\end{thm}
+
+\subsection{Conductance and clustering}
+
+\begin{df}\label{df:conduct}
+Let $M=(\Om, P)$ be a Markov chain with unique stationary distribution $p$. Let
+%Given a Markov chain with $P(x,y)$ being the transition probability from $x$ to $y$ and $p(x)$ being the stationary distribution, let 
+\begin{align}
+Q(x,y) &= p(x) P(x,y)\\
+Q(A,B) & = \iint_{A\times B} Q(x,y)\dx\dy.
+\end{align}
+(I.e., $x$ is drawn from the stationary distribution and $y$ is the next state in the Markov chain.)
+Define the \vocab{(external) conductance} of $S$, $\phi_M(S)$, and the \vocab{Cheeger constant} of $M$, $\Phi(M)$, by
+\begin{align}
+\phi_M(S) & = \fc{Q(S,S^c)}{p(S)}\\
+\Phi(M) &= \min_{S\sub \Om, p(S)\le \rc 2}
+\phi_M(S).
+\end{align}
+\end{df}
+
+\begin{df}\label{df:in-out}
+Let $M=(\Om,P)$ be a Markov chain on a finite state space $\Om$. 
+We say that $k$ disjoint subsets $A_1,\ldots, A_k$ of $\Om$ are a $(\phi_{\text{in}}, \phi_{\text{out}})$-clustering if for all $1\le i\le k$,
+\begin{align}
+\Phi(M|_{A_i}) &\ge \phi_{\text{in}}\\
+\phi_M(A_i)&\le \phi_{\text{out}}.
+\end{align}•
+\end{df}
+
+
+\begin{thm}[Spectrally partitioning graphs, \cite{gharan2014partitioning}]\label{thm:gt14}
+Let $M=(\Om, P)$ be a reversible Markov chain with $|\Om|=n$ states. Let $0=\la_1\le \la_2\le \cdots\le \la_n$ be the eigenvalues of the Markov chain. %\le 2
+
+For any $k\ge 2$, if $\la_k>0$, then there exists $1\le \ell\le k-1$ and a $\ell$-partitioning of $\Om$ into sets $P_1,\ldots, P_\ell$ that is a 
+$
+(\Om(\la_k/k^2), O(\ell^3\sqrt{\la_\ell}))
+$-clustering.
+\end{thm}
+
+\begin{proof}
+This is \cite[Theorem 1.5]{gharan2014partitioning}, except that they use a different notion of the restriction of a Markov chain $M|_{A_i}$. We reconcile this below.
+
+They consider the Markov chain associated with a graph $G$, and consider the Cheeger constant of the induced graph, in their definition of a $(\phi_{\text{in}},\phi_{\text{out}})$ clustering: $\Phi(G[A_i])\ge \phi_{\text{in}}$.
+
+We can recast our definition in graph-theoretic language as follows: construct a weighted graph $G$ with weight on edge $xy$ given by $p(x)P(x,y)$. Now the restricted chain $M|_{A}$ corresponds to the graph $G|_A$, which is the same as the induced graph $G[A]$ except that we take all edges leaving a vertex $x\in A$ and redraw them as self-loops at $x$.
+
+On the surface, this seems to cause a problem because if we define the volume of a set $S\subeq A$ to be the sum of weights of its vertices, the volume of $S$ can be larger in $G|_A$ than $G[A]$, yet the amount of weight leaving $S$ does not increase.
+
+However, examining the proof in \cite{gharan2014partitioning}, we see that every lower bound of the form $\phi_{G[A]}(S) $ is obtained by first lower-bounding by $\fc{w(S,A\bs S)}{\Vol(S)}$, which is exactly $\phi_{G|_A}(S)$. Thus their theorem works equally well with $G|_A$ instead of $G[A]$.
+%Rather than defining the projected chain by 
+\end{proof}
+
+Cheeger's inequality relates the conductance with the spectral gap.
+\begin{thm}[Cheeger's inequality]\label{thm:cheeger}
+Let $M=(\Om, P)$ be a reversible Markov chain on a finite state space and $\Phi=\Phi(M)$ be its conductance. Then
+$$
+\fc{\Phi^2}2 \le \Gap(P) \le \Phi.
+$$
+\end{thm}
+
+\subsection{Continuous time Markov processes}
+\label{sec:mdo}
+
+A continuous time Markov process is instead defined by $(P_t)_{t\ge 0}$, and a more natural object to consider is the generator. 
+\begin{df}
+A continuous time Markov process is given by $M=(\Om, (P_t)_{t\ge 0})$ where the $P_t$ define a random proces $(X_t)_{t\ge 0}$ by
+$$
+\Pj(X_{s+t}\in A) = P_t(x,A) :=\int_A P(x,y)\dy.
+$$
+%(Note that it necessarily satisfies $P_{t+u}(x,z) = \int_\Om P_t(x,y)P_u(y,z)\dy$.)
+Define stationary distributions, reversibility, $P_tf$, and variance as in the discrete case.
+
+Define the \vocab{generator} $\sL$ by
+\begin{align}
+\sL g &= \lim_{t\searrow 0} \fc{P_t g - g}{t}.
+\end{align}
+If $p$ is the unique stationary distribution, define
+\begin{align}
+\cal E_M(g,h) &= -\an{g, \sL h}_p.
+\end{align}
+The spectral gap is defined as in the discrete case with this definition of $\cal E_M$. The eigenvalues of $M$ are defined as the eigenvalues of $-\sL$.\footnote{Note that $\cL=I-P$ in the discrete case corresponds to $-\sL$ in the continuous case.} 
+\end{df}
+Note that in order for $(P_t)_{t\ge 0}$ to be a valid Markov process, it must be the case that $P_tP_u g = P_{t+u}g$, i.e., the $(P_t)_{t\ge 0}$ forms a \vocab{Markov semigroup}. 
+
+%
+
+\begin{df}
+A continuous Markov process satisfies a Poincar\'e inequality with constant $C$ if
+\begin{align}
+\cal E_M(g) \ge \rc C\Var_p(g).
+\end{align}
+\end{df}
+This is another way of saying that $\Gap(M)\ge \rc{C}$. 
+
+For Langevin diffusion with stationary distribution $p$, 
+\begin{align}
+\cal E_M(g) &= \ve{\nb g}_p^2. 
+\end{align}
+Since this depends in a natural way on $p$, we will also write this as $\cal E_p(g)$. A Poincar\'e inequality for Langevin diffusion thus takes the form
+\begin{align}
+\cal E_p(g) = \int_{\Om} \ve{\nb g}^2 p\dx &\ge \rc C \Var_p(g).
+\end{align}
+
+We have the following classical result. 
+
+\begin{thm}[\cite{bakry2013analysis}]\label{thm:bakry-emery}
+Let $g$ be $\rh$-strongly convex and differentiable. %continuously?
+Then $g$ satisfies the Poincar\'e inequality
+$$
+\cal E_p(g) \ge \rh \Var_p(g).
+$$
+
+\end{thm}
+In particular, this holds for $g(x)={\fc{\ve{x-\mu}^2}{2}}$ with $\rh = 1$, giving a Poincar\'e inequality for the gaussian distribution.
+
+A spectral gap, or equivalently a Poincar\'e inequality, implies rapid mixing (cf. \eqref{eq:gap-mix}):
+\begin{align}
+\ve{g - P_t g}_2\le e^{-t\Gap(M)} = e^{-\fc tC}.
+\end{align}

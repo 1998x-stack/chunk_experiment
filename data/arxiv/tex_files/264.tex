@@ -1,0 +1,500 @@
+\documentclass[ssy,preprint]{imsart_axv}
+
+\usepackage{booktabs} % For formal tables
+\usepackage[active]{srcltx}
+\usepackage{color}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{breakurl}
+
+\RequirePackage[OT1]{fontenc}
+\RequirePackage{amsthm,amsmath}
+\RequirePackage[numbers]{natbib}
+\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}
+
+%\arxiv{arXiv:0000.0000}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+
+
+\startlocaldefs
+\numberwithin{equation}{section}
+\theoremstyle{plain}
+\newtheorem{thm}{\protect\theoremname}[section]
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{\protect\definitionname}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{\protect\remarkname}
+\theoremstyle{plain}
+\newtheorem{prop}[thm]{\protect\propositionname}
+\theoremstyle{plain}
+\newtheorem{lem}[thm]{\protect\lemmaname}
+
+
+\makeatother
+
+\providecommand{\definitionname}{Definition}
+\providecommand{\lemmaname}{Lemma}
+\providecommand{\propositionname}{Proposition}
+\providecommand{\remarkname}{Remark}
+\providecommand{\theoremname}{Theorem}
+
+
+\global\long\def\Real{\mathbb{R}}
+\global\long\def\E{\mathbb{E}}
+\global\long\def\Int{\mathbb{Z}}
+\global\long\def\Indicator{\mathbb{I}}
+\global\long\def\n{\boldsymbol{n}}
+\global\long\def\x{\boldsymbol{x}}
+\global\long\def\N{\boldsymbol{N}}
+\global\long\def\Y{\boldsymbol{Y}}
+\global\long\def\M{\boldsymbol{M}}
+\global\long\def\m{\boldsymbol{m}}
+\global\long\def\g{\boldsymbol{g}}
+\global\long\def\blambda{\boldsymbol{\lambda}}
+\global\long\def\e{\boldsymbol{e}}
+\global\long\def\bphi{\boldsymbol{\phi}}
+\global\long\def\bpi{\boldsymbol{\pi}}
+\global\long\def\Prob{\mathbb{P}}
+\global\long\def\balpha{\boldsymbol{\alpha}}
+\global\long\def\Q{\boldsymbol{Q}}
+\global\long\def\R{\boldsymbol{R}}
+\global\long\def\Z{\boldsymbol{Z}}
+\global\long\def\Nc{\mathcal{N}_{C}^{(\epsilon)}}
+\global\long\def\Nd{\mathcal{N}_{D}^{(\epsilon)}}
+\global\long\def\xe{x^{(\epsilon)}}
+\newcommand{\dominate}{\preccurlyeq}
+\endlocaldefs
+
+
+
+\begin{document}
+	
+\begin{frontmatter}	
+\title{Centralized Congestion Control and Scheduling in a Datacenter}
+\runtitle{Centralized Congestion Control and Scheduling}
+
+\begin{aug}
+	\author{\fnms{Devavrat} \snm{Shah}\thanksref{t1}\ead[label=e1]{devavrat@mit.edu }}
+	\address{\printead{e1}}
+	\and
+	\author{\fnms{Qiaomin} \snm{Xie}\thanksref{t1}\ead[label=e2]{qxie@mit.edu}}
+	\address{\printead{e2}}
+	% \address{line 1\\ line 2\\ printead{e1}}
+	\runauthor{D. Shah and Q. Xie}
+	\affiliation{Massachusetts Institute of Technology}
+	%\thankstext{t1}{This work was supported by NSF...}
+\end{aug}
+
+
+%\begin{keyword}[class=MSC]
+%\kwd[Primary ]{}
+%\kwd{}
+%\kwd[; secondary ]{}
+%\end{keyword}
+
+%\begin{keyword}
+%\kwd{}
+%\kwd{}
+%\end{keyword}
+
+
+\begin{abstract}
+
+We consider the problem of designing a packet-level congestion control
+and scheduling policy for datacenter networks. Current datacenter
+networks primarily inherit the principles that went into the design of Internet,
+where congestion control and scheduling are distributed. While distributed
+architecture provides robustness, it suffers in terms of performance. 
+Unlike Internet, data center is fundamentally a ``controlled'' 
+environment. This raises the possibility of designing a centralized architecture
+to achieve better performance. Recent solutions such as Fastpass \cite{perry2014fastpass}
+and Flowtune \cite{perry17flowtune} have provided the proof of this concept. This
+raises the question: what is theoretically optimal performance achievable 
+in a data center?
+
+We propose a centralized policy that guarantees a per-flow end-to-end
+flow delay bound of $O$(\#hops $\times$ flow-size $/$ gap-to-capacity). 
+Effectively such an end-to-end delay will be experienced by flows even if we
+removed congestion control and scheduling constraints as the resulting 
+queueing networks can be viewed as the classical {\em reversible} multi-class 
+queuing network, which has a product-form stationary distribution. In the language
+of \cite{harrison2014bandwidth}, we establish that {\em baseline} performance for
+this model class is achievable.
+
+Indeed, as the key contribution of this work, we propose a method to
+{\em emulate} such a reversible queuing network while satisfying congestion
+control and scheduling constraints. Precisely, our policy is an emulation
+of Store-and-Forward (SFA) congestion control in conjunction with  
+Last-Come-First-Serve Preemptive-Resume (LCFS-PR) scheduling policy. 
+
+\end{abstract}
+
+%\begin{keyword}[class=MSC]
+%\kwd[Primary ]{}
+%\kwd{}
+%\kwd[; secondary ]{}
+%\end{keyword}
+
+%\begin{keyword}
+%\kwd{}
+%\kwd{}
+%\end{keyword}
+
+%\keywords{Congestion Control, Scheduling, Delay, Datacenter, Reversibility}
+
+\end{frontmatter}
+
+\section{Introduction}
+
+With an increasing variety of applications and workloads being hosted
+in datacenters, it is highly desirable to design datacenters that
+provide high throughput and low latency. Current datacenter networks
+primarily employ the design principle of Internet, where congestion
+control and packet scheduling decisions are distributed among endpoints
+and routers. While distributed architecture provides scalability and
+fault-tolerance, it is known to suffer from throughput loss and high
+latency, as each node lacks complete knowledge of entire network conditions
+and thus fails to take a globally optimal decision. 
+
+The datacenter network is fundamentally different from the wide-area
+Internet in that it is under a single administrative control. Such
+a single-operator environment makes a centralized architecture a feasible option.
+Indeed, there have been recent proposals for centralized control
+design for data center networks \cite{perry17flowtune,perry2014fastpass}.
+In particular, Fastpass \cite{perry2014fastpass} uses a centralized
+arbiter to determine the path as well as the time slot of transmission
+for each packet, so as to achieve zero queueing at switches. Flowtune
+\cite{perry17flowtune} also uses a centralized controller, but congestion
+control decisions are made at the granularity of a flowlet, with the
+goal of achieving rapid convergence to a desired rate allocation.
+Preliminary evaluation of these approaches demonstrates promising
+empirical performance, suggesting the feasibility of a centralized design
+for practical datacenter networks.
+
+Motivated by the empirical success of the above work, we are interested
+in investigating the theoretically optimal performance achievable by a centralized
+scheme for datacenters. Precisely, we consider a centralized architecture,
+where the congestion control and packet transmission are delegated
+to a centralized controller. The controller collects all dynamic endpoints
+and switches state information, and redistributes the congestion control
+and scheduling decisions to all switches/endpoints. We propose a packet-level
+policy that guarantees a per-flow end-to-end flow delay bound of $\ensuremath{O}(\#\text{hops}\ensuremath{\times}\text{flow-size}\ensuremath{/}\text{gap-to-capacity})$.
+To the best of our knowledge, our result is the first one to show
+that it is possible to achieve such a delay bound in a network with
+congestion control and scheduling constraints. Before describing the
+details of our approach, we first discuss related work addressing
+various aspects of the network resource allocation problem. 
+
+\subsection{Related Work}
+
+There is a very rich literature on congestion control and scheduling. The literature
+on congestion control has been primarily driven by bandwidth allocation in the
+context of Internet. The literature on packet scheduling has been historically 
+driven by managing supply-chain (multi-class queueing networks), telephone
+networks (loss-networks), switch / wireless networks (packet
+switched networks) and now data center networks. In what follows, we 
+provide brief overview of representative results from theoretical and 
+systems literature. 
+
+
+\medskip
+\noindent\textbf{Job or Packet Scheduling:} A scheduling policy in the context 
+of classical multi-class queueing networks essentially specifies the service 
+discipline at each queue, i.e., the order in which waiting jobs are served. Certain
+service disciplines, including the last-come-first-serve preemptive-resume
+(LCFS-PR) policy and the processor sharing discipline, are known to
+result in quasi-reversible multi-class queueing networks, which have
+a product form equilibrium distribution \cite{kelly1979reversibility}. The crisp 
+description of the equilibrium distribution makes these disciplines remarkably 
+tractable analytically. 
+
+More recently, the scheduling problems for switched networks, which
+are special cases of stochastic processing networks as introduced
+by Harrison \cite{harrison2000brownian}, have attracted a lot of
+attention starting \cite{tassiulas1992maxweight} including some recent
+examples \cite{walton2014concave,shah2014SFA,maguluri2015heavy}. Switched networks are 
+queueing networks where there are constraints on which queues can be served 
+simultaneously. They effectively model a variety of interesting applications, 
+exemplified by wireless communication networks, and input-queued switches for 
+Internet routers. The MaxWeight/BackPressure policy, introduced by 
+Tassiulas and Ephremides for wireless communication \cite{tassiulas1992maxweight, mckeown1996achieving}, 
+have been shown to achieve a maximum throughput stability for switched networks. 
+However, the provable delay bounds of this scheme scale with the number of queues in the
+network. As the scheme requires maintaining one queue per route-destination at each one,
+the scaling can be potentially very bad. For instance, recently Gupta
+and Javidi \cite{gupta2007routing} showed that such an algorithm
+can result in very poor delay performance via a specific example.
+Walton \cite{walton2014concave} proposed a proportional scheduler
+which achieves throughput optimality as the BackPressure policy,
+while using a much simpler queueing structure with one queue per link.
+However, the delay performance of this approach is unknown. Recently
+Shah, Walton and Zhong \cite{shah2014SFA} proposed a policy where
+the scheduling decisions are made to approximate a queueing network
+with a product-form steady state distribution. The policy achieves optimal
+queue-size scaling for a class of switched networks.In a recent work, Theja and Srikant \cite{maguluri2015heavy} established heavy-traffic optimality of
+MaxWeight policy for input-queued switches. 
+
+\medskip
+\noindent\textbf{Congestion control:} A long line of literature on congestion
+control began with the work of Kelly, Maulloo and Tan \cite{kelly1998rate}, where they
+introduced an optimization framework for flow-level resource allocation in
+the Internet. In particular, the rate control algorithms are developed
+as decentralized solutions to the utility maximization problems. The
+utility function can be chosen by the network operator to achieve
+different bandwidth and fairness objectives. Subsequently, this optimization
+framework has been applied to analyze existing congestion control
+protocols (such as TCP) \cite{low2002vegas,low2002internet,mo2000fair}; a
+comprehensive overview can be found in  \cite{srikant_book}.
+Roberts and Massouli\'{e} \cite{massoulie2000bandwidth} applied this
+paradigm to settings where flows stochastically depart and arrive,
+known as bandwidth sharing networks. The resulting proportional fairness
+policies have been shown to be maximum stable \cite{bonald2001fairness,massoulie2007fairness}.
+The heavy traffic behavior of proportional fairness has been subsequently
+studied \cite{shah2014qualitative,kang2009diffusion}. Another bandwidth
+allocation of interest is the store-and-forward allocation (SFA) policy,
+which was first introduced by Massouli\'{e} (see Section 3.4.1 in~\cite{proutiere_thesis}) and
+later analyzed in the thesis of Prouti\`{e}re \cite{proutiere_thesis}. The SFA policy has the remarkable
+property of insensitivity with respect to service distributions,
+as shown by Bonald and Prouti\`{e}re \cite{bonald2003insensitive}, and
+Zachary\cite{zachary2007insensitivity}. Additionally, this policy
+induces a product-form stationary distribution \cite{bonald2003insensitive}.
+The relationship between SFA and proportional fairness has been explored
+\cite{massoulie2007fairness}, where SFA was shown to converge to
+proportional fairness with respect to a specific asymptote. 
+
+\medskip
+\noindent\textbf{Joint congestion control and scheduling:} More recently, the
+problem of designing joint congestion-control and scheduling mechanisms
+has been investigated \cite{eryilmaz2006joint,lin2004joint,stolyar2005maximizing}.
+The main idea of these approaches is to combine a queue-length-based
+scheduler and a distributed congestion controller developed for wireline
+networks, to achieve stability and fair rate allocation. For instance,
+the joint scheme proposed by Eryilmaz and Srikant combines the BackPressure
+scheduler and a primal-dual congestion controller for wireless networks.
+This line of work focuses on addressing the question of the stability. The
+Lyapunov function based delay (or queue-size) bound for such algorithm are
+relatively very poor. It is highly desirable to design a joint mechanism that is provably
+throughput optimal and has low delay bound. Indeed, the work of Moallemi and Shah \cite{moallemi2010flow} was an attempt in this direction, where they
+developed a stochastic model that jointly captures the packet- and 
+flow-level dynamics of a network, and proposed a joint policy based on 
+$\alpha$-weighted policies. They argued that in a certain asymptotic regime 
+(critically loaded fluid model) the resulting algorithm induces queue-sizes that are
+within constant factor of optimal quantities. However, this work stops short of 
+providing non-asymptotic delay guarantees.
+
+\medskip
+\noindent\textbf{Emulation:} In our approach we utilize the concept of emulation,
+which was introduced by Prabhakar and Mckeown \cite{prabhakar1999speedup}
+and used in the context of bipartite matching. Informally, a network
+is said to emulate another network, if the departure processes from
+the two networks are identical under identical arrival processes.
+This powerful technique has been subsequently used in a variety of
+applications \cite{jagabathula2008delay_scheduling,shah2014SFA,gamal2006throughput_delay,chuang1999matching}.
+For instance, Jagabathula and Shah designed a delay optimal scheduling
+policy for a discrete-time network with arbitrary constraints, by
+emulating a quasi-reversible continuous time network \cite{jagabathula2008delay_scheduling};
+The scheduling algorithm proposed by Shah, Walton and Zhong \cite{shah2014SFA}
+for a single-hop switched network, effectively emulates the bandwidth sharing
+network operating under the SFA policy. However, it is unknown how
+to apply the emulation approach to design a joint congestion control
+and scheduling scheme.
+
+
+
+\medskip
+\noindent\textbf{Datacenter Transport:}
+Here we restrict to system literature in the context of datacenters.
+Since traditional TCP developed for wide-area Internet does not meet
+the strict low latency and high throughput requirements in datacenters,
+new resource allocation schemes have been proposed and deployed \cite{alizadeh2010DCTCP,alizadeh2013pfabric,nagaraj2016numfabric,hong2012pdq,perry17flowtune,perry2014fastpass}.
+Most of these systems adopt distributed congestion control schemes,
+with the exception of Fasspass \cite{perry2014fastpass} and Flowtune
+\cite{perry17flowtune}.
+
+DCTCP \cite{alizadeh2010DCTCP} is a delay-based (queueing) congestion
+control algorithm with a similar control protocol as that in TCP. It aims to keep the switch queues small, by leveraging Explicit Congestion Notification (ECN) to provide multi-bit feedback to the end points. Both pFabric \cite{alizadeh2013pfabric} and
+PDQ \cite{hong2012pdq} aim to reduce flow completion time, by utilizing
+a distributed approximation of the shortest remaining flow first policy.
+In particular, pFabric uses in-network packet scheduling to decouple
+the network's scheduling policy from rate control. NUMFabric \cite{nagaraj2016numfabric}
+is also based on the insight that utilization control and network
+scheduling should be decoupled. In particular, it combines a packet
+scheduling mechanism based on weighted fair queueing (WFQ) at the
+switches, and a rate control scheme at the hosts that is based on
+the network utility maximization framework.
+
+Our work is motivated by the recent successful stories that demonstrate
+the viability of centralized control in the context of datacenter
+networks \cite{perry2014fastpass,perry17flowtune}. Fastpass \cite{perry2014fastpass}
+uses a centralized arbiter to determine the path as well as the time
+slot of transmission for each packet. To determine the set of sender-receiver
+endpoints  that can communicate in a timeslot, the arbiter views
+the entire network as a single input-queued switch, and uses a heuristic
+to find a matching of endpoints in each timeslot. The arbiter then
+chooses a path through the network for each packet that has been allocated
+timeslots. To achieve zero-queue at switches, the arbiter assigns
+packets to paths such that no link is assigned multiple packets in
+a single timeslot. That is, each packet is arranged to arrive at a
+switch on the path just as the next link to the destination becomes
+available. 
+
+Flowtune \cite{perry17flowtune} also uses a centralized controller,
+but congestion control decisions are made at the granularity of a
+flowlet, which refers to a batch of packets backlogged at a sender.
+It aims to achieve fast convergence to optimal rates by avoiding packet-level
+rate fluctuations. To be precise, a centralized allocator computes
+the optimal rates for a set of active flowlets, and those rates are
+updated dynamically when flowlets enter or leave the network. In particular,
+the allocated rates maximize the specified network utility, such
+as proportional fairness. 
+
+
+\medskip
+\noindent\textbf{Baseline performance:} In a recent work Harrison et al.~\cite{harrison2014bandwidth} studied the \emph{baseline performance} for congestion control, that is, an achievable benchmark for the delay performance in flow-level models. Such a benchmark provides an upper bound on the optimal achievable performance. In particular, baseline performance in flow-level models is exactly achievable by the store-and-forward allocation (SFA) mentioned earlier. On the other hand, the work by Shah et al.~\cite{shah2014SFA} established baseline performance for scheduling in packet-level networks. They proposed a scheduling policy that effectively emulates the bandwidth sharing network under the SFA policy. The results for both flow- and packet-level models boil down to a product-form stationary distribution, where each component of the product-form behaves like an $M/M/1$ queue. However, no baseline performance has been established for a hybrid model with flow-level congestion control and packet scheduling. 
+
+\smallskip
+
+
+	
+This is precisely the problem we seek to address in this paper.
+The goal of this paper is to understand what is the best performance achievable by centralized designs in datacenter networks. In particular, we aim to establish baseline performance for datacenter networks with congestion control and scheduling constraints. 
+To investigate this problem, we consider a datacenter network with a tree topology, and focus on a hybrid model with simultaneous dynamics of flows and packets. Flows arrive at each endpoint according to an exogenous process and wish to transmit some amount of data through the network. As in standard congestion control algorithms, the flows generate packets at their ingress to the network. The packets travel to their respective destinations along links in the network. We defer the model details to Section \ref{sec:Model-and-Notation}.
+
+
+
+
+\subsection{Our approach}
+
+
+
+
+The control of a data network comprises of two sub-problems: congestion control and scheduling. 
+On the one hand, congestion control aims to ensure fair sharing of network resources among endpoints and to minimize congestion inside the network. The congestion control policy determines the rates at which each endpoint injects data into the internal network for transmission. On the other hand, the internal network maintains buffers for packets that are in transit across the network, where the queues at each buffer are managed according to some packet scheduling policy. 
+
+
+Our approach addresses these two sub-problems simultaneously, with the overall architecture shown in Figure \ref{fig:Overview}. The system decouples congestion control and in-network packet scheduling by maintaining two types of buffers: \emph{external} buffers which store arriving flows of different types, and \emph{internal} buffers for packets in transit across the network. In particular, there is a separate external buffer for each type of arriving flows. Internally, at each directed link~$l$ between two nodes $(u,v)$ of the network, there is an internal buffer for storing packets waiting at node~$u$ to pass through link~$l$. Conceptually, the internal queueing structure 
+corresponds to the output-queued switch fabric of ToR and core switches in a datacenter, so each directed link is abstracted as a queueing server for packet transmission. 
+
+
+Our approach employs independent mechanisms for the two sub-problems. The congestion control policy uses only the state of external buffers for rate allocation, and is hence decoupled from packet scheduling. The rates allocated for a set of flows that share the network will change only when new flows arrive or when flows are admitted into the internal network for transmission. For the internal network, we adopt a packet scheduling mechanism based on the dynamics of internal buffers. 
+
+
+
+\begin{figure}
+	\centering{}\includegraphics[width=0.99\columnwidth]{overview}\caption{Overview of the congestion control and scheduling scheme.\label{fig:Overview}}
+\end{figure}
+
+
+
+Figure \ref{fig:congestion_control} illustrates our congestion control policy. The key idea
+is to view the system as a bandwidth sharing network with flow-level
+capacity constraints. The rate allocated to each flow buffered at source nodes is determined by an online algorithm that only uses
+the queue lengths of the external buffers, and satisfies the capacity constraints. Another key
+ingredient of our algorithm is a mechanism that translates the allocated rates to congestion control decisions. In particular,
+we implement the congestion control algorithm at the granularity of flows, as opposed
+to adjusting the rates on a packet-by-packet basis as in classical
+TCP. 
+
+
+We consider a specific bandwidth allocation scheme called the store-and-forward
+algorithm (SFA), which was first considered by Massouli\'{e} and later
+discussed in \cite{bonald2003insensitive,kelly2009resource,proutiere_thesis,walton2009fairness}.
+The SFA policy has been shown to be insensitive with
+respect to general service time distributions \cite{zachary2007insensitivity},
+and result in a reversible network with Poisson arrival processes~\cite{walton2009fairness}. The bandwidth sharing
+network under SFA has a product-form queue size distribution in equilibrium.
+Given this precise description of the stationary distribution, we
+can obtain an explicit bound on the number of flows waiting at the
+source nodes, which has the desirable form of $\ensuremath{O}(\#\text{hops}\ensuremath{\times}\text{flow-size}\ensuremath{/}\text{gap-to-capacity})$. 
+Details of the congestion control policy description and analysis
+are given in Section \ref{sec:congestion_control} to follow. 
+
+\begin{figure}
+	\begin{centering}
+		\includegraphics[width=0.9\columnwidth]{congestion}
+		\par\end{centering}
+	\caption{A congestion control policy based on the SFA algorithm for a bandwidth
+		sharing network.\label{fig:congestion_control}}
+	
+\end{figure}
+
+
+
+We also make use of the concept of emulation to design a packet scheduling
+algorithm in the internal network, which is operated in discrete time.
+In particular, we propose and analyze a scheduling mechanism that
+is able to emulate a continuous-time \emph{quasi-reversible} network,
+which has a highly desirable queue-size scaling. 
+
+Our design consists of three elements. First, we specify the granularity
+of timeslot in a way that maintains the same throughput as in a network
+without the discretization constraint. By appropriately choosing the granularity,
+we are able to address a general setting where flows arriving on
+each route can have arbitrary sizes, as opposed to prior work that assumed unit-size
+flows. Second, we consider a continuous-time network
+operated under the Last-Come-First-Serve Preemptive-Resume (LCFS-PR)
+policy. If flows on each route are assumed to arrive according a Poisson
+process, the resulting queueing network is quasi-reversible with a
+product-form stationary distribution. In this continuous-time setting,
+we will show that the network achieves a flow delay bound of $\ensuremath{O}(\#\text{hops }\ensuremath{\times}\text{ flow-size }\ensuremath{/}\text{ gap-to-capacity})$.
+Finally, we design a feasible scheduling policy for the discrete-time
+network, which achieves the same throughput and delay bounds as the
+continuous-time network. The resulting scheduling scheme is illustrated
+in Figure \ref{fig:scheduling}.
+
+\begin{figure}
+	\begin{centering}
+		\includegraphics[width=0.7\columnwidth]{scheduling}
+		\par\end{centering}
+	\caption{An adapted LCFS-PR scheduling algorithm \label{fig:scheduling}}
+\end{figure}
+
+
+\subsection{Our Contributions}
+
+The main contribution of the paper is a centralized policy for both congestion control
+and scheduling that achieves a per-flow end-to-end delay bound $\ensuremath{O}(\#\text{hops }\ensuremath{\times}$
+$\text{flow-size }\ensuremath{/}\text{ gap-to-capacity})$. Some
+salient aspects of our result are:
+\begin{enumerate}
+	\item The policy addresses both the congestion control and scheduling problems,
+	in contrast to other previous work that focused on either congestion
+	control or scheduling. 
+	\item We consider flows with variable sizes.
+	\item We provide per-flow delay bound rather than an aggregate bound. 
+	\item Our results are non-asymptotic, in the sense that they hold for any admissible load.
+	\item A central component of our design is the emulation of continuous-time
+	quasi-reversible networks with a product-form stationary distribution.
+	By emulating these queueing networks, we are able to translate the
+	results therein to the network with congestion and scheduling constraints. 
+	This emulation result can be of interest in its own right.
+\end{enumerate}
+
+\subsection{Organization}The remaining sections of the paper are organized
+as follows. In Section \ref{sec:Model-and-Notation} we describe the
+network model. The main results of the paper are presented in Section
+\ref{sec:results}. The congestion control algorithm is described
+and analyzed in Section \ref{sec:congestion_control}. Section \ref{sec:scheduling}
+details the scheduling algorithm and its performance properties. We
+discuss implementation issues and conclude the paper in Section \ref{sec:discussion}.
+
+
+\input{Model.tex}
+
+\input{Results.tex}
+
+\input{Congestion_Control.tex}
+
+\input{Scheduling.tex}
+
+\input{Discussion.tex}
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{datacenter} 
+
+
+
+
+\end{document}

@@ -1,0 +1,3253 @@
+
+\chapter[eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$: an extension of eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ with handlers]{eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$: an extension of eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ with handlers}
+\label{chap:handlers}
+
+\index{ e@eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ (extension of eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers of fibred algebraic effects)}
+In this chapter we show how to extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers of fibred algebraic effects. Our work builds on the pioneering work of Plotkin and Pretnar who generalised exception handlers to all algebraic effects in the simply typed setting~\cite{Plotkin:HandlingEffects}.
+They also showed how handlers can be used to neatly implement relabelling and restriction in Milner's CCS, timeouts, rollbacks, stream redirection, etc., 
+paving the way for handlers to become a practical modular programming language abstraction.
+
+In Section~\ref{sect:handlersoverview}, we recall the conventional definition of handlers and their use in programming languages.
+Next, in Section~\ref{sect:problemwithhandlers}, we make an important observation that will be key for the rest of this chapter. Namely, we observe that using the conventional term-level definition of handlers to extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ leads to unsound program equivalences becoming derivable. We solve this problem in Section~\ref{sect:extendingemlttwithuserdefinedalgebras} by giving handlers a novel type-based treatment via a new computation type, the \emph{user-defined algebra type}, which pairs a value type (the carrier) with a family of value terms (the operations). This type internalises Plotkin and Pretnar's insight that handlers denote algebras for a given equational theory of effects. We call this extended language eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$. 
+
+We demonstrate the generality of our type-based treatment of handlers by showing in Section~\ref{sect:derivingconventionalhandlers} that their conventional term-level presentation can be routinely derived, and demonstrating in Section~\ref{section:usinghandlersforreasoning} that the type-based treatment provides a useful mechanism for reasoning about effectful computations.
+Next, in Section~\ref{section:handlersmetatheory}, we study the meta-theory of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, and in Section~\ref{sect:derivableisomorphismswithhandlers}, we present some useful derivable equations. Finally, in Section~\ref{sect:interpretingemlttwithhandlers}, we equip eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with a denotational semantics. In particular, we show how to define a sound interpretation of it in the same fibred adjunction model we used in Secton~\ref{sect:fibalgeffectsmodel} for giving a denotational semantics to eMLTT$_{\mathcal{T}_{\text{eff}}}$.
+
+\section{Handlers of algebraic effects}
+\label{sect:handlersoverview}
+
+Handlers of algebraic effects were introduced by Plotkin and Pretnar~\cite{Plotkin:HandlingEffects,Plotkin:Handlers} as a natural generalisation of exception handlers to all algebraic effects. 
+%
+Building on the algebraic treatment of computational effects, Plotkin and Pretnar's key insight was to understand exception handlers as defining new algebras for the equational theory of exceptions. 
+%
+Taking this insight as a starting point, they then generalised handlers to arbitrary algebraic effects given by (countable) equational theories, where
+\begin{itemize}
+\item a \emph{handler} defines a new, user-defined algebra for the given equational theory by providing redefinitions of all its algebraic operations; and
+\item the \emph{handling} construct denotes the application of the unique mediating homomorphism between the free algebra and the one denoted by the given handler. 
+\end{itemize}
+
+\index{handler}
+\index{handling construct}
+Plotkin and Pretnar formalise these ideas by extending Levy's CBPV with algebraic effects and their handlers, as explained below. They also give their language a denotational semantics using the  adjunction determined by the category of models of the given equational theory of computational effects. In particular, given an effect theory\footnote{In the sense of~\cite{Plotkin:HandlingEffects}, i.e., a non-dependent version of the fibred effect theories defined in Section~\ref{sect:fibeffecttheories}.}  $\mathcal{T}_{\text{eff}} = (\mathcal{S}_{\text{eff}},\mathcal{E}_{\text{eff}})$, they extend CBPV's computation terms with the following term former that combines a handler $\{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}}$ with the handling construct:
+\[
+\mkrule
+{\Gamma \vdash {M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}} : \ul{C}}
+{
+\cj \Gamma M {FA}
+\quad
+\{\cj {\Gamma, x \!:\! I, x' \!:\! O \to U\ul{C}} {N_{\sigalgop}} {\ul{C}}\}_{\sigalgop \,:\, I \longrightarrow O \,\in\, \mathcal{S}_{\text{eff}}}
+\quad
+\cj {\Gamma, y \!:\! A} {N_{\mathsf{ret}}} {\ul{C}}
+}
+\]
+and the equational theory of computation terms with two $\beta$-equations, given by
+\[
+\begin{array}{c@{\,\,} c@{\,\,} l}
+\Gamma & \vdash & {(\algop^{FA}_V(y'\!.\, M)) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}}
+\\[0.5mm]
+& = & {N_{\sigalgop}[V/x][\lambda\, y' \!:\! O[V/x] .\, \thunk H/x']} : \ul{C}
+\end{array}
+\]
+and
+\[
+\begin{array}{c@{\,\,} c@{\,\,} l}
+\Gamma & \vdash & {(\return V) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}} 
+\\[0.5mm]
+& = & {N_{\mathsf{ret}}[V/y]} : \ul{C}
+\end{array}
+\]
+where, for better readability, we abbreviate the handling construct as
+\[
+H \,\defeq\, M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}
+\]
+
+It is worth noting that while these $\beta$-equations capture the intuition that the handling construct denotes the application of the mediating homomorphism between the free algebra denoted by $FA$ and the algebra defined by the family of terms $N_{\sigalgop}$, they do not capture the idea that the handling construct denotes the unique such homomorphism. 
+To capture the uniqueness of the handling construct, one would also need to extend Plotkin and Pretnar's version of CBPV with a corresponding $\eta$-equation, e.g., as considered in~\cite[Section~6]{Ahman:NBE} for Levy's fine-grain call-by-value language.
+
+
+From a programming language perspective, the first $\beta$-equation describes that handling consists of traversing the given program and replacing each algebraic operation with the corresponding user-defined term $N_{\sigalgop}$.
+The second $\beta$-equation describes that when handling reaches return values (the end of the given program we are handling), a substitution instance of the specified continuation $N_{\mathsf{ret}}$ is evaluated next.
+
+
+As mentioned earlier, handlers can be used to neatly implement timeouts, rollbacks, stream redirection, etc., see~\cite[Section~3]{Plotkin:HandlingEffects} for details of these and other examples. 
+
+\index{ Terminal@$\mathsf{Terminal}$ (type of terminal names)}
+For example, let us consider an extension of the theory of input/output from Example~\ref{ex:fibtheoryofIO} with multiple terminals, where the operation symbols are typed as follows:
+\[
+\mathsf{read} : \mathsf{Terminal} \longrightarrow \Character
+\qquad
+\mathsf{write} : \mathsf{Terminal} \times \Character \longrightarrow 1
+\]
+Now, assuming two distinguished terminal names $V_t$ and $V_{t'}$, we can neatly redirect the output on $V_t$ to $V_{t'}$ by handling a given program using the following handler:
+\[
+\begin{array}{l c l}
+\mathtt{read}_x(x') & \mapsto & \mathtt{read}_x(y' .\, \force {} (x'\, y'))
+\\[2mm]
+\mathtt{write}_x(x') & \mapsto & \mathtt{if}~ (\mathtt{eq}~(\fst x)~V_t)~\mathtt{then}~(\mathtt{write}_{\langle V_{t'}  , \snd x \rangle}(\force {} (x'\, \star)))
+\\
+&& \hspace{3.165cm} \mathtt{else}~(\mathtt{write}_{x}(\force {} (x'\, \star)))
+\end{array}
+\]
+
+More recently, handlers have also gained popularity as a practical and modular programming language abstraction, allowing programmers to write their programs generically in terms of algebraic operations,  and then use handlers to modularly provide different fit-for-purpose implementations of these generic programs. 
+A prototypical example of this approach involves implementing the global state operations using the natural representation of stateful programs as state-passing functions $\State \to A \times \State$.
+
+To facilitate this style of programming, Kammar et al.~\cite{Kammar:Handlers} have extended Haskell, OCaml, SML, and Racket with algebraic effects and their handlers, implemented using free monads and (delimited) continuations. Further, Bauer and Pretnar~\cite{Bauer:AlgebraicEffects,Bauer:EffectSystem} have built an entire ML-like language, called Eff, around this style of programming. This style of programming has also been successfully combined with row-based type-and-effect systems, as demonstrated by Hillerstr\"{o}m and Lindley~\cite{Hillerstrom:Liberating}, and Leijen~\cite{Leijen:Handlers}. Handlers are also central to the ongoing effort to extend OCaml with shared memory multicore parallelism (see~\cite{MulticoreOCaml} for details of the Multicore OCaml project), providing a convenient  means for programmers to implement their own fit-for-purpose schedulers. 
+
+
+\index{handler!multi--}
+Recently, Lindley et al.~\cite{Lindley:DoBeDoBeDo} have also investigated a generalisation of handlers, called \emph{multihandlers}, that allow multiple computations to be handled simultaneously. A binary instance of this generalisation was discussed by Plotkin in an earlier invited talk~\cite{Plotkin:BinaryHandlers}. In particular, Plotkin showed how to define binary handlers in terms of (standard) unary handlers, and how to use them to implement interleaving concurrency.
+
+
+\section{Problems with the term-level definition of handlers}
+\label{sect:problemwithhandlers}
+
+In this section we make an important observation that will be key to our work regarding an extension of eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers of fibred algebraic effects. In particular, we observe that naively following the existing work on handlers to extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ (or any other language with a notion of homomorphism, such as CPBV with stack terms or EEC) would lead to unsound program equivalences becoming derivable. 
+
+More concretely, let us assume we were to extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers \`a la Plotkin and Pretnar~\cite{Plotkin:HandlingEffects} by extending eMLTT$_{\mathcal{T}_{\text{eff}}}$'s computation terms and the corresponding equational theory as discussed in Section~\ref{sect:handlersoverview}. While this extension suffices for CBPV without stack terms, as considered by Plotkin and Pretnar~\cite{Plotkin:HandlingEffects}, and Kammar et al.~\cite{Kammar:Handlers}, languages that also include a notion of homomorphism (e.g., CBPV with stack terms, EEC, and eMLTT$_{\mathcal{T}_{\text{eff}}}$) ought to be extended further. 
+%
+Specifically, in addition to only extending computation terms, one should also extend the corresponding notion of homomorphism with the handling construct. In particular, for eMLTT$_{\mathcal{T}_{\text{eff}}}$ this would mean extending homomorphism terms with the following term former:
+\[
+{K \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}}
+\]
+
+We highlight two reasons for needing such terms when extending eMLTT$_{\mathcal{T}_{\text{eff}}}$
+with handlers \`a la Plotkin and Pretnar. First, as the handling construct naturally denotes the application of the mediating homomorphism between a free algebra and the algebra defined by the family of terms $N_{\sigalgop}$, it is natural to also make it into a homomorphism in the language, thus making the language more complete with respect to its models. 
+Second, making the handling construct into a homomorphism term is also important to ensure that effectful programs could be combined modularly, e.g., to be able to write
+\[
+{\doto {M} {(y \!:\! A_1, z \!:\! FA_2)} {} {\big(z} \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y' \!:\! B \mathtt{~in~} N_{\mathsf{ret}}}\big)
+\]
+where the term being handled is given by the computation variable $z$.
+
+Unfortunately, if we were to follow this approach for extending eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers of fibred algebraic effects, it becomes possible to derive unsound program equivalences in the resulting language, such as the following equation for input/output:
+\[
+\ceq {\Gamma} {\mathtt{write}^{F1}_{\mathsf{a}}(\return *)} {\mathtt{write}^{F1}_{\mathsf{b}}(\return *)} {F1}
+\]
+
+This problem arises from the type of the handling construct not containing any information about the specific handler being used. In particular, recall that a key property of homomorphism terms is that their interaction with algebraic operations is determined exclusively by their types---see the general algebraicity equation given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}. Unfortunately, this property is not true for the handling construct. Specifically, 
+%
+the handling construct gives rise to a critical pair in the equational theory: %a term  
+\[
+{\algop^{FA}_V(y.\, M) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y' \!:\! A \mathtt{~in~} N_{\mathsf{ret}}}
+\]
+matches both the $\beta$-equation for handlers given in the previous section and the general algebraicity equation given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}. It is easy to show that this critical pair is not convergent. 
+%
+For example, let us consider the following handler for input/output:
+\[
+\begin{array}{l c l}
+\mathtt{read}_x(x') & \mapsto & \mathtt{read}(y' .\, \force {} (x'\, y'))
+\\[1mm]
+\mathtt{write}_x(x') & \mapsto & \mathtt{write}_{\mathtt{b}}(\force {} (x'\,\star))
+\end{array}
+\]
+
+On the one hand, the $\beta$-equation for the handling construct allows us to derive
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & {(\mathtt{write}^{F1}_{\mathtt{a}}(\return *)) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}}
+\\
+=\,\, & \mathtt{write}^{F1}_{\mathtt{b}}\big({(\return *) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}}\big)
+\\
+=\,\, & \mathtt{write}^{F1}_{\mathtt{b}}(\return *) : F1
+\end{align*}
+\end{fleqn}
+assuming that the handler in question 
+is defined as above, and $N_{\mathsf{ret}} \defeq \return *$. 
+
+On the other hand, the general algebraicity equation allows us to derive
+\begin{fleqn}
+\begin{align*}
+\hspace{-0.05cm}
+\Gamma \,\vdash\,\, & {(\mathtt{write}^{F1}_{\mathtt{a}}(\return *)) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}}
+\\
+=\,\, & {\big(z \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}\big)[\mathtt{write}^{F1}_{\mathtt{a}}(\return *)/z]}
+\\
+=\,\, & \mathtt{write}^{F1}_{\mathtt{a}}\big(\big(z \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}\big)[\return */z]\big)
+\\
+=\,\, & \mathtt{write}^{F1}_{\mathtt{a}}\big((\return *) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{I/O}}} \mathtt{~to~} y \!:\! 1 \mathtt{~in~} N_{\mathsf{ret}}\big)
+\\
+=\,\, & \mathtt{write}^{F1}_{\mathtt{a}}(\return *) : F1
+\end{align*}
+\end{fleqn}
+allowing us to conclude that the following unsound definitional equation is derivable:
+\[
+\ceq {\Gamma} {\mathtt{write}^{F1}_{\mathsf{a}}(\return *)} {\mathtt{write}^{F1}_{\mathsf{b}}(\return *)} {F1}
+\]
+
+From a semantic perspective, the above discussion also exposes a conflict between the term-level definition of handlers, and Plotkin and Pretnar's semantic insight that they ought to denote algebras for a given equational theory of computational effects.
+
+The reason why Plotkin and Pretnar were able to define a sound interpretation for their language 
+is because they were using CBPV without stack terms, i.e., without a notion of homomorphism. As CBPV's computation terms are interpreted as elements of the carriers of the algebras denoted by their types, the  interpretation of their language and its soundness were not affected by the type of the handling construct not mentioning the corresponding handler. In particular, the carrier of the algebra denoted by the type of the handling construct is the same as the carrier of the algebra denoted by the corresponding handler. The lack of a notion of homomorphism also meant that their equational theory did not have critical pairs arising from the handling construct.
+
+\section{Extending eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ with a type-based treatment of handlers}
+\label{sect:extendingemlttwithuserdefinedalgebras}
+
+As demonstrated in the previous section, we cannot naively follow Plotkin and Pretnar's approach to extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ with handlers of fibred algebraic effects by defining them at the term level for both computation and homomorphism terms. Instead, we either have to i) change the existing equational theory of eMLTT$_{\mathcal{T}_{\text{eff}}}$'s homomorphism terms (e.g., as investigated by Levy for exception handlers in CBPV with stacks; however, in which case the homomorphism terms would not denote homomorphisms any more---see~\cite{Levy:MonadsForExceptions}); or 
+ii) find an alternative solution that would allow handlers to be soundly accommodated in eMLTT$_{\mathcal{T}_{\text{eff}}}$ without changing its existing definition. 
+
+In this thesis, we follow ii) and  
+accommodate handlers  in eMLTT$_{\mathcal{T}_{\text{eff}}}$ via a novel type-level extension that internalises Plotkin and Pretnar's semantic insight that handlers of algebraic effects denote algebras for the corresponding equational theories. Specifically, we extend eMLTT$_{\mathcal{T}_{\text{eff}}}$ with a novel computation type that pairs a value type (the carrier) with a family of appropriately typed value terms (the operations), denoting a user-defined algebra for the given fibred effect theory $\mathcal{T}_{\text{eff}}  = (\mathcal{S}_{\text{eff}},\mathcal{E}_{\text{eff}})$. 
+
+\begin{definition}
+\label{def:extensionofeMLTTsyntaxwithhandlers}
+\index{extension of eMLTT!-- with handlers of fibred algebraic effects}
+\index{type!user-defined algebra --}
+\index{ A@$\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$ (user-defined algebra type)}
+\index{composition operation}
+The syntax of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ is given by extending eMLTT$_{\mathcal{T}_{\text{eff}}}$'s computation types with the \emph{user-defined algebra type}:
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+\ul{C} & ::= & \ldots \,\,\,\vertbar\,\,\, \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\end{array}
+\]
+and computation and homomorphism terms with \emph{composition operations}:
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+M & ::= & \ldots \,\,\,\vertbar\,\,\, \runas M {x \!:\! U\ul{C}} {\ul{D}} {N}
+\\[2mm]
+K & ::= & \ldots \,\,\,\vertbar\,\,\, \runas K {x \!:\! U\ul{C}} {\ul{D}} {M}
+\end{array}
+\]
+\end{definition}
+
+In both $\runas M {x \!:\! U\ul{C}} {\ul{D}} {N}$ and $\runas K {x \!:\! U\ul{C}} {\ul{D}} {N}$, the value variable $x$ is bound in $N$. Similarly to other terms, we often omit the type annotation $\ul{D}$ for better readability---these annotations exist in order to be able define the interpretation of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ as a partial mapping from raw expressions to a suitable fibred adjunction model.
+
+As a special case, these composition operations act as \emph{elimination forms} for the user-defined algebra type, i.e., when $\ul{C} = \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$. In principle, we could have restricted them to only the user-defined algebra type, but then we would not have been able to derive a useful type isomorphism (see Proposition~\ref{prop:typeisomorphismforuserdefinedalgebras}) that allows us to coerce computations between $\ul{C}$ and the corresponding user-defined algebra type, namely, 
+\[
+\begin{array}{c}
+\hspace{-8.75cm}
+{\ul{C}} \cong 
+\langle U\ul{C} , \{\lambda\, y \!:\! (\Sigma\, x \!:\! I .\, O \to U\ul{C}) .\, 
+\\[-1mm]
+\hspace{2.6cm}
+\pmatch y {(x \!:\! I, x' \!:\! O \to U\ul{C})} {} {\thunk (\algop^{\ul{C}}_{x}(y'\!.\, \force {\ul{C}} (x'\,y')))}  \}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\end{array}
+\]
+
+We further note that computation terms of type $\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$ are \emph{introduced} by forcing values of type $A$, i.e., thunked computations of type $U\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$. 
+
+Conceptually, these composition operations are a special kind of explicit substitution of thunked computations for value variables, e.g., the definitional equations accompanying these terms allow us to prove the following definitional equation: 
+\[
+\ceq \Gamma {\runas M {x \!:\! U\ul{C}} {\ul{D}} {N}} {N[\thunk M / x]} {\ul{D}}
+\]
+As such, the value variable $x$ refers to the whole of (the thunk of) the computation term $M$, compared to, e.g., sequential composition $\doto M {x \!:\! A} {} N$, where $x$ refers only to the return value computed by $M$. Therefore, we use $\mathtt{as}$ (running $M$ \emph{as} if it was $x$) instead of $\mathtt{to}$ (running $M$ \emph{to} produce a value for $x$) for the composition operations.
+
+As already hinted above, there is more to these composition operations than just substituting  thunked computations for value variables. In particular, the typing rules for $\runas M {x \!:\! U\ul{C}} {\ul{D}} {N}$ and $\runas K {x \!:\! U\ul{C}} {\ul{D}} {N}$ (see Definition~\ref{def:extensionofeMLTTwithhandlers} below) require that the value variable $x$ is used as if it was a computation variable, in that $x$ must not be duplicated or discarded arbitrarily. 
+However, rather than extending eMLTT$_{\mathcal{T}_{\text{eff}}}$ with some form of linear typing for such $x$, we impose these requirements via equational proof obligations by requiring that  $N$ commutes with algebraic operations (when substituted for $x$ using thunks). This ensures that $N$ behaves as if it was a homomorphism term, meaning that the effects in $M$ and $K$ are guaranteed to happen before those in $N$. 
+
+
+The different kinds of substitution defined for eMLTT$_{\mathcal{T}_{\text{eff}}}$ extend straightforwardly to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$: we extend the (simultaneous) substitution of value terms with
+\[
+\begin{array}{l c l}
+\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle[\overrightarrow{W}/\overrightarrow{x}] & \defeq & \langle A[\overrightarrow{W}/\overrightarrow{x}] , \{V_{\sigalgop}[\overrightarrow{W}/\overrightarrow{x}]\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\\[2mm]
+(\runas M {y \!:\! U\ul{C}} {\ul{D}} {N})[\overrightarrow{W}/\overrightarrow{x}] & \defeq & 
+\runas {M[\overrightarrow{W}/\overrightarrow{x}]} {y \!:\! U\ul{C}[\overrightarrow{W}/\overrightarrow{x}]} {\ul{D}[\overrightarrow{W}/\overrightarrow{x}]} {N[\overrightarrow{W}/\overrightarrow{x}]}
+\\[2mm]
+(\runas K {y \!:\! U\ul{C}} {\ul{D}} {M})[\overrightarrow{W}/\overrightarrow{x}] & \defeq & 
+\runas {K[\overrightarrow{W}/\overrightarrow{x}]} {y \!:\! U\ul{C}[\overrightarrow{W}/\overrightarrow{x}]} {\ul{D}[\overrightarrow{W}/\overrightarrow{x}]} {M[\overrightarrow{W}/\overrightarrow{x}]}
+\end{array}
+\]
+the substitution of computation terms for computation variables with
+\[
+\begin{array}{l c l}
+(\runas K {x \!:\! U\ul{C}} {\ul{D}} {N})[M/z] & \defeq & 
+\runas {K[M/z]} {x \!:\! U\ul{C}} {\ul{D}} {N}
+\end{array}
+\]
+and the substitution of homomorphism terms for computation variables with
+\[
+\begin{array}{l c l}
+(\runas L {x \!:\! U\ul{C}} {\ul{D}} {N})[K/z] & \defeq & 
+\runas {L[K/z]} {x \!:\! U\ul{C}} {\ul{D}} {N}
+\end{array}
+\]
+
+The properties of substitution we established for eMLTT in Sections~\ref{sect:syntax} and~\ref{sect:completeness} also extend straightforwardly from eMLTT and eMLTT$_{\mathcal{T}_{\text{eff}}}$ to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$. Specifically, the proof principles remain unchanged: the user-defined algebra type and the value terms appearing in it are treated analogously to propositional equality and the terms appearing in it; and the composition operations are treated analogously to other computation and homomorphism terms that involve variable bindings and type annotations.
+
+Unless stated otherwise, the types and terms we use in the rest of this chapter are those of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$.
+This also includes the definitions of pure value types and pure value terms appearing in effect terms because every pure eMLTT value type (resp. term) can be trivially considered as a pure eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ value type (resp. term).
+
+Next, we extend the typing rules and definitional equations of eMLTT$_{\mathcal{T}_{\text{eff}}}$ with the user-defined algebra type and the composition operations. Similarly to eMLTT$_{\mathcal{T}_{\text{eff}}}$, the new rules involve the translation of well-formed effect terms $\lj {\Gamma \vertbar \Delta} T$ into value terms $\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_{\!j}}; \overrightarrow{W_{\sigalgop}}}$. The definition of this translation remains unchanged because it only depends on the structure of $T$ and does not inspect the subscripts $A$, $\overrightarrow{V_i}$, $\overrightarrow{V'_{\!j}}$, and $\overrightarrow{W_{\sigalgop}}$.
+
+Similarly to Chapter~\ref{chap:fibalgeffects}, we assume 
+\[
+\Gamma = x_1 \!:\! A_1, \ldots, x_n \!:\! A_n
+\qquad
+\Delta = w_1 \!:\! A'_1, \ldots, w_m \!:\! A'_m
+\] 
+throughout this chapter, so as to simplify the presentation of typing rules, definitional equations, and the meta-theory of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$. As in Chapter~\ref{chap:fibalgeffects}, we use vector notation for sets of value terms, e.g., we use $\overrightarrow{V_i}$ to denote a set of value terms $\{V_1, \ldots, V_n\}$.
+
+\begin{definition}
+\label{def:extensionofeMLTTwithhandlers}
+\index{well-formed syntax}
+The \emph{well-formed syntax} of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ is given by extending the typing rules and definitional equations of eMLTT$_{\mathcal{T}_{\text{eff}}}$ with 
+\begin{itemize}
+\item a formation rule for the user-defined algebra type:
+\[
+\mkrule
+{
+\lj {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+}
+{
+\begin{array}{c}
+\lj {\Gamma'} A
+\quad
+\vj {\Gamma'} {V_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A} 
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+where $\widehat{A_i} \defeq A_i[x'_1/x_1, \ldots, x'_{i-1}/x_{i-1}]$ and $\widehat{A'_j} \defeq A'_j[x'_1/x_1, \ldots, x'_n/x_n]$; and where we write $\overrightarrow{\lambda x'_i \!:\! \widehat{A_i} .}$, $\overrightarrow{\lambda x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}$, $\overrightarrow{\Pi x'_i \!:\! \widehat{A_i}}$, and $\overrightarrow{\widehat{A'_j} \to A}$ for sequences of lambda abstractions and sequences of  (dependent) function types, respectively.
+\index{ A@$\widehat{A_i}$ ($A_i$, with its variables $x_i$ replaced with fresh ones $x'_i$)}
+\index{ lambda@$\overrightarrow{\lambda\, x_{w_j} \hspace{-0.05cm}:\hspace{-0.05cm} \widehat{A'_j} \to A .}$ (sequence of lambda abstractions)}
+\index{ A@$\overrightarrow{\widehat{A'_j} \to A}$ (sequence of function types)}
+\item typing rules for the two composition operations:
+\[
+\mkrule
+{
+\cj {\Gamma} {\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}} {\ul{D}}
+}
+{
+\begin{array}{c@{\qquad} c}
+\cj \Gamma M \ul{C} 
+\quad
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y \!:\! U\ul{C}} N \ul{D}
+\\[2mm]
+\hspace{-0.95cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, N[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\\[-1mm]
+& \hspace{-3.2cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}) 
+\end{array}
+}
+\]
+
+\vspace{-0.15cm}
+
+\[
+\mkrule
+{
+\hj {\Gamma} {z \!:\! \ul{C}} {\runas K {y : U\ul{D}_1} {\ul{D}_2} {M}} {\ul{D}_2}
+}
+{
+\begin{array}{c@{\qquad} c}
+\hj \Gamma{z \!:\! \ul{C}} K \ul{D}_1 
+\quad
+\lj \Gamma \ul{D}_2
+\quad
+\cj {\Gamma, y \!:\! U\ul{D}_1} M \ul{D}_2
+\\[2mm]
+\hspace{-1.1cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{D}_1 .\, M[\thunk (\algop^{\ul{D}_1}_x(y'\!.\, \force {\ul{D}_1} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{D}_1 .\, \algop^{\ul{D}_2}_x(y'\!.\, M[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{D}_1) \to \ul{D}_2}
+\\[-1mm]
+& \hspace{-4cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})
+\end{array}
+}
+\]
+\item congruence rules for the user-defined algebra type and the composition operations:
+\[
+\mkrule
+{
+\ljeq {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {\langle B , \{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+}
+{
+\begin{array}{c}
+\ljeq {\Gamma'} A B
+\quad
+\veq {\Gamma'} {V_{\sigalgop}} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+
+\vspace{-0.15cm}
+
+\[
+\mkrule
+{
+\ceq {\Gamma} {\runas {M_1} {y \!:\! U\ul{C}_1} {\ul{D}_1} {N_1}} {\runas {M_2} {y \!:\! U\ul{C}_2} {\ul{D}_2} {N_2}} {\ul{D}_1}
+}
+{
+\begin{array}{c@{\qquad} c}
+\ljeq \Gamma {\ul{C}_1} {\ul{C}_2}
+\quad
+\ceq \Gamma {M_1} {M_2} \ul{C}_1 
+\\[1mm]
+\ljeq \Gamma {\ul{D}_1} {\ul{D}_2}
+\quad
+\ceq {\Gamma, y \!:\! U\ul{C}_1} {N_1} {N_2} \ul{D}_1
+\\[2mm]
+\hspace{-1.15cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C}_1 .\, N_1[\thunk (\algop^{\ul{C}_1}_x(y'\!.\, \force {\ul{C}_1} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C}_1 .\, \algop^{\ul{D}_1}_x(y'\!.\, N_1[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}_1) \to \ul{D}_1}
+\\[-1mm]
+& \hspace{-4cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})
+\end{array}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\hspace{-0.25cm}
+\mkrule
+{
+\heq {\Gamma} {z \!:\! \ul{C}} {\runas {K} {y \!:\! U\ul{D}_{11}} {\ul{D}_{21}} {M}} {\runas {L} {y \!:\! U\ul{D}_{12}} {\ul{D}_{22}} {N}} {\ul{D}_{21}}
+}
+{
+\begin{array}{c@{\qquad} c}
+\ljeq \Gamma {\ul{D}_{11}} {\ul{D}_{12}}
+\quad
+\heq \Gamma {z \!:\! \ul{C}} {K} {L} \ul{D}_{11} 
+\\[1mm]
+\ljeq \Gamma {\ul{D}_{21}} {\ul{D}_{22}}
+\quad
+\ceq {\Gamma, y \!:\! U\ul{D}_{11}} {M} {N} \ul{D}_{21}
+\\[2mm]
+\hspace{-1.15cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{D}_{11} .\, M[\thunk (\algop^{\ul{D}_{11}}_x(y'\!.\, \force {\ul{D}_{11}} (x'\, y')))/y] \\ \hspace{0.4cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{D}_{11} .\, \algop^{\ul{D}_{21}}_x(y'\!.\, M[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{D}_{11}) \to \ul{D}_{21}}
+\\[-1mm]
+& \hspace{-4.5cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}})
+\end{array}
+}
+\]
+\item a $\beta$-equation for the user-defined algebra type:
+\vspace{0.1cm}
+\[
+\mkrule
+{
+\ljeq {\Gamma} {U\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {A}
+}
+{
+\lj \Gamma \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+}
+\]
+
+\item $\beta$- and $\eta$-equations for the composition operation for computation terms:
+\[
+\mkrule
+{
+\ceq {\Gamma} {\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}} {M[V/y]} {\ul{D}}
+}
+{
+\begin{array}{c@{\qquad} c}
+\vj \Gamma V U\ul{C}
+\quad
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y \!:\! U\ul{C}} M \ul{D}
+\\[2mm]
+\hspace{-0.95cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, M[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, M[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\\[-1mm]
+& \hspace{-3.3cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}) 
+\end{array}
+}
+\]
+
+\vspace{0.05cm}
+
+\[
+\mkrule
+{
+\ceq {\Gamma} {\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}} {K[M/z]} {\ul{D}}
+}
+{
+\cj \Gamma M \ul{C} 
+\quad
+\hj {\Gamma} {z \!:\! \ul{C}} K \ul{D}
+}
+\]
+\item an $\eta$-equation for the composition operation for homomorphism terms:
+\vspace{0.1cm}
+\[
+\mkrule
+{
+\heq {\Gamma} {z_1 \!:\! \ul{C}} {\runas {K} {y \!:\! U\ul{D}_1} {\ul{D}_2} {L[\force {\ul{D}_1} y/z_2]}} {L[K/z_2]} {\ul{D}_2}
+}
+{
+\hj \Gamma {z_1 \!:\! \ul{C}} K \ul{D}_1 
+\quad
+\hj {\Gamma} {z_2 \!:\! \ul{D}_1} L \ul{D}_2
+}
+\]
+\item an $\eta$-equation for algebraic operations at the user-defined algebra type:
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M) \\} { & \force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+{
+\begin{array}{c}
+\vj \Gamma V I 
+\quad
+\lj \Gamma \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+\]
+\end{itemize}
+\end{definition}
+
+Observe that the $\beta$-equation for the user-defined algebra type captures the intuition that the value type $A$ denotes the carrier of the algebra denoted by $\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$.
+Analogously, the $\eta$-equation for algebraic operations captures the intuition that the value terms $V_{\sigalgop}$ denote the operations of the algebra denoted by $\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$.
+
+
+It is also worthwhile to note that the equational theory of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ does not include an $\eta$-equation for the user-defined algebra type, namely, 
+\[
+\hspace{-0.25cm}
+\mkrule
+{
+\begin{array}{c}
+\hspace{-7cm}
+\ljeq {\Gamma} {\ul{C}} {\langle U\ul{C} , \{\lambda\, y \!:\! (\Sigma\, x \!:\! I .\, O \to U\ul{C}) .\, 
+\\[-1mm]
+\hspace{3cm}
+\pmatch y {x \!:\! I, x' \!:\! O \to U\ul{C}} {} {\algop^{\ul{C}}_{x}(y'\!.\, \force {\ul{C}} (x'\, y'))}  \}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+{
+\lj \Gamma \ul{C}
+}
+\]
+
+We omit this equation because it does not hold in the natural fibred adjunction model we use for giving a denotational semantics to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ in Section~\ref{sect:interpretingemlttwithhandlers}, based on models of countable Lawvere theories. 
+However, it is also important to note that this equation would hold in a variant of that fibred adjunction model, based on models of countable equational theories. This illustrates that while the two categories 
+of models might be equivalent as categories, they differ in the strict equations that they support.
+
+
+Instead, as promised earlier, we can derive a type isomorphism that allows us to coerce computations between $\ul{C}$ and the corresponding user-defined algebra type.
+
+\begin{proposition}
+\label{prop:typeisomorphismforuserdefinedalgebras}
+Given $\lj \Gamma \ul{C}$, we can derive a computation type isomorphism
+\[
+\Gamma \vdash \ul{C} \cong \langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\]
+where, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, the value terms $V_{\sigalgop}$ are given by
+\[
+\lambda\, y \!:\! (\Sigma\, x \!:\! I .\, O \to U\ul{C}) .\, 
+\pmatch y {(x \!:\! I, x' \!:\! O \to U\ul{C})} {} {\thunk (\algop^{\ul{C}}_{x}(y'\!.\, \force {\ul{C}} (x'\,y')))}
+\]
+\end{proposition}
+
+\begin{proof}
+This type isomorphism is witnessed by the well-typed homomorphism terms
+\[
+\begin{array}{c}
+\hj \Gamma {z \!:\! \ul{C}} {\runas z {y \!:\! U\ul{C}} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {y}}} {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\\[3mm]
+\hj \Gamma {z \!:\! \langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {\runas z {y \!:\! U\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {} {\force {\ul{C}} {y}}} {\ul{C}}
+\end{array}
+\]
+
+The proofs that both composites of these terms are definitionally equal to $z$ (i.e., to identity) are straightforward, using the $\beta$- and $\eta$-equations for composition operations.
+\end{proof}
+
+We conclude this section by making a simple yet useful observation about our equational proof obligations that allows 
+many of them to be proved at little extra cost.
+
+\begin{proposition}
+Given a homomorphism term $\hj \Gamma {z \!:\! \ul{C}} K {\ul{D}}$, then we have 
+\[
+\begin{array}{c}
+\hspace{-0.9cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, K[\force {\ul{C}} y/z][\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, K[\force {\ul{C}} y/z][x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\end{array}
+\]
+for all operation symbols $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$.
+\end{proposition}
+
+\begin{proof}
+By straightforward equational reasoning, using the definitions of different kinds of substitution, and the general algebraicity equation given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}.
+\end{proof}
+
+
+\section{Deriving the conventional presentation of handlers}
+\label{sect:derivingconventionalhandlers}
+
+In this section we show how to derive the conventional term-level presentation of handlers (as discussed in Section~\ref{sect:handlersoverview}) in eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, so as to provide programmers with a familiar syntax for programming with handlers within computation terms.
+
+\index{handling construct}
+In detail, we define the handling construct 
+\[
+{M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}}
+\]
+using sequential composition as the following composite computation term:
+\[
+\force {\ul{C}} (\thunk (\doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}}))
+\]
+where, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, the value terms $V_{\sigalgop}$ are given by
+\[
+V_{\sigalgop} \defeq \lambda y' \!:\! (\Sigma\, x \!:\! I .\, O \to U\ul{C}) .\, \pmatch {y'} {(x \!:\! I, x' \!:\! O \to U\ul{C})} {} {\thunk N_{\sigalgop}}
+\]
+
+Next, we show that the corresponding typing rule is derivable. Compared to the typing rule considered by Plotkin and Pretnar, ours includes explicit equational proof obligations so as to ensure that the computation type $\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle$ is well-formed.
+
+\begin{proposition}
+\label{prop:handlertyping}
+The following typing rule is derivable:
+\[
+\mkrule
+{
+\cj {\Gamma'} {M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}} {\ul{C}}
+}
+{
+\begin{array}{c}
+\cj {\Gamma'} M FA
+\quad
+\lj {\Gamma'} \ul{C}
+\quad
+\cj {\Gamma', y \!:\! A} {N_{\mathsf{ret}}} {\ul{C}}
+\quad
+\cj {\Gamma', x \!:\! I, x' \!:\! O \to U\ul{C}} {N_{\sigalgop}} {\ul{C}}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+where, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, the value terms $V_{\sigalgop}$ are given by
+\[
+V_{\sigalgop} \defeq \lambda y' \!:\! (\Sigma\, x \!:\! I .\, O \to U\ul{C}) .\, \pmatch {y'} {(x \!:\! I, x' \!:\! O \to U\ul{C})} {} {\thunk N_{\sigalgop}}
+\]
+and where the value types $\widehat{A_i}$ and $\widehat{A'_j}$ are defined as in Definition~\ref{def:extensionofeMLTTwithhandlers}.
+\end{proposition} 
+
+\begin{proof}
+The derivation of this typing rule is constructed straightforwardly. The derivation consists of using the respective typing rules for forcing of thunked computations, thunking of computations, and sequential 
+composition of computation terms. 
+\end{proof}
+
+Further, we can also show that the corresponding $\beta$-equations are derivable.
+
+\begin{proposition}
+\label{prop:handlerequations}
+The following two definitional $\beta$-equations are derivable:
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq {\Gamma'} {& (\algop^{FA}_V(y'\!.\, M)) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}} \\} { & N_{\sigalgop}[V/x][\lambda\, y' \!:\! O[V/x] .\, \thunk H/x']} {\ul{C}}
+\end{array}
+}
+{
+\begin{array}{c}
+\vj {\Gamma'} V I
+\quad
+\cj {\Gamma', y' \!:\! O[V/x]} M FA
+\quad
+\lj {\Gamma'} \ul{C}
+\\
+\cj {\Gamma', y \!:\! A} {N_{\mathsf{ret}}} {\ul{C}}
+\quad
+\cj {\Gamma', x \!:\! I, x' \!:\! O \to U\ul{C}} {N_{\sigalgop}} {\ul{C}}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq {\Gamma'} {& (\return V) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}} \\} { & N_{\mathsf{ret}}[V/y]} {\ul{C}}
+\end{array}
+}
+{
+\begin{array}{c}
+\vj {\Gamma'} V A
+\quad
+\lj {\Gamma'} \ul{C}
+\quad
+\cj {\Gamma', y \!:\! A} {N_{\mathsf{ret}}} {\ul{C}}
+\quad
+\cj {\Gamma', x \!:\! I, x' \!:\! O \to U\ul{C}} {N_{\sigalgop}} {\ul{C}}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+where we abbreviate the handling construct in the first equation as
+\[
+H \,\defeq\, M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}
+\]
+\end{proposition}
+
+\begin{proof}
+These two definitional $\beta$-equations are proved as follows:
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma' \,\vdash\,\, & (\algop^{FA}_V(y'\!.\, M)) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}
+\\[1mm]
+=\,\, & \force {\ul{C}} \big(\thunk \big(
+\\[-1.5mm]
+& \hspace{2.25cm} \doto {(\algop^{FA}_V(y'\!.\, M))} {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {\thunk (N_{\mathsf{ret}})}}\big)\big)
+\\[2mm]
+=\,\, & \force {\ul{C}} \big(\thunk \big(\algop^{\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle}_V(y'\!.\, 
+\\[-2mm]
+& \hspace{3.95cm} \doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}})\big)\big)
+\\
+=\,\, & \force {\ul{C}} \big(\thunk \big(\\[-1.5mm] & \hspace{2cm} \force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {\big(V_{\sigalgop}\, \big\langle V , \lambda\, y' \!:\! O[V/x] .\, \thunk (\\[-1mm] & \hspace{3.6cm} \doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}}) \big\rangle\big)}\big)\big)
+\\[1mm]
+=\,\, & \force {\ul{C}} \big(V_{\sigalgop}\, \big\langle V , \lambda\, y' \!:\! O[V/x] .\, \thunk (\\[-1.5mm] & \hspace{3.95cm} \doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}}) \big\rangle\big)
+\\[1mm]
+=\,\, & \force {\ul{C}} \big(\thunk \big(N_{\sigalgop}[V/x]\big[\lambda\, y' \!:\! O[V/x] .\, \\[-2mm] & \hspace{2cm} \thunk (\doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}})/x'\big]\big)\big)
+\\[1mm]
+=\,\, & N_{\sigalgop}[V/x]\big[\lambda\, y' \!:\! O[V/x] .\, \\[-2mm] & \hspace{2.35cm} \thunk (\doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}})/x'\big]
+\\[1mm]
+=\,\, & N_{\sigalgop}[V/x]\big[\lambda\, y' \!:\! O[V/x] .\, \thunk ( \force {\ul{C}} (\thunk (
+\\[-2mm] & \hspace{3.35cm} \doto M {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}})))/x'\big]
+\\[1mm]
+=\,\, & N_{\sigalgop}[V/x]\big[\lambda\, y' \!:\! O[V/x] .\, \thunk (
+\\[-2mm] & \hspace{2.1cm}
+M \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}})/x'\big] : \ul{C}
+\end{align*}
+\end{fleqn}
+and
+
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma' \,\vdash\,\, & (\return V) \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in~} N_{\mathsf{ret}}
+\\
+=\,\, & \force {\ul{C}} \big(\thunk \big(
+\\[-2mm]
+& \hspace{2cm} \doto {(\return V)} {y \!:\! A} {} {\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}})}}\big)\big)
+\\
+=\,\, & \force {\ul{C}} \big(\thunk \big(\force {\langle U\ul{C} , \{V_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \rangle} {(\thunk N_{\mathsf{ret}}[V/y])}\big)\big)
+\\
+=\,\, & \force {\ul{C}} {(\thunk N_{\mathsf{ret}}[V/y])}
+\\
+=\,\, & N_{\mathsf{ret}}[V/y] : \ul{C}
+\\[-1.25cm]
+\end{align*}
+\end{fleqn}
+\end{proof}
+
+By being able to derive the conventional term-level presentation of handlers, we can also straightforwardly accommodate all the typical example uses of handlers proposed by Plotkin and Pretnar~\cite{Plotkin:HandlingEffects}, e.g., implementing timeouts, rollbacks, stream redirection, etc. 
+We refer the reader to op.~cit. for a detailed overview of these examples.
+
+It is worth noting that the problems discussed in Section~\ref{sect:problemwithhandlers} do not arise in this extension of eMLTT$_{\mathcal{T}_{\text{eff}}}$ because we can not define the handling construct
+\[
+{K \mathtt{~handled~with~} \{\mathtt{op}_x(x') \mapsto N_{\sigalgop}\}_{\sigalgop \,\in\, \mathcal{S}_{\text{eff}}} \mathtt{~to~} y \!:\! A \mathtt{~in}_{\ul{C}} \mathtt{~} N_{\mathsf{ret}}}
+\]
+satisfying analogous equations to those given in 
+Definition~\ref{prop:handlerequations}. Intuitively, we can not derive such terms because the nature of  homomorphism terms does not allow us to temporarily forget about the (algebra) structure of $\ul{C}$ and instead work with $U\ul{C}$, e.g., as used in the definition of 
+the computation term variant of the handling construct above.
+
+Finally, we recall that Plotkin and Pretnar do not enforce the correctness of their handlers during typechecking because it is in general an undecidable problem, see~\cite[\S6]{Plotkin:HandlingEffects} for details. In other words, they do not require the user-defined computation terms $N_{\sigalgop}$ to satisfy the equations given in $\mathcal{E}_{\text{eff}}$. In comparison, we include the corresponding proof obligations in eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$'s typing rules and definitional equations because in this thesis we only study a declarative presentation of eMLTT and its extensions.
+
+
+We plan to address the issue of algorithmic typechecking in future extensions of this work. 
+For example, we could develop a normaliser for eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ that is optimised for important fibred effect theories 
+(e.g., for global state, as studied in~\cite[\S5.2]{Ahman:NBE}), 
+and require  
+programmers to manually prove equations that cannot be established automatically. To facilitate the latter, we could change eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ to use propositional equalities in proof obligations instead of definitional equations---see Section~\ref{sect:normalisationandimplementation}.
+
+
+\section{Using handlers to reason about algebraic effects}
+\label{section:usinghandlersforreasoning}
+
+In this section we demonstrate that our type-based treatment of handlers provides a useful mechanism for reasoning about effectful computations, giving us an alternative to defining predicates on effectful computations using propositional equality on thunks.
+
+To facilitate such reasoning, we first extend eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with \emph{universes}. To keep to the declarative presentation we are using for eMLTT and its extensions, we extend eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with universes \emph{\`a la Tarski}\footnote{This terminology was originally proposed by Martin-L\"{o}f in~\cite{MartinLof:Bibliopolis}, due to the similarity between the explicit decoding function and Tarski's definition of truth~\cite{Tarski:ConceptOfTruth}.} by making the decoding function explicit. 
+
+In detail, we extend eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with i) \emph{universes} of codes of types and ii) \emph{decoding functions} that provide a meaning to these codes by ``interpreting" them as corresponding types.
+As eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ includes both value and computation types, it is natural to include two kinds of universes, albeit we only use the former in our examples. 
+
+Specifically, we extend eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$'s types with
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+A & ::= & \ldots & 
+\\
+& \vertbar & \mathsf{VU} & \text{universe of codes of value types}
+\\
+& \vertbar & \mathsf{CU} & \text{universe of codes of computation types}
+\\
+& \vertbar & \mathsf{El}~ V & \text{decoding function for the codes of value types}
+\\[5mm]
+\ul{C} & ::= & \ldots & 
+\\
+& \vertbar & \mathsf{El}~ V & \text{decoding function for the codes of computation types}
+\end{array}
+\]
+\index{universe}
+\index{ El@$\mathsf{El}$ (decoding function for codes of types)}
+\index{ VU@$\mathsf{VU}$ (universe of codes of value types)}
+\index{ CU@$\mathsf{CU}$ (universe of codes of computation types)}
+
+
+Observe that we consider only one universe level for both value and computation types---this can be straightforwardly extended to a hierarchy of universes using standard techiques, e.g., as discussed in~\cite{Palmgren:Universes}.
+
+The concrete codes of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$'s value and computation types are  given by terms of type $\mathsf{VU}$ and $\mathsf{CU}$, respectively. Specifically, we extend eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$'s value terms with
+\[
+\begin{array}{r c l @{\qquad\qquad}l}
+V & ::= & \ldots & 
+\\
+& \vertbar & \mathtt{nat\text{-}code} \hspace{2.5cm} & 
+\multirow{8}{*}{
+\hspace{-0.7cm}
+\vbox{
+\hsize = 3cm
+\[
+\left. \begin{array}{l}
+\vspace{-0.7cm}
+\,\\
+\,\\
+\,\\
+\,\\
+\,\\
+\,\\
+\,\\
+\,\\
+\,
+\end{array} \right\} \begin{array}{l} \text{codes of value types} \end{array}
+\]
+}
+}
+\\
+& \vertbar & \mathtt{unit\text{-}code}
+\\
+& \vertbar & \mathtt{v\text{-}sigma\text{-}code}(V,x.\,W)
+\\
+& \vertbar & \mathtt{v\text{-}pi\text{-}code}(V,x.\,W)
+\\
+& \vertbar & \mathtt{empty\text{-}code}
+\\
+& \vertbar & \mathtt{sum\text{-}code}(V,W)
+\\
+& \vertbar & \mathtt{eq\text{-}code}(V,W_1,W_2)
+\\
+& \vertbar & \mathtt{u\text{-}code~} V
+\\
+& \vertbar & \mathtt{hom\text{-}code}(V,W)
+\\[5mm]
+& \vertbar & \mathtt{f\text{-}code~} V & 
+\multirow{3}{*}{
+\hspace{-1.07cm}
+\vbox{
+\hsize = 5cm
+\[
+\left. \begin{array}{l}
+\vspace{-0.7cm}
+\,\\
+\,\\
+\,\\
+\,
+\end{array} \right\} \begin{array}{l} \text{codes of} \\[-2mm] \text{computation types} \end{array}
+\]
+}
+}
+\\
+& \vertbar & \mathtt{c\text{-}sigma\text{-}code}(V,x.\,W)
+\\
+& \vertbar & \mathtt{c\text{-}pi\text{-}code}(V,x.\,W)
+\\
+& \vertbar & \mathtt{u\text{-}alg\text{-}code}(V,\{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}})
+\end{array}
+\vspace{0.25cm}
+\]
+
+We also extend the well-formed syntax of eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with rules of the form:
+\vspace{0.25cm}
+
+\[
+\mkrule
+{\lj \Gamma {\mathsf{VU}}}
+{\lj {} \Gamma}
+\qquad
+\mkrule
+{\lj \Gamma {\mathsf{El}~V}}
+{\vj \Gamma V {\mathsf{VU}}}
+\qquad
+\mkrule
+{\lj \Gamma {\mathsf{El}~V}}
+{\vj \Gamma V {\mathsf{CU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\vj \Gamma {\mathtt{hom\text{-}code}(V,W)} {\mathsf{VU}}}
+{\vj \Gamma {V} {\mathsf{CU}} \quad \vj \Gamma {W} {\mathsf{CU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\vj \Gamma {\mathtt{u\text{-}code~} V} {\mathsf{VU}}}
+{\vj \Gamma {V} {\mathsf{CU}}}
+\qquad
+\mkrule
+{\vj \Gamma {\mathtt{f\text{-}code~} V} {\mathsf{CU}}}
+{\vj \Gamma V {\mathsf{VU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\vj \Gamma {\mathtt{c\text{-}sigma\text{-}code}(V,x.\,W)} {\mathsf{CU}}}
+{\vj \Gamma V {\mathsf{VU}} \quad \vj {\Gamma, x \!:\! \mathsf{El}~ V} {W} {\mathsf{CU}}}
+\qquad
+\mkrule
+{\vj \Gamma {\mathtt{c\text{-}pi\text{-}code}(V,x.\,W)} {\mathsf{CU}}}
+{\vj \Gamma V {\mathsf{VU}} \quad \vj {\Gamma, x \!:\! \mathsf{El}~ V} {W} {\mathsf{CU}}}
+\]
+
+The behaviour of the two decoding functions, both written $\mathsf{El}~ V$, is described using definitional equations between value and computation types, e.g., as given by
+\vspace{0.25cm}
+\[
+\mkrule
+{\ljeq \Gamma {\mathsf{El}~(\mathtt{hom\text{-}code}(V,W))} {(\mathsf{El}~V) \multimap (\mathsf{El}~W)}}
+{\vj \Gamma {V} {\mathsf{CU}} \quad \vj \Gamma {W} {\mathsf{CU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\ljeq \Gamma {\mathsf{El}~(\mathtt{u\text{-}code~} V)} {U(\mathsf{El}~V)}}
+{\vj \Gamma {V} {\mathsf{CU}}}
+\qquad
+\mkrule
+{\ljeq \Gamma {\mathsf{El}~(\mathtt{f\text{-}code~} V)} {F(\mathsf{El}~V)}}
+{\vj \Gamma V {\mathsf{VU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\ljeq \Gamma {\mathsf{El}~(\mathtt{c\text{-}sigma\text{-}code}(V,x.\,W))} {\Sigma \, x \!:\! (\mathsf{El}~V).\, \mathsf{El}~W}}
+{\vj \Gamma V {\mathsf{VU}} \quad \vj {\Gamma, x \!:\! \mathsf{El}~V} {W} {\mathsf{CU}}}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{\ljeq \Gamma {\mathsf{El}~(\mathtt{c\text{-}pi\text{-}code}(V,x.\,W))} {\Pi \, x \!:\! (\mathsf{El}~V) .\, \mathsf{El}~W}}
+{\vj \Gamma V {\mathsf{VU}} \quad \vj {\Gamma, x \!:\! \mathsf{El}~V} {W} {\mathsf{CU}}}
+\]
+
+Using these universes (in particular, the value universe $\mathsf{VU}$), we can now define predicates on (thunks of) effectful computations of type $F\!A$ as value terms of the form $\vj \Gamma V {U\!FA \to \mathsf{VU}}$, with the aim of using them to refine (thunks of) effectful computations using the value $\Sigma$-type, as $\Sigma\, x \!:\! U\!FA .\, \mathsf{El}~(V\,x)$. In more detail, we define these predicates by i) equipping the universe $\mathsf{VU}$ (or a value type we define using it) with an appropriate \emph{algebra} for the given fibred effect theory, and by ii) using a combination of thunking-forcing and sequential composition to \emph{handle} the given computation of type $F\!A$ with the above-mentioned algebra on $\mathsf{VU}$ (or on a value type we define using it).
+
+Below we consider two kinds of examples of defining predicates on computations using our type-based treatment of handlers: i) lifting predicates from return values to predicates on computations; and ii) specifying patterns of allowed (I/O-)effects. 
+
+\subsection{Lifting predicates from return values to computations}
+\label{section:liftingpredicatesexamples}
+
+Lifting predicates from return values to computations
+is easiest when the fibred effect theory in question does not contain equations, because then we do not have to prove equational proof obligations for the user-defined algebra type. Therefore, let us first consider the \emph{theory $\mathcal{T}_{\text{I/O}}$ of input/output} from Examples~\ref{ex:fibsigofIO} and~\ref{ex:fibtheoryofIO}---other equation-free fibred algebraic effects can be reasoned about similarly, e.g., exceptions.
+
+In particular, we lift a given predicate $\vj \Gamma {V_{\!P}} {A \to \mathsf{VU}}$ on return values to a predicate $\vj \Gamma {V_{\!\widehat{P}}} {U\!FA \to \mathsf{VU}}$ on (thunks of) computations by 
+\[
+\begin{array}{c}
+V_{\!\widehat{P}} \defeq \lambda\, y \!:\! U\!F\!A .\, 
+\thunk\! \big(\doto {(\force {F\!A} y)} {y' \!:\! A} {} {\force {\langle \mathsf{VU} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{I/O}}} \rangle} (V_{\!P}\, y')}\big)
+\end{array}
+\]
+where the value terms $V_{\mathsf{read}}$ and $V_{\mathsf{write}}$ are given by 
+\[
+\begin{array}{l@{~} c @{~} l}
+V_{\mathsf{read}} & \defeq & \lambda\, y \!:\! (\Sigma\, x \!:\! 1 . \Character \to \mathsf{VU}) .\, \mathtt{v\text{-}sigma\text{-}code}(\mathtt{chr\text{-}code},y'\!.\, (\snd y)\, y')
+\\[2mm]
+V_{\mathsf{write}} & \defeq & \lambda\, y \!:\! (\Sigma\, x \!:\! \Character .\, 1 \to \mathsf{VU}) .\, (\snd y)\, \star
+\end{array}
+\]
+and where $\mathtt{chr\text{-}code}$ is the code of the assumed value type $\Character$ of characters, i.e., 
+\[
+\ljeq \Gamma {\mathsf{El}~\mathtt{chr\text{-}code}} {\Character}
+\]
+
+On closer inspection, we can see that the predicate $V_{\!\widehat{P}}$ agrees with the possibility modality from Evaluation Logic~\cite{PittsAM:evall}, in that a computation satisfies $V_{\!\widehat{P}}$ if there \emph{exists} a return value that satisfies $V_{\!P}$. For example, to prove that $V_{\!\widehat{P}}$ holds of a computation \linebreak term $\mathtt{read}^{FA}(y.\, \mathtt{write}^{FA}_{V}(\return W))$, we need to construct an inhabitant for the right-hand side of the following derivable definitional equation between value types:
+\[
+\Gamma \vdash \mathsf{El}~\big(V_{\!\widehat{P}}\,\, (\thunk\! (\mathtt{read}^{FA}(y.\, \mathtt{write}^{FA}_{V}(\return W))))\big) = \Sigma\, y \!:\! \Character .\, \mathsf{El}~ (V_{\!P}\,\, W)
+\]
+If we replace $\mathtt{v\text{-}sigma\text{-}code}$ with $\mathtt{v\text{-}pi\text{-}code}$ in the definition of $V_{\mathsf{read}}$, we get a predicate that holds if \emph{all} the return values of the given computation satisfy $V_{\!P}$. 
+
+As a second example, we consider a fibred effect theory that does include equations, namely, the \emph{theory $\mathcal{T}_{\text{GS}}$ of global state} from Examples~\ref{ex:fibsigofstate} and~\ref{ex:fibtheoryofglobalstate}. 
+
+In particular, given a predicate $\vj \Gamma {V_{\!Q}} {A \to \State \to \mathsf{VU}}$ on return values  and \emph{final} store values, we define a predicate $\vj {\Gamma} {V_{\!\widehat{Q}}} {U\!FA \to \State \to \mathsf{VU}}$ on (thunks of) computations and \emph{initial} store values by
+\[
+\begin{array}{c}
+\hspace{-3.75cm}
+V_{\!\widehat{Q}} \defeq \lambda\, y \!:\! U\!F\!A .\, \lambda\, x_{S} \!:\! \State .\, 
+\fst \big(\big(\thunk\! \big(\doto {(\force {F\!A} y)} {y' \!:\! A} {} {\\ \hspace{4.25cm}  \force {\langle \State \,\to\, (\mathsf{VU} \times \State) , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)}\big)\big)\,\,  x_{S}\big)
+\end{array}
+\]
+where the value terms $V_{\mathsf{get}}$ and $V_{\mathsf{put}}$ are  defined using the natural representation of stateful programs as state-passing functions ${\State \,\to\, (\mathsf{VU} \times \State)}$, e.g., $V_{\mathsf{put}}$ is defined as 
+\[
+\begin{array}{l@{~} c@{~} l}
+V_{\mathsf{put}} & \defeq & \lambda\, y \!:\! (\Sigma\, x \!:\! \State.\, 1 \to (\State \,\to\, (\mathsf{VU} \times \State))) .\, \lambda\, x_S \!:\! \State .\,
+\\[-1mm]
+\multicolumn{3}{c}{\hspace{4.8cm}\pmatch y {(x \!:\! \State, x' \!:\! 1 \to (\State \,\to\, (\mathsf{VU} \times \State)))} {} {x'\, \star\,\, x}}
+\end{array}
+\]
+In other words, $V_{\mathsf{get}}$ and $V_{\mathsf{put}}$ are defined as if they were operations of the free algebra on $\mathsf{VU}$ for the equational theory corresponding to the fibred effect theory $\mathcal{T}_{\text{GS}}$.
+
+On closer inspection, we can see that $V_{\!\widehat{Q}}$ corresponds to Dijkstra's weakest precondition semantics of stateful programs~\cite{Dijkstra:GCommands}, as made precise in the next proposition.
+
+\begin{proposition}
+The following definitional equations are derivable in eMLTT$_{\mathcal{T}_{\text{GS}}}^{\mathcal{H}}$:
+\[
+\mkrule
+{\Gamma \vdash V_{\!\widehat{Q}}\,\, (\thunk\! (\return V))\,\, V_S = V_{\!Q}\,\, V\,\, V_S : \mathsf{VU}}
+{\vj \Gamma {V_{\!Q}} {A \to \State \to \mathsf{VU}} \quad \vj \Gamma V A \quad \vj \Gamma {V_S} \State}
+\vspace{0.25cm}
+\]
+
+\[
+\mkrule
+{\Gamma \vdash V_{\!\widehat{Q}}\,\, (\thunk\! (\mathtt{get}^{F\!A}(y.\, M)))\,\, V_S = V_{\!\widehat{Q}}\,\, (\thunk M[V_S/y])\,\, V_S : \mathsf{VU}}
+{\vj \Gamma {V_{\!Q}} {A \to \State \to \mathsf{VU}} \quad \cj {\Gamma, y \!:\! \State} {M} {FA} \quad \vj \Gamma {V_S} \State}
+\vspace{0.25cm}
+\]
+\[
+\mkrule
+{\Gamma \vdash V_{\!\widehat{Q}}\,\, (\thunk\! (\mathtt{put}^{F\!A}_{V'_S}(M)))\,\, V_S = V_{\!\widehat{Q}}\,\, (\thunk M)\,\, V'_S : \mathsf{VU}}
+{\vj \Gamma {V_{\!Q}} {A \to \State \to \mathsf{VU}} \quad \cj {\Gamma} {M} {FA} \quad \vj \Gamma {V_S} \State \quad \vj \Gamma {V'_S} {\State}}
+\]
+\end{proposition}
+
+\begin{proof}
+All three equations are proved by straightforward equational reasoning, e.g., 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & V_{\!\widehat{Q}}\,\, (\thunk\! (\mathtt{put}^{F\!A}_{V'_S}(M)))\,\, V_S
+\\[1mm]
+=\,\, & \fst \big(\big(\thunk\! \big(\doto {(\force {F\!A} (\thunk\! (\mathtt{put}^{F\!A}_{V'_S}(M))))} {y' \!:\! A} {} {\\[-2mm] & \hspace{3.5cm}  \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)}\big)\big)\,\,  V_S\big)
+\\[1mm]
+=\,\, & \fst \big(\big(\thunk\! \big(\doto {\mathtt{put}^{F\!A}_{V'_S}(M)} {y' \!:\! A} {} {\\[-2mm] & \hspace{3.5cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)}\big)\big)\,\, V_S\big)
+\\[2.5mm]
+=\,\, & \fst \big(\big(\thunk\! \big(\doto {\mathtt{put}^{\!\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle}_{V'_S}(M} {y' \!:\! A} {} {\\[-2mm] & \hspace{3.35cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle))}\big)\big)\,\, V_S\big)
+\\[1mm]
+=\,\, & \fst \big(\big(\thunk\! \big(\force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle}\big(\\[-1mm] & \hspace{1.5cm} \lambda\, x_S \!:\! \State .\, \pmatch {\big\langle V'_S , \lambda\, y \!:\! 1 .\, \thunk (\doto M {y' \!:\! A} {} {\\[-2mm] & \hspace{3cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)})  \big\rangle} {\\[-1mm] & \hspace{4.85cm} (x \!:\! \State, x' \!:\! 1 \to (\State \,\to\, \mathsf{VU} \times \State))} {} {x'\, \star\,\, x}\big)\big)\big)\,\, V_S\big)
+\\[1mm]
+=\,\, & \fst \big(\big( \lambda\, x_S \!:\! \State .\, \pmatch {\big\langle V'_S , \lambda\, y \!:\! 1 .\, \thunk\! (\doto M {y' \!:\! A} {} {\\[-2mm] & \hspace{3cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)})  \big\rangle} {\\[-1mm] & \hspace{5.2cm} (x \!:\! \State, x' \!:\! 1 \to (\State \,\to\, \mathsf{VU} \times \State))} {} {x'\, \star\,\, x}\big)\,\, V_S\big)
+\\[1mm]
+=\,\, & \fst \big(\pmatch {\big\langle V'_S , \lambda\, y \!:\! 1 .\, \thunk\! (\doto M {y' \!:\! A} {} {\\[-2mm] & \hspace{2.5cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)})  \big\rangle} {\\[-1mm] & \hspace{5.85cm} (x \!:\! \State, x' \!:\! 1 \to (\State \,\to\, \mathsf{VU} \times \State))} {} {x'\, \star\,\, x}\big)
+\\
+=\,\, & \fst \big(\big(\thunk\! \big(\doto {M} {y' \!:\! A} {} {\\[-2mm] & \hspace{3.5cm} \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)}\big)\big)\,\, V'_S\big)
+\\[1mm]
+=\,\, & \fst \big(\big(\thunk\! \big(\doto {(\force {F\!A} (\thunk M))} {y' \!:\! A} {} {\\[-2mm] & \hspace{3.5cm}  \force {\langle \mathsf{S} \,\to\, \mathsf{VU} \times \mathsf{S} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{GS}}} \rangle} (\lambda\, x'_{S} \!:\! \State .\, \langle V_{\!Q}\,\, y'\, x'_{S} , x'_{S} \rangle)}\big)\big)\,\,  V'_S\big)
+\\[1mm]
+=\,\, & V_{\!\widehat{Q}}\,\, (\thunk M)\,\, V'_S : \mathsf{VU}
+\end{align*}
+\end{fleqn}
+The proofs of the other two equations follow a similar pattern.
+\end{proof}
+
+We leave comparing our handler-based definition of Dijkstra's weakest precondition semantics to the CPS-translation based definition used in \pl{F*}~\cite{Ahman:DM4Free} for future work.
+
+\subsection{Specifying patterns of allowed effects}
+
+Analogously to lifting predicates from return values to computations, specifying patterns 
+of allowed effects is easiest when the given fibred effect theory does not contain equations.
+Therefore, let us again consider the fibred effect theory  $\mathcal{T}_{\text{I/O}}$ of input/output. 
+
+As a first example, we define a very coarse grained predicate $V_{\mathsf{no\text{-}w}}$ on the allowed I/O-effects, namely, one that \emph{disallows all writes}. This predicate is defined as follows: 
+\[
+V_{\mathsf{no\text{-}w}} \defeq \lambda\, y \!:\! U\!F\!A .\, \thunk\! \big(\doto {(\force {F\!A} y)} {y' \!:\! A} {} {\force {\langle \mathsf{VU} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{I/O}}} \rangle} \mathtt{unit\text{-}code}}\big)
+\]
+where the value terms $V_{\mathsf{read}}$ and $V_{\mathsf{write}}$ are given by 
+\[
+\begin{array}{l@{~} c @{~} l}
+V_{\mathsf{read}} & \defeq & \lambda\, y \!:\! (\Sigma\, x \!:\! 1 .\, \Character \to \mathsf{VU}) .\, \mathtt{v\text{-}pi\text{-}code}(\mathtt{chr\text{-}code},y'\!.\, (\snd y)\,\, y')
+\\[2mm]
+V_{\mathsf{write}} & \defeq & \lambda\, y \!:\! (\Sigma\, x \!:\! \Character .\, 1 \to \mathsf{VU}) .\, \mathtt{empty\text{-}code}
+\end{array}
+\]
+
+For example, the computation term $\mathtt{read}^{F\!A}(x.\,\mathtt{write}_V^{F\!A}(M))$ does not satisfy $V_{\mathsf{no\text{-}w}}$ (if $\Gamma$ is consistent) because of the following derivable value type isomorphism:
+\[
+\Gamma \vdash \mathsf{El}(V_{\mathsf{no\text{-}w}} (\thunk \! (\mathtt{read}^{F\!A}(y.\,\mathtt{write}_V^{F\!A}(M))))) = \Pi\, y \!:\! 1 \!+\! 1 .\, 0 \cong 0
+\]
+ 
+Next, we show how to 
+specify more complex patterns of allowed I/O-effects in the style of session types~\cite{Honda:LangPrimitives}. To this end, for our second example, let us assume an inductive type $\lj \diamond \mathsf{Protocol}$, defined using three constructors with the following types:
+\[
+\begin{array}{c}
+\mathtt{e} : \mathsf{Protocol}
+\qquad
+\mathtt{r} : (\Character \to \mathsf{Protocol}) \to \mathsf{Protocol}
+\\[2mm]
+\mathtt{w} : (\Character \to \mathsf{VU}) \times \mathsf{Protocol} \to \mathsf{Protocol}
+\end{array}
+\]
+
+Intuitively, $\mathtt{e}$ stands for the end of communication; $\mathtt{r}$ specifies that the next allowed I/O-effect has to be a read; and $\mathtt{w}$ specifies that the next I/O-effect has to be a write. 
+
+Note that both $\mathtt{r}$ and $\mathtt{w}$ take a $\mathsf{Protocol}$-valued argument. This argument specifies the pattern of I/O-effects that are allowed after performing a read or write effect, respectively. Further, observe that for $\mathtt{r}$, the $\mathsf{Protocol}$-valued argument can depend on the character being read from the input. It is also worth noting that $\mathtt{w}$ takes a second argument (with type $\Character \to \mathsf{VU}$). This argument denotes a predicate on the values of type $\Character$ that are allowed to be written to the output by the corresponding write effect.
+
+Then, given some particular protocol $\Gamma \vdash V_{\mathsf{pr}} : \mathsf{Protocol}$, we define a predicate
+\[
+\begin{array}{c}
+\hspace{-5.5cm}
+V_{\widehat{\mathsf{pr}}} \defeq \lambda\, y \!:\! U\!F\!A .\, \big(\thunk\! \big(\doto {(\force {F\!A} y)} {y' \!:\! A} {} {\\[-1.5mm] \hspace{7cm} \force {\langle \mathsf{Protocol} \to \mathsf{VU} , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{I/O}}} \rangle} V_{\mathsf{ret}}}\big)\big)\, V_{\mathsf{pr}}
+\end{array}
+\]
+where the value terms $V_{\mathsf{ret}}$, $V_{\mathsf{read}}$, and $V_{\mathsf{write}}$ are defined as follows (for better readability, we opt to give their definitions by pattern-matching on their respective arguments):
+\[
+\begin{array}{l@{~} l@{~} l@{~~} c@{~~} l}
+V_{\mathsf{ret}}& & \mathtt{e} & \defeq & \mathtt{unit\text{-}code}
+\\[2mm]
+V_{\mathsf{read}}& \langle V , V_{\mathsf{rk}} \rangle& (\mathtt{r}~ V'_{\mathsf{pr}}) & \defeq & \mathtt{v\text{-}pi\text{-}code}(\mathtt{chr\text{-}code},y.\, (V_{\mathsf{rk}}\,\, y)\,\, (V'_{\mathsf{pr}}\,\, y))
+\\[2mm]
+V_{\mathsf{write}}& \langle V , V_{\mathsf{wk}} \rangle& (\mathtt{w}~ \langle V_{\!P} , V'_{\mathsf{pr}} \rangle) & \defeq & \mathtt{v\text{-}sigma\text{-}code}(V_{\!P}\,\, V, y.\, V_{\mathsf{wk}}\,\, \star\,\, V'_{\mathsf{pr}})
+\end{array}
+\]
+with all other cases defined to be equal to $\mathtt{empty\text{-}code}$; and where 
+\[
+\begin{array}{c}
+\Gamma \vdash V_{\mathsf{rk}} : \Character \to \mathsf{Protocol} \to \mathsf{VU}
+\qquad
+\Gamma \vdash V_{\mathsf{wk}} : 1 \to \mathsf{Protocol} \to \mathsf{VU}
+\end{array}
+\]
+are the respective continuations of the algebraic operations denoted by $V_{\mathsf{read}}$ and $V_{\mathsf{write}}$.
+
+The high-level idea is that $V_{\widehat{\mathsf{pr}}}$ computes to $\mathtt{empty\text{-}code}$ if the given computation does not conform to the pattern of I/O-effects specified by the given protocol $V_{\mathsf{pr}}$. On the other hand, if the given computation happens to conform to the given protocol, $V_{\widehat{\mathsf{pr}}}$ will compute to a representation of a sequence of value $\Pi$- and $\Sigma$-types (ending with $1$) for which one can easily construct an inhabitant, and thus prove that $V_{\widehat{\mathsf{pr}}}$ holds.
+
+We conclude by noting that one can easily combine $V_{\mathsf{no\text{-}w}}$ and $V_{\widehat{\mathsf{pr}}}$ with predicates from Section~\ref{section:liftingpredicatesexamples}, by replacing $\mathtt{unit\text{-}code}$ with a predicate $V_{\!P}$ on return values.
+
+\section{Meta-theory} 
+\label{section:handlersmetatheory}
+
+In this section we show how to extend the meta-theory of eMLTT and eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, analogously to how we extended the meta-theory of eMLTT to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$ in Section~\ref{sect:emlttalgeffectsmetatheory}. Similarly to eMLTT$_{\!\mathcal{T}_{\text{eff}}}$, many of the results from Section~\ref{sect:metatheory} (and from the beginning of Section~\ref{sect:completeness}) extend straightforwardly to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, with either the proof remaining the same or it can be easily adapted for eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$. Analogously to  Section~\ref{sect:emlttalgeffectsmetatheory}, we omit the proofs of the propositions and theorems that extend to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ straightforwardly and only comment on the more involved proofs.
+
+
+\subsection*{Extending Theorem~\ref{thm:substitution} (Value term substitution) to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$}
+
+\index{substitution theorem!syntactic --!-- for value terms}
+
+We begin by recalling that in Theorem~\ref{thm:substitution} we showed that the substitution rule is admissible in eMLTT for substituting value terms for value variables. When extending Theorem~\ref{thm:substitution} to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, we keep the basic proof principle the same: we prove $(a)$--$(l)$ for different kinds of types, terms, and definitional equations simultaneously, with $(a)$--$(b)$ proved by induction on the length of the given value context $\Gamma_2$, and $(c)$--$(l)$  by induction on the given derivations; and this theorem as a whole is proved simultaneously with the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of the weakening theorem (Theorem~\ref{thm:weakening}). 
+
+The cases for the terms and definitional equations introduced by eMLTT$_{\mathcal{T}_{\text{eff}}}$ are proved analogously to Section~\ref{sect:fibalgeffectsineMLTT}; this also includes additionally proving an eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:effecttermstranslationsubstitution}, so as to account for substituting value terms for value variables in the translation of effect terms. The new cases for the types, terms, and definitional equations introduced by eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ are proved analogously to other types, terms, and definitional equations that involve variable bindings and type annotations.
+
+For example, in the case corresponding to the formation rule for the user-defined algebra type, the given derivation ends with 
+\[
+\hspace{-0.15cm}
+\mkrule
+{
+\lj {\Gamma_1,y \!:\! B, \Gamma_2} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+}
+{
+\begin{array}{c}
+\lj {\Gamma_1,y \!:\! B, \Gamma_2} A
+\quad
+\vj {\Gamma_1,y \!:\! B, \Gamma_2} {V_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\\[2mm]
+\hspace{-4cm} \veq {\Gamma_1,y \!:\! B, \Gamma_2} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{1.9cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+and we need to construct a derivation of 
+\[
+\lj {\Gamma_1,\Gamma_2[W/y]} {\langle A[W/y] , \{V_{\sigalgop}[W/y]\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\]
+
+To construct this derivation, we first use $(c)$, $(g)$, and $(h)$ on the derivations given by the premises of this rule, in order to get derivations of  
+\[
+\begin{array}{c}
+\lj {\Gamma_1, \Gamma_2[W/y]} A[W/y]
+\\[2mm]
+\vj {\Gamma_1, \Gamma_2[W/y]} {V_{\sigalgop}[W/y]} {(\Sigma\, x \!:\! I[W/y] . O[W/y] \to A[W/y]) \to A[W/y]}
+\\[4mm]
+\hspace{-1.6cm} \veq {\Gamma_1, \Gamma_2[W/y]} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i}[W/y] .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j}[W/y] \to A[W/y] .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}[W/y] \\ \hspace{0.7cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i}[W/y] .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j}[W/y] \to A[W/y] .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}[W/y]\,} {\\[2mm] \hspace{6.5cm} \overrightarrow{\Pi x'_i \!:\! \widehat{A_i}[W/y] .}\, \overrightarrow{\widehat{A'_j}[W/y] \to A[W/y]} \to A[W/y]}
+\end{array}
+\]
+
+Next, we use the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} on the given derivations of $\vj {\Gamma_1} W B$, $\lj \diamond I$, $\lj {x \!:\! I} O$, and $\lj \Gamma {A'_j}$, to get the following inclusions:
+\[
+FVV(W) \subseteq V\!ars(\Gamma_1)
+\qquad
+FVV(I) = \emptyset
+\qquad
+FVV(O) \subseteq \{x\}
+\qquad
+FVV(A'_j) \subseteq V\!ars(\Gamma)
+\]
+
+According to our adopted variable conventions, we also know that  
+\[
+x, x'_1, \ldots, x'_n, x_{w_{1}}, \ldots, x_{w_m} \not\in V\!ars(\Gamma_1, y \!:\! B, \Gamma_2)
+\]
+
+As a result, by recalling that the properties of substitution we established for eMLTT in Section~\ref{sect:syntax} extend straightforwardly to  eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, we get the following equations:
+\[
+I[W/y] = I
+\qquad
+O[W/y] = O
+\qquad
+A'_j[W/y] = A'_j
+\]
+
+Further, by using the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:effecttermstranslationsubstitution}, we also get that
+\[
+\begin{array}{c}
+\efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}[W/y] = \efftrans {T_1} {A[W/y]; \overrightarrow{x'_i[W/y]}; \overrightarrow{x_{w_{\!j}}[W/y]}; \overrightarrow{V_{\sigalgop}[W/y]}} = \efftrans {T_1} {A[W/y]; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}[W/y]}}
+\\[3mm]
+\efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}[W/y] = \efftrans {T_2} {A[W/y]; \overrightarrow{x'_i[W/y]}; \overrightarrow{x_{w_{\!j}}[W/y]}; \overrightarrow{V_{\sigalgop}[W/y]}} = \efftrans {T_2} {A[W/y]; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}[W/y]}}
+\end{array}
+\]
+where the right-hand equations follow from the properties of substitution.
+
+Finally, by combining all these observations, we get that the derivations we constructed in the beginning of this proof turn out to be in fact derivations of
+\[
+\hspace{-0.3cm}
+\begin{array}{c}
+\lj {\Gamma_1, \Gamma_2[W/y]} A[W/y]
+\\[2mm]
+\vj {\Gamma_1, \Gamma_2[W/y]} {V_{\sigalgop}[W/y]} {(\Sigma\, x \!:\! I . O \to A[W/y]) \to A[W/y]}
+\\[4mm]
+\hspace{-2.5cm} \veq {\Gamma_1, \Gamma_2[W/y]} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A[W/y] .}\, \efftrans {T_1} {A[W/y]; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}[W/y]}} \\ \hspace{-0.15cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A[W/y] .}\, \efftrans {T_2} {A[W/y]; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}[W/y]}}\,} {\\[2mm] \hspace{8.5cm} \overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A[W/y]} \to A[W/y]}
+\end{array}
+\]  
+Therefore, we can use the formation rule for the user-defined algebra type with these derivations to construct the required derivation of $\lj {\Gamma_1,\Gamma_2[W/y]} {\langle A[W/y] , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$.
+
+
+\subsection*{Extending Proposition~\ref{prop:wellformedcomponentsofjudgements} to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$}
+
+We begin by recalling that in Proposition~\ref{prop:wellformedcomponentsofjudgements} we showed that the judgements of well-formed expressions and definitional equations only involve well-formed contexts and types, and well-typed terms. For example, given $\ceq \Gamma M N {\ul{C}}$, we showed that
+\[
+\cj \Gamma M \ul{C}
+\qquad
+\cj \Gamma N \ul{C}
+\]
+
+When extending Proposition~\ref{prop:wellformedcomponentsofjudgements} to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, we keep the basic proof principle the same: we prove $(a)$--$(j)$ for different kinds of types, terms, and definitional equations simultaneously, by induction on the given derivations, using the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ versions of the weakening and substitution theorems, where necessary.
+
+The cases for the terms and definitional equations introduced by eMLTT$_{\mathcal{T}_{\text{eff}}}$ are proved as in Section~\ref{sect:fibalgeffectsineMLTT}; this also includes proving Proposition~\ref{prop:welltypednessoftranslatingeffectterms} to show that well-formed effect terms translate into well-typed value terms. Most of the new cases introduced by eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ are proved similarly to other types and terms that involve variable bindings and type annotations. However, in order to be able to account for the congruence rule for the user-defined algebra type, we need to prove the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements} simultaneously with Propositions~\ref{prop:repeatedsubstitutioninhandlerssect} and~\ref{prop:replacementinfibeffecttermtranslationindices} below.
+
+\begin{proposition}
+\label{prop:repeatedsubstitutioninhandlerssect}
+Given a well-typed value term $\vj {\Gamma_1,\Gamma_2,\Gamma_3} V A$ and definitional equations $\veq {\Gamma_1} {V_i} {W_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$, for all $x_i \!:\! A_i$ in $\Gamma_2$, then 
+\[
+\veq {\Gamma_1,\Gamma_3[\overrightarrow{V_i}/\overrightarrow{x_i}]} {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {V[\overrightarrow{W_i}/\overrightarrow{x_i}]} {A[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the length of $\Gamma_2$, as discussed below.
+
+\vspace{0.1cm}
+
+\noindent \textit{Base case} (with $\Gamma_2 = \diamond$): In this case, we simply use the reflexivity rule for value terms to prove $\veq {\Gamma_1,\Gamma_3} V V A$.
+
+\vspace{0.1cm}
+
+\noindent \textit{Step case} (with $\Gamma_2 = \Gamma'_2, x_n \!:\! A_n$): In this case, we first use the induction hypothesis on $\vj {\Gamma_1,\Gamma'_2, x_n \!:\! A_n,\Gamma_3} V A$ (with the contexts chosen as $\Gamma_1$ and $\Gamma'_2$ and $x_n \!:\! A_n, \Gamma_3$) to prove
+\[
+\begin{array}{c}
+\hspace{-4cm}
+\veq {\Gamma_1, x_n \!:\! A_n[V_1/x_1, \ldots, V_{n-1}/x_{n-1}], \Gamma_3[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]} {\\ \hspace{1cm} V[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]} {V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}]} {A[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]}
+\end{array}
+\]
+
+Next, by using the simultaneously proved eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements} on this definitional equation, we get a derivation of
+\[
+\begin{array}{c}
+\hspace{-3.9cm}
+\vj {\Gamma_1, x_n \!:\! A_n[V_1/x_1, \ldots, V_{n-1}/x_{n-1}], \Gamma_3[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]} {\\ \hspace{5.6cm} V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}]} {A[V_1/x_1, \ldots, V_{n-1}/x_{n-1}]}
+\end{array}
+\]
+
+Further, by using the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of the substitution theorem on the definitional equation above, we get a proof of  
+\[
+\begin{array}{c}
+\hspace{-7.6cm}
+\veq {\Gamma_1, \Gamma_3[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]} {\\ \hspace{-2.55cm} V[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]\\ \hspace{2.75cm} } {V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}][V_n/x_n]} {A[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]}
+\end{array}
+\]
+and for which we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:simultaneoussubstlemma2} to show that
+\[
+\begin{array}{c}
+\Gamma_1, \Gamma_3[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]
+=
+\Gamma_1, \Gamma_3[V_1/x_1, \ldots, V_{n-1}/x_{n-1}, V_n/x_n]
+\\[2mm]
+A[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]
+=
+A[V_1/x_1, \ldots, V_{n-1}/x_{n-1}, V_n/x_n]
+\end{array}
+\]
+
+Finally, we can prove the required equation as follows:
+\begin{fleqn}[0.3cm]
+\begin{align*}
+{\Gamma_1,\Gamma_3[\overrightarrow{V_i}/\overrightarrow{x_i}]} \,\vdash\,\, & 
+V[V_1/x_1, \ldots, V_{n-1}/x_{n-1}, V_n/x_n]
+\\
+=\,\, & V[V_1/x_1, \ldots, V_{n-1}/x_{n-1}][V_n/x_n]
+\\
+=\,\, & V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}][V_n/x_n]
+\\
+=\,\, & V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}][W_n/x_n]
+\\
+=\,\, & V[W_1/x_1, \ldots, W_{n-1}/x_{n-1}, W_n/x_n] : A[\overrightarrow{V_i}/\overrightarrow{x_i}]
+\end{align*}
+\end{fleqn}
+where the first and last equation are proved using the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$\! version of Proposition~\ref{prop:simultaneoussubstlemma2}; the second equation is proved using the definitional 
+equation derived above; and the third equation is proved using the replacement rule for value terms.
+\end{proof}
+
+\begin{proposition}
+\label{prop:replacementinfibeffecttermtranslationindices}
+Given a well-formed effect term $\lj {\Gamma \vertbar \Delta} T$ derived from $\mathcal{S}_{\text{eff}}$, value types $A$ and $B$, value terms $V_{i}$ and $W_i$ (for all $x_i \!:\! A_i$ in $\Gamma$), value terms $V'_{j}$ and $W'_j$ (for all $w_j \!:\! A'_j$ in $\Delta$), value terms $V_{\sigalgop}$ and $W_{\sigalgop}$ (for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$), and a value context $\Gamma'$ such that
+\begin{itemize}
+\item $\vdash \Gamma'$, 
+\item $\ljeq {\Gamma'} A B$, 
+\item $\veq {\Gamma'} {V_i} {W_i} {A_i[V_1/x_1, \ldots, V_{i-1}/x_{i-1}]}$, 
+\item $\veq {\Gamma'} {V'_j} {W'_j} {A'_j[V_1/x_1, \ldots, V_n/x_n] \to A}$, 
+\item $\veq {\Gamma'} {V_{\sigalgop}} {W_{\sigalgop}} {(\Sigma\, x \!:\! I .\, O \to A) \to A}$, 
+\end{itemize}
+then 
+\[
+\veq {\Gamma'} {\efftrans T {A; \overrightarrow{V_i}; \overrightarrow{V'_j}; \overrightarrow{V_{\sigalgop}}}} {\efftrans T {B; \overrightarrow{W_i}; \overrightarrow{W'_j}; \overrightarrow{W_{\sigalgop}}}} {A}
+\]
+\end{proposition}
+
+\begin{proof}
+We prove this proposition by induction on the derivation of $\lj {\Gamma \vertbar \Delta} T$.
+
+As a representative example, we consider the case of algebraic operations $\algop_V(y .\, T)$, for which  we need to prove the following definitional equation:
+\[
+\begin{array}{c}
+\hspace{-1cm}
+\veq {\Gamma'} {V_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_j}; \overrightarrow{V_{\sigalgop}}}\rangle
+\\[1mm] \hspace{0.15cm}} { W_{\sigalgop}\,\, \langle V[\overrightarrow{W_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{W_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {B; \overrightarrow{W_i},\, y; \overrightarrow{W'_j}; \overrightarrow{W_{\sigalgop}}}\rangle
+} {A}
+\end{array}
+\]
+
+First, we note that we can repeatedly use the replacement rules for value types and value terms with the derivations of $\vj \Gamma V I$ and $\lj {x \!:\! I} O$, in combination with the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$\! version Theorem~\ref{thm:simultaneoussubstitution} (simultaneous value term 
+substitution), to prove 
+%
+\[
+\veq {\Gamma'} {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {V[\overrightarrow{W_i}/\overrightarrow{x_i}]} {I[\overrightarrow{V_i}/\overrightarrow{x_i}]}
+\qquad
+\ljeq {\Gamma'} {O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]} {O[V[\overrightarrow{W_i}/\overrightarrow{x_i}]/x]}
+\]
+However, as $\lj {\diamond} I$, we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:freevariablesofwellformedexpressions} to get that $FVV(I) = \emptyset$, and 
+thus we can use the eMLTT$_{\mathcal{T}_{\text{eff}}}$ version of Propopsition~\ref{prop:valuesubstlemma1simultaneous} to get
+\[
+\veq {\Gamma'} {V[\overrightarrow{V_i}/\overrightarrow{x_i}]} {V[\overrightarrow{W_i}/\overrightarrow{x_i}]} {I}
+\]
+
+Next, as $y$ is fresh by our adopted variable conventions, we have a derivation of $\lj {} {\Gamma', y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]}$ 
+and thus we can use the induction hypothesis to get
+\[
+\veq {\Gamma', y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x]} {\efftrans T {A; \overrightarrow{V_i} \!, y; \overrightarrow{V'_j}; \overrightarrow{V_{\sigalgop}}}} {\efftrans T {B; \overrightarrow{W_i}, y; \overrightarrow{W'_j}; \overrightarrow{W_{\sigalgop}}}} {A}
+\]
+
+Next, by using the congruence rule for lambda abstraction, we get a proof of
+\[
+\begin{array}{c}
+\hspace{-4cm}
+\veq {\Gamma'} {\lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans T {A; \overrightarrow{V_i} \!, y; \overrightarrow{V'_j}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.25cm}} { \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x].\, \efftrans T {B; \overrightarrow{W_i}, y; \overrightarrow{W'_j}; \overrightarrow{W_{\sigalgop}}}} {O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] \to A}
+\end{array}
+\]
+
+Finally, using the congruence rules for function application and pairing, in combination with the proofs of definitional equations given above, we can prove 
+\[
+\begin{array}{c}
+\hspace{-1cm}
+\veq {\Gamma'} {V_{\sigalgop}\,\, \langle V[\overrightarrow{V_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{V_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {A; \overrightarrow{V_i},\, y; \overrightarrow{V'_j}; \overrightarrow{V_{\sigalgop}}}\rangle
+\\ \hspace{0.15cm}} { W_{\sigalgop}\,\, \langle V[\overrightarrow{W_i}/\overrightarrow{x_i}] , \lambda\, y \!:\! O[V[\overrightarrow{W_i}/\overrightarrow{x_i}]/x] .\, \efftrans {T} {B; \overrightarrow{W_i},\, y; \overrightarrow{W'_j}; \overrightarrow{W_{\sigalgop}}}\rangle
+} {A}
+\end{array}
+\]
+\end{proof}
+
+We now return to the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements}. We consider one example case of its proof in detail, so as to  demonstrate how Proposition~\ref{prop:replacementinfibeffecttermtranslationindices} and equational reasoning are used to prove the new cases introduced by eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$.
+
+
+\vspace{0.2cm}
+
+
+In particular, we consider the case of the congruence rule for the user-defined algebra type. In this case, 
+%
+the given derivation ends with
+\[
+\mkrule
+{
+\ljeq {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {\langle B , \{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+}
+{
+\begin{array}{c}
+\ljeq {\Gamma'} A B
+\quad
+\veq {\Gamma'} {V_{\sigalgop}} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+and we are required to construct derivations of 
+\[
+\lj {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\qquad
+\lj {\Gamma'} {\langle B , \{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\]
+
+We begin by using $(b)$ and $(f)$ on the given derivations of $\ljeq {\Gamma'} A B$ and \linebreak $\veq {\Gamma'} {V_{\sigalgop}} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}$, in order to get derivations of 
+\[
+\begin{array}{c}
+\lj {\Gamma'} A
+\qquad
+\lj {\Gamma'} B
+\\[2mm]
+\vj {\Gamma'} {V_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\qquad
+\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\end{array}
+\]
+for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$. 
+
+On the one hand, based on these derivations, we can immediately construct the required derivation of $\lj {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$
+by using the corresponding formation rule.
+
+On the other hand, more work is needed to construct the required derivation of $\lj {\Gamma'} {\langle B , \{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$. To this end, we first use the context and type conversion rule with $\ljeq {} {\Gamma'} {\Gamma'}$ and $\ljeq {\Gamma'} {(\Sigma\, x \!:\! I . O \to A) \to A} {(\Sigma\, x \!:\! I . O \to B) \to B}$ (which we get from $\ljeq {\Gamma'} A B$) on the derivations of $\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}$ to get derivations of 
+\[
+\vj {\Gamma'} {W_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to B) \to B}
+\]
+
+Next, we prove for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ the following definitional equations: 
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma' \,\vdash\,\, & \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to B .\,} \efftrans {T_1} {B; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{W_{\sigalgop}}}
+\\
+=\,\, & \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .\,} \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}
+\\
+=\,\, & \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .\,} \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}
+\\
+=\,\, & \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to B .\,} \efftrans {T_2} {B; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{W_{\sigalgop}}} : {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\,\overrightarrow{\widehat{A'_j} \to B} \to B}
+\end{align*}
+\end{fleqn}
+using the assumed definitional equations corresponding to equations $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ (for the middle equation), in combination with (the repeated use of) the congruence rule for lambda abstraction and Proposition~\ref{prop:replacementinfibeffecttermtranslationindices} (for the first and last equation).
+
+As a result, we can now use the formation rule for the user-defined algebra type to also construct the required derivation of $\lj {\Gamma'} {\langle B , \{W_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$.
+%
+
+\section{Derivable equations}
+\label{sect:derivableisomorphismswithhandlers}
+
+In this section we present some useful definitional equations that are derivable in eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$. These equations complement those we showed to be derivable in eMLTT and eMLTT$_{\mathcal{T}_{\text{eff}}}$ in Sections~\ref{sect:derivableequations} and~\ref{sect:derivableequationsforeMLTTwithfibalgeffects}, respectively. These derivable equations include unit and associativity equations for the composition operations, and the interaction of the composition operations with other computation and homomorphism terms. 
+
+For better readability, given $\cj {\Gamma, x\!:\! U\ul{C}} M {\ul{D}}$, we abbreviate premises of the form
+\[
+\begin{array}{c}
+\hspace{-0.95cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, M[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\[1mm] \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, M[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\end{array}
+\]
+for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, 
+by writing 
+\[
+\text{$M$ is a homomorphism in } y 
+\]
+
+\begin{proposition}
+\label{prop:emlttwithhandlersunitandassoclaws}
+The following unit and associativity equations are derivable for the composition operations:
+\[
+\mkrule
+{\ceq \Gamma {\runas M {y \!:\! U\ul{C}} {} {\force {\ul{C}} y}} {M} {\ul{C}}}
+{\cj \Gamma M \ul{C}}
+\]
+
+\vspace{-0.15cm}
+
+\[
+\mkrule
+{\heq \Gamma {z \!:\! \ul{C}} {\runas K {y \!:\! U\ul{D}} {} {\force {\ul{D}} y}} {K} {\ul{D}}}
+{\hj \Gamma {z \!:\! \ul{C}} K \ul{D}}
+\]
+
+\vspace{-0.25cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq {\Gamma} {& \runas M {y_1 \!:\! U\ul{C}_1} {} {({\runas {N_1} {y_2 \!:\! U\ul{C}_2} {} {N_2}})} \\[-0.5mm]} {& \runas {(\runas {M} {y_1 \!:\! U\ul{C}_1} {} {N_1})} {y_2 \!:\! U\ul{C}_2} {} {N_2}} {\ul{D}}
+\end{array}
+}
+{
+\begin{array}{c}
+\cj \Gamma M \ul{C}_1 
+\\[0.5mm]
+\lj \Gamma \ul{C}_2
+\quad
+\cj {\Gamma, y_1 \!:\! U\ul{C}_1} {N_1} \ul{C}_2
+\quad
+\text{$N_1$ is a homomorphism in } y_1 
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{C}_2} {N_2} \ul{D}
+\quad
+\text{$N_2$ is a homomorphism in } y_2
+\end{array}
+}
+\]
+
+\vspace{-0.25cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\heq \Gamma {z \!:\! \ul{C}} {& \runas K {y_1 \!:\! U\ul{D}_1} {} {({\runas {M} {y_2 \!:\! U\ul{D}_2} {} {N}})} \\[-0.5mm]} { & \runas {(\runas {K} {y_1 \!:\! U\ul{D}_1} {} {M})} {y_2 \!:\! U\ul{D}_2} {} {N}} {\ul{D}_3}
+\end{array}
+}
+{
+\begin{array}{c}
+\hj \Gamma {z \!:\! \ul{C}} K \ul{D}_1 
+\\[0.5mm]
+\lj \Gamma \ul{D}_2
+\quad
+\cj {\Gamma, y_1 \!:\! U\ul{D}_1} {M} \ul{D}_2
+\quad
+\text{$M$ is a homomorphism in } y_1 
+\\[0.5mm]
+\lj \Gamma \ul{D}_3
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{D}_2} {N} \ul{D}_3
+\quad
+\text{$N$ is a homomorphism in } y_2
+\end{array}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+The two unit equations are proved by using the $\eta$-equation for the composition operations, i.e., as
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \runas M {y \!:\! U\ul{C}} {} {\force {\ul{C}} y}
+\\
+=\,\, & \runas M {y \!:\! U\ul{C}} {} {z[\force {\ul{C}} y/z]}
+\\
+=\,\, & z[M/z]
+\\
+=\,\, & M : \ul{C}
+\end{align*}
+\end{fleqn}
+and similarly for the unit equation for homomorphism terms.
+
+The two associativity equations are proved by using the $\beta$- and $\eta$-equations for the composition operations, i.e., as
+\begin{fleqn}[0.1cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \runas M {y_1 \!:\! U\ul{C}_1} {} {({\runas {N_1} {y_2 \!:\! U\ul{C}_2} {} {N_2}})}
+\\
+=\,\, & \runas M {y_1 \!:\! U\ul{C}_1} {} {\big(\runas {\big(\runas {(\force {\ul{C}_1} y_1)} {y'_1 \!:\! U\ul{C}_1} {} {N_1[y_1'/y_1]}\big)} {y_2 \!:\! U\ul{C}_2} {} {N_2}\big)}
+\\
+=\,\, & \runas M {y_1 \!:\! U\ul{C}_1} {} {\big(\runas {(\runas {z} {y'_1 \!:\! U\ul{C}_1} {} {N_1[y_1'/y_1]})} {y_2 \!:\! U\ul{C}_2} {} {N_2}\big)[\force {\ul{C}_1} y_1/z]}
+\\
+=\,\, & \runas {(\runas {M} {y'_1 \!:\! U\ul{C}_1} {} {N_1[y'_1/y_1]})} {y_2 \!:\! U\ul{C}_2} {} {N_2}
+\\
+=\,\, & \runas {(\runas {M} {y_1 \!:\! U\ul{C}_1} {} {N_1})} {y_2 \!:\! U\ul{C}_2} {} {N_2} : \ul{D}
+\end{align*}
+\end{fleqn}
+and similarly for the associativity equation for homomorphism terms.
+\end{proof}
+
+\begin{proposition}
+Sequential composition commutes with the composition operations from the left:
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \doto {M} {y_1 \!:\! A} {} {(\runas {N_1} {y_2 \!:\! U\ul{C}} {} {N_2})} \\[-0.5mm]} { & \runas {(\doto M {y_1 \!:\! A} {} {N_1})} {y_2 \!:\! U\ul{C}} {} {N_2}} {\ul{D}}
+\end{array}
+}
+{
+\begin{array}{c}
+\cj \Gamma M FA 
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, y_1 \!:\! A} {N_1} \ul{C}
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{C}} {N_2} \ul{D}
+\quad
+\text{$N_2$ is a homomorphism in } y_2 
+\end{array}
+}
+\]
+
+
+\vspace{-0.15cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\heq \Gamma {z \!:\! \ul{C}} {& \doto {K} {y_1 \!:\! A} {} {(\runas {M} {y_2 \!:\! U\ul{D}_1} {} {N})} \\[-0.5mm]} { & \runas {(\doto K {y_1 \!:\! A} {} {M})} {y_2 \!:\! U\ul{D}_1} {} {N}} {\ul{D}_2}
+\end{array}
+}
+{
+\begin{array}{c@{\qquad} c}
+\hj \Gamma {z \!:\! \ul{C}} K FA 
+\quad
+\lj \Gamma \ul{D}_1
+\quad
+\cj {\Gamma, y_1 \!:\! A} {M} \ul{D}_1
+\\[0.5mm]
+\lj \Gamma \ul{D}_2
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{D}_1} {N} \ul{D}_2
+\quad
+\text{$N$ is a homomorphism in } y_2 
+\end{array}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+Both equations are proved by using the $\beta$- and $\eta$-equations for sequential composition, following the same pattern that we used in Proposition~\ref{prop:seqcompdistributivity} where we showed that sequential composition commutes with other computation term formers from the left.
+\end{proof}
+
+\begin{proposition}
+Computational pattern-matching commutes with the composition operations from the left:
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \doto {M} {(y_1 \!:\! A, z \!:\! \ul{C}_1)} {} {(\runas {K} {y_2 \!:\! U\ul{C}_2} {} {N})} \\[-0.5mm]} { & \runas {(\doto M {(y_1 \!:\! A, z \!:\! \ul{C}_1)} {} {K})} {y_2 \!:\! U\ul{C}_2} {} {N}} {\ul{D}}
+\end{array}
+}
+{
+\begin{array}{c}
+\cj \Gamma M \Sigma\, y_1 \!:\! A .\, \ul{C}_1
+\quad
+\lj \Gamma \ul{C}_2
+\quad
+\hj {\Gamma, y_1 \!:\! A} {z \!:\! \ul{C}_1} {K} \ul{C}_2
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{C}_2} {N} \ul{D}
+\quad
+\text{$N$ is a homomorphism in } y_2 
+\end{array}
+}
+\]
+
+\vspace{-0.15cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\heq \Gamma {z_1 \!:\! \ul{C}} {& \doto {K} {(y_1 \!:\! A, z_2 \!:\! \ul{D}_1)} {} {(\runas {L} {y_2 \!:\! U\ul{D}_2} {} {M})} \\[-0.5mm]} { & \runas {(\doto K {(y_1 \!:\! A, z_2 \!:\! \ul{D}_1)} {} {L})} {y_2 \!:\! U\ul{D}_2} {} {M}} {\ul{D}_3}
+\end{array}
+}
+{
+\begin{array}{c}
+\hj \Gamma {z_1 \!:\! \ul{C}} K \Sigma\, y_1 \!:\! A .\, \ul{D}_1 
+\quad
+\lj \Gamma \ul{D}_2
+\quad
+\hj {\Gamma, y_1 \!:\! A} {z_2 \!:\! \ul{D}_1} {L} \ul{D}_2
+\\[0.5mm]
+\lj \Gamma \ul{D}_3
+\quad
+\cj {\Gamma, y_2 \!:\! U\ul{D}_2} {M} \ul{D}_3
+\quad
+\text{$M$ is a homomorphism in } y_2 
+\end{array}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+Both equations are proved by using the $\beta$- and $\eta$-equations for computational pattern-matching, following the same common pattern that we used in Proposition~\ref{prop:comppatternmatchingdistributivity} where we showed that computational pattern-matching commutes with other computation term formers from the left.
+\end{proof}
+
+
+
+\begin{proposition}
+The composition operations commute with sequential composition, computational pairing, pattern-matching, lambda abstraction, function application, and homomorphic function application from the left:
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \runas M {y_1 \!:\! U\ul{C}} {} {(\doto {N_1} {y_2 \!:\! A} {} {N_2})} \\[-0.5mm]} { & \doto {(\runas M {y_1 \!:\! U\ul{C}} {} {N_1})} {y_2 \!:\! A} {} {N_2}} {\ul{D}}
+\end{array}
+}
+{
+\begin{array}{c}
+\cj \Gamma M \ul{C} 
+\quad
+\cj {\Gamma, y_1 \!:\! U\ul{C}} {N_1} FA
+\quad
+\text{$N_1$ is a homomorphism in } y_1
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y_2 \!:\! A} {N_2} \ul{D}
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\ceq \Gamma {\runas M {y_1 \!:\! U\ul{C}} {} {\langle V , N \rangle}} {\langle V ,  {\runas M {y_1 \!:\! U\ul{C}} {} {N}} \rangle} {\Sigma\, y_2 \!:\! A .\, \ul{D}}
+}
+{
+\begin{array}{c}
+\cj \Gamma M \ul{C} 
+\quad
+\vj \Gamma V A
+\\[0.5mm]
+\lj {\Gamma, y_2 \!:\! A} \ul{D}
+\quad
+\cj {\Gamma, y_1 \!:\! U\ul{C}} {N} \ul{D}[V/y_2]
+\quad
+\text{$N$ is a homomorphism in } y_1 
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \runas M {y_1 \!:\! U\ul{C}_1} {} {(\doto {N} {(y_2 \!:\! A, z \!:\! \ul{C}_2)} {} {K})} \\[-0.5mm]} { & \doto {(\runas M {y_1 \!:\! U\ul{C}_1} {} {N})} {(y_2 \!:\! A, z \!:\! \ul{C}_2)} {} {K}} {\ul{D}}
+\end{array}
+}
+{
+\begin{array}{c}
+\cj \Gamma M \ul{C}_1 
+\quad
+\cj {\Gamma, y_1 \!:\! U\ul{C}_1} {N} \Sigma\, y_2 \!:\! A .\, \ul{C}_2
+\quad
+\text{$N$ is a homomorphism in } y_1
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\hj {\Gamma, y_2 \!:\! A} {z \!:\! \ul{C}_2} {K} \ul{D}
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \runas M {y_1 \!:\! U\ul{C}} {} {(\lambda\, y_2 \!:\! A .\, N)} \\[-0.5mm]} { & \lambda\, y_2 \!:\! A .\,  {(\runas M {y_1 \!:\! U\ul{C}} {} {N}})} {\Pi\, y_2 \!:\! A .\, \ul{D}}
+\end{array}
+}
+{
+\begin{array}{c@{\qquad} c}
+\cj \Gamma M \ul{C} 
+\quad
+\lj {\Gamma, y_2 \!:\! A} \ul{D}
+\\[0.5mm]
+\cj {\Gamma, y_1 \!:\! U\ul{C}, y_2 \!:\! A} {N} \ul{D}
+\quad
+\text{$N$ is a homomorphism in } y_1 
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\ceq \Gamma {\runas M {y_1 \!:\! U\ul{C}} {} {N\, V}} {{(\runas M {y_1 \!:\! U\ul{C}} {} {N})} \, V} {\ul{D}[V/y_2]}
+}
+{
+\begin{array}{c@{\qquad} c}
+\cj \Gamma M \ul{C} 
+\quad
+\vj \Gamma V A
+\quad
+\lj {\Gamma, y_2 \!:\! A} \ul{D}
+\\[0.5mm]
+\cj {\Gamma, y_1 \!:\! U\ul{C}} {N} \Pi\, y_2 \!:\! A .\, \ul{D}
+\quad
+\text{$N$ is a homomorphism in } y_1 
+\end{array}
+}
+\]
+
+\vspace{0.01cm}
+
+\[
+\mkrule
+{
+\ceq \Gamma {\runas M {y_1 \!:\! U\ul{C}} {} {V\, N}} {V\, {(\runas M {y_1 \!:\! U\ul{C}} {} {N})}} {\ul{D}_2}
+}
+{
+\begin{array}{c@{\qquad} c}
+\cj \Gamma M \ul{C} 
+\quad
+\vj \Gamma V {\ul{D}_1 \multimap \ul{D}_2}
+\\[0.5mm]
+\cj {\Gamma, y_1 \!:\! U\ul{C}} {N} \ul{D}_1
+\quad
+\text{$N$ is a homomorphism in } y_1 
+\end{array}
+}
+\vspace{0.1cm}
+\]
+Analogous equations also hold for the composition operation for homomorphism terms. 
+\end{proposition}
+
+\begin{proof}
+These equations are proved by using the $\beta$- and $\eta$-equations for the composition operations, e.g., the commutativity with computational pairing is proved as follows:
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \runas M {y_1 \!:\! U\ul{C}} {} {\langle V , N \rangle}
+\\
+=\,\, & \runas M {y_1 \!:\! U\ul{C}} {} {\langle V , \runas {(\force {\ul{C}} y_1)} {y'_1 \!:\! U\ul{C}} {} {N[y'_1/y_1]} \rangle}
+\\
+=\,\, & \runas M {y_1 \!:\! U\ul{C}} {} {\langle V , (\runas {z} {y'_1 \!:\! U\ul{C}} {} {N[y'_1/y_1]})\rangle[\force {\ul{C}} y_1/z]}
+\\
+=\,\, & \langle V ,  {\runas M {y'_1 \!:\! U\ul{C}} {} {N[y'_1/y_1]}} \rangle
+\\
+=\,\, & \langle V ,  {\runas M {y_1 \!:\! U\ul{C}} {} {N}} \rangle : \Sigma\, y_2 \!:\! A .\, \ul{D}
+\end{align*}
+\end{fleqn}
+
+Observe that for this proof to be well-formed, we need to lift the homomorphism assumption about $N$ to the pair $\langle V , N \rangle$. We do so by using the congruence rules for computational lambda abstraction and pairing, in combination with the corresponding specialised algebraicity equation we derived in  Proposition~\ref{prop:specialisedalgebraicity}, as shown below.
+\begin{fleqn}[0.3cm]
+\begin{align*}
+\Gamma \,\vdash\,\, & \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \langle V , N \rangle[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y_1]
+\\
+=\,\, & \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \langle V , N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y_1] \rangle
+\\
+=\,\, & \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \langle V , \algop^{\ul{D}[V/y_2]}_x(y'\!.\, N[x'\, y'/y_1]) \rangle
+\\
+=\,\, & \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\Sigma\, y_2 : A .\, \ul{D}}(y'\!.\, \langle V ,  N[x'\, y'/y_1]\rangle)
+\\
+=\,\, & \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\Sigma\, y_2 : A .\, \ul{D}}(y'\!.\, \langle V ,  N\rangle[x'\, y'/y_1]) 
+\\[-2mm]
+& \hspace{7.5cm} : \Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \Sigma\, y_2 \!:\! A .\, \ul{D}
+\end{align*}
+\vspace{-0.25cm}
+\end{fleqn}
+\end{proof}
+
+We conclude by noting that analogously to other computation term formers, we can also derive  specialised algebraicity equations for the composition operation.
+
+\index{algebraicity equation!specialised --}
+\begin{proposition}
+The following specialised algebraicity equation is derivable, for every operation symbol $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$:
+\[
+\mkrule
+{\ceq \Gamma {\runas {\sigalgop_V^{\ul{C}}(y.\, M)} {y' \!:\! U\ul{C}} {} {N}} {\sigalgop_V^{\ul{D}}(y.\, \runas M {y' \!:\! U\ul{C}} {} {N})} {\ul{D}}}
+{
+\begin{array}{c}
+\vj \Gamma V I
+\quad
+\lj \Gamma \ul{C}
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} {M} {\ul{C}}
+\\[0.5mm]
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y' \!:\! U\ul{C}} {N} {\ul{D}}
+\quad
+\text{$N$ is a homomorphism in } y' 
+\end{array}
+}
+\]
+\end{proposition}
+
+\begin{proof}
+This equation is proved by using the general algebraicity equation given in Definition~\ref{def:extensionofeMLTTwithfibalgeffects}, following the same common pattern that we used in Proposition~\ref{prop:specialisedalgebraicity} where we proved specialised algebraicity equations for other computation terms.
+\end{proof}
+
+
+\section{Alternative presentations of eMLTT, eMLTT$_{\!\mathcal{T}_{\text{eff}}}$, and eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$}
+\label{sect:alternativepresentations}
+
+In this section we outline two ways in which we could have defined eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ (and also eMLTT and eMLTT$_{\mathcal{T}_{\text{eff}}}$) differently from the presentation we used in this thesis.
+
+\subsection{Different equational proof obligations}
+\label{sect:alternativeauxjudgementaux}
+
+First, we note that instead of using equational proof obligations of the form
+\[
+\begin{array}{r@{~} c@{~} l}
+\Gamma & \vdash & \lambda x \!:\! I . \lambda x' \!:\! O \to U\ul{C} . N[\thunk\! (\algop^{\ul{C}}_x(x''\!. \force {\ul{C}} (x'\, x'')))/y] 
+\\[1mm]
+& = & \lambda x \!:\! I . \lambda x' \!:\! O \to U\ul{C} . \algop^{\ul{D}}_x(x''\!. N[x'\, x''\!/y]) : {\Pi x \!:\! I . (O \!\to\! U\ul{C}) \!\to\! \ul{D}}
+\end{array}
+\]
+we could have instead used Munch-Maccagnoni's notion of linearity \citep{Munch:Thesis}, i.e.,
+\[
+\begin{array}{r@{~} c@{~} l}
+\Gamma & \vdash & \lambda x \!:\! UFA . \lambda x' \!:\!  A \to U\ul{C} . N[\thunk\! (\doto {(\force {F\!A} x)} {x'' \!:\! A} {\ul{C}} {\force {\ul{C}} {(x'\, x'')}})/y] 
+\\[1.5mm]
+& = & \lambda x \!:\! UFA . \lambda x' \!:\!  A \to U\ul{C} . \doto {(\force {F\!A} x)} {x'' \!:\! A} {\ul{D}} N[x'\, x''/y] 
+\\
+&& \hspace{9.1cm} : UFA \to (A \to U\ul{C}) \to \ul{D}
+\end{array}
+\]
+
+On the one hand, the proof obligations we used in this thesis follow from Munch-Maccagnoni's notion of linearity by straightforward equational reasoning. On the other hand, in a language supporting only algebraic effects (e.g., eMLTT$_{\mathcal{T}_{\text{eff}}}$ and eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$), Munch-Maccagnoni's notion of linearity follows from the proof obligations we used in this thesis by appealing to Plotkin and Pretnar's principle of computational induction for algebraic effects, which states that every computation term of type $FA$ is either a returned value or built from computation terms using algebraic operations---see~\cite{Plotkin:Logic}.
+
+While the latter form of proof obligations is also applicable in languages with computational effects other than algebraic (e.g., as used by Levy in \cite{Levy:ContextualIsomorphisms} to characterise general isomorphisms between computation types), we chose the former kind of proof obligations due to their more intuitive reading in the setting of algebraic effects.
+
+\subsection{Omitting homomorphism terms}
+
+Second, we note that we could have omitted computation variables $z$ and homomorphism terms $K$ from eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ (and also eMLTT and eMLTT$_{\mathcal{T}_{\text{eff}}}$) altogether. Instead, we could have used value variables $x$ and an appropriate notion of equational proof obligations to define and type the elimination form for $\Sigma x \!:\! A . \ul{C}$, analogously to the typing rules of composition operations given in Definition~\ref{def:extensionofeMLTTwithhandlers}.
+%
+In more detail, this alternative presentation would involve the following elimination form for $\Sigma x \!:\! A . \ul{C}$:
+\vspace{0.05cm}
+\[
+\mkrule
+{\cj \Gamma {\doto M {(x \!:\! A, y \!:\! U\ul{C})} {\ul{D}} N} {\ul{D}}}
+{
+\begin{array}{c}
+\cj \Gamma M {\Sigma x \!:\! A . \ul{C}} \quad \lj \Gamma {\ul{D}} 
+\quad
+\cj {\Gamma, x \!:\! A, y \!:\! U\ul{C}} {N} {\ul{D}}
+\\
+\text{$N$ is a homomorphism in } y
+\end{array}
+}
+\]
+where $M$ would now be eliminated into a pair of values, but with the equational proof obligations (denoted by `$\text{$N$ is a homomorphism in } y$', using the notation of Section~\ref{sect:derivableisomorphismswithhandlers})
+ensuring that the computation term $N$ behaves in $y$ as if it was a homomorphism.
+
+While this alternative presentation would have been semantically more precise (because homomorphism terms are 
+only an under-approximation of all computation terms that behave as if they were homomorphisms), 
+we chose to include both computation and homomorphism terms because the latter enabled us to define  
+a structurally cleaner elimination form for the computational $\Sigma$-type in eMLTT, eMLTT$_{\mathcal{T}_{\text{eff}}}$, and eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ .
+
+
+\section{Interpreting eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ in a fibred adjunction model}
+\label{sect:interpretingemlttwithhandlers}
+
+In this section we equip eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ with a denotational semantics by showing that it can be soundly interpreted in the fibred adjunction model we used for giving a denotational semantics to eMLTT$_{\mathcal{T}_{\text{eff}}}$ in Section~\ref{sect:fibalgeffectsmodel}. We recall that this fibred adjunction model is built by lifting the adjunction $F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} \!\dashv\, U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} : \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set) \longrightarrow \Set$ to a split fibred adjunction between $\mathsf{fam}_{\Set}$ and $\mathsf{fam}_{\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)}$, as depicted in the next diagram.
+\vspace{-1.6cm}
+\[
+\xymatrix@C=0.5em@R=5em@M=0.5em{
+\ar@{}[dd]^-{\!\!\quad\qquad\qquad\qquad\qquad\perp}
+\\
+\Fam(\Set) \ar@/_2.5pc/[d]_-{\mathsf{fam}_{\Set}} \ar@{}[d]_-{\dashv\,\,\,\,\,\,\,\,\,\,} \ar@{}[d]^-{\,\,\,\,\,\,\,\,\,\,\dashv} \ar@/^2.5pc/[d]^-{\ia {-}} \ar@/^1.25pc/[rrrrrrrrrr]^-{\widehat{F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}} &  &&&&&&&&& \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\, \ar@/^1.25pc/[llllllllll]^-{\widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}}  & \hspace{-1.5cm} \Fam(\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)) \ar@/^2pc/[dlllllllllll]^-{\!\!\!\!\!\!\quad\qquad\mathsf{fam}_{\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)}}
+\\
+\mathcal{\Set} \ar[u]_-{\!1}
+}
+\vspace{0.35cm}
+\]
+
+We also recall that the countable Lawvere theory $I_{\mathcal{T}_{\text{eff}}} : \aleph^{\text{op}}_{\!1} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ is derived from the countable equational theory $\mathbb{T}_{\!\mathcal{T}_{\text{eff}}} = (\mathbb{S}_{\!\mathcal{T}_{\text{eff}}},\mathbb{E}_{\!\mathcal{T}_{\text{eff}}})$, which itself is derived from the given fibred effect theory $\mathcal{T}_{\text{eff}} = (\mathcal{S}_{\text{eff}} , \mathcal{E}_{\text{eff}})$. See Proposition~\ref{prop:lawveretheoryfromequationaltheory} and Definition~\ref{def:countableeqthfromeffth}, respectively, for the detailed definitions of these constructions. 
+%
+Analogously to Section~\ref{sect:fibalgeffectsmodel}, we assume that the given fibred effect theory $\mathcal{T}_{\text{eff}}$ is countable.
+
+
+
+In order to be able to define the interpretation of the user-defined algebra type and the composition operations in this fibred adjunction model, we first establish that every model of $I_{\mathcal{T}_{\text{eff}}} : \aleph^{\text{op}}_{\!1} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ and every morphism between such models are determined by how they behave on operations, i.e., terms of the form $\lj {\overrightarrow{x_o}} \sigalgop_i(x_o)_{1 \,\leq\, o \,\leq\, \vert \sem{x : I; O}_2\,\langle \star , i \rangle \vert}$. 
+
+When proving the above-mentioned property of the models of $I_{\mathcal{T}_{\text{eff}}} : \aleph^{\text{op}}_{\!1} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$, we use an auxiliary countable Lawvere theory  $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$, which we derive from the countable fibred effect theory ${\mathcal{T}^{d}_{\text{eff}}} \defeq (\mathcal{S}_{\text{eff}}, \emptyset)$, as also used in Section~\ref{sect:fibalgeffectsmodel}.
+
+\begin{proposition}
+\label{prop:definingmodeloflawthfromops}
+\index{ M@$\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ (model of a countable Lawvere theory, derived from a set $A$ and functions $f_{\sigalgop_i}$)}
+Given a set $A$ and a family of functions 
+\[
+\begin{array}{c}
+f_{\sigalgop_i} : \bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} A \longrightarrow A
+\end{array}
+\]
+for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, then there exists a model 
+\[
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle} : \mathcal{L}_{\mathcal{T}^d_{\text{eff}}} \longrightarrow \Set
+\]
+of the countable Lawvere theory $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$.
+\end{proposition}
+
+\begin{proof}
+We define $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ on objects using countable products, i.e., as\footnote{In the rest of this section, the notation $\bigsqcap_{1 \,\leq\, j \,\leq\, n}\, A$ stands for $A$ when $n = 1$; for $\bigsqcap_{j \in \{1,\ldots,n\}}\, A$ when $n$ is a natural number different from $1$; and for $\bigsqcap_{j \in \mathbb{N}}\, A$ when $n$ is the distinguished symbol $\omega$. In particular, having $\bigsqcap_{1 \,\leq\, j \,\leq\, 1}\, A = A$ allows us to show that the $\beta$-equation for the user-defined algebra type is sound.}
+\[
+\begin{array}{c}
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(n) \defeq \bigsqcap_{1 \,\leq\, j \,\leq\, n}\, A
+\end{array}
+\]
+and on morphisms $(\lj \Delta {t_k})_{1 \,\leq\, k \,\leq\, m} : n \longrightarrow m$ as
+\[
+\xymatrix@C=15em@R=5em@M=0.5em{
+\bigsqcap_{1 \,\leq\, j \,\leq\, n}\, A \ar[r]^-{\langle \mathcal{M}'(\lj {\Delta\,\,} {\,t_k}) \rangle_{1 \,\leq\, k \,\leq\, m}} & \bigsqcap_{1 \,\leq\, k \,\leq\, m}\, A
+}
+\]
+where $\mathcal{M}'(\lj {\Delta} {t_k})$ is defined by recursion on the derivation of $\lj {\Delta} {t_k}$, as follows:
+\[
+\begin{array}{l c l}
+\mathcal{M}'(\lj {\overrightarrow{x_j}} {x_j}) & \defeq & \mathsf{proj}_j
+\\[2mm]
+\mathcal{M}'(\lj {\Delta} {\sigalgop_i(t_o)_{1 \,\leq\, o \,\leq\, \vert \sem{x : I; O}_2\,\langle \star , i \rangle \vert}}) & \defeq & f_{\sigalgop_i} \comp \langle \mathcal{M}'(\lj {\Delta} {t_o}) \rangle_{1 \,\leq\, o \,\leq\, \vert \sem{x : I; O}_2\,\langle \star , i \rangle \vert}
+\end{array}
+\]
+
+Next, to show that $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ preserves identity morphisms,  we recall that the identity morphisms are given in $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ by tuples of variables. As a result, we can show
+\[
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\id_n) = \langle \mathcal{M}'(\lj {\overrightarrow{x_j}} {x_j}) \rangle_{1 \,\leq\, j \,\leq\, n} = \langle \mathsf{proj}_j \rangle_{1 \,\leq\, j \,\leq\, n} = \id_{\bigsqcap_{1 \,\leq\, j \,\leq\, n}\, A}
+\]
+
+Next, we show that given any two morphisms $(\lj \Delta t_k)_{1 \,\leq\, k \,\leq\, n_2} : n_1 \!\longrightarrow\! n_2$ and \linebreak $(\lj {\overrightarrow{x_k}} u_l)_{1 \,\leq\, l \,\leq\, n_3} : n_2 \!\longrightarrow\! n_3$, $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ preserves their composition, i.e.,  
+\[
+\begin{array}{c}
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}((\lj \Delta {u_l[\overrightarrow{t_k}/\overrightarrow{x_k}]})_{1 \,\leq\, l \,\leq\, n_3})
+\\
+=
+\\
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}((\lj {\overrightarrow{x_k}} {u_l})_{1 \,\leq\, l \,\leq\, n_3}) \,\comp\, \mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}((\lj \Delta {t_k})_{1 \,\leq\, k \,\leq\, n_2})
+\end{array}
+\vspace{0.15cm}
+\]
+
+This proof proceeds in two steps. First, we show that for all $1 \leq l \leq n_3$, we have 
+\[
+\begin{array}{c}
+\mathcal{M}'(\lj \Delta {u_l[\overrightarrow{t_k}/\overrightarrow{x_k}]})
+=
+\mathcal{M}'(\lj {\overrightarrow{x_k}} {u_l}) \comp \langle \mathcal{M}'(\lj \Delta {t_k}) \rangle_{1 \,\leq\, k \,\leq\, n_2}
+\end{array}
+\]
+by straightforward induction on the derivation of $\lj {\overrightarrow{x_k}} {u_l}$; we omit the details. Second, the required equation follows by combining these equations with the definition of $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ and the universal property of countable products, i.e., it follows from
+\[
+\xymatrix@C=8em@R=7em@M=0.5em{
+\bigsqcap_{1 \,\leq\, j \,\leq\, n_1}\, A \ar@/^1pc/[rr]^-{\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}((\lj {\Delta\,\,} {\,u_l[\overrightarrow{t_k}/\overrightarrow{x_k}]})_{1 \,\leq\, l \,\leq\, n_3})
+}_*+<0.5em>{\dcomment{\text{def.}}} \ar@/_1pc/[rr]_-{\langle \mathcal{M}'(\lj {\Delta\,\,} {\,u_l[\overrightarrow{t_k}/\overrightarrow{x_k}]}) \rangle_{1 \,\leq\, l \,\leq\, n_3}} \ar@/_4.5pc/[rr]_-{\langle \mathcal{M}'(\lj {\overrightarrow{x_k}\,\,} {\,u_l}) \,\,\comp\,\, \langle \mathcal{M}'(\lj {\Delta\,\,} {\,t_k}) \rangle_{1 \,\leq\, k \,\leq\, n_2} \rangle_{1 \,\leq\, l \,\leq\, n_3}}^*+<1em>{\dcomment{\text{equations proved above}}}_*+<3em>{\dcomment{\text{the universal property of countable products}}}
+\ar@/_3pc/[dr]_-{\langle \mathcal{M}'(\lj {\Delta\,\,} {\,t_k}) \rangle_{1 \,\leq\, k \,\leq\, n_2}\,\,}
+& & 
+\bigsqcap_{1 \,\leq\, l \,\leq\, n_3}\, A
+\\
+& \bigsqcap_{1 \,\leq\, j \,\leq\, n_1}\, A
+\ar@/_3pc/[ur]_-{\,\,\,\,\,\,\langle \mathcal{M}'(\lj {\overrightarrow{x_k}\,\,} {\,u_l}) \rangle_{1 \,\leq\, l \,\leq\, n_3}}
+}
+\]
+
+Finally, we note that $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ preserves countable products because it maps objects of $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ (each of which is itself a countable product) to countable products in $\Set$, variables (i.e., projections in $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$) to projections in $\Set$, and tuples of terms (i.e., pairing of morphisms in $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$) to pairing in $\Set$. We omit the details of this proof.
+%...
+\end{proof}
+
+\begin{proposition}
+\label{prop:liftingnoeqlawthmodeltoeqlawthmodel}
+The model $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle} : \mathcal{L}_{\mathcal{T}^d_{\text{eff}}} \longrightarrow \Set$ of the countable Lawvere theory $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ extends to a model of $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ if we have
+\[
+\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_1}) = \mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_2})
+\]
+for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and $\gamma$ in $\sem{\Gamma}$.
+\end{proposition}
+
+\begin{proof}
+Recalling the definitions of the categories $\mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ and $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$, the only difference \linebreak between the two is that in the latter the morphisms given by terms $\lj {\Delta^\gamma} {T^\gamma_1}$ and \linebreak $\lj {\Delta^\gamma} {T^\gamma_2}$ are identified, for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and $\gamma$ in $\sem{\Gamma}$. As a result, for $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle} : \mathcal{L}_{\mathcal{T}^d_{\text{eff}}} \longrightarrow \Set$ to also be a model of the countable Lawvere theory $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$, it suffices to show that $\mathcal{M}_{\langle A , \{f_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ identifies such terms, which follows immediately from the equations we assume in this proposition.
+\end{proof}
+
+\begin{proposition}
+\label{prop:extendingmorphtohomomorph}
+Given models $\mathcal{M}_1 : \mathcal{L}_{\mathcal{T}_{\text{eff}}} \longrightarrow \Set$ and $\mathcal{M}_2 : \mathcal{L}_{\mathcal{T}_{\text{eff}}} \longrightarrow \Set$ of the countable Lawvere theory  $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$, and a function $f : \mathcal{M}_1(1) \longrightarrow \mathcal{M}_2(1)$ such that
+\[
+\xymatrix@C=8em@R=3em@M=0.5em{
+\bigsqcap_{o \in \vert \sem{x : I; O}_2\, \langle \star , i \rangle \vert} (\mathcal{M}_1(1)) 
+\ar[r]^-{\bigsqcap_o (f)}
+\ar[d]_-{\cong}
+& 
+\bigsqcap_{o \in \vert \sem{x : I; O}_2\, \langle \star , i \rangle \vert} (\mathcal{M}_2(1))
+\ar[d]^-{\cong}
+\\
+\mathcal{M}_1(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]_-{\mathcal{M}_1(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+&
+\mathcal{M}_2(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]^-{\mathcal{M}_2(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+\\
+\mathcal{M}_1(1)
+\ar[r]_-{f}
+&
+\mathcal{M}_2(1)
+}
+\]
+for all operation symbols $\sigalgop_i : \vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert$ in $\mathbb{S}_{\!\mathcal{T}_{\text{eff}}}$, then $f$ extends to a morphism 
+\[
+\mathsf{hom}(f) : \mathcal{M}_1 \longrightarrow \mathcal{M}_2
+\]
+of models of the countable Lawvere theory $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$.
+\end{proposition}
+
+\begin{proof}
+We define the components $\mathsf{hom}(f)_n$ of the natural transformation $\mathsf{hom}(f)$ as
+\[
+\xymatrix@C=3.5em@R=5em@M=0.5em{
+\mathcal{M}_1(n) \ar[r]^-{\cong} & \bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_1(1)) \ar[r]^-{\bigsqcap_j (f)} & \bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_2(1)) \ar[r]^-{\cong} & \mathcal{M}_2(n)
+}
+\]
+
+We prove that $\mathsf{hom}(f)$ is natural in $n$ in two steps. 
+
+First, for any morphism $n \longrightarrow 1$ in $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$, given by a term $\lj \Delta t$, we show that the next diagram commutes, by induction on the given derivation of $\lj \Delta t$.
+\[
+\xymatrix@C=3.5em@R=5em@M=0.5em{
+\mathcal{M}_1(n) \ar[r]^-{\cong} 
+\ar[dr]_-{\mathcal{M}_1(\lj {\Delta\,\,} {\,t})}
+& 
+\bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_1(1)) \ar[r]^-{\bigsqcap_j (f)} 
+& 
+\bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_2(1)) \ar[r]^-{\cong} 
+& 
+\mathcal{M}_2(n)
+\ar[dl]^-{\mathcal{M}_2(\lj {\Delta\,\,} {\,t})}
+\\
+&
+\mathcal{M}_1(1)
+\ar[r]_-{f}
+&
+\mathcal{M}_2(1)
+}
+\]
+We omit the details of the proof and only note that the case for variables follows from the preservation of countable products by $\mathcal{M}_1$ and $\mathcal{M}_2$; and the case for algebraic operations follows from the  commuting squares we assume in the proposition.
+
+Second, using such commuting squares, we show that the naturality square for $\mathsf{hom}(f)$ commutes for any morphism $n \longrightarrow m$ given by a tuple of terms $(\lj \Delta t_k)_{1 \,\leq\, k \,\leq\, m}$:
+\[
+\xymatrix@C=1.75em@R=7em@M=0.5em{
+\mathcal{M}_1(n) \ar[r]^-{\cong} 
+\ar@/^1pc/[dr]^>>>>>>>>>>>>>{\langle \mathcal{M}_1(\lj {\Delta\,\,} {\,t_k}) \rangle_k}
+\ar[d]_-{\mathcal{M}_1((\lj {\Delta\,\,} {\,t_k})_{k})}^>>>>>{\,\,\,\,\dcomment{\text{pres. of c. prod.}}}^<<<<<<{\,\,\,\qquad\qquad\quad\dcomment{\text{above diagram and the univ. prop. of c. prod.}}}
+\ar@/^4pc/[rrr]^-{\mathsf{hom}(f)_n}_<<<<<<<<{\qquad\dcomment{\text{def.}}}
+& 
+\bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_1(1)) \ar@/^2pc/[r]^-{\bigsqcap_j (f)} 
+& 
+\bigsqcap_{1 \,\leq\, j \,\leq\, n} (\mathcal{M}_2(1)) \ar[r]^-{\cong} 
+& 
+\mathcal{M}_2(n)
+\ar@/_1pc/[dl]_>>>>>>>>>>>>>{\langle \mathcal{M}_2(\lj {\Delta\,\,} {\,t_k}) \rangle_k}
+\ar[d]^-{\mathcal{M}_2((\lj {\Delta\,\,} {\,t_k})_{k})}_>>>>>{\dcomment{\text{pres. of c. prod.}}\,\,\,\,}
+\\
+\mathcal{M}_1(m) \ar[r]_-{\cong} 
+\ar@/_4pc/[rrr]_-{\mathsf{hom}(f)_m}^>>>>>>>>>{\dcomment{\text{def.}}\qquad}
+& 
+\bigsqcap_{1 \,\leq\, k \,\leq\, m} (\mathcal{M}_1(1)) \ar@/_2pc/[r]_-{\bigsqcap_k (f)} 
+\ar@/^2pc/[r]^-{\langle f \,\comp\, \mathsf{proj}_k \rangle_k}_*+<2.45em>{\!\dcomment{\text{def.}}}
+& 
+\bigsqcap_{1 \,\leq\, k \,\leq\, m} (\mathcal{M}_2(1)) \ar[r]_-{\cong} 
+& 
+\mathcal{M}_2(m)
+}
+\vspace{-0.25cm}
+\]
+\end{proof}
+
+Using these observations about the models of $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$ and the morphisms between them, we next show how to interpret eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ in the fibred adjunction model given by the split fibred adjunction $\widehat{F_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}} \dashv \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}$.
+
+\begin{definition}
+\label{def:interpretationofemlttwithhandlers}
+\index{interpretation function}
+\index{ @$\sem{-}$ (interpretation function)}
+We extend the \emph{interpretation} of eMLTT$_{\mathcal{T}_{\text{eff}}}$ in this fibred adjunction model to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ by defining $\sem{-}$ on the user-defined algebra type as
+\vspace{0.1cm}
+\[
+\mkrule
+{
+\begin{array}{l c l}
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 & \defeq &\sem{\Gamma'}
+\\[0.5mm]
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2(\gamma\,') & \defeq & \mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+{
+\begin{array}{c}
+\sem{\Gamma';A}_1 = \sem{\Gamma'} \in \Set
+\quad
+\sem{\Gamma';A}_2 : \sem{\Gamma'} \longrightarrow \Set
+\quad
+\sem{\Gamma';V_{\sigalgop}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\\[2mm]
+(\sem{\Gamma';V_{\sigalgop}}_2)_{\gamma\,'} : 1 \longrightarrow \bigsqcap_{\langle i , f \rangle \in \bigsqcup_{i \in \sem{\diamond; I}_2(\star)} \bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (\sem{\Gamma';A}_2(\gamma\,'))} (\sem{\Gamma';A}_2(\gamma\,'))
+\\[4mm]
+\mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_1}) = \mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_2})
+\\[5mm]
+\text{for all } \ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \text{ in } \mathcal{E}_{\text{eff}} \text{ and } \gamma \text{ in } \sem{\Gamma} \text{, where } 
+\\[1.5mm]
+f^{\gamma\,'}_{\sigalgop_i} \defeq f \mapsto \mathsf{proj}_{\langle i , f \rangle}((\sem{\Gamma';V_{\sigalgop}}_2)_{\gamma\,'}(\star))
+\\[0.5mm]
+\end{array}
+}
+\vspace{0.15cm}
+\]
+on the composition operation for computation terms as
+\[
+\mkrule
+{
+\xymatrix@C=5em@R=6em@M=0.5em{
+\txt<10pc>{$\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} N}_1 $\\$ \defeq $\\$ \sem{\Gamma}$}
+\ar[dd]_-{\id_{\sem{\Gamma}}}
+&
+\txt<11pc>{$(\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} N}_2)_{\gamma} $\\$ \defeq $\\$ 1$}
+\ar[d]^-{(\sem{\Gamma;M}_2)_\gamma}
+\\
+&
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\ar[d]^-{f^\gamma}
+\\
+\sem{\Gamma}
+&
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+}
+%
+}
+{
+\begin{array}{c}
+\sem{\Gamma;M}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[2mm]
+(\sem{\Gamma;M}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\\[2mm]
+\sem{\Gamma, y \!:\! U\ul{C}; N}_1 = \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))} : \sem{\Gamma, y \!:\! U\ul{C}} \longrightarrow \sem{\Gamma, y \!:\! U\ul{C}}
+\\[2mm]
+(\sem{\Gamma, y \!:\! U\ul{C}; N}_2)_{\langle \gamma , c \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma; \ul{D}}_2(\gamma))
+\\[3mm]
+\xymatrix@C=10em@R=3em@M=0.5em{
+\bigsqcap_o (\mathcal{M}^{\gamma}_1(1)) 
+\ar[r]^-{\bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (f^\gamma)}
+\ar[d]_-{\cong}
+& 
+\bigsqcap_o (\mathcal{M}^{\gamma}_2(1))
+\ar[d]^-{\cong}
+\\
+\mathcal{M}^{\gamma}_1(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]_-{\mathcal{M}^{\gamma}_1(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+&
+\mathcal{M}^{\gamma}_2(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]^-{\mathcal{M}^{\gamma}_2(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+\\
+\mathcal{M}^{\gamma}_1(1)
+\ar[r]_-{f^\gamma}
+&
+\mathcal{M}^{\gamma}_2(1)
+}
+\\[3mm]
+\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \text{ in } \mathcal{S}_{\text{eff}} \text{, } \gamma \text{ in } \sem{\Gamma} \text{, and } i \text{ in } \sem{\diamond;I}_2 (\star)\text{, where}
+\\[1.5mm]
+\mathcal{M}^{\gamma}_1 \defeq \sem{\Gamma; \ul{C}}_2(\gamma)
+\qquad
+\mathcal{M}^{\gamma}_2 \defeq \sem{\Gamma; \ul{D}}_2(\gamma)
+\qquad
+f^{\gamma} \defeq c \mapsto (\sem{\Gamma, y \!:\! U\ul{C}; N}_2)_{\langle \gamma , c \rangle}(\star)
+\\[0.5mm]
+\end{array}
+}
+\]
+
+\pagebreak
+
+\noindent
+and on the composition operation for homomorphism terms as
+\[
+\mkrule
+{
+\xymatrix@C=3em@R=6em@M=0.5em{
+\txt<13pc>{$\sem{\Gamma; z \!:\! \ul{C};\runas K {y \!:\! U\ul{D}_1} {\ul{D}_2} M}_1 $\\$ \defeq $\\$ \sem{\Gamma}$}
+\ar[dd]_-{\id_{\sem{\Gamma}}}
+&
+\txt<14pc>{$(\sem{\Gamma; z \!:\! \ul{C};\runas K {y \!:\! U\ul{D}_1} {\ul{D}_2} M}_2)_{\gamma} $\\$ \defeq $\\$ \sem{\Gamma;\ul{C}}_2(\gamma)$}
+\ar[d]^-{(\sem{\Gamma;z : \ul{C};K}_2)_\gamma}
+\\
+&
+\sem{\Gamma;\ul{D}_1}_2(\gamma)
+\ar[d]^-{\mathsf{hom}(f^\gamma)}
+\\
+\sem{\Gamma}
+&
+\sem{\Gamma;\ul{D}_2}_2(\gamma)
+}
+%
+}
+{
+\begin{array}{c}
+\sem{\Gamma; z \!:\! \ul{C};K}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[2mm]
+(\sem{\Gamma; z \!:\! \ul{C};K}_2)_\gamma : \sem{\Gamma;\ul{C}}_2(\gamma) \longrightarrow \sem{\Gamma;\ul{D}_1}_2(\gamma)
+\\[2mm]
+\sem{\Gamma, y \!:\! U\ul{D}_1; M}_1 = \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}_1}_2(\gamma)))} : \sem{\Gamma, y \!:\! U\ul{D}_1} \longrightarrow \sem{\Gamma, y \!:\! U\ul{D}_1}
+\\[2mm]
+(\sem{\Gamma, y \!:\! U\ul{D}_1; M}_2)_{\langle \gamma , d \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma; \ul{D}_2}_2(\gamma))
+\\[3mm]
+\xymatrix@C=10em@R=3em@M=0.5em{
+\bigsqcap_o (\mathcal{M}^{\gamma}_1(1)) 
+\ar[r]^-{\bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (f^\gamma)}
+\ar[d]_-{\cong}
+& 
+\bigsqcap_o (\mathcal{M}^{\gamma}_2(1))
+\ar[d]^-{\cong}
+\\
+\mathcal{M}^{\gamma}_1(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]_-{\mathcal{M}^{\gamma}_1(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+&
+\mathcal{M}^{\gamma}_2(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar[d]^-{\mathcal{M}^{\gamma}_2(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+\\
+\mathcal{M}^{\gamma}_1(1)
+\ar[r]_-{f^\gamma}
+&
+\mathcal{M}^{\gamma}_2(1)
+}
+\\[3mm]
+\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \text{ in } \mathcal{S}_{\text{eff}} \text{, } \gamma \text{ in } \sem{\Gamma} \text{, and } i \text{ in } \sem{\diamond;I}_2 (\star)\text{, where}
+\\[1.5mm]
+\mathcal{M}^{\gamma}_1 \defeq \sem{\Gamma; \ul{D}_1}_2(\gamma)
+\qquad
+\mathcal{M}^{\gamma}_2 \defeq \sem{\Gamma; \ul{D}_2}_2(\gamma)
+\qquad
+f^{\gamma} \defeq d \mapsto (\sem{\Gamma, y \!:\! U\ul{D}_1; M}_2)_{\langle \gamma , d \rangle}(\star)
+\\[0.5mm]
+\end{array}
+}
+\]
+\end{definition}
+
+\pagebreak
+
+Similarly to eMLTT$_{\mathcal{T}_{\text{eff}}}$, the results from Section~\ref{sect:soundness} that relate  weakening and substitution to reindexing along semantic projection and substitution morphisms extend to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ straightforwardly. 
+However, analogously to eMLTT$_{\mathcal{T}_{\text{eff}}}$, the soundness theorem (Theorem~\ref{thm:soundness}) again needs more attention, as discussed in detail below.
+
+\subsection*{Extending Theorem~\ref{thm:soundness} (Soundness) to eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$}
+
+\index{soundness theorem}
+We begin by recalling that in Theorem~\ref{thm:soundness} we showed that the \emph{a priori} partially defined interpretation function $\sem{-}$  is defined on well-formed contexts and types, and well-typed terms, and that it maps definitionally equal contexts, types, and terms to equal objects and morphisms. For example, given $\ceq \Gamma M N \ul{C}$, we showed that
+\[
+\sem{\Gamma;M} 
+=
+\sem{\Gamma;N} 
+: 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{C}})
+\]
+
+
+When extending Theorem~\ref{thm:soundness} to eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$, we keep the basic proof principle the same: $(a)$--$(l)$ are proved simultaneously, by induction on the given derivations, using the eMLTT$_{\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ versions of Propositions~\ref{prop:semweakening2},~\ref{prop:semsubstitution2},~\ref{prop:semsubstitution3}, and~\ref{prop:semsubstitution4} to relate syntactic weakening and substitution to their semantic counterparts. We discuss some new cases corresponding to the rules given in Definition~\ref{def:extensionofeMLTTwithhandlers} in detail below.
+
+\vspace{0.2cm}
+
+\noindent
+\textbf{Formation rule for the user-defined algebra type:}
+In this case, the given derivation ends with 
+\[
+\mkrule
+{
+\lj {\Gamma'} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+}
+{
+\begin{array}{c}
+\lj {\Gamma'} A
+\qquad
+\vj {\Gamma'} {V_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}
+\\[2mm]
+\hspace{-3.9cm} \veq {\Gamma'} {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}} \\ \hspace{0.45cm} } {\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}\,} {\,\overrightarrow{\Pi x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\widehat{A'_j} \to A} \to A}
+\\[3mm]
+(\text{for all } \sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}
+\text{ and }
+\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2} \in \mathcal{E}_{\text{eff}})
+\end{array}
+}
+\]
+%
+and we need to show that
+\[
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} \in \Fam_{\sem{\Gamma'}}(\Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set))
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing 
+\[
+\begin{array}{c}
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 = \sem{\Gamma'} \in \Set
+\\[3mm]
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 : \sem{\Gamma'} \longrightarrow \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)
+\end{array}
+\]
+
+First, we use $(d)$ on the assumed derivations of $\vj {\Gamma'} {V_{\sigalgop}} {(\Sigma\, x \!:\! I . O \to A) \to A}$, in combination with the propositions that relate weakening and substitution to reindexing along semantic projection and substitution morphisms, so as to get
+\[
+\begin{array}{c}
+\sem{\Gamma';V_{\sigalgop}}_1 = \id_{\sem{\Gamma'}} : \sem{\Gamma'} \longrightarrow \sem{\Gamma'}
+\\[3mm]
+(\sem{\Gamma';V_{\sigalgop}}_2)_{\gamma\,'} : 1 \longrightarrow \bigsqcap_{\langle i , f \rangle \in \bigsqcup_{i \in \sem{\diamond; I}_2(\star)} \bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (\sem{\Gamma';A}_2(\gamma\,'))} (\sem{\Gamma';A}_2(\gamma\,'))
+\end{array}
+\]
+
+Next, we use $(j)$ on the assumed derivations of definitional equations, again in combination with the propositions that relate weakening and substitution to reindexing along semantic projection and substitution morphisms, to get
+\[
+\begin{array}{c}
+\sem{\Gamma'; \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_1 
+\\[-1mm]
+= 
+\\[1mm]
+\sem{\Gamma'; \overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_1 
+\\
+= 
+\\[-1mm]
+\id_{\sem{\Gamma'}}
+\end{array}
+\]
+and
+\vspace{3mm}
+\[
+\begin{array}{c}
+(\sem{\Gamma';\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\gamma\,'}
+\\[-1mm]
+=
+\\[1mm]
+(\sem{\Gamma';\overrightarrow{\lambda\, x'_i \!:\! \widehat{A_i} .}\, \overrightarrow{\lambda\, x_{w_{\!j}} \!:\! \widehat{A'_j} \to A .}\, \efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\gamma\,'}
+\\[1mm]
+\end{array}
+\]
+as $\sem{\Gamma'} \longrightarrow \sem{\Gamma'}$ and $1 \longrightarrow 
+\bigsqcap_{f \in \bigsqcap_{x_{i}} (\sem{\Gamma;A_{i}}_2(\gamma)) }
+\bigsqcap_{g \in \bigsqcap_{w_{\!j}} \bigsqcap_{a \in \sem{\Gamma;A'_{\!j}}_2(\gamma)} (\sem{\Gamma';A}_2(\gamma\,')) } (\sem{\Gamma';A}_2(\gamma\,'))$, respectively, 
+for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and $\gamma\,'$ in $\sem{\Gamma'}$. 
+
+Based on the definition of $\sem{-}$ for lambda abstraction, the above equations give us
+\[
+\begin{array}{c}
+(\sem{\Gamma',\overrightarrow{x'_i \!:\! \widehat{A_i}},\overrightarrow{x_{w_{\!j}} \!:\! \widehat{A'_j} \to A};\efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\langle \langle \gamma\,', \gamma , \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}
+\\
+=
+\\
+(\sem{\Gamma',\overrightarrow{x'_i \!:\! \widehat{A_i}},\overrightarrow{x_{w_{\!j}} \!:\! \widehat{A'_j} \to A};\efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\langle \langle \gamma\,', \gamma , \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}
+\end{array}
+\]
+as morphisms $1 \longrightarrow \sem{\Gamma';A}_2(\gamma\,')$, for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$, $\gamma$ in $\sem{\Gamma}$, $\gamma\,'$ in $\sem{\Gamma'}$, and $f_{w_{\!j}}$ in $\bigsqcap_{a \in \sem{\Gamma;A'_{\!j}}_2(\gamma)} (\sem{\Gamma';A}_2(\gamma\,'))$, for all $w_{\!j} \!:\! A'_{\!j}$ in $\Delta$.
+
+Next, we show that $\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$ is defined, for which we need to show
+\[
+\mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_1}) = \mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_2})
+\]
+for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and $\gamma$ in $\sem{\Gamma}$, for which we use Proposition~\ref{prop:relatingsemanticsoffibeffectterms}.
+
+\pagebreak
+
+To be able to use Proposition~\ref{prop:relatingsemanticsoffibeffectterms} to prove the above equations, we first define a family $\mathcal{M}_{\langle \langle \gamma\,' , \gamma \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}$ of models of the countable Lawvere theory $I_{\mathcal{T}^d_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}^d_{\text{eff}}}$ by 
+\vspace{-0.5cm}
+\[
+\mathcal{M}_{\langle \langle \gamma\,' , \gamma \rangle , \overrightarrow{f_{w_{\!j}}} \rangle} \defeq \mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}
+\vspace{-0.25cm}
+\]
+where $f_{w_{\!j}}$ is an element of $\bigsqcap_{a \in \sem{\Gamma;A'_{\!j}}_2(\gamma)} (\sem{\Gamma';A}_2(\gamma\,'))$, and $f^{\gamma\,'}_{\sigalgop_i}$ is given as in Definition~\ref{def:interpretationofemlttwithhandlers}.
+%
+Observe that by definition we have $\mathcal{M}_{\langle \langle \gamma\,' , \gamma \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}(1) = \sem{\Gamma';A}_2(\gamma\,')$, as discussed in more detail in the footnote in the beginning of this section.
+
+Further, in order to be able to use Proposition~\ref{prop:relatingsemanticsoffibeffectterms}, we also need to show that the next diagram commutes, where we abbreviate $\mathcal{M}_{\langle \langle \gamma\,' , \gamma \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}$ as $\mathcal{M}$. 
+\[
+\xymatrix@C=5em@R=9em@M=0.5em{
+1
+\ar[r]^-{\langle \id_1 \rangle_{\langle i , f \rangle}}
+\ar@/_10pc/[dddr]_<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{(\sem{\Gamma';V_{\sigalgop}}_2)_{\gamma\,'}}
+&
+\bigsqcap_{\langle i , f \rangle \in \bigsqcup_{i \in \sem{\diamond; I}_2(\star)} \bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (\mathcal{M}(1))} 1
+\ar[d]^-{\bigsqcap_{\langle i , f \rangle} (\star \,\mapsto\, f)}_-{\dcomment{\text{the universal property of count. prod.}}\quad\,\,\,}
+\\
+&
+\bigsqcap_{\langle i , f \rangle} \bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (\mathcal{M}(1))
+\ar@/^7pc/[dd]^-{\bigsqcap_{\langle i , f \rangle} (\sigalgop^{\mathcal{M}}_i)}
+\ar[d]_-{\cong}^>>>>>>{\!\!\!\!\quad\dcomment{\text{def. of } \sigalgop^{\mathcal{M}}_i}}
+\ar@/_7.5pc/[dd]^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{\bigsqcap_{\langle i , f \rangle} (f^{\gamma\,'}_{\sigalgop_i})}_-{\dcomment{\text{def.}}\,\,\,\,}
+\ar@/_10.5pc/[dd]_<<<<<<{\langle \mathsf{proj}_{\langle i , f \rangle}((\sem{\Gamma';V_{\sigalgop}}_2)_{\gamma\,'}(\star)) \rangle_{\langle i , f \rangle}\,\,\,\,\,\,\,\,\,\,}
+\\
+&
+\bigsqcap_{\langle i , f \rangle} (\mathcal{M}(\vert \sem{x : I; O}_2\, \langle \star , i \rangle \vert))
+\ar@/^3.5pc/[d]_-{\bigsqcap_{\langle i , f \rangle} (\mathcal{M}(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_o}))}_<<<<{\dcomment{\text{def. of } \mathcal{M}}\qquad}
+\\
+&
+\bigsqcap_{\langle i , f \rangle} (\mathcal{M}(1))
+}
+\]
+
+Based on the above, we can now use Proposition~\ref{prop:relatingsemanticsoffibeffectterms} with $\efftrans {T_1} {A; \overrightarrow{x_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}$ and \linebreak $\efftrans {T_2} {A; \overrightarrow{x_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}$ to show that for all $\gamma\,'$, $\gamma$, and $\overrightarrow{f_{w_{\!j}}}$, the following diagram commutes: 
+
+\[
+\hspace{-0.45cm}
+\xymatrix@C=2em@R=4em@M=0.5em{
+1
+\ar[d]_>>>>{\langle f_{w_{\!j}} \rangle_{w_{\!j} : A'_{\!j} \in \Delta}}
+\ar@/_10.5pc/[dddd]_<<<<<<<<{(\sem{\Gamma',\overrightarrow{x'_i \!:\! \widehat{A_i}},\overrightarrow{x_{w_{\!j}} \!:\! \widehat{A'_j} \to A};\efftrans {T_1} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\langle \langle \gamma\,', \gamma , \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}\qquad\quad\!\!\!\!\!\!\!\!\!\!}
+\ar@/^10.5pc/[dddd]^>>>>>>>>>{\!\!\!\!\!\!\!\!\!\!\qquad(\sem{\Gamma',\overrightarrow{x'_i \!:\! \widehat{A_i}},\overrightarrow{x_{w_{\!j}} \!:\! \widehat{A'_j} \to A};\efftrans {T_2} {A; \overrightarrow{x'_i}; \overrightarrow{x_{w_{\!j}}}; \overrightarrow{V_{\sigalgop}}}}_2)_{\langle \langle \gamma\,', \gamma , \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}}
+\\
+\bigsqcap_{w_{\!j} : A'_{\!j} \in \Delta} \bigsqcap_{a \in {\sem{\Gamma;A'_{\!j}}_2(\gamma)}} (\sem{\Gamma';A}_2(\gamma\,'))
+\ar[d]_-{\cong}
+\\
+\mathcal{M}(\vert \Delta^\gamma \vert)
+\ar@/_2pc/[d]_-{\mathcal{M}(\lj {\Delta^\gamma\,\,} {\,T_1^\gamma})}
+\ar@/^2pc/[d]^-{\mathcal{M}(\lj {\Delta^\gamma\,\,} {\,T_2^\gamma})}
+\\
+\mathcal{M}(1)
+\ar[d]_-{=}
+\\
+\sem{\Gamma';A}_2(\gamma\,')
+}
+\vspace{0.1cm}
+\]
+where, for better readability, we again write $\mathcal{M}$ for $\mathcal{M}_{\langle \langle \gamma\,' , \gamma \rangle , \overrightarrow{f_{w_{\!j}}} \rangle}$. 
+
+As the above diagram commutes for all $f_{w_{\!j}}$, namely, for all elements of the product $\bigsqcap_{w_{\!j} : A'_{\!j} \in \Delta} \bigsqcap_{a \in {\sem{\Gamma;A'_{\!j}}_2(\gamma)}} (\sem{\Gamma';A}_2(\gamma\,'))$, we can derive the required equations
+\vspace{0.1cm}
+\[
+\mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_1}) = \mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(\lj {\Delta^\gamma} {T^\gamma_2})
+\vspace{0.4cm}
+\]
+from it, for all $\ljeq {\Gamma \vertbar \Delta} {T_1} {T_2}$ in $\mathcal{E}_{\text{eff}}$ and $\gamma$ in $\sem{\Gamma}$, by using the well-pointedness of the category of sets and functions, and the fact that every isomorphism is an epimorphism. 
+
+Finally, as we have shown that $\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}$ is defined, and as we know from  Proposition~\ref{prop:liftingnoeqlawthmodeltoeqlawthmodel} that $\mathcal{M}_{\langle \sem{\Gamma';A}_2(\gamma\,') , \{f^{\gamma\,'}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ is a model of $I_{\mathcal{T}_{\text{eff}}} : \aleph_{\!\!1}^{\text{op}} \longrightarrow \mathcal{L}_{\mathcal{T}_{\text{eff}}}$,\vspace{0.1cm}\linebreak for all $\gamma\,'$ in $\sem{\Gamma'}$, then, as required, we have 
+\[
+\begin{array}{c}
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 = \sem{\Gamma'} \in \Set
+\\[3mm]
+\sem{\Gamma';\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 : \sem{\Gamma'} \longrightarrow \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)
+\end{array}
+\]
+
+
+\pagebreak
+
+\noindent
+\textbf{Typing rule for the composition operation for computation terms:}
+ In this case, the given derivation ends with 
+\[
+\mkrule
+{
+\cj {\Gamma} {\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}} {\ul{D}}
+}
+{
+\begin{array}{c@{\qquad} c}
+\cj \Gamma M \ul{C} 
+\quad
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y \!:\! U\ul{C}} N \ul{D}
+\\[2mm]
+\hspace{-0.95cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, N[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\\[-1mm]
+& \hspace{-3.5cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}) 
+\end{array}
+}
+\]
+and we need to show that
+\[
+\sem{\Gamma;{\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}} : 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{D}})
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing
+\[
+\sem{\Gamma;{\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+(\sem{\Gamma;{\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\]
+ 
+First, we use the induction hypothesis on $\cj \Gamma M \ul{C}$ and $\cj {\Gamma, y \!:\! U\ul{C}} N \ul{D}$
+to get
+\[
+\begin{array}{c}
+\sem{\Gamma;M}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\qquad
+(\sem{\Gamma;M}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\\[3mm]
+\sem{\Gamma, y \!:\! U\ul{C}; N}_1 = \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma; \ul{C}}_2(\gamma)))} : \sem{\Gamma, y \!:\! U\ul{C}} \longrightarrow \sem{\Gamma, y \!:\! U\ul{C}}
+\\[3mm]
+(\sem{\Gamma, y \!:\! U\ul{C}; N}_2)_{\langle \gamma , c \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+ \end{array}
+ \]
+
+
+Next, we use $(k)$ on the assumed derivations of definitional equations
+to get
+\[
+\begin{array}{c}
+\sem{\Gamma; {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y]}}_1 
+\\
+=
+\\
+\sem{\Gamma;{\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, N[x'\, y'/y])}}_1 
+\\
+=
+\\
+\id_{\sem{\Gamma}}
+\end{array}
+\]
+and
+\[
+\begin{array}{c}
+(\sem{\Gamma; {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y]}}_2)_\gamma
+\\
+=
+\\
+(\sem{\Gamma;{\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, N[x'\, y'/y])}}_2)_\gamma 
+\end{array}
+\]
+for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$ and $\gamma$ in $\sem{\Gamma}$. 
+
+Based on the definition of $\sem{-}$ for lambda abstraction, the above equations give us
+\vspace{0.1cm}
+\[
+\begin{array}{c}
+(\sem{\Gamma, x \!:\! I, x' \!:\! O \to U\ul{C}; N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y]}_2)_{\langle \langle \gamma , i \rangle , f \rangle}
+\\[-0.5mm]
+=
+\\
+(\sem{\Gamma, x \!:\! I, x' \!:\! O \to U\ul{C}; \algop^{\ul{D}}_x(y'\!.\, N[x'\, y'/y])}_2)_{\langle \langle \gamma , i \rangle , f \rangle}
+\end{array}
+\vspace{0.1cm}
+\]
+as morphisms $1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))$, for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, $\gamma$ in $\sem{\Gamma}$, $i$ in $\sem{\diamond;I}_2(\star)$, and $f$ in $\bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle}(U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))$.
+
+\vspace{0.15cm}
+Next, we show that $\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}$ is defined, by proving that the following diagram commutes:  
+\[
+\xymatrix@C=12em@R=4em@M=0.5em{
+\bigsqcap_{o} (\mathcal{M}^{\gamma}_1(1)) 
+\ar@/^3.5pc/[r]^-{\bigsqcap_{o \in \sem{x : I; O}_2\, \langle \star , i \rangle} (f^\gamma)}_*+<0.8em>{\dcomment{\text{def. of } f^\gamma}}
+\ar[r]^-{\bigsqcap_o(c \,\mapsto\, (\sem{\Gamma, y : U\ul{C}; N}_2)_{\langle \gamma, c \rangle}(\star))}_*+<0.5em>{\dcomment{\text{the univ. prop. of count. prod.}}}
+\ar@/_2.5pc/[r]_-{f \,\mapsto\, \langle (\sem{\Gamma, y : A; N}_2)_{\langle \gamma , \mathsf{proj}_o(f) \rangle}(\star) \rangle_o}
+\ar[ddd]_-{\cong}
+\ar@{}[dddddd]^>>>>>>>>>>>>>>>>>>>>>>>>>{\!\!\!\!\qquad\dcomment{\text{eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:semsubstitution2}}}}^>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>{\!\!\!\!\qquad\qquad\qquad\dcomment{\text{def. of } \sem{-}}}
+\ar@/^1.15pc/[ddddddr]_>>>>>>>>>{f \,\mapsto\, (\sem{\Gamma, x, x'; N[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y]}_2)_{\langle \langle \gamma , i \rangle , f \rangle}(\star)}
+\ar@/^4pc/[ddddddr]^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{\!\!\!f \,\mapsto\, (\sem{\Gamma, x, x'; \algop^{\ul{C}}_x(y'\!.\, N[x'\, y'/y])}_2)_{\langle \langle \gamma , i \rangle , f \rangle}(\star)}_-{\dcomment{\text{(k)}}\,\,\,\,}
+& 
+\bigsqcap_{o} (\mathcal{M}^{\gamma}_2(1))
+\ar@/^3pc/[ddd]^-{\cong}_>>>>>>>>>>>>>{\dcomment{\text{def. of } \sem{-}}\qquad\quad}_<<<<<<<<<<<<<<<<{\dcomment{\text{eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:semsubstitution2}}}\quad}
+\\
+\\
+\\
+\mathcal{M}^{\gamma}_1(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar@/_2pc/[ddd]_<<<<<<<<<<{\mathcal{M}^{\gamma}_1(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+&
+\mathcal{M}^{\gamma}_2(\vert \sem{x \!:\! I; O}_2\, \langle \star , i \rangle \vert)
+\ar@/_0.5pc/[ddd]^-{\mathcal{M}^{\gamma}_2(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_i(x_o)_{o}})}
+\\
+\\
+\\
+\mathcal{M}^{\gamma}_1(1)
+\ar@/_3.5pc/[r]_-{f^\gamma}
+\ar[r]_-{c \,\mapsto\, (\sem{\Gamma, y : U\ul{C}; N}_2)_{\langle \gamma , c \rangle}(\star)}_*+<2.5em>{\dcomment{\text{def. of } f^\gamma}}
+&
+\mathcal{M}^{\gamma}_2(1)
+}
+\]
+for all $\sigalgop : (x \!:\! I) \longrightarrow O$ in $\mathcal{S}_{\text{eff}}$, $\gamma$ in $\sem{\Gamma}$, and $i$ in $\sem{\diamond, I}_2(\star)$, and where 
+\[
+\mathcal{M}^{\gamma}_1 \defeq \sem{\Gamma; \ul{C}}_2(\gamma)
+\qquad
+\mathcal{M}^{\gamma}_2 = \sem{\Gamma; \ul{D}}_2(\gamma)
+\qquad
+f^{\gamma} \defeq c \mapsto (\sem{\Gamma, y \!:\! U\ul{C}; N}_2)_{\langle \gamma , c \rangle}(\star)
+\]
+
+Finally, as we have shown that $\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}$ is defined, then, as required, we have
+\[
+\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+(\sem{\Gamma;\runas M {y \!:\! U\ul{C}} {\ul{D}} {N}}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\]
+
+\vspace{0.2cm}
+
+\noindent
+\textbf{$\beta$-equation for the user-defined algebra type:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{\ljeq {\Gamma} {U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} {A}}
+{
+\begin{array}{c}
+\lj \Gamma \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\end{array}
+}
+\]
+and we need to show 
+\[
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle }
+=
+\sem{\Gamma;A} 
+\in \Fam_{\sem{\Gamma}}(\Set)
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing
+\[
+\begin{array}{c}
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 = \sem{\Gamma;A}_1 = \sem{\Gamma} \in \Set
+\\[3mm]
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 = \sem{\Gamma;A}_2 : \sem{\Gamma} \longrightarrow \Set
+\end{array}
+\]
+
+First, we use $(c)$ on the derivation of $\lj \Gamma \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle$ to get 
+\[
+\begin{array}{c}
+\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 = \sem{\Gamma} \in \Set
+\\[3mm]
+\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 : \sem{\Gamma} \longrightarrow \Mod(\!\mathcal{L}_{\mathcal{T}_{\text{eff}}},\Set)
+\end{array}
+\]
+
+Next, recalling the definition of $\sem{-}$ for the type of thunked computations, we get
+\[
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle } = \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}) \in \Fam_{\sem{\Gamma}}(\Set)
+\]
+which, for the fibred adjunction model we are working with, is equivalent to 
+\[
+\begin{array}{c}
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle }_1 = \sem{\Gamma} \in \Set
+\\[3mm]
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle }_2(\gamma) = U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}} \comp \sem{\Gamma; \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 : \sem{\Gamma} \longrightarrow \Set
+\end{array}
+\]
+
+Finally, by unfolding the definition of $\sem{-}$ for the user-defined algebra type, and recalling the definitions of $\mathcal{M}_{\langle \sem{\Gamma;A}_2(\gamma) , \{f^{\gamma}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$ and $U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}$, we have
+\[
+\begin{array}{c}
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma; \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2(\gamma)) 
+\\[1mm]
+= 
+\\[-1mm]
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathcal{M}_{\langle \sem{\Gamma;A}_2(\gamma) , \{f^{\gamma}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle})
+\\[1mm]
+=
+\\[-1mm]
+\mathcal{M}_{\langle \sem{\Gamma;A}_2(\gamma) , \{f^{\gamma}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}(1)
+\\[1mm]
+=
+\\[-1mm]
+\sem{\Gamma;A}_2(\gamma)
+\end{array}
+\]
+which means that, as required, we have
+\[
+\begin{array}{c}
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_1 = \sem{\Gamma;A}_1 = \sem{\Gamma} \in \Set
+\\[3mm]
+\sem{\Gamma;U \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2 = \sem{\Gamma;A}_2 : \sem{\Gamma} \longrightarrow \Set
+\end{array}
+\]
+
+\vspace{0.2cm}
+
+\noindent
+\textbf{$\beta$-equation for the composition operation for computation terms:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{
+\ceq {\Gamma} {\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}} {M[V/y]} {\ul{D}}
+}
+{
+\begin{array}{c@{\qquad} c}
+\vj \Gamma V U\ul{C}
+\quad
+\lj \Gamma \ul{D}
+\quad
+\cj {\Gamma, y \!:\! U\ul{C}} M \ul{D}
+\\[2mm]
+\hspace{-0.95cm}
+\ceq \Gamma {\lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, M[\thunk (\algop^{\ul{C}}_x(y'\!.\, \force {\ul{C}} (x'\, y')))/y] \\ \hspace{0.25cm}} { \lambda\, x \!:\! I .\, \lambda\, x' \!:\! O \to U\ul{C} .\, \algop^{\ul{D}}_x(y'\!.\, M[x'\, y'/y])} {\Pi\, x \!:\! I .\, (O \to U\ul{C}) \to \ul{D}}
+\\[-1mm]
+& \hspace{-3.5cm} (\sigalgop : (x \!:\! I) \longrightarrow O \in \mathcal{S}_{\text{eff}}) 
+\end{array}
+}
+\]
+and we need to show
+\[
+\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}} = \sem{\Gamma;M[V/y]}
+: 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{D}})
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing
+\[
+\begin{array}{c}
+\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_1 
+= 
+\sem{\Gamma;M[V/y]}_1 
+= 
+\id_{\sem{\Gamma}}
+: \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\end{array}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_2)_\gamma
+=
+(\sem{\Gamma;M[V/y]}_2)_\gamma
+: 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\end{array}
+\]
+
+First, using the premises of the given $\beta$-equation, we can construct a derivation of
+\[
+\cj {\Gamma} {\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}} {\ul{D}}
+\]
+which means that $\sem{-}$ is defined on the left-hand side of the required equation, by using $(e)$ on this derivation. By unfolding the definition of $\sem{-}$ for this term, we get
+\[
+\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_1
+=
+\id_{\sem{\Gamma}}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_2)_\gamma 
+\\
+= 
+\\[-0.5mm]
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathsf{hom}(f^\gamma)) \comp (\sem{\Gamma;\force {\ul{C}} V}_2)_\gamma
+\end{array}
+\]
+as morphisms $\sem{\Gamma} \longrightarrow \sem{\Gamma}$ and $1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))$, respectively, and where
+\[
+f^{\gamma} \defeq c \mapsto (\sem{\Gamma, y \!:\! U\ul{C}; M}_2)_{\langle \gamma , c \rangle}(\star)
+\]
+
+Next, by unfolding the definition of $\sem{-}$ further (for the forcing of thunked computations) and recalling the definitions of $U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}$ and $\mathsf{hom}(f^\gamma)$, we get
+\[
+\begin{array}{c}
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathsf{hom}(f^\gamma)) \comp (\sem{\Gamma;\force {\ul{C}} V}_2)_\gamma 
+\\[-1mm]
+= 
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathsf{hom}(f^\gamma)) \comp (\sem{\Gamma;V}_2)_\gamma
+\\[-1mm]
+= 
+\\
+(\mathsf{hom}(f^\gamma))_1 \comp (\sem{\Gamma;V}_2)_\gamma
+\\
+=
+\\
+f^\gamma \comp (\sem{\Gamma;V}_2)_\gamma
+\end{array}
+\]
+
+Now, by combining these last equations, we get
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_2)_\gamma (\star)
+\\
+=
+\\
+f^\gamma((\sem{\Gamma;V}_2)_\gamma(\star))
+\\
+=
+\\[-1mm]
+(\sem{\Gamma, y \!:\! U\ul{C}; M}_2)_{\langle \gamma , (\sem{\Gamma;V}_2)_\gamma(\star) \rangle}(\star)
+\end{array}
+\]
+
+Next, we use $(d)$ on the derivation of $\vj \Gamma V A$ to get
+\[
+\begin{array}{c}
+\sem{\Gamma;V}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\qquad
+(\sem{\Gamma;V}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\end{array}
+\]
+
+Next, we can use the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:semsubstitution2} to get
+\[
+\begin{array}{c}
+\sem{\Gamma;M[V/y]}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[3mm]
+(\sem{\Gamma;M[V/y]}_2)_\gamma = (\sem{\Gamma, y \!:\! U\ul{C}; M}_2)_{\langle \gamma , (\sem{\Gamma;V}_2)_\gamma (\star) \rangle} : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\end{array}
+\]
+
+Finally, by combining these last two equations with the corresponding two equations we derived by unfolding the definition of $\sem{-}$ earlier, we have, as required, that
+\[
+\begin{array}{c}
+\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_1 
+= 
+\sem{\Gamma;M[V/y]}_1 
+= 
+\id_{\sem{\Gamma}}
+: \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\end{array}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {(\force {\ul{C}} V)} {y \!:\! U\ul{C}} {\ul{D}} {M}}}_2)_\gamma
+=
+(\sem{\Gamma;M[V/y]}_2)_\gamma
+: 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\end{array}
+\]
+
+
+\vspace{0.2cm}
+
+\noindent
+\textbf{$\eta$-equation for the composition operation for computation terms:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{
+\ceq {\Gamma} {\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}} {K[M/z]} {\ul{D}}
+}
+{
+\cj \Gamma M \ul{C} 
+\quad
+\hj {\Gamma} {z \!:\! \ul{C}} K \ul{D}
+}
+\]
+and we need to show
+\[
+\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}} = \sem{\Gamma;K[M/z]}
+: 1_{\sem{\Gamma}} \longrightarrow \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\ul{D}})
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing
+\[
+\begin{array}{c}
+\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_1
+=
+\sem{\Gamma;K[M/z]}_1
+=
+\id_{\sem{\Gamma}}
+: \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\end{array}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\hspace{-0.1cm}
+\begin{array}{c}
+(\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_2)_\gamma
+=
+(\sem{\Gamma;K[M/z]}_2)_\gamma
+: 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\end{array}
+\]
+
+First, using the premises of the given $\eta$-equation, we can construct a derivation of
+\[
+\cj {\Gamma} {\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}} {\ul{D}}
+\]
+which means that $\sem{-}$ is defined on the left-hand side of the required equation, by using $(e)$ on this derivation. 
+By unfolding the definition of $\sem{-}$ for this term, we get
+\[
+\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_1 = \id_{\sem{\Gamma}}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_2)_\gamma
+\\
+=
+\\
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathsf{hom}(f^\gamma)) \comp (\sem{\Gamma;M}_2)_\gamma
+\end{array}
+\]
+as morphisms $\sem{\Gamma} \longrightarrow \sem{\Gamma}$ and $1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))$, respectively, and where
+\[
+f^{\gamma} \defeq c \mapsto (\sem{\Gamma, y \!:\! U\ul{C}; K[\force {\ul{C}} y/z]}_2)_{\langle \gamma , c \rangle}(\star)
+\]
+
+Next, by recalling the definitions of $U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}$ and $\mathsf{hom}(f^\gamma)$, we get
+\[
+\begin{array}{c}
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathsf{hom}(f^\gamma)) \comp (\sem{\Gamma;M}_2)_\gamma
+\\
+=
+\\
+(\mathsf{hom}(f^\gamma))_1 \comp (\sem{\Gamma;M}_2)_\gamma
+\\
+=
+\\
+f^\gamma \comp (\sem{\Gamma;M}_2)_\gamma
+\end{array}
+\]
+
+Now, by combining these last equations with the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Propositon~\ref{prop:semweakening2} that relates weakening to reindexing along semantic projection morphisms, and with the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:semsubstitution3} that relates substitution of computation terms for computation variables to composition of morphisms, we get
+\[
+\begin{array}{c}
+(\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_2)_\gamma(\star)
+\\
+=
+\\
+f^\gamma((\sem{\Gamma;M}_2)_\gamma(\star))
+\\
+=
+\\[-2mm]
+(\sem{\Gamma, y \!:\! U\ul{C}; K[\force {\ul{C}} y/z]}_2)_{\langle \gamma , (\sem{\Gamma;M}_2)_\gamma(\star) \rangle}(\star)
+\\[2mm]
+=
+\\[-1mm]
+(U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;z \!:\! \ul{C};K}_2)_{\gamma})((\sem{\Gamma;M}_2)_\gamma(\star))
+\end{array}
+\]
+
+
+Next, we use $(e)$ on the assumed derivation of $\cj \Gamma M \ul{C}$ and $(f)$ on the assumed derivation of  $\hj {\Gamma} {z \!:\! \ul{C}} K \ul{D}$ to get
+\[
+\begin{array}{c}
+\sem{\Gamma;M}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\qquad
+(\sem{\Gamma;M}_2)_\gamma : 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\\[3mm]
+\sem{\Gamma;z \!:\! \ul{C};K}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\qquad
+(\sem{\Gamma;z \!:\! \ul{C};K}_2)_\gamma : \sem{\Gamma;\ul{C}}_2(\gamma) \longrightarrow \sem{\Gamma;\ul{D}}_2(\gamma)
+\end{array}
+\]
+from which we get
+\[
+\begin{array}{c}
+\sem{\Gamma, y \!:\! U\ul{C};z \!:\! \ul{C};K}_1 = \id_{\bigsqcup_{\gamma \in \sem{\Gamma}} (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma)))} : \sem{\Gamma, y \!:\! U\ul{C}} \longrightarrow \sem{\Gamma, y \!:\! U\ul{C}}
+\\[3mm]
+(\sem{\Gamma, y \!:\! U\ul{C}; z \!:\! \ul{C};K}_2)_{\langle \gamma, c \rangle} : \sem{\Gamma;\ul{C}}_2(\gamma) \longrightarrow \sem{\Gamma;\ul{D}}_2(\gamma)
+\end{array}
+\]
+using the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Propositon~\ref{prop:semweakening2} that relates weakening to reindexing along semantic projection morphisms.
+
+Next, by using the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:semsubstitution3}, we get
+\[
+\begin{array}{c}
+\sem{\Gamma;K[M/z]}_1 = \id_{\sem{\Gamma}} : \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\\[3mm]
+(\sem{\Gamma;K[M/z]}_2)_\gamma = U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}((\sem{\Gamma;z \!:\! \ul{C};K}_2)_\gamma) \comp (\sem{\Gamma;M}_2)_\gamma
+: 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{C}}_2(\gamma))
+\end{array}
+\]
+
+Finally, by combining these last two equations with the corresponding two equations we derived by unfolding the definition of $\sem{-}$ earlier, we have, as required, that
+\[
+\begin{array}{c}
+\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_1
+=
+\sem{\Gamma;K[M/z]}_1
+=
+\id_{\sem{\Gamma}}
+: \sem{\Gamma} \longrightarrow \sem{\Gamma}
+\end{array}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\hspace{-0.1cm}
+\begin{array}{c}
+(\sem{\Gamma;{\runas {M} {y \!:\! U\ul{C}} {\ul{D}} {K[\force {\ul{C}} y/z]}}}_2)_\gamma
+=
+(\sem{\Gamma;K[M/z]}_2)_\gamma
+: 1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\ul{D}}_2(\gamma))
+\end{array}
+\]
+
+\vspace{0.2cm}
+
+\noindent
+\textbf{$\eta$-equation for algebraic operations at the user-defined algebra type:}
+In this case, the given derivation ends with
+\[
+\mkrule
+{
+\begin{array}{r@{\,\,} l}
+\ceq \Gamma {& \algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M) \\[-0.5mm]} { & \force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+{
+\begin{array}{c}
+\vj \Gamma V I 
+\quad
+\lj \Gamma \langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle
+\quad
+\cj {\Gamma, y \!:\! O[V/x]} M {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+}
+\]
+and we need to show
+\[
+\begin{array}{c}
+\hspace{-0.5cm}
+\sem{\Gamma;\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}
+=
+\sem{\Gamma;\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)}
+\\
+\hspace{8.4cm}
+: 1 \longrightarrow \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle})
+\end{array}
+\]
+which, for the fibred adjunction model we are working with, is equivalent to showing
+\[
+\begin{array}{c}
+\sem{\Gamma;\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}_1
+\\[-2mm]
+=
+\\
+\sem{\Gamma;\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)}_1
+\\
+=
+\\
+\id_{\sem{\Gamma}}
+\end{array}
+\]
+and, for all $\gamma$ in $\sem{\Gamma}$, that
+\[
+\begin{array}{c}
+(\sem{\Gamma;\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}_2)_\gamma
+\\[-2mm]
+=
+\\
+(\sem{\Gamma;\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)}_2)_\gamma
+\end{array}
+\]
+as morphisms $\sem{\Gamma} \longrightarrow \sem{\Gamma}$ and $1 \longrightarrow U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2(\gamma))$, respectively. 
+
+First, using the eMLTT$_{\!\mathcal{T}_{\text{eff}}}^{\mathcal{H}}$ version of Proposition~\ref{prop:wellformedcomponentsofjudgements}, we get derivations of
+\[
+\begin{array}{c}
+\cj \Gamma {\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}  {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\\[2mm]
+\cj \Gamma {\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)} {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}
+\end{array}
+\]
+which means that $\sem{-}$ is defined on both sides of the required equation, by using $(e)$ on these two derivations. 
+
+The equality of the first components of the two sides of the required equation \linebreak (to $\id_{\sem{\Gamma}}$) follows straigthforwardly by unfolding the definition of $\sem{-}$ on both sides.
+
+We prove the equality of the second components of the two sides of the required equation, for all $\gamma$ in $\sem{\Gamma}$, by showing that the next diagram commutes. 
+
+\mbox{}
+\[
+\hspace{-0.15cm}
+\xymatrix@C=1em@R=7em@M=0.5em{
+1
+\ar@/_1pc/[d]_-{\langle \id_1 \rangle_{o \in \sem{\Gamma;O[V/x]}_2(\gamma)}}^-{\qquad\qquad\dcomment{\text{composition}}}
+\ar[r]^-{(\sem{\Gamma;V_{\sigalgop}}_2)_\gamma}
+\ar@/_3pc/[ddr]^>>>>>>>>>>>{\!\!\!\!\langle (\sem{\Gamma, y : O[V/x]; M}_2)_{\langle \gamma , o \rangle} \rangle_o}
+& 
+\bigsqcap_{\langle i , f \rangle} (\sem{\Gamma;A}_2(\gamma))
+\ar@/^7pc/[ddddr]^<<<<<<{\!\!\mathsf{proj}_{\langle (\sem{\Gamma;V}_2)_\gamma(\star) , \langle (\sem{\Gamma, y : O[V/x]; \thunk M}_2)_\gamma(\star) \rangle_o \rangle}}_-{\dcomment{\text{def.}}\,\,\,\,\,}
+\ar@/^4pc/[ddddr]_<<<<<<<<<<<<<<<<<<<<<<<<<<<{\mathsf{proj}_{\langle (\sem{\Gamma;V}_2)_\gamma(\star) , \langle (\sem{\Gamma, y : O[V/x]; M}_2)_\gamma(\star) \rangle_o \rangle}}
+& 
+\\
+\bigsqcap_o 1
+\ar[d]_-{\bigsqcap_o ((\sem{\Gamma, y : O[V/x]; M}_2)_{\langle \gamma , o \rangle})}
+\ar[d]^>>>>{\,\,\dcomment{\text{u. prop. of c. pr.}}}
+&
+&
+\\
+\bigsqcap_o (U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}(\mathcal{M}))
+\ar[r]^-{=}
+\ar@/_5pc/[dddr]_>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>{\sigalgop^{\mathcal{M}}_{(\sem{\Gamma;V}_2)_\gamma(\star)}\!\!\!}
+&
+\bigsqcap_o(\mathcal{M}(1))
+\ar@/_7pc/[d]_-{\cong}
+\ar@/^8.5pc/[dd]_<<<<<<<<<<<<<<<<<<<{f \,\mapsto\, \mathsf{proj}_{\langle (\sem{\Gamma;V}_2)_\gamma(\star) , f \rangle}((\sem{\Gamma;V_{\sigalgop}}_2)_\gamma(\star))}
+\\
+&
+\mathcal{M}(\vert \sem{\Gamma; O[V/x]}_2(\gamma) \vert)
+\ar[d]_-{\mathcal{M}(\lj {\overrightarrow{x_o}\,\,} {\,\sigalgop_{(\sem{\Gamma;V}_2)_\gamma(\star)}(x_o)_o})}_<<<<<<{\dcomment{\text{def. of } \sigalgop^{\mathcal{M}}_{(\sem{\Gamma;V}_2)_\gamma(\star)}}\quad\,\,\,\,\,\,\,\,}^<<<<<<{\qquad\dcomment{\text{def. of } \mathcal{M}}}
+\\
+&
+\mathcal{M}(1)
+\ar[d]_-{=}
+&
+\sem{\Gamma;A}_2(\gamma)
+\ar@/^1.5pc/[dl]^-{=}
+\\
+&
+U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}\!(\mathcal{M})
+&
+}
+\]
+where, for better readability,  we write $\mathcal{M}$ for both $(\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_2(\gamma))$ and $\mathcal{M}_{\langle \sem{\Gamma;A}_2(\gamma) , \{f^{\gamma}_{\sigalgop_i}\}_{\sigalgop_i \in \mathcal{S}_{\text{eff}}} \rangle}$. Recall that these two models of $\mathcal{L}_{\mathcal{T}_{\text{eff}}}$ are equal by definition.
+
+Finally, when we unfold the definition of $\sem{-}$, we see that the two composite 
+top-to-bottom morphisms along the outer perimeter of the above diagram are respectively 
+equal to 
+\vspace{0.15cm}
+\[
+(\sem{\Gamma;\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}_2)_\gamma
+\]
+and
+\[
+(\sem{\Gamma;\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)}_2)_\gamma
+\vspace{0.25cm}
+\]
+
+As a result, we have, as required, that
+\[
+\begin{array}{c}
+\hspace{-0.5cm}
+\sem{\Gamma;\algop^{\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle}_V(y.\, M)}
+=
+\sem{\Gamma;\force {\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle} (V_{\sigalgop}\, \langle V , \lambda\, y \!:\! O[V/x] .\, \thunk M \rangle)}
+\\
+\hspace{8.4cm}
+: 1 \longrightarrow \widehat{U_{\!\mathcal{L}_{\mathcal{T}_{\text{eff}}}}}(\sem{\Gamma;\langle A , \{V_{\sigalgop}\}_{\sigalgop \in \mathcal{S}_{\text{eff}}} \rangle})
+\end{array}
+\]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

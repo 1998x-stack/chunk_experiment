@@ -1,0 +1,187 @@
+\section{Convergence proof} \label{sec:cv_proof}
+The proposed sketch of proof adapts the first arguments developed in~\cite{Cannelli2016}, in order to clarify that the proposed algorithm fits within this general framework. Note that a similar proof can be obtained by induction when $J$ blocks have to be updated by each worker, and $I$ blocks by the master node (corresponding to the situation described in~\eqref{eq:problem}).
+
+%% ==============================================================
+%% LEMMA 1 : consequence of the hypotheses
+%% ==============================================================
+\begin{lemma} \label{lemma1}
+Under Assumptions~\ref{alg_assumption} to~\ref{assumption2}, there exists two positive constants $c_\x$ and $c_\z$ such that
+\begin{align}
+& \Psi(\x^{k+1},\z^{k+1}) \leq \Psi(\x^k,\z^k) \nonumber\\
+& - \frac{\gamma_k}{2} \bigl( c_\x - \gamma_k (\Lx^+ + \Ldxz^+) \bigr) \norm{\xhtk^k - \xtk^k}^2  \nonumber\\
+& - \frac{\gamma_k}{2} \bigl(c_\z - \gamma_k \Lz^+ \bigr) \norm{\zh^k - \z^k}^2 \nonumber\\
+& + \frac{1}{2} \tau \Ldxz^+ \sum_{q = k-\tau+1}^k \norm{\z^q - \z^{q - 1}}^2 \label{eq:lemma1}.
+\end{align}
+\end{lemma}
+
+%---------------------------------------------------------------%%
+\begin{proof}
+%
+\textbf{Step 1:} Assumption~\ref{assumption}\ref{assumption:partial_grad} allows the descent lemma \cite[p. 683]{Bertsekas1999} to be applied to $\z \mapsto F(\x, \z)$, leading to
+%
+\begin{align} \label{eq:descent_z}
+F(\x^{k+1}, &\z^{k+1}) \leq F(\x^{k+1},\z^k) + \frac{\Lz^k}{2} \norm{\z^{k+1} - \z^k}^2 \nonumber \\
+&+ \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \z^{k+1} - \z^k} 
+\end{align}
+%
+Thus,
+%
+\begin{align}
+    &\Psi(\x^{k+1},\z^{k+1}) \leq F(\x^{k+1},\z^k) + G(\x^{k+1}) \nonumber \\
+    & \qquad + \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \z^{k+1} - \z^k}  \nonumber \\
+    & \qquad + \frac{\Lz^k}{2} \norm{\z^{k+1} - \z^k}^2 + r(\z^{k+1}) \nonumber
+\end{align}
+    
+\begin{align}
+    & = \ftk(\xtk^{k+1},\z^{k}) + \gtk(\xtk^{k+1}) + \frac{\Lz^k}{2} \norm{\z^{k+1} - \z^k}^2 \nonumber \\
+    & \quad + \sum_{q \neq \omega^k} f_q(\x_q^{k},\z^k) + g_q(\x_q^{k}) + r(\z^{k+1})  \nonumber \\
+    & \quad + \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \z^{k+1} - \z^k}.
+\end{align}
+%
+Since $\z^{k+1} = \z^k + \gamma^k \bigl( \zh^k - \z^k  \bigr)$, we further have
+%
+\begin{align} \label{eq:inequality}
+\Psi(\x^{k+1},& \z^{k+1}) \leq \ftk(\xtk^{k+1},\z^{k}) + \gtk(\xtk^{k+1}) \nonumber \\
+& \quad + \sum_{q \neq \omega^k} f_q(\x_q^{k},\z^k) + g_q(\x_q^{k}) + r(\z^{k+1})  \nonumber \\
+& \quad + \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \z^{k+1} - \z^k} \nonumber \\
+& \quad + \frac{(\gamma^k)^2\Lz^k}{2} \norm{\zh^{k} - \z^k}^2.
+\end{align}
+%
+In addition, the optimality of $\zh^k$ implies
+%
+\begin{equation} \label{eq:optimality_z}
+\begin{split}
+r(\zh^k) &+ \frac{c_{\z}^k}{2} \norm{\zh^k - \z^k}^2 \\
+& + \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \zh^k - \z^k}  \leq r(\z^k)
+\end{split}
+\end{equation}
+%
+and the convexity of $r$ leads to
+%
+\begin{equation} \label{eq:convexity_r}
+r(\z^{k+1}) \leq r(\z^k) + \gamma_k \bigl( r(\zh^k) -  r(\z^k) \bigr).
+\end{equation}
+%
+Combining~\eqref{eq:convexity_r},~\eqref{eq:optimality_z} and exploiting the expression $\z^{k+1} = \z^k + \gamma^k \bigl( \zh^k - \z^k  \bigr)$ leads to
+%
+\begin{align}
+    r(\z^{k+1}) &\leq r(\z^k) + \gamma_k \bigl( r(\zh^k) -  r(\z^k) \bigr) \nonumber \\
+    \text{(from \eqref{eq:optimality_z})} & \leq r(\z^k) - \frac{\gamma^k c_{\z}^k}{2} \norm{\zh^{k} - \z^k}^2 \nonumber \\
+    & - \gamma^k \pscalar{\nabla_{\z} F(\x^{k+1},\z^k), \zh^k - \z^k}. \label{eq:stepz}
+\end{align}
+%
+Combining~\eqref{eq:stepz} and~\eqref{eq:inequality} finally results in
+%
+\begin{align} \label{eq:sufficient_decrease_z}
+    &\Psi(\x^{k+1},\z^{k+1}) \leq \ftk(\xtk^{k+1},\z^{k}) + \gtk(\xtk^{k+1}) \nonumber \\
+    & \quad + r(\z^{k}) + \sum_{q \neq \omega^k} f_q(\x_q^{k},\z^k) + g_q(\x_q^{k}) \nonumber \\
+    & \quad - \frac{\gamma_k}{2} (c_{\z}^k - \gamma^k \Lz^k) \norm{\zh^{k} - \z^k}^2.
+\end{align}
+    %
+
+\textbf{Step 2:} Arguments similar to those used in Step 1 above lead to
+%
+\begin{align} \label{eq:step_x}
+    & \ftk (\xtk^{k+1}, \z^k) + \gtk (\xtk^{k+1}) \leq \ftk (\xtk^k, \z^k) & \nonumber \\
+    & + \bigl\langle \nabla_{\xtk} \ftk (\xtk^k,\z^k) - \nabla_{\xtk} \ftk (\xtk^k,\zh^k), \xtk^{k+1} - \xtk^k \bigr\rangle & \nonumber \\
+    & - \frac{\gamma_k}{2} \bigl( c_{\xtk}^k - \gamma_k \Lxtk^k \bigr) \norm{\xhtk^k - \xtk^k}^2 + \gtk(\xtk^k). &
+\end{align}
+%
+Since $\nabla_{\x_\omega} f_\omega (\x_\omega,\cdot)$ is assumed to be Lipschitz continuous (see Assumption~\ref{assumption2}\ref{assumption2_lip}), we have
+%
+\begin{equation*}
+\begin{split}
+&\bigl\langle \nabla_{\xtk} \ftk (\xtk^k,\z^k) - \nabla_{\xtk} \ftk (\xtk^k,\zh^k), \xtk^{k+1} - \xtk^k \bigr\rangle \\
+& \quad \leq  \Ldxz^k \norm{\z^k - \zh^k} \norm{\xtk^{k+1} - \xtk^k}
+\end{split}
+\end{equation*}
+%
+which, combined with~\eqref{eq:step_x}, leads to
+%
+\begin{equation} \label{eq:sufficient_decrease_x}
+\begin{split}
+& \ftk (\xtk^{k+1}, \z^k) + \gtk (\xtk^{k+1}) \leq \ftk (\xtk^k, \z^k) \\
+& \quad + \Ldxz^k \norm{\z^k - \zh^k} \norm{\xtk^{k+1} - \xtk^k} + \gtk(\xtk^k)  \\
+& \quad - \frac{\gamma_k}{2} \bigl( c_{\xtk}^k - \gamma_k \Lxtk^k \bigr) \norm{\xhtk^k - \xtk^k}^2 .
+\end{split}
+\end{equation}
+%
+
+
+\textbf{Step 3:} From this point, the product involving $\norm{\z^k - \tilde{\z}^k}$ in~\eqref{eq:sufficient_decrease_x} can be bounded as proposed in \cite[Theorem 5.1]{Davis2016}. To this end, we first note that
+%
+\begin{align} \label{eq:step1}
+    & \Ldxz^k \norm{\z^k - \zh^k} \norm{\xtk^{k+1} - \xtk^k} \nonumber \\
+    & \leq \frac{\Ldxz^k}{2} \norm{\z^k - \zh^k}^2 + \frac{\Ldxz^k}{2} \norm{\xtk^{k+1} - \xtk^k}^2 \nonumber \\
+    & = \frac{\Ldxz^k}{2} \norm{\z^k - \zh^k}^2 + \frac{\Ldxz^k \gamma_k^2}{2} \norm{\xhtk^k - \xtk^k}^2  \nonumber \\
+    & \text{(using $\xtk^{k+1} = \xtk^{k} + \gamma_k (\xhtk^{k} - \xtk^{k})$)}. 
+\end{align}
+%
+Besides, using the fact that $\dtk \leq \tau$ for any index $k$ (see Assumption~\ref{alg_assumption}), we have
+%
+\begin{align} \label{eq:step2}
+&\norm{\z^k - \tilde{\z}^k}^2 = \norm{\sum_{q = k-\dtk+1}^k (\z^q - \z^{q - 1})}^2 \nonumber \\
+& \leq \tau \sum_{q = k-\tau+1}^k \norm{\z^q - \z^{q - 1}}^2.
+\end{align}
+%
+Combining~\eqref{eq:sufficient_decrease_x}, \eqref{eq:step1}, and~\eqref{eq:step2} then leads to
+%
+\begin{align} \label{eq:step3}
+    \begin{split}
+    & \ftk (\xtk^{k+1}, \z^k) + \gtk (\xtk^{k+1}) \leq \ftk (\xtk^k, \z^k) \\
+    & - \frac{\gamma_k}{2} \bigl( c_{\xtk}^k - \gamma_k (\Lxtk^k + \Ldxz^k )  \bigr) \norm{\xhtk^k - \xtk^k}^2 \\
+    & + \tau \Ldxz^k \sum_{q = k-\tau+1}^k \norm{\z^q - \z^{q - 1}}^2 + \gtk(\xtk^k) .
+    \end{split}
+\end{align}
+%
+\textbf{Step 4:} Combining~\eqref{eq:sufficient_decrease_z}, \eqref{eq:step3} and using the bounds on the different Lipschitz constants introduced in Assumptions~\ref{assumption}\ref{assumption_lip} and~\ref{assumption2}\ref{assumption2_lip} finally leads to the announced result.
+\end{proof}
+
+According to Lemma~\ref{lemma1}, the objective function $\Psi$ is not necessarily decreasing from an iteration to another due to the presence of a residual term involving $\tau$ past estimates of $\z$. From this observation, an auxiliary function (whose derivation is reproduced in Lemma~\ref{lemma2} for the sake of completeness) has been proposed in~\cite{Davis2016}. The introduction of such a function, which is eventually non-increasing between two consecutive iterations, is of particular interest for the convergence analysis. This function finally allows convergence guarantees related to the original problem~\eqref{eq:problem} to be recovered.
+
+%% ==============================================================
+%% LEMMA 2 : auxiliary function and Davis' trick
+%% ==============================================================
+\begin{lemma}[Auxiliary function definition, adapted from \protect{\cite[Proof of Theorem 5.1]{Davis2016}}] \label{lemma2}
+Under the same assumptions as in Lemma~\ref{lemma1}, let $\Phi$ be the function defined by
+%
+\begin{align}
+&\Phi \bigl( \x(0),\z(0),\z(1),\dotsc,\z(\tau) \bigr) = \Psi\bigl( \x(0),\z(0) \bigr) \nonumber \\
+& + \frac{\beta}{2} \sum_{q = 1}^\tau (\tau - q + 1) \norm{\z(q) - \z(q-1)}^2
+\end{align}
+%
+with $\beta = \tau \Ldxz^+$.
+%
+Let $\w^k = (\x^k,\z^k,\check{\z}^k)$ and $\check{\z}^k = (\z^{k-1},\dotsc,\z^{k-\tau})$ for any iteration index $k \in \mathbb{N}$ (with the convention $\z^{q} = \z^0$ if $q < 0$). Then,
+%
+\begin{align} \label{eq:eq_lemma2}
+& \Phi(\w^{k+1}) \leq \Phi(\w^k) \nonumber \\
+& - \frac{\gamma_k}{2} \bigl( c_{\x} - \gamma_k (\Lx^+ + \Ldxz^+) \bigr) \norm{\xhtk^k - \xtk^k}^2  \nonumber\\
+& - \frac{\gamma_k}{2} \bigl(c_{\z} - \gamma_k (\Lz^+ + \tau^2 \Ldxz^+ ) \bigr) \norm{\zh^k - \z^k}^2 .
+\end{align}
+\end{lemma}
+%%---------------------------------------------------------------%%
+\begin{proof}
+The expression of the auxiliary function proposed in~\cite{Davis2016} results from the following decomposition of the residual term $\sum_{q = k - \tau + 1}^k \norm{\z^q - \z^{q-1}}^2$. Introducing the auxiliary variables
+\begin{equation*}
+\alpha^k = \sum_{q = k-\tau+1}^k (q - k + \tau) \norm{\z^q - \z^{q - 1}}^2
+\end{equation*}
+%
+we can note that
+\begin{equation} \label{eq:diff_alpha}
+\alpha^k - \alpha^{k+1} = \sum_{q = k-\tau+1}^k \norm{\z^q - \z^{q - 1}}^2 - \tau \norm{\z^{k+1} - \z^k}^2.
+\end{equation}
+%
+Thus, using the upper bound $\Ldxz^k \leq \Ldxz^+$ (Assumption~\ref{assumption2}\ref{assumption2_lip}) and replacing~\eqref{eq:diff_alpha} in~\eqref{eq:lemma1} yields
+%
+\begin{align*}
+& \Psi(\x^{k+1},\z^{k+1}) + \beta \alpha^{k+1}\leq \Psi(\x^k,\z^k) + \beta \alpha^k \\
+& - \frac{\gamma_k}{2} \bigl( c_\x - \gamma_k (\Lx^+ + \Ldxz^+) \bigr) \norm{\xhtk^k - \xtk^k}^2  \nonumber\\
+& - \frac{\gamma_k}{2} \bigl(c_{\z} - \gamma_k (\Lz^+ + \tau^2 \Ldxz^+ ) \bigr) \norm{\zh^k - \z^k}^2.
+\end{align*}
+%
+Observing that $\Phi(\w^k) = \Psi(\x^{k},\z^{k}) + \alpha^{k}$ finally leads to the announced result.
+\end{proof}
+%%---------------------------------------------------------------%%
+
+The previous lemma makes clear that the proposed algorithm can be studied as a special case of~\cite{Cannelli2016}. The rest of the convergence analysis, which involves somewhat convoluted arguments, exactly follows~\cite{Cannelli2016} up to minor notational modifications.

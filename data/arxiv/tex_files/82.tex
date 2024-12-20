@@ -1,0 +1,584 @@
+To understand our hard instance, it is helpful to consider first a simple instance that shows an inefficiency of Wolfe's method. 
+The example is a set of points where a point leaves and reenters the current corral: 
+4 points in $\RR^3$, $(1,0,0), (1/2,1/4,1), (1/2,1/4,-1), (-2,1/4,0)$. 
+If one labels the points $1,2,3,4$, the sequence of corrals with the minnorm rule is $1,12,23,234,14$, where point $1$ enters, leaves and reenters (For succintness, sets of points like $\{a,b,c\}$ may be denoted $abc$.). 
+The idea now is to recursively replace point 1 (that reenters) in this construction by a recursively constructed set of points whose corrals are then considered twice by Wolfe's method. 
+To simplify the proof, our construction uses a variation of this set of 4 points with an additional point and modified coordinates. This modified construction is depicted in \cref{fig:pq}, where point 1 corresponds to a set of points $\Pset{d-2}$, points 2,3 correspond to points $\ppoint{d}, \qpoint{d}$ and point 4 corresponds to points $\rpoint{d}, \spoint{d}$.
+
+The high-level idea of our exponential lower bound example is the following.
+We will inductively define a sequence of instances of increasing dimension of the minimum norm point problem. 
+Given an instance in dimension $d-2$, we will add a few dimensions and points so that, when given to Wolfe's method, the number of corrals of the new augmented instance in dimension $d$ has about twice the number of corrals of the 
+input instance in dimension $d-2$. More precisely, our augmentation procedure takes an instance $\Pset{d-2}$ in $\RR^{d-2}$, adds two new coordinates and adds four points, $\ppoint{d}, \qpoint{d}, \rpoint{d}, \spoint{d}$, to get an instance $\Pset{d}$ in $\RR^d$. 
+
+Points $\ppoint{d}, \qpoint{d}$ are defined so that the method on instance $\Pset{d}$ goes first through every corral given by the points in the prior configuration $\Pset{d-2}$ and then goes to corral $\ppoint{d} \qpoint{d}$. 
+To achieve this under the minimum norm rule, the four new points have greater norm than any point in $\Pset{d-2}$ and they are in the geometric configuration sketched in \cref{fig:pq}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.44\columnwidth]{figs/expex.png}
+\includegraphics[width=.46\columnwidth, trim=0 1in 0 0, clip]{figs/expex2Dview.pdf}
+\caption{Left: In this view of $\Pset{d}$, the point labeled $\Pset{d-2}$ represents all points from $\Pset{d-2}$ embedded into $\RR^d$.  The axis labeled $\RR^{d-2}$ represents the $(d-2)$-dimensional subspace, $\linspan{\Pset{d-2}}$ projected into $\linspan{\xstar{d-2}}$.  Right: A two-dimensional view of $\Pset{d}$ projected along the $x_d$ coordinate axis.}\label{fig:pq}
+\end{figure}
+
+
+At this time, no point in $\Pset{d-2}$ is in the current corral and so, if a point in $\Pset{d-2}$ is part of the optimal corral, 
+it will have to reenter, which is expensive. Points $\rpoint{d}, \spoint{d}$ are defined so that $\rpoint{d} \spoint{d}$ is a corral after 
+$\ppoint{d} \qpoint{d}$, but now every point in $\Pset{d-2}$ is improving according to Wolfe's criterion and may enter again.
+Specifically, every corral in $\Pset{d-2}$, with $\rpoint{d} \spoint{d}$ appended, is visited again.
+
+Before we start describing the exponential example in detail, we wish to review preliminary lemmas of independent interest which will be used in the arguments. The first lemma demonstrates that orthogonality between finite point sets allows us to easily describe the affine minimizer of their union.  Figure \ref{fig:affinemins} shows two such situations, one in which the affine hull of the union of the point sets span all of $\RR^3$ and one in which it does not.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=2.6in]{figs/affinemins.png}\includegraphics[width=2.6in]{figs/uninterestingaffinemins.png}
+\caption{Examples of Lemma \ref{lem:orthogonal}.  Left: the affine hull of $P\cup Q$ is not full dimensional, and thus the affine minimizer lies at $\ve{z}$ along the line segment connecting $\ve{x}=\ve{p}$ and $\ve{y}$.  Right: the convex hull of $P\cup Q$ is full-dimensional and thus the affine hull of $P\cup Q$ includes $O$ which is the affine minimizer.}
+\label{fig:affinemins}
+\end{figure}
+
+% The following lemma gives conditions under which 
+
+\begin{lemma}\label{lem:orthogonal}
+Let $A\subseteq \RR^d$ be a proper linear subspace. 
+Let $P \subseteq A$ be a non-empty finite set. 
+Let $Q \subseteq A^\perp$ be another non-empty finite set. 
+Let $\ve{x}$ be the minimum norm point in $\aff P$. Let $\ve{y}$ be the minimum norm point in $\aff Q$. 
+Let $\ve{z}$ be the minimum norm point in $\aff (P \cup Q)$.
+We have:
+\begin{enumerate}
+\item 
+$\ve{z}$ is the minimum norm point in $[\ve{x}, \ve{y}]$ and therefore, if $\ve x \neq \ve 0$ or $\ve y \neq \ve 0$, then $\ve{z} = \lambda \ve{x} + (1-\lambda) \ve{y}$ with $\lambda = \frac{\enorms{\ve{y}}}{\enorms{\ve{x}} + \enorms{\ve{y}}}$.
+
+\item
+If $\ve{x} \neq \ve{0}$ and $\ve{y} \neq \ve{0}$, then $\ve{z}$ is a strict convex combination of $\ve{x}$ and $\ve{y}$.
+
+\item
+If $\ve{x} \neq \ve{0}$, $\ve{y} \neq \ve{0}$ and $P$ and $Q$ are corrals, then $P \cup Q$ is also a corral.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+If $\ve x=\ve y=\ve 0$ then part 1 follows immediately. 
+If at least one of $\ve x, \ve y$ is non-zero, then they are also distinct by the orthogonality assumption.
+Given two distinct points $\ve{a}, \ve{b}$, one can show that the minimum norm point in the line through them is $\lambda \ve{a} + (1-\lambda)\ve{b}$ where $\lambda = \ve{b}^T (\ve{b}-\ve{a})/\enorms{\ve{b}-\ve{a}}$.
+For points $\ve{x}, \ve{y}$ as in the statement, the minimum norm point in $\aff (\ve{x} \cup \ve{y})$ is $\ve{z}' = \lambda \ve{x} + (1-\lambda)\ve{y}$ with $\lambda = \frac{\enorms{\ve{y}}}{\enorms{\ve{x}} + \enorms{\ve{y}}} \in [0,1]$. Thus, $\ve{z}'$ is also the minimum norm point in $[\ve{x},\ve{y}]$.
+We will now use the optimality condition in \cref{lem:affineoptimality} to conclude that $\ve{z}' = \ve{z}$.
+Let $\ve{p} \in P$.
+Then $\ve{p}^T \ve{z}'$ can be computed in two steps: 
+First project $\ve{p}$ onto $\linspan{\ve{x},\ve{y}}$ (a subspace that contains $\ve{z}'$). This projection is $\ve{x}$ by optimality of $\ve{x}$. 
+Then project onto $\ve{z}'$. This shows that $\ve{p}^T \ve{z}' = \ve{x}^T \ve{z}' = \enorms{\ve{z}'}$.
+A similar calculation shows $\ve{q}^T \ve{z}' = \enorms{\ve{z}'}$ for any $\ve{q} \in Q$. 
+We conclude that $\ve{z}'$ is the minimum norm point in $\aff (P \cup Q)$.
+This proves part 1.
+
+Part 2 follows from our expression for $\lambda$ above, which is in $(0,1)$ when $\ve{x} \neq \ve{0}$ and $\ve{y} \neq \ve{0}$.
+
+Under the assumptions of part 3, we have that $\ve{x}$ is a strict convex combination of $P$ and $\ve{y}$ is a strict convex combination of $Q$. This combined with the conclusion of part 2 gives that $\ve{z}$ is a strict convex combination of $P\cup Q$. The claim in part 3 follows.
+\end{proof}
+
+The following lemma shows conditions under which, if we have a corral and a new point that only has components along the minimum norm point of the corral and along new coordinates, then the corral with the new point added is also a corral. Moreover, the new minimum norm point is a convex combination of the old minimum norm point and the added point. Figure \ref{fig:pluspointcorral} gives an example of such a situation in $\RR^3$. Denote by $\linspan{M}$ the linear span of the set $M$.
+
+% \ifnum\version=\stocversion
+% \begin{SCfigure}
+% \else
+% \begin{figure}
+% \fi
+\begin{myfigure}
+\centering
+\includegraphics[width=3.1in]{figs/pluspointcorral.png}
+\caption{An example of Lemma \ref{lem:corralpluspoint} in which point $\ve{q}$ satisfies all assumptions and $P \cup \{\ve{q}\}$ is a corral.  The hyperplanes are labeled with their defining properties and demonstrate that $\ve{q}^T\ve{x} < \min\{\|\ve{x}\|^2,\|\ve{q}\|^2\}.$ The minimizer of $P \cup \{\ve{q}\}$ lies at the intersection of the blue, vertical axis and $\conv(P \cup \{\ve{q}\}).$}
+\label{fig:pluspointcorral}
+% \ifnum\version=\stocversion
+% \end{SCfigure}
+% \else
+% \end{figure}
+% \fi
+\end{myfigure}
+
+\begin{lemma}\label{lem:corralpluspoint}
+Let $P \subseteq \RR^d$ be a finite set of points that is a corral. Let $\ve{x}$ be the minimum norm point in $\aff P$.
+Let $\ve{q} \in \operatorname{span} \bigl(\ve{x}, \linspan{P}^\perp\bigr)$, and assume $\ve{q}^T\ve{x} < \min \bigl\{\enorms{\ve{q}}, \enorms{\ve{x}} \bigr\}$. Then $P \cup \{\ve{q}\}$ is a corral. Moreover, the minimum norm point $\ve y$ in  $\conv (P \cup \{\ve{q}\})$ is a (strict) convex combination of $\ve{q}$ and the minimum norm point of $P$: $\ve{y} = \lambda \ve{x} + (1-\lambda)\ve{q}$ with $\lambda = \ve{q}^T (\ve{q}-\ve{x})/\enorms{\ve{q}-\ve{x}}$.
+\end{lemma}
+\details{Condition is essentially necessary, though the case $\ve{x} = \ve{q}$ needs a bit of care.}
+\begin{proof}
+Let $\ve{y}$ be the minimum norm point in $\aff ({P \cup \{\ve{q}\}})$.
+Intuitively, $\ve{y}$ should be the minimum norm point in the line through $\ve{x}$ and $\ve{q}$.
+We will characterize $\ve{y}$ and show that it is a strict convex combination of $P \cup \{\ve{q}\}$ (which implies that it is a corral).
+Given two points $\ve{a}, \ve{b}$, one can show that the minimum norm point in the line through them is $\lambda \ve{a} + (1-\lambda)\ve{b}$ where $\lambda = \ve{b}^T (\ve{b}-\ve{a})/\enorms{\ve{b}-\ve{a}}$.
+Thus, we define $\ve{y} = \lambda \ve{x} + (1-\lambda)\ve{q}$ with $\lambda = \ve{q}^T (\ve{q}-\ve{x})/\enorms{\ve{q}-\ve{x}}$.
+By definition we have $\ve{y} \in \aff(P \cup \{\ve{q}\})$.
+
+The minimality of the norm of $\ve{y}$ follows from the optimality condition in Lemma \ref{lem:affineoptimality}. 
+It holds by construction for $\ve{q}$. It also holds for $\ve{p} \in P$: 
+The projection of $\ve{p}$ onto $\ve{y}$ can be computed in two steps. 
+First, project onto $\linspan{\ve{x},\ve{q}}$ (a subspace that contains $\ve{y}$), which is $\ve{x}$ by optimality of $\ve{x}$. 
+Then project onto $\ve{y}$. 
+This shows that $\ve{p}^T \ve{y} = \ve{x}^T \ve{y} = \norms{\ve{y}}$ (the second equality by optimality of $\ve{y}$). 
+We conclude that $\ve{y}$ is of minimum norm in $\aff{P \cup \{\ve{q}\}}$.
+
+To conclude that $P \cup \{\ve{q}\}$ is a corral, we show that $\ve{y}$ is a strict convex combination of points $P \cup \{\ve{q}\}$.
+It is enough to show that $\ve{y}$ is a strict convex combination of $\ve{x}$ and $\ve{q}$.
+We have $\lambda = \ve{q}^T (\ve{q}-\ve{x})/\enorms{\ve{q}-\ve{x}} = \frac{\enorms{\ve{q}} - \ve{q}^T\ve{x}}{\enorms{\ve{q}-\ve{x}}} > 0$ by assumption.
+We also have $1-\lambda = -\ve{x}^T (\ve{q}-\ve{x})/\enorms{\ve{q}-\ve{x}} = \frac{\enorms{\ve{x}} - \ve{q}^T\ve{x}}{\enorms{\ve{q}-\ve{x}}} > 0$ by assumption.
+\end{proof}
+
+Our last lemma shows that if we have points in two orthogonal subspaces, $A$ and $A^\perp$, then adding a point from $A^\perp$ to a set from $A$ does not cause any points from $A$ that previously did not violate Wolfe's criterion (for the affine minimizer) to violate it.  Figure \ref{fig:halfspaceintersection} demonstrates this situation.
+
+% \ifnum\version=\stocversion
+% \begin{SCfigure}
+% \else
+% \begin{figure}
+% \fi
+\begin{myfigure}
+\centering
+\includegraphics[width=3in]{figs/halfspaceintersection.png}
+\caption{An example of Lemma \ref{lem:secondround} in which adding points $Q$ from $A^\perp$ to points $P$ from $A$ create a new affine minimizer, $\ve{z}$, but the points satisfying Wolfe's criterion in $A$ remain the same.  Note that both hyperplanes intersect at the affine minimizer of $P$, so the halfspace intersections with $A$ are the same.}
+\label{fig:halfspaceintersection}
+% \ifnum\version=\stocversion
+% \end{SCfigure}
+% \else
+% \end{figure}
+% \fi
+\end{myfigure}
+
+\begin{lemma}\label{lem:secondround}
+For a point $\ve{z}$ define $H_{\ve{z}}=\{\ve{w} \in \RR^n \suchthat \ve{w}^T \ve{z} < \enorms{\ve{z}} \}$.
+%i.e, the halfspace of improving points for a corral in Wolfe's method.
+Suppose that we have an instance of the minimum norm point problem in $\RR^d$ as follows: 
+Some points, $P$, live in a proper linear subspace $A$ and some, $Q$, in $A^\perp$. 
+%Suppose that $C \subseteq P$ is a corral and $C \cup Q$ is another corral. 
+Let $\ve{x}$ be the minimum norm point in $\aff P$ and $\ve{y}$ be the minimum norm point in $\aff(P \cup Q)$. Then $H_{\ve{y}} \cap A = H_{\ve{x}} \cap A$.
+\end{lemma}
+\begin{proof}
+Let $B$ be the span of $\ve{x}$ and $Q$. We first show $\ve{y} \in B$. 
+To see this, suppose not. 
+Decompose $\ve{y}$ as $\ve{y}=\lambda \ve{v} + \sum_{\ve{q} \in Q} \mu_q \ve{q}$, where $\ve{v} \in \aff P$ and $\lambda + \sum \mu_q = 1$.
+Decompose $\ve{v}$ as $\ve{v} = \ve{u} + \ve{x}$ where $\ve{u} \perp \ve{x}$ and $\ve{u} \in A$ (this is possible because $\ve{v}-\ve{x}$ is orthogonal to $\ve{x}$, by optimality of $\ve{x}$, \cref{lem:affineoptimality}).
+Thus, $\ve{y} = \lambda \ve{u} + \lambda \ve{x} + \sum_{\ve{q} \in Q} \mu_q \ve{q}$ with $\lambda \ve{u}$ orthogonal to $\lambda \ve{x} + \sum_{\ve{q} \in Q} \mu_q \ve{q}$.
+This implies that $\ve{y}' = \lambda \ve{x} + \sum_{\ve{q} \in Q} \mu_q \ve{q}$ has a smaller norm than $\ve{y}$ and $\ve{y}' \in \aff (P \cup Q)$. 
+This is a contradiction.
+
+To conclude, we have $H_{\ve{y}} \cap A$ is a halfspace in $A$ whose normal is parallel to the projection of $\ve{y}$ onto $A$
+(It is helpful to understand how to compute the intersection of a hyperplane with a subspace. 
+If $T_{\ve{g}} = \{\ve{w} : \ve{w} \cdot \ve{g} = 1\}$ and $S$ is a linear subspace, then $T_{\ve{g}} \cap S = \{\ve{w} \in S : \ve{w} \cdot \proj_S \ve{g} = 1 \}$. 
+In other words, in order to intersect a hyperplane with a subspace we project the normal.) 
+That is, it is parallel to $\ve{x}$. 
+But that halfspace must also contain $\ve{x}$ on its boundary.
+Thus, that halfspace is equal to $H_{\ve{x}} \cap A$.
+\end{proof}
+
+%xxx move to prelims? Isnt this just WOLFES criterion as in the preliminaries already??
+%\begin{lemma}[Optimality condition for minimum norm point in affine hull]\label{lem:affineoptimality}
+%Let $P \subseteq \RR^d$ be a non-empty finite set of points. Then $x \in \aff P$ is the minimum norm point in $\aff P$ iff for all $p \in P$ we have $p^T x = \norms{x}$.
+%\end{lemma}
+
+
+
+%\begin{lemma}[Optimality condition for minimum norm point in affine hull]\label{lem:affineoptimality}
+%Let $P = \{p_1,p_2,...,p_n\} \subseteq \RR^d$ be a non-empty finite set of points. Then $x \in \aff P$ is the minimum %norm point in $\aff P$ iff for all $p_i \in P$ we have $p_i^T x = \norms{x}$.
+%\end{lemma}
+%\begin{proof}
+%Let $p=\underset{i=1}{\overset{n}{\sum}} \rho_i p_i$ with $\underset{i=1}{\overset{n}{\sum}} \rho_i = 1$ be an arbitrary %point in $\aff P$ and suppose $p_i^T x = \norms{x}$ for $i=1,2,...,n$.  Then $$p^T x = \underset{i=1}{\overset{n}{\sum}} %\rho_i p_i^T x = \underset{i=1}{\overset{n}{\sum}}\rho_i\norms{x} = \norms{x}.$$  Then $0 \le \norms{p-x} = \norms{p} - %2p^T x + \norms{x} = \norms{p} - \norms{x}$ and so $\norms{x} \le \norms{p}.$
+
+%Next, suppose $x \in \aff P$ is the minimum norm point in $\aff P$.  Suppose that $x^T(p_i - x) \not= 0$ for some $i \in %[n]$.  First, consider the case when $x^T(p_i - x) > 0$ and define $0 < \epsilon < \frac{2x^T(p_i-x)}{\norms{p_i - x}}.$ % Then we have $$\norms{(1+\epsilon)x - \epsilon p_i} = \norms{x} - 2\epsilon x^T(p_i-x) +\epsilon^2 \norms{p_i-x} < %\norms{x}$$ which contradicts our assumption that $x$ is the minimum norm point in $\aff P$.  The case when $x^T(p_i -x) %< 0$ is likewise proved by considering $\norms{(1-\epsilon)x + \epsilon p_i}$ with $0< \epsilon < %-\frac{2x^T(p_i-x)}{\norms{p_i - x}}.$  Thus, we have that $x^T(p_i - x) = 0$.
+%\end{proof}
+
+
+
+We will now describe our example in detail. The simplest version of our construction uses square roots and real numbers. We present instead a version with a few additional tweaks so that it only involves rational numbers.
+
+Let $\Pset{1} = \{ 1\} \subseteq \QQ$. For odd $d >1$, let $\Pset{d}$ be a list of points in $\QQ^d$ defined inductively as follows: 
+Let $\xstar{d}$ denote the minimum norm point in $\conv \Pset{d}$.  
+Let $\M{d} := \max_{\ve{p} \in \Pset{d}} \norm{\ve{p}}_1$, which is a rational upper bound to the maximum $2$-norm among the points in $\Pset{d}$. 
+(For a first reading one can let $\M{d}$ be the maximum $2$-norm among points in $\Pset{d}$, which leads to an essentially equivalent instance except that it is not rational.) 
+Similarly, let $\m{d} = \norm{\xstar{d}}_\infty$, which is a rational lower bound to the minimum norm among points in $\conv \Pset{d}$. 
+(Again, for a first reading one can define $\m{d} = \enorm{\xstar{d}}$ which leads to an essentially equivalent 
+instance, except that it is not rational.) 
+
+We finally present the example. If we identify $\Pset{d}$ with a matrix where the points are rows, then the points in $\Pset{d}$ are given by the following block matrix:
+
+\[
+\Pset{d} =
+\begin{pmatrix}
+\Pset{d-2} & 0 & 0 \\
+\frac{1}{2} \xstar{d-2} & \frac{\m{d-2}}{4} & \M{d-2} \\
+\frac{1}{2} \xstar{d-2} & \frac{\m{d-2}}{4} & -(\M{d-2}+1) \\
+0 & \frac{\m{d-2}}{4} & \M{d-2}+2 \\
+0 & \frac{\m{d-2}}{4} & -(\M{d-2}+3).
+\end{pmatrix}.
+\]
+
+The last four rows of the matrix $\Pset{d}$ are the points $\ppoint{d}, \qpoint{d}, \rpoint{d}, \spoint{d}$ of the configuration. For a picture of the case of $\Pset{3}$ see Figure \ref{fig:pqdim3}.
+\begin{figure}[ht]
+\includegraphics[width=3.4in]{figs/expexdim3.png}
+\includegraphics[width=3in]{figs/expexdim32Dview.pdf}
+\caption{Left: Three-dimensional view of $\Pset{3}$. Right: A two-dimensional view of $\Pset{3}$ projected along the $x_3$ coordinate axis.}\label{fig:pqdim3}
+\end{figure}
+
+
+\begin{remark}
+First note that strictly speaking $\Pset{d-2} \subset \QQ^{d-2}$, and that we are defining an embedding of it into
+$\QQ^d$, for which we have to use a recursive process. To avoid unnecessary notation, we will abuse the notation. The point $\ve{v_{d-2}}$ denotes both a point of $\Pset{d-2}$ and of the subsequent $\Pset{d}$, i.e., $\ve{v_{d-2}}=(\ve{v},0,0)$ will be the 
+identical copy of $\ve{v_{d-2}}$ within $\Pset{d}$, but we add two extra zero coordinates. Depending on the context 
+$\ve{v_{d-2}}$ will be understood as both a $(d-2)$-dimensional vector or as a $d$-dimensional vector (e.g., when
+doing dot products). The points of $\Pset{d-2}$ become a subset of the point configuration $\Pset{d}$ by padding extra zeros.  See Figures \ref{fig:pq} and \ref{fig:expexcloud} which illustrate this embedding and address our visualizations of these sets in three dimensions.
+\end{remark}
+
+% \ifnum\version=\stocversion
+% \begin{SCfigure}
+% \else
+% \begin{figure}[ht]
+% \fi
+\begin{myfigure}[ht]
+\centering
+\includegraphics[width=4.0in]{figs/expexcloud.png}
+\caption{As described in Figure \ref{fig:pq}, the axis labeled $\RR^{d-2}$ represents the $(d-2)$-dimensional subspace $\linspan{\Pset{d-2}}$ projected onto the one dimensional subspace $\linspan{\xstar{d-2}}$.  Here we illustrate that the projection of the set $\Pset{d-2}$ forms a `cloud' of points and the convex hull of this projection has many fewer faces than the unprojected convex hull.  For simplicity, we will visualize $\Pset{d-2}$ and subsets of $\Pset{d-2}$ as a single point in $\linspan{\xstar{d-2}}$ as in Figure \ref{fig:pq}.}
+\label{fig:expexcloud}
+% \ifnum\version=\stocversion
+% \end{SCfigure}
+% \else
+% \end{figure}
+% \fi
+\end{myfigure}
+
+\newcommand{\thmlength}{5 \cdot 2^{k-1} -4}
+\begin{theorem}\label{thm:lowerbound}
+Consider the execution of Wolfe's method with the \emph{minnorm} point rule on input $\Pset{d}$ where $d=2k-1$.
+Then the sequence of corrals has length $\thmlength$.
+\end{theorem}
+\begin{proof}
+Points in $\Pset{d}$ are shown in order of increasing norm.
+Let $\ppoint{d}, \qpoint{d}, \rpoint{d}, \spoint{d}$ denote the last four points of $\Pset{d}$, respectively. 
+Let $\Cset{d}$ denote the ordered sequence of corrals in the execution of Wolfe's method on $\Pset{d}$. 
+Let $\Oset{d}$ denote the last (optimal) corral in $\Cset{d}$.
+
+%\paragraph{Claim:}
+
+
+The rest of the proof will establish that the sequence of corrals $\Cset{d}$ is
+\begin{align*}
+\Cset{d-2} \\
+\Oset{d-2} \ppoint{d} \\
+\ppoint{d} \qpoint{d} \\
+\qpoint{d} \rpoint{d} \\
+\rpoint{d} \spoint{d} \\
+\Cset{d-2} \rpoint{d} \spoint{d}
+\end{align*}
+(where a concatenation such as $\Cset{d-2} \rpoint{d} \spoint{d}$ denotes every corral in $\Cset{d-2}$ with $\rpoint{d}$ and $\spoint{d}$ added).
+After this sequence of corrals is established, we solve the resulting recurrence relation: Let $T(d)$ denote the length of $\Cset{d}$. We have $T(1) = 1$, $T(d) = 2 T(d-2) + 4$. This implies $T(d) = \thmlength$ (with $d=2k-1$).
+
+%\begin{proof}
+
+All we must show now to complete the proof of Theorem \ref{thm:lowerbound} is that $\Cset{d}$ has indeed
+the stated recursive form. We do this by induction on $d$. The steps of the proof are written as claims with individual proofs.
+
+By construction, $\Cset{d}$ starts with $\Cset{d-2}$. 
+%\details{
+This happens because points in $\Cset{d}$ are ordered by increasing norm and the proof proceeds inductively 
+as follows:
+The first corral in $\Cset{d}$ is the minimum norm point in $\Pset{d}$, which is also the first corral in $\Cset{d-2}$.
+Suppose now that the first $t$ corrals of $\Cset{d}$ coincide with the first $t$ corrals of $\Cset{d-2}$.
+We will show that corral $t+1$ in $\Cset{d}$ is the same as corral $t+1$ in $\Cset{d-2}$. 
+To see this, it is enough to see that the set of points in $\Pset{d}$ that can enter (improving points) contains 
+the point that enters in $\Cset{d-2}$ (with two zeros appended) and contains no point of smaller norm.
+This two-part claim is true because the two new zero coordinates play no role in this and all points in $\Pset{d}$ 
+but not in $\Pset{d-2}$ have a larger norm than any point in $\Pset{d}$.
+%}
+
+Once $\Oset{d-2}$ is reached (with minimum norm point $\xstar{d-2}$), the set of improving points, as established by Wolfe's criterion, consist of $\{\ppoint{d}, \qpoint{d}, \rpoint{d}, \spoint{d}\}$. Now, because we are using the minimum-norm insertion rule, the next point to enter is $\ppoint{d}$.
+%\end{proof}
+
+\begin{claim}\label{claim:star}
+$\Oset{d-2} \ppoint{d}$ is a corral.
+\end{claim}
+\begin{claimproof}
+This is a special case of \cref{lem:corralpluspoint}.
+We have $\ppoint{d} = (\xstar{d-2}/2, \m{d-2}/4,\M{d-2})$.
+We just need to verify the two inequalities in \cref{lem:corralpluspoint}:
+\[
+(\xstar{d-2})^T{\ppoint{d}} = \enorms{\xstar{d-2}}/2 < \enorms{\xstar{d-2}} < \enorms{\ppoint{d}}.
+\]
+\end{claimproof}
+\begin{claim}
+%The set of potentially improving points is now $\{q_d, r_d, s_d\}$, but the point $q_d$ is the next to enter.
+The next improving point to enter is $\qpoint{d}$.
+\end{claim}
+
+\begin{claimproof}
+\details{Old version:
+From \cref{lem:secondround}, taking $P= \Pset{d-2}$, $A$ equal to its linear span and $Q$ the points $p_d,q_d,r_d,s_d$, we can conclude that the next point which may be available to enter is $q_d$, since nothing in $\Pset{d-2}$ is available. The first thing to observe is that $\qpoint{d}$ is closer to the origin than $\rpoint{d},\spoint{d}$, so it is enough to 
+check that $\qpoint{d}$ is an improving point per Wolfe's criterion.
+From \cref{lem:corralpluspoint} we know the optimal point $\ve{y}$ in the corral $\Oset{d-2} \ppoint{d}$ 
+explicitly  in terms of the optimal point $\xstar{d-2}$ of $\Oset{d-2}$ and $\ppoint{d}$, namely 
+$\ve{y}$ is a convex combination $\lambda \xstar{d-2}+ (1-\lambda) \ppoint{d}$, with $\lambda=\frac{\enorms{\ppoint{d}} - {\ppoint{d}}^T\xstar{d-2}}{\enorms{\ppoint{d}-\xstar{d-2}}}$. Using Wolfe's criterion 
+we can decide whether point $\qpoint{d}$ is a candidate to enter the corral. Compute
+
+%$$ y^Tq_d=\frac{\norms{p_d} - {p_d}^Tx_{d-2}^*}{\norms{p_d-x_{d-2}^*}}\uparrow(x_{d-2}^*)^Tq_d + \frac{\norms{x_{d-2}^*} - %{p_d}^Tx_{d-2}^*}{\norms{p_d-x_{d-2}^*}}p_d^Tq_d.$$
+
+%but we can compute the inner product and see
+%\[
+%\uparrow(x^*_{d-2})^T{q_d} = \norms{x^*_{d-2}}/2 < \norms{x^*_{d-2}} < \norms{q_d}.
+%\]
+
+%$$ \ve{y}^T\qpoint{d}=\lambda (\xstar{d-2})^T\qpoint{d} + (1-\lambda) \ppoint{d}^T\qpoint{d}=$$
+%$$ \lambda \norms{\xstar{d-2}} + (1-\lambda)[\frac{1}{4} \norms{\xstar{d-2}} + \frac{1}{16}\norms{\xstar{d-2}} -\M{d-2}^2-\M{d-2}]=$$
+%$$ \lambda \norms{\xstar{d-2}} + (1-\lambda)[(\frac{1}{4}\norms{\xstar{d-2}} -\M{d-2}^2) + (\frac{1}{16}\norms{\xstar{d-2}} -\M{d-2})]=$$
+}
+We first check that no point in $\Pset{d-2}$ can enter. 
+From \cref{lem:corralpluspoint} we know the optimal point $\ve{y}$ in corral $\Oset{d-2} \ppoint{d}$ 
+explicitly  in terms of the optimal point $\xstar{d-2}$ of $\Oset{d-2}$ and $\ppoint{d}$, namely 
+$\ve{y}$ is a convex combination $\lambda \xstar{d-2}+ (1-\lambda) \ppoint{d}$, with $\lambda=\frac{\enorms{\ppoint{d}} - {\ppoint{d}}^T\xstar{d-2}}{\enorms{\ppoint{d}-\xstar{d-2}}}$. 
+Let $\ve{p} \in \Pset{d-2}$. We check that it cannot enter via Wolfe's criterion. We compute $\ve{p}^T \ve{y}$ in two steps:
+First project $\ve{p}$ onto $\linspan{ \xstar{d-2}, \ppoint{d}}$ (a subspace that contains $\ve{y}$).
+This projection is longer than $\xstar{d-2}$ by optimality of $\xstar{d-2}$.
+Then project onto $\ve{y}$.
+This shows that $\ve{p}^T \ve{y} \geq {\xstar{d-2}}^T \ve{y} = \enorms{\ve{y}}$ and $\ve{p}$ cannot enter as it is not an improving point according to Wolfe's criterion.
+
+By construction, $\qpoint{d}$ is closer to the origin than $\rpoint{d},\spoint{d}$, so to conclude it is enough to 
+check that $\qpoint{d}$ is an improving point per Wolfe's criterion.
+%Using Wolfe's criterion we can decide whether point $\qpoint{d}$ is a candidate to enter the corral. 
+Compute
+
+%$$ y^Tq_d=\frac{\norms{p_d} - {p_d}^Tx_{d-2}^*}{\norms{p_d-x_{d-2}^*}}\uparrow(x_{d-2}^*)^Tq_d + \frac{\norms{x_{d-2}^*} - %{p_d}^Tx_{d-2}^*}{\norms{p_d-x_{d-2}^*}}p_d^Tq_d.$$
+
+%but we can compute the inner product and see
+%\[
+%\uparrow(x^*_{d-2})^T{q_d} = \norms{x^*_{d-2}}/2 < \norms{x^*_{d-2}} < \norms{q_d}.
+%\]
+
+%$$ \ve{y}^T\qpoint{d}=\lambda (\xstar{d-2})^T\qpoint{d} + (1-\lambda) \ppoint{d}^T\qpoint{d}=$$
+%$$ \lambda \norms{\xstar{d-2}} + (1-\lambda)[\frac{1}{4} \norms{\xstar{d-2}} + \frac{1}{16}\norms{\xstar{d-2}} -\M{d-2}^2-\M{d-2}]=$$
+%$$ \lambda \norms{\xstar{d-2}} + (1-\lambda)[(\frac{1}{4}\norms{\xstar{d-2}} -\M{d-2}^2) + (\frac{1}{16}\norms{\xstar{d-2}} -\M{d-2})]=$$
+
+\begin{align*}
+ \ve{y}^T\qpoint{d} 
+ &= \lambda(\xstar{d-2})^T\qpoint{d} + (1-\lambda) \ppoint{d}^T\qpoint{d} \\
+ &\leq \frac{\lambda}{2} \enorms{\xstar{d-2}} + (1-\lambda)\left[\frac{1}{4} \enorms{\xstar{d-2}} + \frac{1}{16}\enorms{\xstar{d-2}} -\M{d-2}^2-\M{d-2}\right] \\
+ &\leq \frac{\lambda}{2} \enorms{\xstar{d-2}} 
+ %&= \frac{\lambda}{2} \norms{\xstar{d-2}} + (1-\lambda)\left[(\frac{1}{4}\norms{\xstar{d-2}} -\M{d-2}^2) + (\frac{1}{16}\norms{\xstar{d-2}} -\M{d-2})\right].
+\end{align*}
+since by construction $\M{d-2} \geq 1$ and $\enorm{\xstar{d-2}} \leq 1$.
+%$\frac{5}{16} \norms{\xstar{d-2}} \le \M{d-2}^2$.  
+On the other hand,
+\begin{align*}
+\enorms{\ve{y}} 
+&= \lambda^2 \enorms{\xstar{d-2}} + 
+%(1-\lambda)^2 \left[\frac{1}{4}\norms{\xstar{d-2}} + \frac{1}{16} \m{d-2}^2 + \M{d-2}^2.\right] + 
+(1-\lambda)^2 \enorms{\ppoint{d}} +
+2\lambda(1-\lambda)\frac{1}{2}\enorms{\xstar{d-2}} \\
+&= \lambda \enorms{\xstar{d-2}} + 
+%(1-\lambda)^2 \left[\frac{1}{4}\norms{\xstar{d-2}} + \frac{1}{16} \m{d-2}^2 + \M{d-2}^2.\right] \\
+(1-\lambda)^2 \enorms{\ppoint{d}} \\
+&\geq \lambda \enorms{\xstar{d-2}}.
+\end{align*}
+Thus, $\ve{y}^T\qpoint{d} < \norms{\ve{y}}$, that is, $\qpoint{d}$ is an improving point.
+%
+%Compare it to
+%$$ \lambda \norms{\xstar{d-2}} + (1-\lambda)[(\frac{1}{4}\norms{\xstar{d-2}} -\M{d-2}^2) + (\frac{1}{16}\norms{\xstar{d-2}} -\M{d-2})]$$
+%The key observation now is that both $(\frac{1}{4}\norms{\xstar{d-2}} -\M{d-2}^2)$ and $(\frac{1}{16}\norms{\xstar{d-2}}-\M{d-2})$ are negative (due to the fact that $\norms{\xstar{d-2}} <1$ and the choice of $\M{d-2}$) while the corresponding summands in the first expression are positive. Thus 
+%we can conclude that $\norms{\ve{y}}$ is bigger than $\ve{y}^T\qpoint{d}$. 
+\end{claimproof}
+
+
+
+
+
+
+\begin{claim}
+The current set of points, $\Oset{d-2} \cup \{\ppoint{d}, \qpoint{d}\}$, is not a corral. 
+Points in $\Oset{d-2}$ leave one by one. The next corral is $\ppoint{d} \qpoint{d}$. 
+%CAN WE WRITE THIS IN TWO CLAIMS? MINOR CYCLES? LUIS?
+\end{claim}
+\begin{claimproof}
+Instead of analyzing the iterations of Wolfe's inner loop, we use the key fact,
+from \cref{Wolfeintro}, that the inner loop must end with a corral whose distance to 
+the origin is strictly less than the previous corral. We look at the alternatives:
+This new corral cannot be $\Oset{d-2} \cup \{\ppoint{d}\}$ (the previous corral)  or any 
+subset of it because it would not decrease the distance.
+An analysis similar to that of \cref{claim:star} or basic trigonometry (in three-dimensions) 
+shows that $\Oset{d-2} \cup \{\qpoint{d}\}$  is a corral whose distance to the origin 
+is larger than the distance for 
+$\Oset{d-2} \cup \{\ppoint{d}\}$. See \cref{jamie1}, where we show a projection, the perpendicular line segments to $\conv(\Oset{d-2},\ppoint{d})$ and $\conv(\Oset{d-2},\qpoint{d})$ are shown in dotted line after projection.  
+Thus, the new corral cannot be $\Oset{d-2} \cup \{\qpoint{d}\}$ or any subset of it.
+%The new corral cannot be $\{p_d\}$ or $\{q_d\}$, because that would not decrease the distance.
+
+No set of the form $S \cup \{\ppoint{d}, \qpoint{d}\}$ with $S \subseteq \Oset{d-2}$ and 
+$S$ non-empty can be a corral: 
+To see this, first note that the minimum norm point in $\conv(S \cup \{\ppoint{d}, \qpoint{d}\})$ 
+is in the segment $[\ppoint{d}, \qpoint{d}]$, specifically, point $(\xstar{d-2}/2, \m{d-2}/4,0)$ 
+(minimality follows from Wolfe's criterion, Lemma \ref{wolfec}).
+This implies that the minimum norm point in $\aff (S \cup \{\ppoint{d}, \qpoint{d}\})$ cannot be in the relative interior of $\conv(S \cup \{\ppoint{d}, \qpoint{d}\})$ when $S$ is non-empty (see Figure \ref{jamie1star}).
+
+The only remaining non-empty subset is $\{\ppoint{d}, \qpoint{d}\}$, which is the new corral.
+\end{claimproof}
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.3]{figs/jamie1.png}
+\end{center}
+\caption{A projection of the point set in the direction of $x_{d-1}$. Any corral of the form $S\qpoint{d}$ where $S \subset \Oset{d-2}$ would have distance larger than the previous corral, $\Oset{d-2}\ppoint{d}$.}\label{jamie1}
+\end{figure}
+
+\begin{figure}
+\includegraphics[scale=0.73]{figs/jamie1star.png}
+\includegraphics[scale=0.29]{figs/jamie1star2Dview.png}
+\caption{The minimum norm point in $\conv(S \cup \{\ppoint{d}, \qpoint{d}\})$ is in the line segment between $\ppoint{d}$ and $\qpoint{d}$.}\label{jamie1star}
+\end{figure}
+
+\begin{claim}
+The set of improving points is now $\{\rpoint{d}, \spoint{d}\}$. 
+\end{claim}
+\begin{claimproof}
+Recall that the optimal point in corral $\{ \ppoint{d},\qpoint{d} \}$ has coordinates $(\xstar{d-2}/2, \m{d-2}/4,0)$. 
+Thus, when computing distances and checking Wolfe's criterion it is enough to do so in the two-dimensional situation 
+depicted in Figure \ref{jamie2}. Thus,
+a hyperplane orthogonal to the segment from the origin to $(\xstar{d-2}/2, \m{d-2}/4,0)$ is shown in the figure. It leaves the points in $\Pset{d-2}$ above and both $\rpoint{d}$ and $\spoint{d}$ below making them the only improving points.
+\end{claimproof}
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.3]{figs/jamie2.png}
+\end{center}
+\caption{The set of improving points is now $\{\rpoint{d},\spoint{d}\}$.}\label{jamie2}
+\end{figure}
+
+Point $\rpoint{d}$ enters since it has smallest norm.
+\begin{claim}
+Point $\ppoint{d}$ leaves and the next corral is $\qpoint{d} \rpoint{d}$. 
+\end{claim}
+\begin{claimproof}
+To start, notice that by construction the four points $\ppoint{d},\qpoint{d},\rpoint{d},\spoint{d}$ lie on a common hyperplane, $L$, parallel to the subspace spanned by
+$\xstar{d-2}$. Thus, one does not need to do distance calculations but rather  \cref{jamie1prime} is a faithful representation of the positions of points. The origin is facing the hyperplane $L$, parallel to $\linspan{\xstar{d-2}}$.  The closest point to the origin 
+within $L$ is in the line segment joining $\rpoint{d},\spoint{d}$ thus, as we move vertically, the closest point to the origin in triangle $\ppoint{d},\qpoint{d},\rpoint{d}$ must be in the line segment joining 
+$\rpoint{d}$ and $\qpoint{d}$.
+\end{claimproof}
+
+
+\begin{figure}
+\begin{minipage}[t]{0.49\textwidth}
+\begin{center}
+\includegraphics[scale=0.28]{figs/jamie1prime.png}
+\end{center}
+\caption{The set $\{\ppoint{d},\qpoint{d},\rpoint{d}\}$ is not a corral.}\label{jamie1prime}
+\end{minipage}
+\begin{minipage}[t]{0.49\textwidth}
+\begin{center}
+\includegraphics[scale=0.25]{figs/jamie2prime.png}
+\end{center}
+\caption{The only improving point is $\spoint{d}$.}\label{jamietwoprime}
+\end{minipage}
+\end{figure}
+
+
+\begin{claim}
+The only improving point now is $\spoint{d}$. 
+\end{claim}
+\begin{claimproof}
+Once more we rely in two different orthogonal two-dimensional projections of $\Pset{d}$ to
+estimates distances and to check Wolfe's criterion. The line segment  from the origin to the optimum of the corral $\qpoint{d},\rpoint{d}$ (we
+could calculate this exactly, but it is not necessary), and
+its orthogonal hyperplane are shown in Figure \ref{jamietwoprime}.  This shows only $\rpoint{d}$ or $\spoint{d}$ are
+candidates but $\rpoint{d}$ is in the current corral, so only $\spoint{d}$ may be added.
+\end{claimproof}
+
+
+
+Point $\spoint{d}$ enters as the closest improving point to the origin.
+\begin{claim}
+Point $\qpoint{d}$ leaves.
+The next corral is $\rpoint{d} \spoint{d}$. 
+\end{claim}
+\begin{claimproof}
+We wish to find the closest point to the origin in triangle $\qpoint{d},\rpoint{d},\spoint{d}$. From
+Figure \ref{jamiethree} the optimum is between $\rpoint{d},\spoint{d}$; this point is $(\m{d-2}/4) \ve{e_{d-1}}$. Clearly
+this point is below $\qpoint{d}$, so it must leave the corral. 
+\end{claimproof}
+
+\begin{figure}
+\begin{minipage}{0.49\textwidth}
+\begin{center}
+\includegraphics[scale=0.28]{figs/jamie3a.png}
+\end{center}
+\caption{The point $\qpoint{d}$ leaves.}\label{jamiethree}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{center}
+\includegraphics[scale=0.24]{figs/jamie3b.png}
+\end{center}
+\caption{The improving points are $\Pset{d-2}$.}\label{jamie3b}
+\end{minipage}
+\end{figure}
+
+\begin{claim}
+The set of improving points is now $\Pset{d-2}$ (with two zero coordinates appended).
+\end{claim}
+\begin{claimproof}
+Now Wolfe's criterion hyperplane contains the four points $\ppoint{d},\qpoint{d},\rpoint{d},\spoint{d}$ by construction leaving $\Pset{d-2}$ on the same
+side as the origin (see Figure \ref{jamie3b}).
+\end{claimproof}
+
+
+
+The first (and minimum norm) point in $\Pset{d}$ enters and the next corral is this point together with $\rpoint{d}$ and $\spoint{d}$.
+That is, the next corral is precisely the first corral in $\Cset{d-2} \rpoint{d} \spoint{d}$. 
+We will prove inductively that the sequence of corrals from now on is exactly all of $\Cset{d-2} \rpoint{d} \spoint{d}$.
+To see this, we repeatedly invoke \cref{lem:secondround} after every corral with $A$ equal to the subspace spanned by the first 
+$d-2$ coordinate vectors of $\RR^d$.
+Suppose that the current corral is $C \rpoint{d} \spoint{d}$, where $C$ is one of the corrals in $\Cset{d-2}$ and denote the next corral in $\Cset{d-2}$ by $C'$.
+From \cref{lem:secondround}, we get that the set of improving points for corral $C \rpoint{d} \spoint{d}$ is obtained by taking the set of improving points 
+for corral $C$ and removing $\{\ppoint{d}, \qpoint{d}, \rpoint{d}, \spoint{d}\}$.
+Thus, the point that enters is the same that would enter after corral $C$. Let $\ve{a}$ denote that point.
+\begin{claim}
+The next corral is $C'\rpoint{d}\spoint{d}$.
+\end{claim}
+\begin{claimproof}
+The current set of points is $C\rpoint{d} \spoint{d} \ve{a} $.
+If $C \ve{a} $ is a corral then so is $C\rpoint{d} \spoint{d} \ve{a} = C' \rpoint{d} \spoint{d}$ (by \cref{lem:orthogonal}, part 3) and the claim holds.
+If $C \ve{a} $ is not a corral, it is enough to prove that the sequence of points removed by the inner loop of Wolfe's method on this set is the same as the sequence on set $C\rpoint{d} \spoint{d} \ve{a}$.
+%At a high level, the execution of the inner loop on vertices $Cr_d s_d a$ will make a series of 
+We will show this now by simultaneously analyzing the execution of the inner loop on $C \ve{a} $ and $C\rpoint{d} \spoint{d} \ve{a}$. 
+%A variable with a bar on top ($\bar$) denotes 
+We distinguish the two cases with the following notation: variables are written without a bar ($\bar{\phantom{x}}$) and with a bar, respectively.
+
+Let $\ve{x_1}, \dotsc, \ve{x_k}$ be the sequence of current points constructed by the inner loop on $C \ve{a}$. 
+Let $\ve{p_1}, \dotsc, \ve{p_k}$ be the sequence of removed points.
+Let $C_1, \dotsc, C_k$ be the sequence of current sets of points at every iteration.
+Let $\ve{\bar x_1}, \dotsc, \ve{\bar x_{\bar k}}$ be the corresponding sequence on $C \rpoint{d} \spoint{d} \ve{a}$.
+Let $\ve{\bar p_1}, \dotsc, \ve{\bar p_{\bar k}}$ be the corresponding sequence of removed points.
+Let $\bar C_1, \dotsc, \bar C_{\bar k}$ be the corresponding sequence of current sets of points.
+We will show inductively: $k = \bar k$, there is a one-to-one correspondence between sequences $(\ve{x_i})$ and $(\ve{\bar x_i})$, and $(\ve{p_i}) = (\ve{\bar p_i})$.
+%\lnote{I think this is different from what I wrote and not correct anymore. Specifically the added "for". I think one needs to show that $k = \bar k$. I think it should say ``We will show inductively: $k = \bar k$, there is a one-to-one correspondence between sequences $(\ve{x_i})$ and $(\ve{\bar x_i})$, and $(\ve{p_i}) = (\ve{\bar p_i})$.'' Maybe an itemize of the 3 claims would be clearer.}
+More specifically, the correspondence is realized by maintaining the following invariant in the inner loop: $\ve{\bar x_i}$ is a strict convex combination of $\ve{x_i}$ and the minimum norm point in $[\rpoint{d}, \spoint{d}]$.
+
+For the base case, from \cref{lem:orthogonal}, part 2, we have that $\ve{\bar x_1}$ is a strict convex combination of $\ve{x_1}$ (which is the minimum norm point in $\conv C$) and the minimum norm point in segment $[\rpoint{d}, \spoint{d}]$, specifically $\ve{w} := \frac{\m{d-2}}{4}\ve{e_{d-1}}$.
+
+%$\bar x_i$ is a convex combination of $x_i$ and $w$. 
+For the inductive step, if $\ve{x_i}$ is a strict convex combination of the current set of points $C_i$, then so is $\ve{\bar x_i}$ of $\bar C_i$ and the inner loop ends in both cases with corrals $C_i = C'$ and $\bar C_i = C' \rpoint{d} \spoint{d}$, respectively.
+%(by \cref{lem:orthogonal}, part 3). 
+The claim holds.
+If $\ve{x_i}$ is not a strict convex combination of the current set of points $C_i$, then neither is $\ve{\bar x_i}$ of $\bar C_i$.
+The inner loop then continues by computing the minimum norm point $\ve{y}$ in $\aff C_i$ and $\ve{\bar y}$ in $\aff \bar C_i$, respectively. 
+It then finds point $\ve{z}$ in $\conv C_i$ that is closest to $\ve{y}$ in segment $[\ve{x_i}, \ve{y}]$. 
+It finds $\ve{\bar z}$, respectively. 
+It then selects a point $\ve{p_i}$ to be removed, and a point $\ve{\bar p_i}$, respectively.
+From \cref{lem:orthogonal}, part 2, we have that $\ve{\bar y}$ is a strict convex combination of $\ve{y}$ and $\ve{w}$.
+%By construction and linearity/convexity we have then that $\bar z$ is a strict convex combination of $z$ and $w$.
+
+We will argue that $\ve{\bar z}$ is a strict convex combination of $\ve{z}$ and $\ve{w}$.
+To see this, we note that segment $[\ve{\bar x_i}, \ve{\bar y}]$ lies in the hyperplane where the last coordinate is 0.
+Therefore we only need to intersect it with the part of $\conv \bar C_i$ that lies in that hyperplane.
+This part is exactly $\conv (C_i \cup \{\ve{w}\})$, which can be written in a more explicit way as the union of all segments of the form $[\ve{b},\ve{w}]$ with $\ve{b} \in C_i$.
+Even more, we only need to look at triangle $\ve{w}, \ve{x_i}, \ve{y}$, as all relevant segments lie on it.
+The intersection of this triangle with $\conv C_i$ is segment $[\ve{x_i}, \ve{z}]$ and therefore the intersection of the triangle with $\conv \bar C_i$ is simply triangle $\ve{x_i}, \ve{z}, \ve{w}$.
+This implies that the intersection between segment $[\ve{\bar x_i}, \ve{\bar y}]$ and $\conv \bar C_i$ is the same as the intersection between  segment $[\ve{\bar x_i}, \ve{\bar y}]$ and triangle $\ve{x_i}, \ve{z}, \ve{w}$. 
+This intersection is an interval $[\ve{\bar x_i}, \ve{\bar z}]$ where $\ve{\bar z}$ is a strict convex combination of $\ve{w}$ and $\ve{z}$ and $\ve{\bar z}$ is the closest point to $\ve{\bar y}$ in that intersection.
+
+It follows that the set of potential points to be removed is the same for the two executions. 
+Specifically, if $\ve{z}$ is a strict convex combination of a certain subset $C^*$ of $C_i$, then $\ve{\bar z}$ is a strict convex combination of $C^* \cup \{\rpoint{d}, \spoint{d}\}$.
+The sets of points that can potentially be removed are $C_i \setminus C^*$ and $\bar C_i \setminus (C^* \cup \{\rpoint{d}, \spoint{d}\}) = C_i \setminus C^*$ (the same), respectively.
+In particular\footnote{Under a mild consistency assumption on the way a point is chosen when there is more than one choice, for example, ``choose the point with smallest index among potential points.''}, $\ve{p_i} = \ve{\bar p_i}$.
+This implies $C_{i+1} = \bar C_{i+1}$.
+Also, $\ve{x_{i+1}} = \ve{z}$ and $\ve{\bar x_{i+1}} = \ve{\bar z}$ is in $[\ve{x_{i+1}}, \ve{w}]$.
+This completes the inductive argument about the inner loop and proves the claim.
+\end{claimproof}
+This completes the proof of \cref{thm:lowerbound}.
+\end{proof}
+

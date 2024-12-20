@@ -1,0 +1,582 @@
+\documentclass[11pt]{elsarticle}
+%\documentclass[12pt]{article}	           %% 
+%\textwidth6.5in\textheight9in             %% 
+%\setlength{\oddsidemargin}{5mm}           %% 
+%\setlength{\evensidemargin}{5mm} 	   %% 
+%\setlength{\topmargin}{-15mm} 		   %% %
+% \oddsidemargin 0in
+% \evensidemargin 0in
+% \addtolength{\topmargin}{-0.2cm}
+% \addtolength{\textheight}{0cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{graphicx}
+\usepackage{amssymb}    %American Mathematical Society symbol package
+\usepackage{epstopdf}
+
+\newcommand{\boldnabla}{\mbox{\boldmath$\nabla$}}
+
+\usepackage[toc,page,header]{appendix}
+\usepackage{lscape}
+\usepackage{epsfig}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{amsmath,amssymb,xspace}
+\usepackage{tabularx}
+\def\cal{\mathcal}
+
+\def\nref#1{(\ref{#1})} 
+\def\inv{^{-1}} 
+\def\eps{\varepsilon} 
+
+
+%%%%%%%%%\let \cal \mathcal 
+
+\newfont{\bbb}{msbm10 scaled\magstep1}
+\newtheorem{theo}{Theorem}[section]
+\newtheorem{Theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{prop}{Proposition}[section]
+\newtheorem{hypothese}{Hypothesis}
+\newtheorem{rem}{Remark}[section]
+\newtheorem{cor}{Corollary}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{conjecture}{Conjecture}
+\renewcommand{\thesection}{\arabic{section}}
+\let \leq \leqslant
+\let \geq \geqslant
+\let \cal \mathcal
+\let \epsilon \varepsilon
+\let \hat \widehat
+\newcommand{\norm}[2]{\mbox{$\parallel #1\parallel_{#2}$}}
+\newenvironment{demo}%
+{ \par \medskip \par
+  \noindent \textit{\textbf{Demonstration\/}} : }{\null \hfill $\Box$ \par }
+\newcommand{\inter}[1]{\stackrel{\circ}{#1}} 
+\newcommand{\R} {\ensuremath{\mathbb{R}}}
+\newcommand{\Z} {\ensuremath{\mathbb{Z}}}
+\newcommand{\N} {\ensuremath{\mathbb{N}}}
+\newcommand{\C} {\ensuremath{\mathbb{C}}}
+\newcommand{\Q} {\ensuremath{\mathbb{Q}}}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\demi}{{\frac{1}{2}}}
+\newcommand{\xjp}{{x_{j+\demi}}}\newcommand{\xjm}{{x_{j-\demi}}}
+
+
+
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+
+\newcommand{\ud}{\mathrm{d}}
+\newcommand{\dx}{\partial_x}
+\newcommand{\dr}{\partial_r}
+\newcommand{\dt}{\partial_t}
+\newcommand{\dto}{\partial_{\tau}}
+\newcommand{\dn}{\partial_{\mathbf{n}}}
+\newcommand{\Nu}{\mathcal{V}}
+\newcommand{\W}{\mathscr{W}}  
+\newcommand{\F}{\mathcal{F}}   % Fourier
+
+
+
+\journal{} 
+
+
+
+
+\begin{document}
+
+
+\begin{frontmatter}
+
+
+\title{Domain Decomposition Method for the N-body Time-Independent and Time-Dependent Schr\"odinger Equation} 
+
+
+\author[carl,crm]{E. Lorin}
+\ead{elorin@math.carleton.ca}
+
+\address[carl]{School of Mathematics and Statistics, Carleton University, Ottawa, Canada, K1S 5B6}
+\address[crm]{Centre de Recherches Math\'{e}matiques, Universit\'{e} de Montr\'{e}al, Montr\'{e}al, Canada, H3T~1J4}
+
+
+
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+
+\begin{abstract}
+This paper is devoted to the derivation of a pleasingly parallel Galerkin method for the time-independent $N$-body Schr\"odinger equation, and its time-dependent version modeling molecules subject to an external electric field \cite{BAN,gauge,CCT}.  In this goal, we develop a Schwarz Waveform Relaxation (SWR) Domain Decomposition Method (DDM) for the $N$-body Schr\"odinger equation. In order to optimize the efficiency and accuracy of the overall algorithm, i) we use mollifiers to regularize the singular potentials and to approximate the Schr\"odinger Hamiltonian, ii) we select appropriate orbitals, and iii) we carefully derive and approximate the SWR transmission conditions. Some low dimensional numerical experiments are presented to illustrate the methodology.
+\end{abstract}
+
+\begin{keyword} $N$-body Schr\"odinger equation, domain decomposition method, mollifiers, parallel computing.
+\end{keyword}
+
+
+\end{frontmatter}
+\tableofcontents
+\section{Introduction}\label{NBODY}
+This paper is devoted to the derivation of a pleasingly parallel real-space algorithm for solving the $N$-body Schr\"odinger equation. It is well-known that the numerical computation to the solution to this equation faces the curse of dimensionality, as it requires computations in a $3N$-dimensional space. Even for 2 electrons ($N=2$), smart parallel numerical algorithms must then be developed in order to tackle this problem. At the discrete level, the dimension of the Hamiltonian is basically dependent on the chosen basis functions: the less information is contained in the basis functions, the larger the dimension of the approximate Hamiltonian. The ``worst-case scenario'', would be a finite difference approximation. However, elaborated alternatives exist such as the Full Configuration Interaction (FCI) \cite{ostlund}, which requires highly non-trivial basis functions, and which then allows for the construction of relatively compact discrete Hamiltonians. The time-independent and dependent Schr\"odinger equations are computed using algorithms (linear system and eigenvalue solvers) basically requiring many high-dimensional matrix-vector products. The parallelization of such algorithms is a major research field, and numerous parallel libraries exist among which, we can for instance cite {\tt lapack, arpack, sparselib, petsc, iml,...}. However, the performance of the parallel implementation is often far from ideal, and other approaches should be explored. In this goal, we propose a Schwarz domain decomposition method for solving the $N$-body Schr\"odinger equation. The principle consists of solving a large number of Schr\"odinger equations on ``small'' spatial domains. The interest is double. First, the parallel implementation is expected to be highly efficient, as local Schr\"odinger equations are solved independently and their corresponding solution is connected to the others only through the so-called transmission conditions \cite{DoleanBook}. Secondly, we can benefit from a {\it scaling effect}, as the computational complexity of real-space numerical (time-independent or dependent) Schr\"odinger equation solvers, is usually polynomial in time. We then solve in parallel, several small linear systems associated to local Schr\"odinger equations, rather than a large one. The price to pay though, is the need for computing several times (Schwarz iterations) the same equations each Schwarz iteration, but with different boundary conditions. More specifically, the chosen DDM is a Schwarz Waveform Relaxation method \cite{halpern3,GanderHalpernNataf,halpern2,jsc}, which is an elaborated fixed point algorithm. Notice that SWR could as well be used as a preconditioning technique, but we would a priori then not benefit from the {\it scaling effect}, as using the latter approach we will still have to solve a huge linear system, although of course very preconditioned. This method is characterized by a choice of transmission conditions (or boundary conditions) on each subdomain, derived from the solution to local wave equations.  This popular method is for instance analyzed for a 2-subdomain Schr\"odinger equation in  \cite{halpern2,jsc,lorin-TBS,lorin-TBS2,AML}.\\
+A SWR-Galerkin method for solving the $N$-body Schr\"odinger equation is developed in this paper, using 2 different types of basis functions. The first basis is composed by Gaussian functions. The second basis which is used, is constituted by local Slater's determinants in the FCI formalism. The corresponding SWR method requires i) the computation of 1-electron orbitals, that is eigenfunctions of local $1$-body Schr\"odinger Hamiltonians, ii) from which we construct local Slater's determinants. These Slater determinants can be used as local basis functions. The SWR methods developed in this paper are first applied to solve the stationary Schr\"odinger equation using the Normalized Gradient Flow (NFG) method \cite{bao}. The NGF is a minimization method, which consists in solving a normalized Schr\"odinger equation in imaginary time (this is why, it is also referred in the literature as the {\it imaginary time method}), or equivalently a normalized heat equation, with variable integration times. The SWR method is next applied to the time-dependent Schr\"odinger equation, modeling a molecule subject to an external electric field. For sufficiently intense fields, the $N$-body wavefunction is expected to be delocalized, requiring then large $3N$-dimensional computational domains and then justifying the use of DDM. The purpose of this paper is not to show some high-dimensional simulations but rather to precisely describe aefficient general strategy for addressing the N-body problem. Some numerical results are however proposed in one dimension ($d=1$) for 2 electrons ($N=2$) to illustrate the proposed approach.
+\subsection{$N$-body Time-Independent Schr\"odinger Equation}\label{TISE}
+The stationary $N$-particle Schr\"odinger equation, under the Born-Oppenheimer approximation, reads in $d$ dimensions \cite{CAM15-10,ostlund}, as follows
+\begin{eqnarray}\label{etise}
+H_0\psi(\widetilde{{\bf x}}_1,\cdots,\widetilde{{\bf x}}_N) = \lambda \psi(\widetilde{{\bf x}}_1,\cdots,\widetilde{{\bf x}}_N)
+\end{eqnarray}
+with $\widetilde{{\bf x}}_i=({\bf x}_i,\omega_i)$,  where ${\bf x}_i \in \R^d$ is the spatial coordinates of the $i$th electron, and $\omega_i = \{-1/2,1/2\}$ its spin. In \eqref{etise}, the wavefunction $\psi$ is an eigenstate associated to the eigenvalue $\lambda.$ The Schr\"odinger Hamiltonian $H_0$, for $N$ electrons and $P$ fixed nuclei (Born-Oppenheimer approximation) is given by
+\begin{eqnarray*}
+H_0 = -\cfrac{1}{2}\sum_{i=1}^N\triangle_i -\sum_{i=1}^N\sum_{A=1}^P\cfrac{Z_A}{|{\bf x}_i-{\bf x}_A|} + \sum_{i=1}^N\sum_{j>i}^N\cfrac{1}{|{\bf x}_i-{\bf x}_j|}.
+\end{eqnarray*}
+where ${\bf x}_A \in \R^d$ denotes the position of the $A$th nucleus, and $Z_A$ its charge. In order to ensure the antisymmetry of the wavefunction $\psi$, due to Pauli's exclusion principle
+\begin{eqnarray*}
+\psi(\widetilde{{\bf x}}_1,\cdots,\widetilde{{\bf x}}_p,\cdots,\widetilde{{\bf x}}_q,\cdots,\widetilde{{\bf x}}_N) = -\psi(\widetilde{{\bf x}}_1,\cdots,\widetilde{{\bf x}}_q,\cdots,\widetilde{{\bf x}}_p,\cdots,\widetilde{{\bf x}}_N).
+\end{eqnarray*}
+for any $1\leq p < q \leq N$, one can consider the traditional FCI approach \cite{ostlund} based on Slater's determinants. Assume that $\{\phi_j({\bf x})\}_{j=1}^M$ is a set of $M$ orthonormal spatial orbitals in $\R^d$, and that $\alpha(\omega)$, $\beta(\omega)$ denote the spin coordinates, we can then define $2M$ orbitals as follows: $\chi_{2j-1}(\widetilde{{\bf x}}) = \phi_j({\bf x})\alpha(\omega)$, $\chi_{2j}(\widetilde{{\bf x}}) = \phi_j({\bf x})\beta(\omega)$, for $j=1,\cdots,M$. Next, $N$-spin orthogonal orbitals are defined among ${2M \choose N}$ Slater's (antisymmetric) determinants.
+\begin{eqnarray*}
+w(\widetilde{{\bf x}}_1,\cdots,\widetilde{{\bf x}}_N) = 
+\cfrac{1}{\sqrt{N!}}\left|
+\begin{array}{cccc}
+\chi_1(\widetilde{{\bf x}}_1) & \chi_2(\widetilde{{\bf x}}_1) & \cdots & \chi_N(\widetilde{{\bf x}}_1) \\
+\chi_1(\widetilde{{\bf x}}_2) & \chi_2(\widetilde{{\bf x}}_2) & \cdots & \chi_N(\widetilde{{\bf x}}_2) \\
+\cdot & \cdot & \cdot & \cdot \\
+\cdot & \cdot & \cdot & \cdot \\
+\cdot & \cdot & \cdot & \cdot \\
+\chi_1(\widetilde{{\bf x}}_N) & \chi_2(\widetilde{{\bf x}}_N) & \cdots & \chi_N(\widetilde{{\bf x}}_N)
+\end{array}
+\right|.
+\end{eqnarray*}
+ Slater's determinants $\{w_j\}_j$, can then be used as basis functions in order to compute the eigenfunctions of $H_0$. However, it is possible to construct more simple local basis functions $\{w_j\}_j$. In particular, we will also use in this paper, Gaussian basis functions, in Section \ref{GBF}. Once, the basis functions are selected, any wavefunction $\psi$ is then expanded as $\sum_{j} c_jw_j$. {\it From now on} and for the sake of the presentation, we will omit the spin variable and only consider the spatial coordinates.
+%Efficient computation of the matrix ${\bf H}_K$ was presented in \cite{CAM15-10}, where a key argument, is the use of the following mollifiers 
+%\begin{eqnarray*}
+%B_{\epsilon}(r) = \left\{
+%\begin{array}{ll}
+%\cfrac{\gamma_q}{4\pi\epsilon^3}\Big[1-\big[\cfrac{r}{\epsilon}\big]^2\Big]^q\Big[1+\sum_{j=1}^{K-1}\alpha_j\Big(1-\big[\cfrac{r}{\epsilon}\big]^2\Big)^j\Big], & r\leq \epsilon,\\
+%\\
+%0, & r>\epsilon
+%\end{array}
+%\right.
+%\end{eqnarray*}
+%where $\gamma_q$ and $\alpha_j$ are defined in \cite{CAM14-43} and $\epsilon$ is a small positive parameter, allowing to approximate $-\triangle_i/2 - Z_A/|{\bf x}_i-{\bf x}_{A}|$ by
+%\begin{eqnarray*}
+%-\cfrac{1}{2}\nabla_i\cdot\big(a_{i}({\bf x}_i)\nabla_i\big) - Z_AG_{\epsilon}\big({\bf x}_i-{\bf x}_A\big) + \Phi_{b_i}({\bf x}_i)
+%\end{eqnarray*}
+%with $r_i=|{\bf x}_i|$, $\Phi_{b_i}({\bf x}_i) = s_{\epsilon_{b_i}}|{\bf x}_i-{\bf x}_{b_i}|V_i^{\infty}$ is a boundary potential, and $a_{\epsilon_{b_i}}({\bf x}_i) = 1-s_{\epsilon_{b_i}}|{\bf x}_i-{\bf x}_{b_i}|$ is a step function. Finally, -$1/|{\bf x}_i|*B_{\epsilon}({\bf x}_i) = 4\pi G_{\epsilon}({\bf x})$ with $\triangle G_{\epsilon} = B_{\epsilon}$. We refer to \cite{CAM14-43,CAM14-44,CAM15-10,CAM15-09} for details. Notice that basis functions $v_j$ have compact support, which is naturally very useful from the computational viewpoint.  The purpose of the technology summarized above and used below for the 2-electron equation, is to provide an efficient and pleasingly scalable the construction of Matrix ${\bf H}_{K}$.
+\subsection{$N$-body Time-Dependent Schr\"odinger Equation}\label{TDSE}
+The $N$-body time-dependent Schr\"odinger equation (TDSE), for $t \in (0,T)$ in {\it length gauge} (LG) \cite{gauge} reads
+\begin{eqnarray}\label{LG}
+{\tt i}\partial_t \psi({\bf x},t) = \big(H_0 + \sum_{i=1}^N{\bf x}_i\cdot {\bf E}(t) \big)\psi({\bf x},t)
+\end{eqnarray}
+where ${\bf E}(t)$ denotes a given external electric field, under the dipole approximation (wavelength of the electric field much larger than the spatial scale of the $N$-body system).
+%, and in {\it velocity gauge} (VG), the equation reads
+%\begin{eqnarray*}
+%{\tt i}\partial_t \psi = \big(H_0 -{\tt i}\sum_{i=1}^N{\bf F}(t)\cdot {\bf \nabla}_i + \cfrac{1}{2}|{\bf F}(t)|^2_{\ell^{2}(\R^d)} \big)\psi.
+%\end{eqnarray*}
+%where $\nabla_i=(\partial_{x_i},\partial_{y_i},\partial_{z_i})^T$ and ${\bf F}(t)$ is an external electric potential. We search for the wavefunction in the form:
+%\begin{eqnarray*}
+%\psi(\cdot,t) = \sum_{j=1}^Kw_j(\cdot)c_j(t).
+%\end{eqnarray*}
+That is, for $1 \leq l\leq K$
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl}
+{\tt i}\sum_{j=1}^K\langle w_j,w_l\rangle\dot c_j(t) & = & \sum_{j=1}^K\langle H_0 w_j,w_l\rangle c_j(t) + \sum_{j=1}^K\sum_{i=1}^N\langle {\bf x}_i w_j,w_l\rangle \cdot {\bf E}(t) c_j(t)
+\end{array}
+\right.
+\end{eqnarray*}
+which can be rewritten
+\begin{eqnarray*}
+{\tt i}{\bf A}\dot{\bf c}(t) = \big({\bf H}_0 + {\bf T}(t)\big){\bf c}(t)
+\end{eqnarray*}
+with ${\bf c}=(c_1,\cdots,c_N)^T$, and where 
+\begin{eqnarray*}
+T_{jl}(t) = \sum_{i=1}^N\langle  {\bf x}_i w_j,w_l\rangle \cdot {\bf E}(t)
+\end{eqnarray*}
+and ${\bf A}=\big(\langle w_j,w_l\rangle\big)_{1\leq j,l \leq K}$. If the basis functions are Slater's determinants, their orthogonality implies that ${\bf A}$ is the identity matrix (when considering Neumann boundary conditions). When we are interested in the interaction of $N$-electrons with an intense external field ${\bf E}(t)$, it is necessary to include a very large number of 1-electron orbitals ($M \gg 1$, $K \gg 1$), in particular ``non-local'' ones, as ionization is also expected \cite{PBC,AB12}. As a consequence, actual computations {\it in all} $\R^{dN}$ is, in principle, necessary. 
+\subsection{Normalized Gradient Flow (NGF) method}\label{ITM}
+In order to solve the time-independent Schr\"odinger equation, the method which is proposed is the imaginary time method, also referred in the Mathematics literature as a Normalized Gradient Flow (NGF) method. Let us rewrite the time-dependent Schr\"odinger in a compact form in $\R^{3N}$:
+\begin{eqnarray}\label{LG}
+{\tt i}\partial_t \psi = \big(-\cfrac{1}{2}\sum_{i=1}^N\triangle_i+V\big)\psi.
+\end{eqnarray}
+The NGF method for computing the ground state $\phi$ of the Schr\"odinger Hamiltonian, consists of solving the time-dependent Schr\"odinger equation in imaginary time, and normalizing the solution at each time iteration. The converged state minimizes the energy functional
+$$E(\phi):=\min_{\|\chi \|_{L^{2}(\mathbb{R}^{dN})}=1}E(\chi)$$ 
+defined by 
+\begin{equation}\label{dennrj}
+E(\chi):=\int_{ \R^{dN}}|\nabla \chi({\bf x}_1,\cdots,{\bf x}_N)|^2+V({\bf x}_1,\cdots,{\bf x}_N)|\chi({\bf x}_1,\cdots,{\bf x}_N)|^2d{\bf x}_1,\cdots,d{\bf x}_N.
+\end{equation}
+More specifically the ground state is constructed by solving for $({\bf x}_1,\cdots,{\bf x}_N) \in  \R^{dN}$ and $t_{n}< t <t_{n+1}$,
+\begin{eqnarray}\label{e1bis}
+\left\{
+\begin{array}{l}
+\partial_t \phi({\bf x}_1,\cdots,{\bf x}_N,t) = -\nabla_{\phi^{*}}E(\phi) \\ \hspace{0.9cm} =\triangle \phi({\bf x}_1,\cdots,{\bf x}_N,t) - V({\bf x}_1,\cdots,{\bf x}_N)\phi({\bf x}_1,\cdots,{\bf x}_N,t), \\
+\displaystyle \phi({\bf x}_1,\cdots,{\bf x}_N,t_{n+1}):=\phi({\bf x}_1,\cdots,{\bf x}_N,t^{+}_{n+1})=\frac{\phi({\bf x}_1,\cdots,{\bf x}_N,t^{-}_{n+1})}{\| \phi(\cdot ,t^{-}_{n+1})\|_{L^{2}(\mathbb{R}^{dN})}},\\
+\phi({\bf x}_1,\cdots,{\bf x}_N,t)=\phi_0({\bf x}), \, ({\bf x}_1,\cdots,{\bf x}_N) \in  \R^{dN}, \textrm{with $\|\phi_{0} \|_{L^{2}(\mathbb{R}^{dN})}=1$.}
+\end{array}
+\right.
+\end{eqnarray} 
+In the above system of equation, $t_{0}:=0<t_{1}<...<t_{n+1}<...$ are discrete times, $\phi_{0}$ is an initial data for the time marching algorithm discretizing the projected
+gradient method
+ and pointwise $\lim_{t\rightarrow t_{n}^{\pm}}\phi({\bf x}_1,\cdots,{\bf x}_N,t)=\phi({\bf x}_1,\cdots,{\bf x}_N,t_{n}^{\pm})$, see \cite{bao} for $N=1$ and $d=3$. \\
+However by construction, the computed state is not antisymmetric. As a consequence a constraint must be added in order to ensure that Pauli's exclusion principle is well satisfied. We denote by $\mathcal{A}$ an antisymmetrization operator. For instance, if $N=2$, and $d=1$ we have
+\begin{eqnarray*}
+\mathcal{A}\phi(x_1,x_2)=
+\left\{
+\begin{array}{cl}
+\phi(x_1,x_2) & \hbox { if }  x_1 > x_2, \\
+-\phi(x_2,x_1) & \hbox { if }  x_1 \leq x_2.
+\end{array}
+\right.
+\end{eqnarray*}
+We assume that $V$ is symmetric, that is for any $i,j$ in $\{1,\cdots,N\}^2$
+\begin{eqnarray*}\label{sym}
+V({\bf x}_1,\cdots,{\bf x}_i,\cdots,{\bf x}_j,\cdots,{\bf x}_N) = V({\bf x}_1,\cdots,{\bf x}_j,\cdots,{\bf x}_i,\cdots,{\bf x}_N).
+\end{eqnarray*}
+In the general situation, $\phi$ is antisymmetrized using odd permutations. We notice that $\mathcal{A}\phi$ satisfies the heat equation
+\begin{eqnarray}\label{HA}
+\partial_t \mathcal{A}\phi =\triangle \mathcal{A}\phi - V({\bf x}_1,\cdots,{\bf x}_N)\mathcal{A}\phi.
+\end{eqnarray}
+as $\partial_t$, $\triangle$ are linear operators, and as $\mathcal{A}V=V$. We have now to show that the following algorithm is energy decreasing for any $({\bf x}_1,\cdots,{\bf x}_N) \in  \R^{dN}$ and $t_{n}< t <t_{n+1}$:
+\begin{eqnarray}\label{e1ter}
+\left\{
+\begin{array}{l}
+\partial_t \phi  =\triangle \phi({\bf x}_1,\cdots,{\bf x}_N,t) - V({\bf x}_1,\cdots,{\bf x}_N)\phi({\bf x}_1,\cdots,{\bf x}_N,t), \\
+\displaystyle \phi({\bf x}_1,\cdots,{\bf x}_N,t_{n+1}):=\phi({\bf x}_1,\cdots,{\bf x}_N,t^{+}_{n+1})=\frac{\mathcal{A}\phi({\bf x}_1,\cdots,{\bf x}_N,t^{-}_{n+1})}{\|\mathcal{A}\phi(\cdot ,t^{-}_{n+1})\|_{L^{2}(\mathbb{R}^{dN})}},\\
+\phi({\bf x}_1,\cdots,{\bf x}_N,0)=\phi_0({\bf x}_1,\cdots,{\bf x}_N), \textrm{with $\|\phi_{0} \|_{L^{2}(\mathbb{R}^{dN})}=1$.}
+\end{array}
+\right.
+\end{eqnarray} 
+We notice first that:
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl}
+\cfrac{d}{dt}\|\mathcal{A}\phi\|_{L^2(\R^{dN})}^2 & = & 2\int_{\R^{dN}}\mathcal{A}\phi\partial_t(\mathcal{A}\phi) = 2\int_{\R^{dN}}\mathcal{A}\phi \big(\cfrac{1}{2}\triangle -V \big)\mathcal{A}\phi. \\
+& =&  -2\int_{\R^{dN}}\cfrac{1}{2}|\nabla \mathcal{A}\phi|^2+V\mathcal{A}\phi^2 \leq 0.
+\end{array}
+\right.
+\end{eqnarray*}
+Then following Theorem 2.1 in \cite{bao}, the energy defined in \eqref{dennrj} satisfies
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl}
+\cfrac{d}{dt}E\Big(\cfrac{\mathcal{A}\phi}{\|\mathcal{A}\phi\|}\Big) & = & \int_{\R^{dN}}\cfrac{|\nabla \phi|^2}{\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}} + \cfrac{V \mathcal{A}\phi^2}{\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}} \\
+& = & 2 \int_{\R^{dN}}\cfrac{\nabla \mathcal{A}\phi \cdot \partial_t(\nabla \mathcal{A}\phi)}{2\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}} +\cfrac{V\mathcal{A}\phi\partial_t(\mathcal{A}\phi)}{\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}} \\
+& & -\Big(\cfrac{d}{dt}\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}\Big)\int_{\R^{dN}}\Big(\cfrac{|\nabla \mathcal{A}\phi|^2}{2\|\mathcal{A}\phi\|^4_{L^2(\R^{dN})}} + \cfrac{V\mathcal{A}\phi^2}{\|\mathcal{A}\phi\|^4_{L^2(\R^{dN})}}\Big)\\
+& = & -2\cfrac{\|\mathcal{A}\phi_t\|^2_{L^2(\R^{dN})}}{\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}}\Big(\langle \mathcal{A},\phi \mathcal{A}\phi_t\rangle\Big)^2-\|\mathcal{A}\phi\|^2_{L^2(\R^{dN})}\|\mathcal{A}\phi_t\|^2_{L^2(\R^{dN})}\Big)\\
+& \leq & 0.
+\end{array}
+\right.
+\end{eqnarray*}
+We then conclude that
+\begin{prop}
+Assuming that $V$ is a symmetric potential, the algorithm \eqref{e1ter} is convergent to an antisymmetry state of minimal energy.
+\end{prop}
+ the NGF algorithm will converge to the minimum energy antisymmetric state. 
+\begin{rem}
+A more straightforward approach is simply to notice that if the initial data is antisymmetric ($\mathcal{A}\phi_0=\phi_0$), then the solution to the heat equation will be antisymmetric as long as the potential is symmetric. This is a simple consequence of the uniqueness of the Cauchy problem associated to \eqref{HA}. Then, as mentioned in Theorem 2.2 from \cite{bao},
+\begin{eqnarray}\label{e1ter}
+\left\{
+\begin{array}{l}
+\partial_t \phi =\triangle \phi - V({\bf x}_1,\cdots,{\bf x}_N)\phi + \mu_{\phi}\phi, \, ({\bf x}_1,\cdots,{\bf x}_N) \in  \R^{dN},\, t \geq 0, \\
+\phi({\bf x}_1,\cdots,{\bf x}_N,0)=\cfrac{\phi_0}{\|\phi_0\|_{L^{2}(\mathbb{R}^{dN})}}, \, ({\bf x}_1,\cdots,{\bf x}_N) \in  \R^{dN}, \textrm{with $\|\phi_{0} \|_{L^{2}(\mathbb{R}^{dN})}=1$.}
+\end{array}
+\right.
+\end{eqnarray} 
+where $\mu_{\phi}$ is defined as 
+\begin{eqnarray*}
+\mu_{\phi}(t) = \cfrac{1}{\|\phi(\cdot,t)\|^2_{L^2(\R^{dN})}}\int_{\R^{dN}}\cfrac{1}{2}|\nabla\phi|^2+V({\bf x}_1,\cdots,{\bf x}_N)\phi^2.
+\end{eqnarray*}
+\end{rem}
+\subsection{Organization of the paper}
+This paper is organized as follows. In Section \ref{GBF}, we present the construction of Gaussian local basis functions. We then propose in Section \ref{1D-2E}, a methodology to construct local Slater's determinants which can be used as local basis functions. Some properties of local Slater's determinants, as well as the efficient construction of local Hamiltonians is discussed in this section as well as in \ref{APXA}. Section \ref{SWR} is devoted to the derivation and implementation of the Schwarz Waveform Relaxation algorithm for solving the $N$-body Schr\"odinger equation. Some mathematical properties of the SWR will be recalled in this section, and their computational complexity will be discussed in \ref{APXC}. Sections \ref{NumGauss} and \ref{NumSlater} are devoted to some numerical experiments for solving the time-independent and time-dependent $2$-body Schr\"odinger equations, in one dimension. More specifically, the experiments are performed using local Gaussian basis functions in Section \ref{NumGauss}, and local Slater basis functions in Section \ref{NumSlater}. We finally conclude in Section \ref{conclusion}.
+\section{Local Gaussian basis functions}\label{GBF}
+The domain decomposition method for solving the $N$-body Schr\"odinger equation which is proposed in this paper is based on a Galerkin method. The choice of the local basis functions is of crucial matter in order to make the computation as efficient as possible. Before considering complex basis functions in Section \ref{1D-2E}, we study the methodology with simple basis functions. A natural choice is to use Gaussian functions. \\
+In order to simplify the notations, we will consider here, the case $N=2$, $d=1$. The extension of the following ideas is straightforward for arbitrary $N$ and $d$ and is shortly discussed at the end of this subsection. We denote by $\big\{D_j\big\}_{j\in\Z}$ an infinite sequence of open intervals, such that: $\R=\cup_{j\in \Z}\overline{D}_j$ and $D_i\cap D_j=\emptyset$, for $i\neq j$, and $\Lambda_{i,j}=D_i\times D_j \subsetneq \R^2$, for any $i$ and $j$ in $\Z$. Naturally we have $\cup_{(i,j)\in \Z^2}\overline{\Lambda}_{i,j} = \R^2$. We denote by $\big\{\phi^{i}_j\big\}_{(i,j)\in \N\times\Z}$ the set of one-dimensional Gaussian functions, defined by
+\begin{eqnarray}\label{gauss1d}
+\phi_j^{i}(x_k) = \exp\big(-\delta_k^{(i)}(x_k-\alpha^{(i)}_j)^2\big).
+\end{eqnarray}
+where $\delta_k^{(i)}$ is a subdomain-dependent ($i$-index) positive number for Electron $k$ ($k=1,2$), and $\alpha_{j}^{(i)} \in D_i$ is a sequence of Gaussian centers.  When the $\delta_j^{(i)}$'s are subdomain and particle independent, we will use the notation $\delta$. Now, we can construct local basis functions for any $\Lambda_{i,j}$. From any localized orbitals $\phi^i_l$, $\phi_p^j$, with $p,l$ in $\N$ (basis function indices) and $i,j$ in $\Z$ (subdomain indices), we define $v^{i,j}_{l,p}$ by:
+\begin{eqnarray*}
+v^{i,j}_{l,p}(x_1,x_2) = \phi^i_l(x_1)\phi^j_p(x_2).
+\end{eqnarray*}
+In term of support, we have
+\begin{eqnarray*}
+\left.
+\begin{array}{lcl} 
+\mbox{Supp}_{(x_1,x_2)} v^{i,j}_{l,p} & = &\mbox{Supp}\big(\phi^i_l(x_1)\phi_p^j(x_2)\big).\\
+&=& \mbox{Supp}\phi_l^i\times\mbox{Supp}\phi_p^j.\\
+&\subsetneq &\cup_{k=-1}^1\big(\Lambda_{i+k,j}\cup\Lambda_{i,j+k}\big).
+\end{array}
+\right.
+\end{eqnarray*}
+If $\delta^{(i)}=\delta$ and $\alpha_j^{(i)}=\alpha^{(i)}$ is taken subdomain independent, the local basis functions are actually identical in all the subdomains, which is quite convenient from a computational point of view, as we only need to construct once for all, a unique free-particle Hamiltonian. The weakness of this approach is that naturally, as the local basis functions do not contain any particular information, a large number should be used. In Fig. \ref{GBF0}, we present in a given subdomain, the local Gaussian basis functions. The construction to Gaussian basis functions for $N$ particles in $d$ dimensions is naturally straightforward by considering the tensor products of $N$ local Gaussian functions: $\Pi_{k=1}^N\phi({\bf x}_k)$. The analysis of convergence of the Galerkin method applied to the Schr\"odinger equation, and using Gaussian basis functions was presented in \cite{GalerSchro}.\\
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{GaussianBF0.eps}
+\caption{$36$ Gaussian basis functions in one subdomain for $N=2$ and $d=1$.}
+\label{GBF0}
+\end{center}
+\end{figure}
+In order to directly construct antisymmetric basis functions (at least locally) it is possible to construct (spinless) Slater-like Gaussian basis functions \cite{ostlund}, from any localized Gaussian functions $\phi^i_l$, $\phi_p^j$, with $p,l$ in $\N$ and $i,j$ in $\Z$,
+\begin{eqnarray}\label{LSD}
+v_{l,p}^{i,j}(x_1,x_2) = 
+\cfrac{1}{\sqrt{2}}\left|
+\begin{array}{cc}
+\phi^i_l(x_1) & \phi^j_p(x_1) \\
+\phi^i_l(x_2) & \phi^j_p(x_2) 
+\end{array}
+\right| = \cfrac{1}{\sqrt{2}}\Big(\phi_l^i(x_1)\phi_p^j(x_2) -\phi_l^i(x_2)\phi_p^j(x_1)\Big)
+\end{eqnarray}
+In the next section, we consider more elaborated antisymmetric basis functions using the traditional Slater's determinants computed from 1-electron orbitals.
+\section{Local orbitals and Local Slater's Determinants as basis functions}\label{1D-2E}
+This section is devoted to the construction of Local Orbitals (LO's) and Local Slater's Determinants (LSD's).\\
+As we have done in the previous section, we will detail the case $d=1$ and $N=2$, that is a two-body problem in one-dimension. This is motivated by the fact that the extension to the general case (arbitrarily $N$ and $d$ case) can be deduced from \cite{CAM15-09,CAM15-10} and does not present any fundamental difficulty, but would complexify the notations.  The material presented here will be used for the Schwarz Waveform Relaxation (SWR) Domain Decomposition Method (SWR-DDM) presented in Section \ref{SWR}. The local orbitals and Slater's determinants will allow for the construction of local Hamiltonians and local wavefunctions, from which we will reconstruct a global wavefunction. The basic idea is to construct local, in the sense subdomain dependent, Slater's determinants from local 1-electron orbitals. This procedure can be applied to any subdomain, or only in some of the subdomains, typically those containing the nuclei. \\
+\\
+We denote by $x_i$ ($i=1,2$) the coordinate of the $i$th particle. The Schr\"odinger Hamiltonian reads, for $2$ fixed nuclei
+\begin{eqnarray*}
+H_0 = -\cfrac{1}{2}\sum_{i=1}^2\triangle_i -\sum_{i=1}^2\sum_{A=1}^2\cfrac{Z_A}{|x_i-x_A|} + \cfrac{1}{|x_1-x_2|}
+\end{eqnarray*}
+where $x_A \in \R$ denotes the position of the $A$th nucleus and $Z_A$ its charge. Antisymmetry of the wavefunction reads
+\begin{eqnarray*}
+\psi(x_1,x_2) = -\psi(x_1,x_2), \qquad \forall (x_1,x_2) \in \R^2.
+\end{eqnarray*}
+% As an illustration, we represent in Fig. \ref{ES1D} the ground state for a $H_%2$-molecule with 2-center with internuclear distance of $\sqrt{2}$ a.u.
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=8cm, keepaspectratio]{ES1Da.eps}
+%\caption{Ground eigenstate for $H_2$-molecule}
+%\label{ES1D}
+%\end{center}
+%\end{figure}
+\subsection{Local FCI procedure}
+We denote by $\big\{\phi_j\big\}_{j\in \Z}$ the set of 1-electron orbitals, which will allow for the construction of the compact support {\it localized orbitals}, LO's, denoted by $\big\{\phi_j^{i}\big\}_{(i,j)\in \N\times \Z}$\footnote{Top index refers to subdomain $D_i$, and bottom index to full orbital $\phi_j$ index}. Typically $\phi_j^i$ should satisfy, for any $i \in \N$ and $j \in \Z$
+\begin{eqnarray}\label{phi_ij}
+\left.
+\begin{array}{l}
+\phi^i_{j}(x) = \phi_j(x), \qquad \mbox{ if } x \in D_i\\
+\mbox{Supp}\phi_j^i \subsetneq D_{i-1}\cup D_i\cup D_{i+1}\\
+\phi_j^i \in C^2\big(D_{i-1}\cup D_i\cup D_{i+1},\R\big).
+\end{array}
+\right.
+\end{eqnarray}
+By construction, we will assume that $x_A,x_B \in D_0$. In order to solve the stationary Schr\"odinger equation, we choose the FCI model for a $2$-electron problem. The latter is based on (spinless) Slater's Determinant basis functions (SD's) which are defined as follows. 
+%For any 1-electron orbitals $\phi_l$, $\phi_j$, (spinless) Slater's determinants in $\R^2$ are constructed, as follows.
+%\begin{eqnarray*}
+%v_{p,l}(x_1,x_2) = 
+%\cfrac{1}{\sqrt{2}}
+%\left|
+%\begin{array}{cc}
+%\phi_l(x_1) & \phi_p(x_1) \\
+%\phi_l(x_2) & \phi_p(x_2) 
+%\end{array}
+%\right|= \cfrac{1}{\sqrt{2}}\Big(\phi_l(x_1)\phi_p(x_2) -\phi_l(x_2)\phi_p(x_1)%\Big).
+%\end{eqnarray*}
+From any localized orbitals $\phi^i_l$, $\phi_p^j$, with $p,l$ in $\N$ and $i,j$ in $\Z$, Slater's determinants as follows:
+\begin{eqnarray}\label{LSD}
+v_{l,p}^{i,j}(x_1,x_2) = 
+\cfrac{1}{\sqrt{2}}\left|
+\begin{array}{cc}
+\phi^i_l(x_1) & \phi^j_p(x_1) \\
+\phi^i_l(x_2) & \phi^j_p(x_2) 
+\end{array}
+\right| = \cfrac{1}{\sqrt{2}}\Big(\phi_l^i(x_1)\phi_p^j(x_2) -\phi_l^i(x_2)\phi_p^j(x_1)\Big).
+\end{eqnarray}
+Notice that in practice the number of determinants to compute can be reduced. For instance, for $l=p$ only indices $j\geq i+1$ should be considered. In the following, we will denote by $\mbox{Supp}_{(x_1,x_2)}$, the support of any function with respect to its $(x_1,x_2)$-variables. As a consequence:
+\begin{eqnarray}\label{supp}
+\left.
+\begin{array}{lcl} 
+\mbox{Supp}_{(x_1,x_2)} v^{i,j}_{p,l} & = &\mbox{Supp}\Big(\phi_l^i(x_1)\phi_p^j(x_2) -\phi_l^i(x_2)\phi_p^j(x_1)\Big)\\
+&=& \mbox{Supp}\phi_p^i\times\mbox{Supp}\phi_p^j\\
+&\subsetneq &\cup_{k=-1}^1\Big(\Lambda_{i+k,j}\cup\Lambda_{i,j+k}\Big).
+\end{array}
+\right.
+\end{eqnarray}
+In other words, the support of any $v^{i,j}_{p,l}$ is compact and is strictly included in the union of $\overline{\Lambda}_{i,j}$ with the subdomains having an edge in common with $\overline{\Lambda}_{i,j}$. By construct, $v^{i,j}_{p,l}$ is naturally antisymmetric.
+\subsection{Local orbital construction}\label{subsec:SLO}
+The domain decomposition introduced above, allows for an adaptive selection of 1-electron orbitals per-subdomain. The key points are i) the number $P$ of nuclei, ii) their location, and iii) in the time-dependent case, the intensity of the external electric field. Notice that for any subdomain $D_i$, we select $M_i$ 1-electron localized orbitals, $\big\{\phi_l^i\big\}_{l=1}^{M_i}$. Then, from two sets of localized orbitals, $\big\{\phi_l^i\big\}_{l=1}^{M_i}$, $\big\{\phi_p^j\big\}_{p=1}^{M_j}$, we can construct ${M_i+M_j \choose 2}$ LSD's \eqref{LSD}. From a practical point of view, we consider a finite number $L$, of one-dimensional subdomains partially covering $\R$: $\cup_{i=1}^LD_{i} \subsetneq \R$. Notice that this will force us to impose absorbing conditions at the global computational domain boundary \cite{ABC,MOLPHYS}. Then, for each subdomain $\Lambda_{i,j}$, we will select $K_{i,j}$ LSD's $\big\{v_{k}^{i,j}\big\}_{k=1}^{K_{i,j}}$, among ${M_i+M_j \choose 2}$ determinants. Notice however that the procedure which is presented below, may only be relevant for subdomains containing at least one nucleus. In the other subdomains, local Gaussian basis functions could be considered. The stationary wavefunction $\psi$, solution to the Schr\"odinger equation, will then be searched in each $\Omega_i$, in the form 
+\begin{eqnarray*}
+\psi_i(x_1,x_2) = \sum_{k=1}^{K_{i,j}}c_{k}^{i,j}v_{k}^{i,j}(x_1,x_2).
+\end{eqnarray*}
+where $c_{k}^{i,j}$ are the unknown coefficients. 
+%For any $1\leq k \leq K_{i,j}$ (resp. $1 \leq q \leq K_{m,n}$), $v^{i,j}_{k}$ (resp. $v^{m,n}_{q}$) is constructed from two localized orbitals $\phi_l^i$, $\phi_p^j$ (resp. $\phi_t^m$, $\phi_u^n$) for some $1\leq l \leq M_i$ and $1\leq p \leq M_j$ (resp. $1 \leq t \leq M_m$ and $1\leq u \leq M_n$) and according to \eqref{supp}, and with
+%\begin{eqnarray*}
+%\mbox{Supp}_{(x_1,x_2)}v^{i,j}_{k} = \mbox{Supp} \phi_l^i \times \mbox{Supp} \phi_p^j.
+%\end{eqnarray*}
+%Notice that for any $(i,j) \in \{1,\cdots,L\}^2$
+%\begin{eqnarray*}
+%\mbox{Supp}_{(x_1,x_2)}v^{i,j}_{k} \cap \mbox{Supp}_{(x_1,x_2)}v^{m,n}_{l} \neq \emptyset \Leftrightarrow (m,n)\in \mathcal{S}(i,j)
+%\end{eqnarray*}
+%where
+%\begin{eqnarray*}
+%\mathcal{S}(i,j) := \big\{(i,j);(i\pm 1,j);(i;j\pm 1);(i\pm 1,j\mp 1);(i\pm 1,j\pm 1);(i,j\pm 2);(i\pm 2,j)\big\}.
+%\end{eqnarray*}
+%Similarly, denoting the Schr\"odinger Hamiltonian by $H_0$
+%\begin{eqnarray*}
+%\mbox{Supp}_{(x_1,x_2)}\big(H_0v^{i,j}_{k}\big) \cap \mbox{Supp}_{(x_1,x_2)}v^{m,n}_{l} \neq \emptyset \Leftrightarrow (m,n)\in \mathcal{S}(i,j)
+%\end{eqnarray*}
+We now detail the procedure to construct the localized orbitals $\big\{\phi_j^{i}\big\}_{j \in \N}$ under the condition \eqref{phi_ij},  for $i \in \{1,\cdots,L\}$. We consider as a generic example the case of the $H_2$-molecule, corresponding to $Z_A=Z_B=1$.\\
+\\
+%\noindent{\bf A posteriori construction of the localized orbitals}. Consider a 1-electron orbital $\phi_l$ in $\R$ with $l \in\{1,\cdots,M_i\}$, for a 2-center problem:
+%\begin{eqnarray*}
+%\big(-\cfrac{1}{2}\partial_{xx}  - \cfrac{1}{|x-x_A|} - \cfrac{1}{|x-x_B|}\big)%\phi_{l}^{i}(x) = \lambda^{i}_{l}\phi_{l}^{i}(x).
+%\end{eqnarray*}
+% We first set
+%\begin{eqnarray*}
+%\widetilde{\phi}_l^{i}(x):=
+%\left\{
+%\begin{array}{ll}
+%\phi_l(x) & \mbox{ if } x \in D_i,\\ 
+%0 & \mbox{ if } x \notin D_i.
+%\end{array}
+%\right.
+%\end{eqnarray*}
+%We then introduce a mollifier $\rho_{\epsilon} \in \mathcal{D}(\R)$ such that $%\rho_{\epsilon} \rightarrow_{\epsilon \rightarrow 0} \delta$ in $\mathcal{D}'(\%R)$. Then, for a given positive $\epsilon$ (small enough), we define
+%\begin{eqnarray*}
+%\phi_{l,\epsilon}^i := \cfrac{\widetilde{\phi}_l^i*\rho_{\epsilon}}{\big|\widet%ilde{\phi}_l^i*\rho_{\epsilon}\big|}
+%\end{eqnarray*}
+%which satisfies \eqref{phi_ij}. Notice also that when $\epsilon \rightarrow 0$,% $\phi_{l,\epsilon}^i\in \mathcal{D}(\R) \rightarrow \widetilde{\phi}^i_l$ in $%\mathcal{D}'(\R)$. In the following, we omit the $\epsilon$ index, and we denot%e $\varphi_{l}^i :=\phi_{l,\epsilon}^i$ with fixed $\epsilon$, by
+%\begin{eqnarray*}
+%\mbox{Supp}\phi_{l,\epsilon}^i \subsetneq D_{i-1}\cup D_i\cup D_{i+1}.
+%\end{eqnarray*}
+%We typically choose $\rho_{\epsilon}$ as follows.
+%\begin{eqnarray*}
+%\rho_{\epsilon}(x) = 
+%\left\{
+%\begin{array}{ll}
+%\cfrac{1}{\epsilon \int_{y \in \R \, : \, |y|<1}\exp\big((|x|^2-1)^{-1}\big)dx}%\exp\Big(\cfrac{\epsilon^2}{|x|^2-\epsilon^2}\Big) & \mbox{ if } |x| < \epsilon%,\\
+%\\
+%0, & \mbox{ if } |x| \geq  \epsilon.
+%\end{array}
+%\right.
+%\end{eqnarray*}
+%Notice that $\int_{\R} \rho_{\epsilon}(x)=1$, see Fig. \ref{eps05} (Left) where% we represent $\rho_{0.5}$ on $(-20,20)$.
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{rho_0_5.eps}
+%%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4eigenstates.eps}
+%\caption{(Left) Mollifier $\rho_{0.5}$. (Right) First 4 eigenstates with 2-cent%er potential $V(x) = -1/\sqrt{(x-x_A)^2+0.01} -1/\sqrt{(x-x_B)^2+0.01}$.}
+%\label{eps05}
+%\end{center}
+%\end{figure}
+%We also represent the first 4 eigenstates for $l=1,\cdots,4$, in Fig. \ref{eps05} (Right)  for a pseudopotential 
+%\begin{eqnarray}\label{pseudo}
+%V(x) = -1/\sqrt{(x-x_A)^2+\eta^2} -1/\sqrt{(x-x_B)^2+\eta^2},
+%\end{eqnarray}
+%where $\eta=0.1$ is a smoothing parameter. They are computed using an order $4$ finite difference scheme. Then, for $L=2$, $x_b=6$  ($L=5$ subdomains), we represent for the middle subdomain  $i=3$ (resp. $i=4$) $\varphi^0_l$ (resp. $\varphi_l^1$), for $l=1,\cdots,4$ in Fig. \ref{SLO_app1}.
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4SLO_0.eps}
+%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4SLO_1.eps}
+%\caption{First 4 eigenstates LO's: (left) $\phi_{l,\epsilon}^3$ (right) $\phi_{l,\epsilon}^4$ for $l=1,\cdots,4$.}
+%\label{SLO_app1}
+%\end{center}
+%\end{figure}
+%\\
+%\\
+%We have assumed that $x_{A,B} \in D_0$. As a consequence, for $|i-(L+1)/2|$ small enough, the orbitals $\big\{\varphi_l\big\}_{l \leq M_i}$ are selected among the low energy states. More generally, the larger $|i-(L+1)/2|$, the larger the selected energy states. The main weakness of this approach comes from the fact that the constructed orbitals are a priori not orthogonal, when their support intersect, which will lead to a lack of sparsity of the discrete Hamiltonian. Another drawback was the introduction a smoothing parameter in the Coulomb potential.\\
+\\
+The approach which is proposed is based on ideas presented in \cite{CAM15-09}. Rather than post-processing the full domain 1-electron orbitals, we directly construct the smooth localized orbitals with compact support, and with orthogonality properties. This is possible thanks to the use of i) infinite potentials at the subdomain boundary, and ii) of mollifiers when a subdomain contains a nucleus singularity. We proceed as follows.  We consider the two following situations, for a given subdomain $D_i$, with $2\leq i \leq  L-1$.
+\begin{itemize}
+\item {\it $D_i$ contains a nucleus singularity}. Only a few subdomains belong to this first category, in particular when we are interested in the time-dependent Schr\"odinger equation for intense field-particle interaction. In that case, mollifiers will allow for an arbitrarily accurate smoothing of the nucleus singularities. Notice that in 1-d, the singularity treatment is different than in 3-d. Indeed in the latter case, we benefit from the fact that a Coulomb potential, up to a multiplicative constant is a fundamental solution to Poisson's equation. This property allows for an accurate and efficient treatment of the localized orbitals. The Coulomb potential is then approximated by a smooth function $G_{\epsilon}$, thanks to mollifiers $B_{\epsilon}$ as defined in \cite{CAM14-43}, and such that:
+\begin{eqnarray}\label{GEPS}
+G_{\epsilon}({\bf x}) = \cfrac{1}{4\pi}\big(V*B_{\epsilon}\big)({\bf x})
+\end{eqnarray}
+where $V({\bf x}) = -1/|{\bf x}|$, which also satisfies
+\begin{eqnarray}\label{PE1D}
+4\pi \triangle G_{\epsilon}({\bf x}) = B_{\epsilon}({\bf x}).
+\end{eqnarray}
+As a consequence, a smooth approximation of the Coulomb potential $V$ using \eqref{PE1D}, can be constructed with $G_{\epsilon}\rightarrow_{\epsilon \rightarrow 0}V$ in $\mathcal{D}'(\R^3)$. Notice that this property is also fundamental for efficiently computing the $6$-dimensional integrals in order to construct the global discrete Hamiltonian \cite{CAM14-43}. In 1-d, the fundamental solution of the Poisson equation is $|x|$ and the latter property does not occur anymore. Instead, we directly computed $G_{\epsilon}$ using \eqref{GEPS} with $B_{\epsilon}$ defined by:
+\begin{eqnarray}
+\label{Beps}
+B_{\epsilon}(x)=\left\{
+\begin{array}{cc}
+\cfrac{1}{\epsilon}\sigma_{M(1)}\Big(1-\big(\cfrac{x}{\epsilon}\big)^2\Big)^M, & |x|\leq \epsilon,\\
+0, & |x|>\epsilon
+\end{array}
+\right.
+\end{eqnarray}
+where $M$ refers to the order of the mollifier and the scaling factors $\sigma_M(1)$ are explicitly defined in \cite{CAM14-43}. For instance, for $\sigma(1)=3/4$, $\sigma(2)=15/16$ we represent in Fig. \ref{beps05} for a unique domain $B_{\epsilon=0.5}$ (Left) and $G_{\epsilon=0.5}$ (Right). In particular it is proven in \cite{CAM14-43}, that for any smooth function $f$
+\begin{eqnarray*}
+\|f-f*B_{\epsilon}\|_2 = \sum_{k \geq 1}c_{k}\epsilon^{2k}
+\end{eqnarray*}
+for some positive sequence $\{c_{k}\}_k$.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{b_0_5.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{g_0_5.eps}
+\caption{(Left) Mollifiers $B_{0.5}$ ($M=1,2$), (Right) and $G_{0.5}$ for $d=1$.}
+\label{beps05}
+\end{center}
+\end{figure}
+Once $G_{\epsilon}$ is computed, we introduce a barrier potential as in \cite{CAM15-09}
+\begin{eqnarray}\label{BARPOT}
+V_{\textrm{b}}(x) = s_{\epsilon_b}(x-x_b)V_{\infty}
+\end{eqnarray}
+where i) the smooth function $s_{\epsilon_s}$ is equal to $0$ for $x<x_b-\epsilon_b/2$ and $1$ for $x>x_b-\epsilon_b/2$, ii) $\epsilon_b>0$, and iii) $V_{\infty}$ and $x_b$ are imposed. The support  of the localized orbitals is then $(x_{c_i}-x_b,x_{c_i}+x_b)$, where $x_{c_i}$ denotes the coordinates of the center of the subdomain $D_i$.  We typically choose $x_b > |D_i|/2$ to ensure that the localized orbitals are not null at $D_i$'s boundary. A contrario, taking $x_b$ too large will lead to a loss of computational efficiency due to a large localized orbital support. In $D_i$, we then solve the following one-dimensional one-electron eigenvalue problem 
+\begin{eqnarray*}
+\big(-\cfrac{1}{2}\partial_{x}\big(a_{\epsilon}(x)\partial_x\big)  + G_{\epsilon}(x-x_A) + G_{\epsilon}(x-x_B) + V_{\textrm{b}}(x-x_{c_i})\big)\varphi_{l}^{i}(x) = \lambda^{i}_{l,\epsilon}\varphi_{l}^{i}(x)
+\end{eqnarray*}
+where $1\leq l\leq M_i$ (resp. $2 \leq i\leq L-1$) is the orbital (resp. subdomain) index and where $a_{\epsilon}(x):=1-s_{\epsilon_b}(x-x_b)$.
+%  We represent on $(-20,20)$, $V_{\textrm{b}}$ and $a_{\epsilon=0.5}$ with $V_{\infty}=100$ and $x_b=6$, in Fig. \ref{sbeps1} (Left).
+%\begin{figure}[!ht]
+%\begin{center}
+%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{sb_0_5.eps}
+%\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4eigenstatesCA.eps}
+%\caption{(Left) Functions $V_{b}$ and $a_{0.5}$ for $V_{\infty}=100$ and $x_b=6$. (Right) First 4 eigenstates for 2-center potential computed on 1 domain.}
+%\label{sbeps1}
+%\end{center}
+%\end{figure} 
+Notice that the choice of the localized orbitals is motivated by physical considerations.  When we are interested in field-particle interaction, for subdomains containing the nuclei, we will select the localized orbitals corresponding to the lower energy states, as they will be predominant in the overall wavefunction in the vicinity of the nucleus singularities.
+% We represent in Fig. \ref{sbeps1} (Right) the first 4 eigenstates $\phi_{l,\epsilon}$ ($1\leq l\leq 4$), of a one-electron hydrogen atoms, obtained by solving on 1 domain:
+%\begin{eqnarray*}
+%\big(-\cfrac{1}{2}\partial_{x}\big(a_{\epsilon}(x)\partial_x\big)  + G_{\epsilon}(x-x_A) + G_{\epsilon}(x-x_B)  + V_{\textrm{b}}(x)\big)\varphi^i_{l}(x) = \lambda^{l}_{\epsilon}\varphi^i_{l}(x) \, .
+%\end{eqnarray*}
+\item {\it $D_i$ does not contain any nucleus singularity}. In that case, the regularization  of the Coulomb potential through mollifiers is naturally useless. The localized orbitals are then directly obtained by solving
+\begin{eqnarray*}
+\big(-\cfrac{1}{2}\partial_{x}\big(a_{\epsilon}(x)\partial_x\big)  - \cfrac{1}{|x-x_A|} - \cfrac{1}{|x-x_B|}+ V_{\textrm{b}}(x)\big)\varphi_{l}^{i}(x) = \lambda^{i}_{l,\epsilon}\varphi_{l}^{i}(x)
+\end{eqnarray*}
+Similarly to the previous case (subdomain containing the nuclei), the selected localized orbitals will strongly depend on the relative position of the nuclei $/$ $D_i$. Alternatively, for those subdomains, we can use local Gaussian basis functions as described in Section \ref{GBF}.
+\end{itemize}
+Once the localized orbitals are computed, we can construct the discrete Schr\"odinger Hamiltonian. The approach which is proposed below will benefit from i) the fact that the localized orbitals are selected accordingly to the position of the nuclei, ii) the compact support of the LO's and iii) their orthogonality property (more specifically their extension by $0$ to all $\Omega$). This last point necessitates some precisions. First, we notice that by construction for any $i \in \{2,\cdots,L-1\}$, the supports of $\{\varphi_l^{i}\big\}_{1\leq l\leq M_i}$ and of $\{\varphi_m^{j}\big\}_{1\leq m\leq M_{j}}$ with $j \neq i-1,i,i+1$ are disjoint, so that these LO's are trivially orthogonal. By construction, the LO's $\{\varphi_l^{i}\big\}_l$ of any $D_i$ are also orthogonal to each other. For $j=i-1$ or  $j=i+1$, the orthogonality of the LO's $\{\varphi_l^{i}\big\}_{1\leq l\leq M_i}$ and of $\{\varphi_m^{j}\big\}_{1\leq m\leq M_j}$ is not, a priori, ensured. However, by construction for any $1\leq l \leq M_i$ and $1\leq m \leq M_{i\pm 1}$
+\begin{eqnarray*}
+\Big|\hbox{Supp}\big(\varphi_l^i\cap\varphi^{i\pm 1}_m\big)\Big| \leq 2x_b-\big|D_i \cup D_{i\pm 1}\big| \, .
+\end{eqnarray*}
+Then, as the LO's (smoothly) vanish at the boundary of their support, for $x_b-|D_{i,i\pm 1}|/2$ small enough, we expect that $\int_{\R}\varphi_l^{i}(x)\varphi^{i\pm1}_m(x)dx$ to be small. For $L=2$ and $x_b=8$ (which is relatively very large) and ($L=$) 5 subdomains, we represent for subdomain $D_{i=0}=(-10,10)$ (resp. $D_{i=1}=(-2,18)$) $\varphi_l^0$ (resp. $\varphi^1_l$), for $l=1,\cdots,4$ in Figs. \ref{SLO_app2}.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4SLO_0CA.eps}
+\hspace*{1mm}\includegraphics[height=6cm, keepaspectratio]{first4SLO_1CA.eps}
+\caption{First 4 eigenstates LO's $\phi_{l,\epsilon}^3$ (left), $\phi_{l,\epsilon}^4$ (right) for $l=1,\cdots,4$.}
+\label{SLO_app2}
+\end{center}
+\end{figure}
+\subsection{Augmented local bases}\label{subsec:CB}
+By construction the local Slater's determinant basis functions are null at the boundary of the subdomains. This can constitute an issue if the overlapping zone between two subdomains is too narrow, as in such zones the basis functions are basically null or very small, see Fig. \ref{overPB} (Left). In order to fix this issue, a simple solution consists of adding Gaussian basis functions all around the subdomains Fig. \ref{overPB} (Right). It will then ensure that in any overlapping zone the local wavefunctions could be properly transmitted from one subdomain to another thanks to the transmission conditions.
+\begin{figure}[!ht]
+\begin{center}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{overPB.eps}
+\hspace*{1mm}\includegraphics[height=4cm, keepaspectratio]{overPB2.eps}
+\caption{(Left) Local basis functions overlapping issue. (Right) Additional Gaussian basis functions ensuring a proper transmission.}
+\label{overPB}
+\end{center}
+\end{figure}
+Notice that in \ref{APXA}, we present a general strategy to efficiently compute the integrals involved in the construction of the local Hamiltonians, using the formalism proposed in \cite{CAM15-10}.
+\subsection{Important remarks about subdomain and local basis function indices}\label{notations}
+In order to lighten the presentation, some compact notations will be used along the paper. 
+\begin{itemize}
+\item Functions $\{w_l\}_l$ will systematically refer to basis functions for a unique domain problem, that is without DDM.
+\item  In a given subdomain $\Omega_i$ ($i$-index), the local basis functions ($l$-index) can be also denoted by $v_l^i$. For a given two-dimendional subdomain $\Lambda_{i,j}$, the local basis functions could be also denoted by $v^{i,j}_{l}$, where $l$ denotes the basis function index, and $i,j$ the one-dimensional subdomain indices. This notation was already used in Subsection \ref{subsec:SLO} to define local Slater's determinants.
+\item  For and $N=2$, $d=1$, $1\leq i\leq L$ and $1\leq j \leq L$, $\Lambda_{i,j}$ will also be denoted by $\Omega_{i+jL}$. In this case, the $L^2$ subdomains will be reindexed as $\{\Omega_i\}_{1\leq i \leq L^2}$.
+\end{itemize}
+In general, for the local basis functions the top index always refers to the basis function index, and the bottom one to the subdomain index.
+%\input D-DDM
+\input method-one
+\input add
+\newpage
+%\input AppendixB
+\input AppendixA
+\input AppendixC
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+
+
+\end{document}

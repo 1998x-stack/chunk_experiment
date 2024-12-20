@@ -1,0 +1,53 @@
+\subsection{Word-based Models}
+\label{sec:word_based_models}
+
+\begin{table*}[h!]
+\centering
+\begin{tabular}{c|rr|rr|rr|rr}
+ & \multicolumn{2}{c|}{\textbf{AGNews}} & \multicolumn{2}{c|}{\textbf{DBPedia}} & \multicolumn{2}{c|}{\textbf{TripAdvisor}} & \multicolumn{2}{c}{\textbf{Yelp}} \\
+\textbf{Model} & PPL & ACC & PPL & ACC & PPL & ACC & PPL & ACC \\ \hline
+Unadapted & 96.2 & -- & 44.1 & -- & 51.6 & -- & 67.1 & -- \\
+SoftmaxBias & 95.1 & \textbf{90.6} & 40.4 & 95.5 & 48.8 & 51.9 & 66.9 & 51.6 \\
+ConcatCell & 93.8 & 89.7 & 39.5 & 97.8 & 48.3 & 56.0 & 66.8 & 56.9 \\
+FactorCell & \textbf{92.3} & \textbf{90.6} & \textbf{37.7} & \textbf{98.2} & \textbf{48.2} & \textbf{58.2} & \textbf{66.2} & \textbf{58.8} \\
+\end{tabular}
+\caption{Perplexity and classification accuracy on the test set for the four word-based datasets.}
+\label{table:word_accuracies}
+\end{table*}
+
+Perplexities and classification accuracies for the four word-based datasets are presented in Table \ref{table:word_accuracies}. In each of the four datasets, the FactorCell model gives the best perplexity. For classification accuracy, there is a bigger difference between the models, and the FactorCell model is the most accurate on three out of four datasets and tied with the SoftmaxBias model on AgNews. For DBPedia and TripAdvisor, most of the improvement in perplexity relative to the unadapted case is achieved by the SoftmaxBias model with smaller relative improvements coming from the increased power of the ConcatCell and FactorCell models. For Yelp, the perplexity improvements are small; the FactorCell model is just 1.3\% better than the unadapted model.
+
+From \newcite{Yogatama2017GenerativeAD}, we see that for AGNews, much more so than for other datasets, the unigram statistics capture the discriminating information, and it is the only dataset in that work where a naive Bayes classifier is competitive with the generative LSTM for the full range of training data. The fact that the SoftmaxBias model gets the same accuracy as the FactorCell model 
+on this task suggests that topic classification tasks may benefit less from adapting the recurrent layer.
+
+For the DBPedia and Yelp datasets, the FactorCell model beats previously reported classification accuracies for generative models \cite{Yogatama2017GenerativeAD}. However, it is not competitive with state-of-the-art discriminative models on these tasks with the full training set.  With less training data, it probably would be, based on the results in \cite{Yogatama2017GenerativeAD}. 
+
+The numbers in Table \ref{table:word_accuracies} do not adequately convey the fact that there are hyperparameters whose effect on perplexity is greater than the sometimes small relative differences between models. Even the seed for the random weight initialization can have a ``major impact'' on the final performance of an LSTM \cite{reimers2017reporting}. We use Figure \ref{fig:acc_vs_ppl4} to show how the three classes of models perform across a range of hyperparameters. The figure compares perplexity on the x-axis with accuracy on the y-axis with both metrics computed on the development set. Each point in this figure represents a different instance of the model trained with random hyperparameter settings and the best results are in the upper right corner of each plot. The color/shape differences of the points correspond to the three classes of models: FactorCell, ConcatCell, and SoftmaxBias. 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.45\textwidth]{acc_vs_ppl4}
+\caption{Accuracy vs. perplexity for different classes of models on the four word-based datasets.}
+\label{fig:acc_vs_ppl4}
+\end{figure}
+
+Within the same model class but across different hyperparameter settings, there is much more variation in perplexity than in accuracy. The LSTM cell size is mainly responsible for this; it has a much bigger impact on perplexity than on accuracy. It is also apparent that the models with the lowest perplexity are not always the ones with the highest accuracy. See Section \ref{sec:hyperparam_analysis} for further analysis.
+
+Figure \ref{table:heatmap} is a visualization of the per-word log likelihood ratios between a model assuming a 5 star review and the same model assuming a 1 star review. Likelihoods were computed using an ensemble of three models to reduce variance. The analysis is repeated for each class of model. Words highlighted in blue are given a higher likelihood under the 5 star assumption.
+
+Unigrams with strong sentiment such as ``lovely" and ``friendly" are well-represented by all three models. The reader may not consider the tokens ``craziness" or ``5-8pm" to be strong indicators of a positive review but the way they are used in this review is representative of how they are typically used across the corpus. 
+
+\begin{figure}
+\centering
+SoftmaxBias
+\includegraphics[width=0.45\textwidth]{heatmaps/bias}
+ConcatCell
+\includegraphics[width=0.45\textwidth]{heatmaps/concat}
+FactorCell
+\includegraphics[width=0.45\textwidth]{heatmaps/factor}
+\caption{Log likelihood ratio between a model that assumes a 5 star review and the same model that assumes a 1 star review. Blue indicates a higher 5 star likelihood and red is a higher likelihood for the 1 star condition.}
+\label{table:heatmap}
+\end{figure}
+
+As expected, the ConcatCell and FactorCell model capture the sentiment of multi-token phrases. As an example, the unigram ``enough" is 3\% more likely to occur in a 5 star review than in a 1 star review. However, ``do enough" is 30 times more likely to appear in a 5 star review than in a 1 star review. In this example, the FactorCell model does a better job of handling the word ``enough."
+

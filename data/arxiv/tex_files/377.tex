@@ -1,0 +1,125 @@
+\section{Optimal Solution without D2D} \label{sec:optimal_no_d2d}
+In this section, we describe how to compute the minimum spectrum
+without D2D, i.e., $F^{\textsf{ND}}$. Since there are no D2D links,
+we can calculate the required minimum spectrum for each BS separately.
+Let us denote $F_b^{\textsf{ND}}$ as the minimum spectrum
+of BS $b$ to deliver all its own traffic demands, i.e., $\mathcal{J}_b$.
+Then the total minimum spectrum without D2D is\footnote{Here for simplicity, we assume that
+all BSs use orthogonal spectrum.
+%In practice, the same spectrum can be spatially reused by multiple BSs separated by enough distances.
+We discuss how to extend our results
+to the practical case of spectrum reuse in Sec.~\ref{sec:towards_spectrum_reduction}.}
+$
+F^{\textsf{ND}} = \sum_{b \in \mathcal{B}} F_b^{\textsf{ND}}.
+$
+
+
+\subsection{Problem Formulation}
+For each BS $b \in \mathcal{B}$, we formulate the problem of
+minimizing the spectrum to deliver all demands in cell $b$ without D2D,
+named as $\textsf{Min-Spectrum-ND}_b$,
+\bse
+\bee
+%&  \nnb \\
+& \min_{x^{j}_{u_j,b}(t), \gamma_b(t), F_b \in \mathbb{R}^+}  \quad F_b  \label{equ:nd_up_peak_obj}\\
+\text{s.t.}
+%& \quad \eqref{equ:nd_up_traffic_cons1}, \eqref{equ:nd_up_traffic_cons2}, \nnb \\
+& \quad \sum_{t=s_j}^{e_j} x^{j}_{u_j,b}(t)R_{u_j,b} = r_j, \forall j \in \mathcal{J}_b
+\label{equ:nd_up_traffic_cons1} \\
+& \quad \sum_{j \in \mathcal{J}_b: t \in [s_j,e_j]} x^{j}_{u_j,b}(t) = \gamma_b(t), \forall t \in [T]
+\label{equ:nd_up_peak_cons1} \\
+& \quad \gamma_b(t) \le F_b,
+\forall t \in [T]
+\label{equ:nd_up_peak_cons2} \\
+& \quad x^{j}_{u_j,b}(t) \ge 0, \forall j \in \mathcal{J}_b, t \in [s_j, e_j]
+\label{equ:nd_up_traffic_cons2}
+\eee
+\ese
+where $x^{j}_{u_j,b}(t)$ is the allocated spectrum (unit: Hz)
+for transmitting demand $j$ from user $u_j$ to BS $b$ at slot $t$,
+the auxiliary variable $\gamma_b(t)$ is the total used spectrum from users to BS $b$ at slot $t$,
+and $F_b$ is the allocated (peak) spectrum to BS $b$,
+
+Our objective is to minimize the total allocated spectrum of BS $b$, as shown in \eqref{equ:nd_up_peak_obj}.
+Without D2D, users can only be served by its own BS.
+Equation \eqref{equ:nd_up_traffic_cons1} shows the volume requirement for any
+traffic demand $j$, i.e., the total traffic volume $r_j$ needs to be delivered from user $u_j$ to BS $b$ during its lifetime.
+Equation \eqref{equ:nd_up_peak_cons1} depicts the total needed spectrum of cell $b$ (i.e., $\gamma_b(t)$) in slot $t$,
+which is the summation of allocated spectrum for all active jobs in slot $t$.
+Inequality \eqref{equ:nd_up_peak_cons2} shows that the total needed spectrum of cell $b$ in any slot $t$
+cannot exceed the total allocated spectrum of BS $b$.
+Finally, inequality \eqref{equ:nd_up_traffic_cons2} means that the allocated spectrum for a job in any slot is non-negative.
+
+
+
+Let us denote $d_{\max} \triangleq \max_{j \in \mathcal{J}} (e_j-s_j+1)$ as
+the maximum delay among all demands. Then the number of variables in
+$\textsf{Min-Spectrum-ND}_b$ is $O(|\mathcal{J}_b| \cdot d_{\max}+T)$
+and the number of constraints in $\textsf{Min-Spectrum-ND}_b$ is also $O(|\mathcal{J}_b| \cdot d_{\max}+T)$.
+
+\subsection{Characterizing the Optimal Solution}
+To solve $\textsf{Min-Spectrum-ND}_b$, we can use standard linear programming (LP) solvers.
+However, LP solvers cannot exploit the structure of this problem. We next propose a combinatorial algorithm that exploits the problem structure and
+achieves lower complexity than general LP algorithms.
+
+We note that $\textsf{Min-Spectrum-ND}_b$ resembles a uniprocessor scheduling problem for preemptive tasks
+with hard deadlines \cite{Buttazzo97}. Indeed, we can attach each task $j \in \mathcal{J}_b$ with an
+arrival time $s_j$ and a hard deadline $e_j$ and the requested service time
+$\frac{r_j}{R_{u_j,b}}$. Then for a given amount of allocated spectrum $F_b$
+(which resembles the maximum speed of the processor), we can use
+the earliest-deadline-first (EDF) scheduling algorithm  \cite{EDF73} to check its feasibility. Since we
+can easily get an upper bound for the minimum spectrum,
+%\footnote{For instance,
+%we can construct a feasible solution by averaging each traffic demand
+%within its lifetime, i.e., $x^{j}_{u_j,b}(t)=\frac{{r_j}/{R_{u_j,b}}}{e_j-s_j+1},
+%\forall t \in [s_j, e_j].$ Then $F_b= \max_{t\in [T]}\sum_{j \in \mathcal{J}_b: t \in [s_j,e_j]} x^{j}_{u_j,b}(t)$
+%serves as an upper bound for $F_b^{\textsf{ND}}$.},
+we can use binary search to find the minimum spectrum $F_b^{\textsf{ND}}$,
+supported by the EDF feasibility-check subroutine.
+
+More interestingly, we can even get a semi-closed form for $F_b^{\textsf{ND}}$, inspired by \cite[Theorem 1]{YDS95}.
+Specifically, let us define the \emph{intensity} \cite{YDS95} of an interval $I = [z,z']$
+to be
+\be
+g_b(I) \triangleq \frac{\sum\limits_{j \in \mathcal{A}_b(I)} \frac{r_j}{R_{u_j,b}}}{z'-z + 1}
+\label{equ:intensity_nd_b}
+\ee
+where
+$
+\mathcal{A}_b(I) \triangleq \{j \in \mathcal{J}_b:
+[s_j, e_j] \subset [z,z']\}
+$
+is the set of all active traffic demands whose lifetime is within the interval $I=[z,z']$.
+Then we have the following theorem.
+
+
+\begin{theorem}
+$F_b^{\textsf{ND}} = \max\limits_{I \subset [T]} g_b(I)$.
+\label{the:YDS}
+\end{theorem}
+
+\begin{IEEEproof}
+Since the proof of Theorem 1 was omitted in \cite{YDS95} and
+the theorem is not directly mapped to the minimum spectrum problem,
+we give a  proof
+\ifx \ISTR \undefined
+in our technical report \cite{TR} for completeness.
+\else
+in Appendix \ref{app:proof_YDS} for completeness.
+%in the supplementary materials for completeness.
+\fi
+\end{IEEEproof}
+
+Theorem~\ref{the:YDS} shows that $F_b^{\textsf{ND}}$ is the maximum intensity over all intervals.
+To obtain the interval with maximum intensity (and hence $F_b^{\textsf{ND}}$),
+we adapt the  algorithm originally developed for solving the job scheduling problem
+in \cite{YDS95}, which is called YDS algorithm named after the authors, to our spectrum minimization problem.
+%In the rest of this paper, we will call Theorem \ref{the:YDS} the YDS algorithm.
+The time complexity
+of the YDS algorithm is related to the total number of possible intervals. Clearly
+the optimal interval can only begin from the generation time of a demand and end
+at the deadline of a demand. So the total number of intervals needed to be checked is $O(|\mathcal{J}_b|^2)$.
+Thus the time complexity of our adaptive YDS algorithm is $O(|\mathcal{J}_b|^2)$ \cite{YDS95}.
+But the complexity of general LP algorithms is $O((|\mathcal{J}_b| \cdot d_{\max}+T)^4L)$
+where $L$ is a parameter determined by the coefficients of the LP \cite{khachiyan1980polynomial}.
+Thus, our combinatorial algorithm has much lower complexity than general LP algorithms.

@@ -1,0 +1,157 @@
+\section{Reliability and Performance Models for Resilience Design Patterns}
+\label{sec:Models}
+
+The models are intended to be useful for predicting the reliability and performance characteristics of solutions built using design patterns in a notional extreme-scale system that may use different plausible architectures and configurations that consist of different node counts, and may use different software environments.  
+Therefore, we present the analytic models for the various architecture patterns in our catalog because these patterns explicitly specify the type of event that they handle and convey details about the handling capabilities and the components that make up the solution in a manner independent of the layer of system stack and hardware/software architectural features. For the checkpoint and rollback pattern, we present models for the derivative structural patterns due to their widespread use in HPC environments. The models for the patterns provide a quantitative analysis of the costs and benefits of instantiating specific resilience design patterns. The models may be applied to an individual hardware or software component, which is a sub-system, or to a full system that consists of a collection of nodes capable of running a parallel application. 
+
+Although the future extreme-scale systems may not look at all like the systems of today, we assume that the notional system consists of multiple processing nodes, and that the parallel application partitions the work among tasks that run on these nodes that cooperate via message passing to synchronize. Therefore, we use the following notation in the descriptions of the models: \textit{N}: number of tasks/processes in the parallel application; \textit{M}: total number of messages exchanged between the tasks/processes of the application; \textit{P}: the number of processors in the system; \textit{T$_{system}$}: the operation time of the system, or the execution time of an application.  
+
+In general, we assume that the event (whether fault, error or failure) arrivals follow a Poisson process, the probability of an event is F(t). The reliability of the system is:
+\begin{equation}
+R(t) = 1 - F(t) 
+\label{eq:reliability1}
+\end{equation}
+which indicates the probability that the system operates correctly for time t.
+
+If the scope of the system captured by the state pattern has an exponential event distribution, the reliability of the system takes the form: 
+\begin{equation}
+R(t) = 1 - e^{-t/\eta}
+\label{eq:reliability2}
+\end{equation}
+where $\eta$ is the mean time to interrupt of the system, which may be calculated as the inverse of the failure rate of the system.
+
+\subsection{Fault Diagnosis Pattern Model}
+The fault diagnosis pattern identifies the presence of the fault and tries to determine its root cause. 
+Until a fault has not activated into an error it does not affect the correct operation of the system, and therefore the pattern makes an assessment about the presence of a defect based on observed behavior of one or more system parameters. To incorporate this pattern in an HPC environment requires inclusion of a monitoring component. The pattern uses either effect-cause or cause-effect analysis on the observed parameters of a monitored system to infer the presence of a fault. The performance overhead of this pattern may be expressed as:
+ 
+\begin{equation}
+T_{system} = T_{0} + \sum_{k=1}^{n} t_{inference}/\beta
+\label{eq:diagnosis1}
+\end{equation}
+
+where $n$ is the number of observed parameters of the monitored system and $\beta$ is the frequency of polling the monitored system. Since the pattern only identifies faults, but does not remedy them, there is no tangible improvement in reliability of the system when this pattern is instantiated.  
+
+\subsection{Reconfiguration Pattern Model}
+The reconfiguration pattern entails modification of the interconnection between components in a system, such that isolates the component affected by a fault, error or failure event, preventing it from affecting the correct operation of the overall system. The pattern may cause the system to assume one of several valid configurations that are functionally equivalent to the original system configuration, but results in system operation at a degraded performance level. 
+
+To simplify the derivation of the reliability and performance models, we assume that the system consists of n identical components. The performance of the system for the loss of a single component may be expressed as:
+\begin{equation}
+T_{system} = T_{FF} + (1 - T_{FF}).\frac{n-1}{n} + T_{R}  
+\label{eq:reconfig1}
+\end{equation} 
+
+where T$_{FF}$ represents the operational time before the occurrence of the event, and T$_{R}$ is the system downtime on account of the delay for reconfiguring the n-1 components. 
+
+The reliability of the system may be expressed as: 
+\begin{equation}
+R(n,t)  = 1 - \prod_{i=1}^{n}(1-R_{i}(t))
+\label{eq:reconfig2}
+\end{equation}
+
+This equation assumes that the fault events are independent and are exponentially distributed. 
+
+\subsection{Rollback Recovery Pattern Model}
+The checkpoint-recovery architectural pattern is based on the creation of snapshots of the system state and maintenance of these checkpoints on a persistent storage system during the error- or failure-free operation of the system. Upon detection of an error or a failure, the checkpoints/logged events are used to recreate last known error- or failure-free state of the system, after which the system operation is restarted. The rollback recovery pattern is a derivative of the checkpoint-recovery provides rollback recovery, i.e., based on a temporal view of the system's progress, the system state recreated during the recovery process is a previous correct version of the state of the system.  
+
+The pattern requires interruption of the system during error or failure-free operation to record the checkpoint, which incurs an overhead. Therefore, the operational lifetime of the system can be partitioned into distinct phases, which include the regular execution phase (\textit{o}), the interval for creating checkpoints ($\delta$), and the interval for recovery upon occurrence of an event ($\gamma$) to account for the operational state lost on account of the event.
+
+The performance of the system in absence of any error or failure events may be expressed as:
+\begin{equation}
+T_{system} = o + \delta/r
+\label{eq:cr1}
+\end{equation}
+
+where \textit{r} is the rate of checkpointing.
+
+The performance of the system in the presence of failure events, assuming an exponential event rate of e$^{-t/\eta}$ ($\eta$ is the mean time to interrupt of the system) may be modeled as: 
+\begin{equation}
+T_{system} = (T_{FF} + \gamma)/\eta 
+\label{eq:cr2}
+\end{equation}
+
+where T$_{FF}$ = o + $\delta$/r
+
+The reliability of a system using the rollback recovery pattern may be modeled as: 
+\begin{equation}
+R(t) = 1 -  e^{-(T_{FF} + \gamma)/\eta} 
+\label{eq:cr3}
+\end{equation}
+
+for systems in which an event occurs before the interval T$_{FF}$ + $\gamma$, and $\eta$ is the mean time to interrupt.
+
+\subsection{Roll-Forward Recovery Pattern Model}
+The roll-forward pattern is a structural pattern, which is also a derivative of the checkpoint recovery pattern. It uses either checkpointing or log-based protocols to record system progress during error- or failure-free operation. The recovery entails the use of checkpointed state and/or logging information to recreate a stable version of the system identical to the one right before the error or failure occurred. The roll-forward pattern may also use online recovery protocols that use inference methods to recreate state.
+
+The roll-forward pattern also requires the system to record system and/or message state during fault-free operation. The system performance may be calculated using: 
+\begin{equation}
+T_{system} = o + \delta/r
+\label{eq:rf1}
+\end{equation}
+
+where \textit{r} is the rate of checkpointing or message logging.
+
+The performance of the system in the presence of failure events may be captured using: 
+\begin{equation}
+T_{system} = (T_{FF} + \gamma)/\eta 
+\label{eq:rf2}
+\end{equation}
+
+where T$_{FF}$ = o + $\delta$/r.
+
+When the roll-forward pattern instantiation uses message logging, the term $\delta$ in these equations is calculated as the logging interval: $\delta$ = M . t$_{logging}$.
+
+The reliability of the system that uses the rollforward pattern capability may be modeled as:
+\begin{equation}
+\begin{split}
+R(t) & = 1 -  e^{-(T_{FF} + M.t_{logging})/\eta} \text{[for message logging implementations]} \\
+     & = 1 -  e^{-(T_{FF} + \gamma)/\eta}        \text{[for checkpointing implementations]} 
+\end{split}
+\label{eq:rf3}
+\end{equation}
+
+assuming an exponential event arrival and $\eta$ is the mean time to interrupt of the system. 
+
+\subsection{Redundancy Pattern Model}
+The redundancy pattern is based on a strategy of compensation since it entails creation of a group of N replicas of a system. The replicated versions of the system are used in various configurations to compensate for errors or failures in one of the system replicas, including fail-over, active comparison for error detection, or majority voting for detection and correction by excluding the replica whose outputs fall outside the majority. The use of the redundancy pattern incurs overhead to the system operation independent of whether an error or failure event occurs. 
+
+For parallel application, the overhead depends on the scope of replication, which may include aspects such as the amount of computation performed by the tasks, the communication between them, etc. The overhead also depends on factors such as the degree of redundancy, placement of the replicas on the system resources. Therefore, to develop a precise mathematical model that represents each of these factors is complex. To simplify the analysis, we partition the operation time of the system into the ratio of the time spent on the redundant operation $\mathcal{A}$ and the time . This partitioning can be logically defined by the scope of the state patterns; (1 - $\mathcal{A}$) is the fraction outside the scope of the state pattern, for which no redundancy is applied. Since the term \textit{t} is taken as the base execution time of the application, the time $\mathcal{A}$.t is the time of system operation for which redundancy is applied, while (1 - $\mathcal{A}$).t is the remaining time. The term \textit{d} refers to the degree of redundancy, i.e., the number of copies of the pattern behavior that are replicated.
+
+\begin{equation}
+T_{system} = T_{S}.((1 - \mathcal{A}) + \beta.\mathcal{A}))  + T_{MV}
+\label{eq:redundancy1}
+\end{equation}
+
+where $\beta$ is 1 when the state pattern is replicated in a space redundant manner and is equal to \textit{d} when applied in a time redundant manner. The term T$_{S}$ is serial operation time of the system and the term T$_{MV}$ represents the time spent by the majority voting logic to detect output mismatches.  
+
+Assuming the mean time to interrupt of the system that uses the redundancy pattern is $\lambda$, then the reliability of the system may expressed as:
+\begin{equation}
+R(t) = 1 - \prod_{i=1}^{d} t/\lambda = 1 - (t/\lambda)^{d}  
+\label{eq:redundancy2}
+\end{equation}
+
+\subsection{Design Diversity Pattern Model}
+When a design bug exists in a system design or configuration, an error or failure during system operation is often unavoidable. Therefore, the detection and mitigation of the impact of such errors or failures is critical. The n-version design pattern applies distinct implementations of the same design specification created by different individuals or teams. The N versions of the system are operated simultaneously with a majority voting logic is used to compare the results produced by each design version. Due the low likelihood that different individuals or teams make identical errors in their respective implementations, the pattern enables compensating for errors or failures caused by a bug in any one implementation version.
+
+Assuming that there are n versions of the system scope encapsulated by the state pattern, 1 $\geq$ i $\leq$ n, then the probability that only version i executes its function correctly while the remaining versions produce an incorrect outcome:
+\begin{equation}
+P(A) = \sum_{k=1}^{n+1} P(A_{k}) 
+\label{eq:nversion1}
+\end{equation}
+
+where the P(A$_{k}$) is the probability that only the version A$_{k}$ out of the n versions produces the correct outcome, while the remaining versions produce an incorrect outcome.
+
+The probability density function (PDF) describing the probability of failure occurring during the system operation may be expressed as:
+\begin{equation}
+P(t) = ( (1 - P(V))\sum_{k=1}^{n+1} P(A_{k})  + P(V) )
+\label{eq:nversion2}
+\end{equation}
+
+where the P(V) represents the probability that the majority voting procedure cannot select the correct result from at least two correct versions. Therefore, the reliability of the system using the n-version design at time t may be calculated in terms of this probability:
+
+\begin{equation}
+R(t) = 1 - ( (1 - P(V))\sum_{k=1}^{n+1} P(A_{k})  + P(V) ). F(t)
+\label{eq:nversion3}
+\end{equation}
+
+where F(t) = e$^{-t/\eta}$ is the failure rate assuming exponential event arrival rate.
+

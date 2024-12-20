@@ -1,0 +1,852 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>[1710.02369] End-to-end DNN based speaker recognition inspired by i-vector and PLDA</title><meta property="og:description" content="Recently, several end-to-end speaker verification systems based on deep neural networks (DNNs) have been proposed. These systems have been proven to be competitive for text-dependent tasks as well as for text-independe…">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="End-to-end DNN based speaker recognition inspired by i-vector and PLDA">
+<meta name="twitter:image:src" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta name="twitter:image:alt" content="ar5iv logo">
+<meta property="og:title" content="End-to-end DNN based speaker recognition inspired by i-vector and PLDA">
+<meta property="og:site_name" content="ar5iv">
+<meta property="og:image" content="https://ar5iv.labs.arxiv.org/assets/ar5iv_card.png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ar5iv.labs.arxiv.org/html/1710.02369">
+<link rel="canonical" target="_blank" href="https://ar5iv.labs.arxiv.org/html/1710.02369">
+
+<!--Generated on Fri Mar  8 08:38:18 2024 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<script>
+  function detectColorScheme(){
+    var theme="light";
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if(current_theme){
+      if(current_theme == "dark"){
+        theme = "dark";
+      } }
+    else if(!window.matchMedia) { return false; }
+    else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark"; }
+    if (theme=="dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light"); } }
+
+  detectColorScheme();
+
+  function toggleColorScheme(){
+    var current_theme = localStorage.getItem("ar5iv_theme");
+    if (current_theme) {
+      if (current_theme == "light") {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+      else {
+        localStorage.setItem("ar5iv_theme", "light"); } }
+    else {
+        localStorage.setItem("ar5iv_theme", "dark"); }
+    detectColorScheme(); }
+</script>
+<link media="all" rel="stylesheet" href="/assets/ar5iv-fonts.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv.0.8.0.min.css"><link media="all" rel="stylesheet" href="/assets/ar5iv-site.0.2.2.css">
+</head>
+<body>
+<div class="ltx_page_main">
+<div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line">
+<h1 class="ltx_title ltx_title_document">End-to-end DNN based speaker recognition inspired by i-vector and PLDA</h1>
+
+<div class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p id="id1.id1" class="ltx_p"><span id="id1.id1.1" class="ltx_text" style="font-size:90%;">Recently, several end-to-end speaker verification systems based on deep neural networks (DNNs) have been proposed. These systems have been proven to be competitive for text-dependent tasks as well as for text-independent tasks with short utterances. However, for text-independent tasks with longer utterances, end-to-end systems are still outperformed by standard i-vector + PLDA systems. In this work, we develop an end-to-end speaker verification system that is initialized to mimic an i-vector + PLDA baseline. The system is then further trained in an end-to-end manner but regularized so that it does not deviate too far from the initial system. In this way we mitigate overfitting which normally limits the performance of end-to-end systems. The proposed system outperforms the i-vector + PLDA baseline on both long and short duration utterances.</span></p>
+</div>
+<div id="p1" class="ltx_para">
+<p id="p1.1" class="ltx_p"><span id="p1.1.1" class="ltx_text ltx_font_bold ltx_font_italic" style="font-size:90%;">Index Terms<span id="p1.1.1.1" class="ltx_text ltx_font_upright">— <span id="p1.1.1.1.1" class="ltx_text ltx_font_medium">
+Speaker verification, DNN, end-to-end</span></span></span></p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p"><span id="S1.p1.1.1" class="ltx_text" style="font-size:90%;">In recent years, there have been many attempts to take advantage of neural
+networks (NNs) in speaker verification.
+Most of the attempts have replaced or improved one of the components
+of an i-vector + PLDA system (feature extraction, calculation of sufficient statistics, i-vector extraction or PLDA) with a neural network. For example by using NN bottleneck features instead of conventional MFCC features </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib1" title="" class="ltx_ref">1</a><span id="S1.p1.1.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.4" class="ltx_text" style="font-size:90%;">, NN acoustic models instead of Gaussian mixture models for extraction of sufficient statistics </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.5.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib2" title="" class="ltx_ref">2</a><span id="S1.p1.1.6.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.7" class="ltx_text" style="font-size:90%;">, NNs for either complementing PLDA </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.8.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib3" title="" class="ltx_ref">3</a>, <a href="#bib.bib4" title="" class="ltx_ref">4</a><span id="S1.p1.1.9.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.10" class="ltx_text" style="font-size:90%;"> or replacing it </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.11.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib5" title="" class="ltx_ref">5</a><span id="S1.p1.1.12.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.13" class="ltx_text" style="font-size:90%;">. More ambitiously, NNs that take the frame level features of an utterance as input and directly produce an utterance level representation, usually referred to as an </span><em id="S1.p1.1.14" class="ltx_emph ltx_font_italic" style="font-size:90%;">embedding</em><span id="S1.p1.1.15" class="ltx_text" style="font-size:90%;">, have recently been proposed </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.16.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib6" title="" class="ltx_ref">6</a>, <a href="#bib.bib7" title="" class="ltx_ref">7</a>, <a href="#bib.bib8" title="" class="ltx_ref">8</a>, <a href="#bib.bib9" title="" class="ltx_ref">9</a>, <a href="#bib.bib10" title="" class="ltx_ref">10</a>, <a href="#bib.bib11" title="" class="ltx_ref">11</a><span id="S1.p1.1.17.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.18" class="ltx_text" style="font-size:90%;">. The embedding is obtained by means of a </span><em id="S1.p1.1.19" class="ltx_emph ltx_font_italic" style="font-size:90%;">pooling mechanism</em><span id="S1.p1.1.20" class="ltx_text" style="font-size:90%;">, for example taking the mean, over the framewise outputs of one or more layers in the NN </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.21.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib6" title="" class="ltx_ref">6</a><span id="S1.p1.1.22.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.23" class="ltx_text" style="font-size:90%;">, or by the use of a recurrent NN </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.24.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib7" title="" class="ltx_ref">7</a><span id="S1.p1.1.25.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.26" class="ltx_text" style="font-size:90%;">.
+One effective approach is to train the NN for classifying a set of training speakers, i.e., using multiclass training </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.27.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib6" title="" class="ltx_ref">6</a>, <a href="#bib.bib10" title="" class="ltx_ref">10</a>, <a href="#bib.bib11" title="" class="ltx_ref">11</a><span id="S1.p1.1.28.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.29" class="ltx_text" style="font-size:90%;">. In order to do speaker verification, the embeddings are extracted and used in a standard backend, e.g., PLDA. Ideally the NNs should however be trained directly for the speaker verification task, i.e., binary classification of two utterances as a </span><em id="S1.p1.1.30" class="ltx_emph ltx_font_italic" style="font-size:90%;">target</em><span id="S1.p1.1.31" class="ltx_text" style="font-size:90%;"> or a </span><em id="S1.p1.1.32" class="ltx_emph ltx_font_italic" style="font-size:90%;">non-target</em><span id="S1.p1.1.33" class="ltx_text" style="font-size:90%;"> trial </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.34.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib7" title="" class="ltx_ref">7</a>, <a href="#bib.bib8" title="" class="ltx_ref">8</a>, <a href="#bib.bib9" title="" class="ltx_ref">9</a><span id="S1.p1.1.35.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.36" class="ltx_text" style="font-size:90%;">. Such systems are known as </span><em id="S1.p1.1.37" class="ltx_emph ltx_font_italic" style="font-size:90%;">end-to-end</em><span id="S1.p1.1.38" class="ltx_text" style="font-size:90%;"> systems and have been proven competitive for text-dependent tasks </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.39.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib7" title="" class="ltx_ref">7</a>, <a href="#bib.bib8" title="" class="ltx_ref">8</a><span id="S1.p1.1.40.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.41" class="ltx_text" style="font-size:90%;"> as well as text-independent tasks with short test utterances and an abundance of training data </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.42.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib9" title="" class="ltx_ref">9</a><span id="S1.p1.1.43.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.44" class="ltx_text" style="font-size:90%;">. However, on text-independent tasks with longer utterances, end-to-end systems are still being outperformed by standard i-vector + PLDA systems </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p1.1.45.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib9" title="" class="ltx_ref">9</a><span id="S1.p1.1.46.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p1.1.47" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p"><span id="S1.p2.1.1" class="ltx_text" style="font-size:90%;">One reason that end-to-end training has not yet been effective for long utterances in text-independent speaker verification could be overfitting on the training data.
+A second reason could be that the previous works have trained the NN on short segments even when long segments are used in testing. This reduces the memory requirements in training and reduces the risk of overfitting but introduces a mismatch between the training and test conditions.
+</span></p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p"><span id="S1.p3.1.1" class="ltx_text" style="font-size:90%;">In this work, we develop an end-to-end speaker verification system that is initialized to mimic an i-vector + PLDA baseline.
+The system consists of a NN module for extraction of sufficient statistics (</span><span id="S1.p3.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S1.p3.1.3" class="ltx_text" style="font-size:90%;">), an NN module for extraction of i-vectors (</span><span id="S1.p3.1.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S1.p3.1.5" class="ltx_text" style="font-size:90%;">) and finally, a discriminative PLDA (DPLDA) model </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S1.p3.1.6.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib12" title="" class="ltx_ref">12</a>, <a href="#bib.bib13" title="" class="ltx_ref">13</a><span id="S1.p3.1.7.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S1.p3.1.8" class="ltx_text" style="font-size:90%;"> for producing scores. These three modules are first developed individually so that they mimic the corresponding part of the i-vector + PLDA baseline. After the modules have been trained individually they are combined and the system is further trained in an end-to-end manner on both long and short utterances. During the end-to-end training, we regularize the model parameters towards the initial parameters so that they do not deviate too far from them. In this way the system is prevented from becoming too different from the original i-vector + PLDA baseline which reduces the risk of overfitting.
+Additionally, by first developing the three modules individually, we can more easily find their optimal architectures as well as detect difficulties to be aware of in the end-to-end training.</span></p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p"><span id="S1.p4.1.1" class="ltx_text" style="font-size:90%;">We evaluate the system on three different data sets that are derived from previous NIST SREs. The three test sets contain speech from various languages and were designed to test the performance both on long (longer than two minutes) and short (shorter than 40s) utterances. The achieved results show that the proposed system outperforms both generatively and discriminatively trained i-vector + PLDA baselines.</span></p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_section">2 </span>Datasets and Baseline systems</h2>
+
+<section id="S2.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">2.1 </span>Datasets</h3>
+
+<div id="S2.SS1.p1" class="ltx_para">
+<p id="S2.SS1.p1.1" class="ltx_p"><span id="S2.SS1.p1.1.1" class="ltx_text" style="font-size:90%;">We followed the design of the PRISM</span><cite class="ltx_cite ltx_citemacro_cite"><span id="S2.SS1.p1.1.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib14" title="" class="ltx_ref">14</a><span id="S2.SS1.p1.1.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S2.SS1.p1.1.4" class="ltx_text" style="font-size:90%;"> dataset in the sense of splitting the data into </span><span id="S2.SS1.p1.1.5" class="ltx_text ltx_font_bold" style="font-size:90%;">training</span><span id="S2.SS1.p1.1.6" class="ltx_text" style="font-size:90%;"> and test sets. The PRISM set contains data from the following sources: NIST SRE 2004 - 2010 (also known as MIXER collections), Fisher English and Switchboard. During training of the end-to-end system initialization, we used the female portion of the NIST SRE’10 telephone condition (condition 5) to independently tune the performance of the blocks A and B in Figure </span><a href="#S3.F1" title="Figure 1 ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S2.SS1.p1.1.7" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<div id="S2.SS1.p2" class="ltx_para">
+<p id="S2.SS1.p2.1" class="ltx_p"><span id="S2.SS1.p2.1.1" class="ltx_text" style="font-size:90%;">We report results on three different datasets:</span></p>
+<ul id="S2.I1" class="ltx_itemize">
+<li id="S2.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S2.I1.i1.p1" class="ltx_para">
+<p id="S2.I1.i1.p1.1" class="ltx_p"><span id="S2.I1.i1.p1.1.1" class="ltx_text" style="font-size:90%;">The female part of the </span><span id="S2.I1.i1.p1.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">PRISM language</span><span id="S2.I1.i1.p1.1.3" class="ltx_text" style="font-size:90%;"> condition</span><span id="footnote1" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_tag ltx_tag_note">1</span>For detailed description, please see section B, paragraph 4 of<cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib14" title="" class="ltx_ref">14</a>]</cite>.</span></span></span><span id="S2.I1.i1.p1.1.4" class="ltx_text" style="font-size:90%;"> that is based on original (long) telephone recordings from NIST SRE 2005 - 2010. It contains trials from various languages, including cross-language trials.</span></p>
+</div>
+</li>
+<li id="S2.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S2.I1.i2.p1" class="ltx_para">
+<p id="S2.I1.i2.p1.1" class="ltx_p"><span id="S2.I1.i2.p1.1.1" class="ltx_text" style="font-size:90%;">The </span><span id="S2.I1.i2.p1.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">short lang</span><span id="S2.I1.i2.p1.1.3" class="ltx_text" style="font-size:90%;"> condition (also containing only female trials) is derived from the PRISM language condition by taking multiple short cuts from each original recording. Durations of the speech in the cuts reflect the evaluation plan for NIST SRE’16 - more precisely we based our cuts on the actual detected speech in the SRE’16 labeled development data. We chose the cuts to follow the uniform distribution:</span></p>
+</div>
+<div id="S2.I1.i2.p2" class="ltx_para">
+<ul id="S2.I1.i2.I1" class="ltx_itemize">
+<li id="S2.I1.i2.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item"><span id="S2.I1.i2.I1.i1.1.1.1" class="ltx_text ltx_font_bold">–</span></span> 
+<div id="S2.I1.i2.I1.i1.p1" class="ltx_para">
+<p id="S2.I1.i2.I1.i1.p1.1" class="ltx_p"><span id="S2.I1.i2.I1.i1.p1.1.1" class="ltx_text" style="font-size:90%;">Enrollment between 25-50 seconds of speech</span></p>
+</div>
+</li>
+<li id="S2.I1.i2.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item"><span id="S2.I1.i2.I1.i2.1.1.1" class="ltx_text ltx_font_bold">–</span></span> 
+<div id="S2.I1.i2.I1.i2.p1" class="ltx_para">
+<p id="S2.I1.i2.I1.i2.p1.1" class="ltx_p"><span id="S2.I1.i2.I1.i2.p1.1.1" class="ltx_text" style="font-size:90%;">Test between 3-40 seconds of speech</span></p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S2.I1.i2.p3" class="ltx_para">
+<p id="S2.I1.i2.p3.1" class="ltx_p"><span id="S2.I1.i2.p3.1.1" class="ltx_text" style="font-size:90%;">We split the resulting set into two equally large disjoint sets where speakers do not overlap. We used one part as our </span><span id="S2.I1.i2.p3.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">dev</span><span id="S2.I1.i2.p3.1.3" class="ltx_text" style="font-size:90%;"> set for tuning the performance of the DPLDA and the end-to-end system. The other part was used for evaluation only. It should be noted that, for simplicity, we test only on single-enrollment trials unlike in our SRE’16 system description where we include multi-enrollment trials </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S2.I1.i2.p3.1.4.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib15" title="" class="ltx_ref">15</a><span id="S2.I1.i2.p3.1.5.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S2.I1.i2.p3.1.6" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+</li>
+<li id="S2.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S2.I1.i3.p1" class="ltx_para">
+<p id="S2.I1.i3.p1.1" class="ltx_p"><span id="S2.I1.i3.p1.1.1" class="ltx_text" style="font-size:90%;">Additionally, we report the results on the single-enrollment trials of the NIST SRE’16 evaluation set (both males and females).</span></p>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<section id="S2.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">2.2 </span>Generative and Discriminative Baselines</h3>
+
+<div id="S2.SS2.p1" class="ltx_para">
+<p id="S2.SS2.p1.2" class="ltx_p"><span id="S2.SS2.p1.2.1" class="ltx_text" style="font-size:90%;">As features we used 60-dimensional spectral features (20 MFCCs, including </span><math id="S2.SS2.p1.1.m1.1" class="ltx_Math" alttext="C_{0}" display="inline"><semantics id="S2.SS2.p1.1.m1.1a"><msub id="S2.SS2.p1.1.m1.1.1" xref="S2.SS2.p1.1.m1.1.1.cmml"><mi mathsize="90%" id="S2.SS2.p1.1.m1.1.1.2" xref="S2.SS2.p1.1.m1.1.1.2.cmml">C</mi><mn mathsize="90%" id="S2.SS2.p1.1.m1.1.1.3" xref="S2.SS2.p1.1.m1.1.1.3.cmml">0</mn></msub><annotation-xml encoding="MathML-Content" id="S2.SS2.p1.1.m1.1b"><apply id="S2.SS2.p1.1.m1.1.1.cmml" xref="S2.SS2.p1.1.m1.1.1"><csymbol cd="ambiguous" id="S2.SS2.p1.1.m1.1.1.1.cmml" xref="S2.SS2.p1.1.m1.1.1">subscript</csymbol><ci id="S2.SS2.p1.1.m1.1.1.2.cmml" xref="S2.SS2.p1.1.m1.1.1.2">𝐶</ci><cn type="integer" id="S2.SS2.p1.1.m1.1.1.3.cmml" xref="S2.SS2.p1.1.m1.1.1.3">0</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS2.p1.1.m1.1c">C_{0}</annotation></semantics></math><span id="S2.SS2.p1.2.2" class="ltx_text" style="font-size:90%;">, augmented with their </span><math id="S2.SS2.p1.2.m2.1" class="ltx_Math" alttext="\Delta\&gt;\mathrm{and}\&gt;\Delta\Delta" display="inline"><semantics id="S2.SS2.p1.2.m2.1a"><mrow id="S2.SS2.p1.2.m2.1.1" xref="S2.SS2.p1.2.m2.1.1.cmml"><mi mathsize="90%" mathvariant="normal" id="S2.SS2.p1.2.m2.1.1.2" xref="S2.SS2.p1.2.m2.1.1.2.cmml">Δ</mi><mo lspace="0.220em" rspace="0em" id="S2.SS2.p1.2.m2.1.1.1" xref="S2.SS2.p1.2.m2.1.1.1.cmml">​</mo><mi mathsize="90%" id="S2.SS2.p1.2.m2.1.1.3" xref="S2.SS2.p1.2.m2.1.1.3.cmml">and</mi><mo lspace="0.220em" rspace="0em" id="S2.SS2.p1.2.m2.1.1.1a" xref="S2.SS2.p1.2.m2.1.1.1.cmml">​</mo><mi mathsize="90%" mathvariant="normal" id="S2.SS2.p1.2.m2.1.1.4" xref="S2.SS2.p1.2.m2.1.1.4.cmml">Δ</mi><mo lspace="0em" rspace="0em" id="S2.SS2.p1.2.m2.1.1.1b" xref="S2.SS2.p1.2.m2.1.1.1.cmml">​</mo><mi mathsize="90%" mathvariant="normal" id="S2.SS2.p1.2.m2.1.1.5" xref="S2.SS2.p1.2.m2.1.1.5.cmml">Δ</mi></mrow><annotation-xml encoding="MathML-Content" id="S2.SS2.p1.2.m2.1b"><apply id="S2.SS2.p1.2.m2.1.1.cmml" xref="S2.SS2.p1.2.m2.1.1"><times id="S2.SS2.p1.2.m2.1.1.1.cmml" xref="S2.SS2.p1.2.m2.1.1.1"></times><ci id="S2.SS2.p1.2.m2.1.1.2.cmml" xref="S2.SS2.p1.2.m2.1.1.2">Δ</ci><ci id="S2.SS2.p1.2.m2.1.1.3.cmml" xref="S2.SS2.p1.2.m2.1.1.3">and</ci><ci id="S2.SS2.p1.2.m2.1.1.4.cmml" xref="S2.SS2.p1.2.m2.1.1.4">Δ</ci><ci id="S2.SS2.p1.2.m2.1.1.5.cmml" xref="S2.SS2.p1.2.m2.1.1.5">Δ</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S2.SS2.p1.2.m2.1c">\Delta\&gt;\mathrm{and}\&gt;\Delta\Delta</annotation></semantics></math><span id="S2.SS2.p1.2.3" class="ltx_text" style="font-size:90%;"> features). The features were short-term mean and variance normalized over a 3 second sliding window.</span></p>
+</div>
+<div id="S2.SS2.p2" class="ltx_para">
+<p id="S2.SS2.p2.1" class="ltx_p"><span id="S2.SS2.p2.1.1" class="ltx_text" style="font-size:90%;">Both PLDA and DPLDA are based on i-vectors </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S2.SS2.p2.1.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib16" title="" class="ltx_ref">16</a><span id="S2.SS2.p2.1.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S2.SS2.p2.1.4" class="ltx_text" style="font-size:90%;"> extracted by means of UBM with 2048 diagonal covariance components. Both UBM and i-vector extractor with 600 dimensions are trained on the </span><span id="S2.SS2.p2.1.5" class="ltx_text ltx_font_bold" style="font-size:90%;">training</span><span id="S2.SS2.p2.1.6" class="ltx_text" style="font-size:90%;"> set. For training our generative (PLDA) and discriminative (DPLDA </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S2.SS2.p2.1.7.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib12" title="" class="ltx_ref">12</a><span id="S2.SS2.p2.1.8.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S2.SS2.p2.1.9" class="ltx_text" style="font-size:90%;">) baseline systems, we used only telephone data from the </span><span id="S2.SS2.p2.1.10" class="ltx_text ltx_font_bold" style="font-size:90%;">training</span><span id="S2.SS2.p2.1.11" class="ltx_text" style="font-size:90%;"> set and we also included short cuts derived from portion of our training data that comes from non-English or non-native-English speakers. The duration of the speech in cuts follows the uniform distribution between 10-60 seconds. The cuts comprise of 22766 segments out of total 85858. Finally, we augmented the training data with labeled development data from NIST SRE’16.</span></p>
+</div>
+<div id="S2.SS2.p3" class="ltx_para ltx_noindent">
+<p id="S2.SS2.p3.1" class="ltx_p"><span id="S2.SS2.p3.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">PLDA:</span><span id="S2.SS2.p3.1.2" class="ltx_text" style="font-size:90%;">
+We used the standard PLDA recipe, when i-vectors are mean (mean is calculated using all training data) and length normalized. Then the Linear Discriminant Analysis (LDA) is applied prior PLDA training, decreasing dimensions of i-vectors from 600 to 250. We did not perform any additional domain adaptation or score normalization. We also filtered the training data in such a way that each speaker has at least six utterances which reduces it to the total of 62994 training utterances.</span></p>
+</div>
+<div id="S2.SS2.p4" class="ltx_para ltx_noindent">
+<p id="S2.SS2.p4.1" class="ltx_p"><span id="S2.SS2.p4.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Discriminative PLDA:</span><span id="S2.SS2.p4.1.2" class="ltx_text" style="font-size:90%;">
+The DPLDA baseline model was trained on the full batch of i-vectors by means of LBFGS optimizing the binary cross-entropy on the training data. We used the </span><span id="S2.SS2.p4.1.3" class="ltx_text ltx_font_bold" style="font-size:90%;">dev</span><span id="S2.SS2.p4.1.4" class="ltx_text" style="font-size:90%;"> set to tune a single constant that is used for L2 regularization imposed on all parameters except the constant (</span><math id="S2.SS2.p4.1.m1.1" class="ltx_Math" alttext="k" display="inline"><semantics id="S2.SS2.p4.1.m1.1a"><mi mathsize="90%" id="S2.SS2.p4.1.m1.1.1" xref="S2.SS2.p4.1.m1.1.1.cmml">k</mi><annotation-xml encoding="MathML-Content" id="S2.SS2.p4.1.m1.1b"><ci id="S2.SS2.p4.1.m1.1.1.cmml" xref="S2.SS2.p4.1.m1.1.1">𝑘</ci></annotation-xml><annotation encoding="application/x-tex" id="S2.SS2.p4.1.m1.1c">k</annotation></semantics></math><span id="S2.SS2.p4.1.5" class="ltx_text" style="font-size:90%;"> in Eq. </span><a href="#S3.E1" title="In 3.3 i-vectors to scores (DPLDA) ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S2.SS2.p4.1.6" class="ltx_text" style="font-size:90%;">).</span></p>
+</div>
+<div id="S2.SS2.p5" class="ltx_para">
+<p id="S2.SS2.p5.1" class="ltx_p"><span id="S2.SS2.p5.1.1" class="ltx_text" style="font-size:90%;">All i-vectors were mean (mean was calculated using all training data available) and length normalized. After the mean normalization, we performed LDA, decreasing the dimensionality of vectors to 250. As an initialization of DPLDA training, we used a corresponding PLDA model. During the DPLDA training, we set the prior probability of target trials to reflect the SRE’16 evaluation operating point (exactly in the middle between the two operating points of SRE’16 DCF</span><cite class="ltx_cite ltx_citemacro_cite"><span id="S2.SS2.p5.1.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib17" title="" class="ltx_ref">17</a><span id="S2.SS2.p5.1.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S2.SS2.p5.1.4" class="ltx_text" style="font-size:90%;">).</span></p>
+</div>
+</section>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_section">3 </span>Proposed end-to-end DNN architecture</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p"><span id="S3.p1.1.1" class="ltx_text" style="font-size:90%;">In this section, we describe the proposed end-to-end architecture. The system is depicted in Figure </span><a href="#S3.F1" title="Figure 1 ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S3.p1.1.2" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<figure id="S3.F1" class="ltx_figure"><img src="/html/1710.02369/assets/x1.png" id="S3.F1.g1" class="ltx_graphics ltx_centering ltx_img_portrait" width="332" height="648" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering" style="font-size:90%;"><span class="ltx_tag ltx_tag_figure"><span id="S3.F1.12.1.1" class="ltx_text ltx_font_bold">Fig. 1</span>: </span>Block diagram of the end-to-end system. Part <span id="S3.F1.13.2" class="ltx_text ltx_font_bold">A</span> corresponds to the UBM that converts features to GMM responsibilities. By adding the next two blocks we obtain first order statistics (<span id="S3.F1.14.3" class="ltx_text ltx_font_bold">f2s</span>). Part <span id="S3.F1.15.4" class="ltx_text ltx_font_bold">B</span> (<span id="S3.F1.16.5" class="ltx_text ltx_font_bold">s2i</span>) simulates the i-vector extraction followed by LDA and length normalization. Parameters in solid line blocks are meant to be trained, while outputs of the dashed blocks are directly computed.</figcaption>
+</figure>
+<div id="S3.p2" class="ltx_para">
+<p id="S3.p2.1" class="ltx_p"><span id="S3.p2.1.1" class="ltx_text" style="font-size:90%;">We first describe each of the modules </span><em id="S3.p2.1.2" class="ltx_emph ltx_font_italic" style="font-size:90%;">features to statistics</em><span id="S3.p2.1.3" class="ltx_text" style="font-size:90%;">, </span><em id="S3.p2.1.4" class="ltx_emph ltx_font_italic" style="font-size:90%;">statistics to i-vectors</em><span id="S3.p2.1.5" class="ltx_text" style="font-size:90%;"> and DPLDA (please see </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.p2.1.6.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib18" title="" class="ltx_ref">18</a><span id="S3.p2.1.7.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.p2.1.8" class="ltx_text" style="font-size:90%;"> for details), and then the complete end-to-end system. The system was implemented using the Theano Library </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.p2.1.9.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib19" title="" class="ltx_ref">19</a><span id="S3.p2.1.10.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.p2.1.11" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<section id="S3.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">3.1 </span>Features to sufficient statistics</h3>
+
+<div id="S3.SS1.p1" class="ltx_para">
+<p id="S3.SS1.p1.1" class="ltx_p"><span id="S3.SS1.p1.1.1" class="ltx_text" style="font-size:90%;">The first module of the end-to-end system converts a sequence of feature vectors into sufficient statistics. We will denote this module as </span><span id="S3.SS1.p1.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS1.p1.1.3" class="ltx_text" style="font-size:90%;">. This module consists of a network that predicts a vector of GMM responsibilities (posteriors) for each frame of the input utterance (Block A in Figure </span><a href="#S3.F1" title="Figure 1 ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S3.SS1.p1.1.4" class="ltx_text" style="font-size:90%;">), followed by a layer for pooling the frames into sufficient statistics. The network that predicts responsibilities consists of four hidden layers with sigmoid activation functions and a softmax output layer. All hidden layers have 1500 neurons while the output layer has 2048 elements which corresponds to the number of components in our baseline GMM-UBM. We train this network with stochastic gradient descent (SGD) to optimize the categorical cross-entropy with the GMM-UBM posteriors as targets.</span></p>
+</div>
+<div id="S3.SS1.p2" class="ltx_para">
+<p id="S3.SS1.p2.3" class="ltx_p"><span id="S3.SS1.p2.3.1" class="ltx_text" style="font-size:90%;">As input to the network, the acoustic features described in Section </span><a href="#S2.SS2" title="2.2 Generative and Discriminative Baselines ‣ 2 Datasets and Baseline systems ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">2.2</span></a><span id="S3.SS1.p2.3.2" class="ltx_text" style="font-size:90%;"> are preprocessed as follows. For each frame, a window of 31 frames around the current frame (i.e. </span><math id="S3.SS1.p2.1.m1.1" class="ltx_Math" alttext="\pm 15\," display="inline"><semantics id="S3.SS1.p2.1.m1.1a"><mrow id="S3.SS1.p2.1.m1.1.1" xref="S3.SS1.p2.1.m1.1.1.cmml"><mo mathsize="90%" id="S3.SS1.p2.1.m1.1.1a" xref="S3.SS1.p2.1.m1.1.1.cmml">±</mo><mn mathsize="90%" id="S3.SS1.p2.1.m1.1.1.2" xref="S3.SS1.p2.1.m1.1.1.2.cmml">15</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.SS1.p2.1.m1.1b"><apply id="S3.SS1.p2.1.m1.1.1.cmml" xref="S3.SS1.p2.1.m1.1.1"><csymbol cd="latexml" id="S3.SS1.p2.1.m1.1.1.1.cmml" xref="S3.SS1.p2.1.m1.1.1">plus-or-minus</csymbol><cn type="integer" id="S3.SS1.p2.1.m1.1.1.2.cmml" xref="S3.SS1.p2.1.m1.1.1.2">15</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS1.p2.1.m1.1c">\pm 15\,</annotation></semantics></math><span id="S3.SS1.p2.3.3" class="ltx_text" style="font-size:90%;"> frames) is considered. In this window, the temporal trajectory of each feature coefficient is weighted by a Hamming window and projected into first 6 DCT bases (including </span><math id="S3.SS1.p2.2.m2.1" class="ltx_Math" alttext="C_{0}" display="inline"><semantics id="S3.SS1.p2.2.m2.1a"><msub id="S3.SS1.p2.2.m2.1.1" xref="S3.SS1.p2.2.m2.1.1.cmml"><mi mathsize="90%" id="S3.SS1.p2.2.m2.1.1.2" xref="S3.SS1.p2.2.m2.1.1.2.cmml">C</mi><mn mathsize="90%" id="S3.SS1.p2.2.m2.1.1.3" xref="S3.SS1.p2.2.m2.1.1.3.cmml">0</mn></msub><annotation-xml encoding="MathML-Content" id="S3.SS1.p2.2.m2.1b"><apply id="S3.SS1.p2.2.m2.1.1.cmml" xref="S3.SS1.p2.2.m2.1.1"><csymbol cd="ambiguous" id="S3.SS1.p2.2.m2.1.1.1.cmml" xref="S3.SS1.p2.2.m2.1.1">subscript</csymbol><ci id="S3.SS1.p2.2.m2.1.1.2.cmml" xref="S3.SS1.p2.2.m2.1.1.2">𝐶</ci><cn type="integer" id="S3.SS1.p2.2.m2.1.1.3.cmml" xref="S3.SS1.p2.2.m2.1.1.3">0</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS1.p2.2.m2.1c">C_{0}</annotation></semantics></math><span id="S3.SS1.p2.3.4" class="ltx_text" style="font-size:90%;">) </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS1.p2.3.5.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib20" title="" class="ltx_ref">20</a><span id="S3.SS1.p2.3.6.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS1.p2.3.7" class="ltx_text" style="font-size:90%;">. This results in a </span><math id="S3.SS1.p2.3.m3.1" class="ltx_Math" alttext="6\times 60=360" display="inline"><semantics id="S3.SS1.p2.3.m3.1a"><mrow id="S3.SS1.p2.3.m3.1.1" xref="S3.SS1.p2.3.m3.1.1.cmml"><mrow id="S3.SS1.p2.3.m3.1.1.2" xref="S3.SS1.p2.3.m3.1.1.2.cmml"><mn mathsize="90%" id="S3.SS1.p2.3.m3.1.1.2.2" xref="S3.SS1.p2.3.m3.1.1.2.2.cmml">6</mn><mo lspace="0.222em" mathsize="90%" rspace="0.222em" id="S3.SS1.p2.3.m3.1.1.2.1" xref="S3.SS1.p2.3.m3.1.1.2.1.cmml">×</mo><mn mathsize="90%" id="S3.SS1.p2.3.m3.1.1.2.3" xref="S3.SS1.p2.3.m3.1.1.2.3.cmml">60</mn></mrow><mo mathsize="90%" id="S3.SS1.p2.3.m3.1.1.1" xref="S3.SS1.p2.3.m3.1.1.1.cmml">=</mo><mn mathsize="90%" id="S3.SS1.p2.3.m3.1.1.3" xref="S3.SS1.p2.3.m3.1.1.3.cmml">360</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.SS1.p2.3.m3.1b"><apply id="S3.SS1.p2.3.m3.1.1.cmml" xref="S3.SS1.p2.3.m3.1.1"><eq id="S3.SS1.p2.3.m3.1.1.1.cmml" xref="S3.SS1.p2.3.m3.1.1.1"></eq><apply id="S3.SS1.p2.3.m3.1.1.2.cmml" xref="S3.SS1.p2.3.m3.1.1.2"><times id="S3.SS1.p2.3.m3.1.1.2.1.cmml" xref="S3.SS1.p2.3.m3.1.1.2.1"></times><cn type="integer" id="S3.SS1.p2.3.m3.1.1.2.2.cmml" xref="S3.SS1.p2.3.m3.1.1.2.2">6</cn><cn type="integer" id="S3.SS1.p2.3.m3.1.1.2.3.cmml" xref="S3.SS1.p2.3.m3.1.1.2.3">60</cn></apply><cn type="integer" id="S3.SS1.p2.3.m3.1.1.3.cmml" xref="S3.SS1.p2.3.m3.1.1.3">360</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS1.p2.3.m3.1c">6\times 60=360</annotation></semantics></math><span id="S3.SS1.p2.3.8" class="ltx_text" style="font-size:90%;">-dimensional input to the network for each frame.</span></p>
+</div>
+<div id="S3.SS1.p3" class="ltx_para">
+<p id="S3.SS1.p3.1" class="ltx_p"><span id="S3.SS1.p3.1.1" class="ltx_text" style="font-size:90%;">Once the network for predicting responsibilities is trained, we add the layer that produces sufficient statistics.
+The input to this layer is a matrix of frame-by-frame responsibilities coming from the previous softmax layer and a matrix of original acoustic features without any preprocessing. This layer is not trained but designed in such a way that it exactly reproduces the standard calculation of sufficient statistics used in i-vector extraction.
+It should be noted that, in principle, expanding the features should not be necessary in order to predict the GMM-UBM posteriors since these are calculated from original features. However, by using the expanded features, we hope that we can gain further improvements in the end-to-end training.</span></p>
+</div>
+</section>
+<section id="S3.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">3.2 </span>Sufficient statistics to i-vectors</h3>
+
+<div id="S3.SS2.p1" class="ltx_para">
+<p id="S3.SS2.p1.1" class="ltx_p"><span id="S3.SS2.p1.1.1" class="ltx_text" style="font-size:90%;">The second module of the end-to-end system is trained to mimic the i-vector extraction from the sufficient statistics (Block B in Figure </span><a href="#S3.F1" title="Figure 1 ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S3.SS2.p1.1.2" class="ltx_text" style="font-size:90%;">). We will denote this module as </span><span id="S3.SS2.p1.1.3" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S3.SS2.p1.1.4" class="ltx_text" style="font-size:90%;">.
+The input sufficient statistics were first converted into MAP adapted supervectors </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS2.p1.1.5.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib21" title="" class="ltx_ref">21</a><span id="S3.SS2.p1.1.6.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS2.p1.1.7" class="ltx_text" style="font-size:90%;"> (using a relevance factor of </span><math id="S3.SS2.p1.1.m1.1" class="ltx_Math" alttext="r=16" display="inline"><semantics id="S3.SS2.p1.1.m1.1a"><mrow id="S3.SS2.p1.1.m1.1.1" xref="S3.SS2.p1.1.m1.1.1.cmml"><mi mathsize="90%" id="S3.SS2.p1.1.m1.1.1.2" xref="S3.SS2.p1.1.m1.1.1.2.cmml">r</mi><mo mathsize="90%" id="S3.SS2.p1.1.m1.1.1.1" xref="S3.SS2.p1.1.m1.1.1.1.cmml">=</mo><mn mathsize="90%" id="S3.SS2.p1.1.m1.1.1.3" xref="S3.SS2.p1.1.m1.1.1.3.cmml">16</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.SS2.p1.1.m1.1b"><apply id="S3.SS2.p1.1.m1.1.1.cmml" xref="S3.SS2.p1.1.m1.1.1"><eq id="S3.SS2.p1.1.m1.1.1.1.cmml" xref="S3.SS2.p1.1.m1.1.1.1"></eq><ci id="S3.SS2.p1.1.m1.1.1.2.cmml" xref="S3.SS2.p1.1.m1.1.1.2">𝑟</ci><cn type="integer" id="S3.SS2.p1.1.m1.1.1.3.cmml" xref="S3.SS2.p1.1.m1.1.1.3">16</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS2.p1.1.m1.1c">r=16</annotation></semantics></math><span id="S3.SS2.p1.1.8" class="ltx_text" style="font-size:90%;">). To overcome the computational problems that would arise when using the 122880 dimensional supervector as input to the NN, the supervectors were projected by PCA into a 4000 dimensional space.
+The NN consists of two 600 dimensional hidden layers, with hyperbolic tangent (tanh) activation functions. The last layer of the NN is designed to produce length normalized 250 dimensional i-vectors. As training objective, we use the average cosine distance between NN outputs and LDA reduced and length-normalized reference i-vectors. The NN is trained with SGD and L1 regularization.</span></p>
+</div>
+</section>
+<section id="S3.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">3.3 </span>i-vectors to scores (DPLDA)</h3>
+
+<div id="S3.SS3.p1" class="ltx_para">
+<p id="S3.SS3.p1.2" class="ltx_p"><span id="S3.SS3.p1.2.1" class="ltx_text" style="font-size:90%;">The final component of the end-to-end system is a DPLDA </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS3.p1.2.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib12" title="" class="ltx_ref">12</a>, <a href="#bib.bib13" title="" class="ltx_ref">13</a><span id="S3.SS3.p1.2.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS3.p1.2.4" class="ltx_text" style="font-size:90%;"> model. The DPLDA model is based on the fact that, given two i-vectors </span><math id="S3.SS3.p1.1.m1.1" class="ltx_Math" alttext="\bm{\phi}_{i}" display="inline"><semantics id="S3.SS3.p1.1.m1.1a"><msub id="S3.SS3.p1.1.m1.1.1" xref="S3.SS3.p1.1.m1.1.1.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.SS3.p1.1.m1.1.1.2" xref="S3.SS3.p1.1.m1.1.1.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.SS3.p1.1.m1.1.1.3" xref="S3.SS3.p1.1.m1.1.1.3.cmml">i</mi></msub><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.1.m1.1b"><apply id="S3.SS3.p1.1.m1.1.1.cmml" xref="S3.SS3.p1.1.m1.1.1"><csymbol cd="ambiguous" id="S3.SS3.p1.1.m1.1.1.1.cmml" xref="S3.SS3.p1.1.m1.1.1">subscript</csymbol><ci id="S3.SS3.p1.1.m1.1.1.2.cmml" xref="S3.SS3.p1.1.m1.1.1.2">bold-italic-ϕ</ci><ci id="S3.SS3.p1.1.m1.1.1.3.cmml" xref="S3.SS3.p1.1.m1.1.1.3">𝑖</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.1.m1.1c">\bm{\phi}_{i}</annotation></semantics></math><span id="S3.SS3.p1.2.5" class="ltx_text" style="font-size:90%;"> and </span><math id="S3.SS3.p1.2.m2.1" class="ltx_Math" alttext="\bm{\phi}_{j}" display="inline"><semantics id="S3.SS3.p1.2.m2.1a"><msub id="S3.SS3.p1.2.m2.1.1" xref="S3.SS3.p1.2.m2.1.1.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.SS3.p1.2.m2.1.1.2" xref="S3.SS3.p1.2.m2.1.1.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.SS3.p1.2.m2.1.1.3" xref="S3.SS3.p1.2.m2.1.1.3.cmml">j</mi></msub><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.2.m2.1b"><apply id="S3.SS3.p1.2.m2.1.1.cmml" xref="S3.SS3.p1.2.m2.1.1"><csymbol cd="ambiguous" id="S3.SS3.p1.2.m2.1.1.1.cmml" xref="S3.SS3.p1.2.m2.1.1">subscript</csymbol><ci id="S3.SS3.p1.2.m2.1.1.2.cmml" xref="S3.SS3.p1.2.m2.1.1.2">bold-italic-ϕ</ci><ci id="S3.SS3.p1.2.m2.1.1.3.cmml" xref="S3.SS3.p1.2.m2.1.1.3">𝑗</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.2.m2.1c">\bm{\phi}_{j}</annotation></semantics></math><span id="S3.SS3.p1.2.6" class="ltx_text" style="font-size:90%;">, the LLR score for the PLDA model is given by</span></p>
+<table id="S5.EGx1" class="ltx_equationgroup ltx_eqn_eqnarray ltx_eqn_table">
+
+<tbody id="S3.E1">
+<tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_td ltx_align_right ltx_eqn_cell"><math id="S3.Ex1.m1.1" class="ltx_Math" alttext="\displaystyle s_{ij}" display="inline"><semantics id="S3.Ex1.m1.1a"><msub id="S3.Ex1.m1.1.1" xref="S3.Ex1.m1.1.1.cmml"><mi mathsize="90%" id="S3.Ex1.m1.1.1.2" xref="S3.Ex1.m1.1.1.2.cmml">s</mi><mrow id="S3.Ex1.m1.1.1.3" xref="S3.Ex1.m1.1.1.3.cmml"><mi mathsize="90%" id="S3.Ex1.m1.1.1.3.2" xref="S3.Ex1.m1.1.1.3.2.cmml">i</mi><mo lspace="0em" rspace="0em" id="S3.Ex1.m1.1.1.3.1" xref="S3.Ex1.m1.1.1.3.1.cmml">​</mo><mi mathsize="90%" id="S3.Ex1.m1.1.1.3.3" xref="S3.Ex1.m1.1.1.3.3.cmml">j</mi></mrow></msub><annotation-xml encoding="MathML-Content" id="S3.Ex1.m1.1b"><apply id="S3.Ex1.m1.1.1.cmml" xref="S3.Ex1.m1.1.1"><csymbol cd="ambiguous" id="S3.Ex1.m1.1.1.1.cmml" xref="S3.Ex1.m1.1.1">subscript</csymbol><ci id="S3.Ex1.m1.1.1.2.cmml" xref="S3.Ex1.m1.1.1.2">𝑠</ci><apply id="S3.Ex1.m1.1.1.3.cmml" xref="S3.Ex1.m1.1.1.3"><times id="S3.Ex1.m1.1.1.3.1.cmml" xref="S3.Ex1.m1.1.1.3.1"></times><ci id="S3.Ex1.m1.1.1.3.2.cmml" xref="S3.Ex1.m1.1.1.3.2">𝑖</ci><ci id="S3.Ex1.m1.1.1.3.3.cmml" xref="S3.Ex1.m1.1.1.3.3">𝑗</ci></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.Ex1.m1.1c">\displaystyle s_{ij}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_eqn_cell"><math id="S3.Ex1.m2.1" class="ltx_Math" alttext="\displaystyle=" display="inline"><semantics id="S3.Ex1.m2.1a"><mo mathsize="90%" id="S3.Ex1.m2.1.1" xref="S3.Ex1.m2.1.1.cmml">=</mo><annotation-xml encoding="MathML-Content" id="S3.Ex1.m2.1b"><eq id="S3.Ex1.m2.1.1.cmml" xref="S3.Ex1.m2.1.1"></eq></annotation-xml><annotation encoding="application/x-tex" id="S3.Ex1.m2.1c">\displaystyle=</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left ltx_eqn_cell"><math id="S3.Ex1.m3.1" class="ltx_Math" alttext="\displaystyle\bm{\phi}_{i}^{T}\bm{\Lambda}\bm{\phi}_{j}+\bm{\phi}_{j}^{T}\bm{\Lambda}\bm{\phi}_{i}+\bm{\phi}_{i}^{T}\bm{\Gamma}\bm{\phi}_{i}+\bm{\phi}_{j}^{T}\bm{\Gamma}\bm{\phi}_{j}" display="inline"><semantics id="S3.Ex1.m3.1a"><mrow id="S3.Ex1.m3.1.1" xref="S3.Ex1.m3.1.1.cmml"><mrow id="S3.Ex1.m3.1.1.2" xref="S3.Ex1.m3.1.1.2.cmml"><msubsup id="S3.Ex1.m3.1.1.2.2" xref="S3.Ex1.m3.1.1.2.2.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.2.2.2.2" xref="S3.Ex1.m3.1.1.2.2.2.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.2.2.2.3" xref="S3.Ex1.m3.1.1.2.2.2.3.cmml">i</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.2.2.3" xref="S3.Ex1.m3.1.1.2.2.3.cmml">T</mi></msubsup><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.2.1" xref="S3.Ex1.m3.1.1.2.1.cmml">​</mo><mi mathsize="90%" id="S3.Ex1.m3.1.1.2.3" xref="S3.Ex1.m3.1.1.2.3.cmml">𝚲</mi><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.2.1a" xref="S3.Ex1.m3.1.1.2.1.cmml">​</mo><msub id="S3.Ex1.m3.1.1.2.4" xref="S3.Ex1.m3.1.1.2.4.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.2.4.2" xref="S3.Ex1.m3.1.1.2.4.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.2.4.3" xref="S3.Ex1.m3.1.1.2.4.3.cmml">j</mi></msub></mrow><mo mathsize="90%" id="S3.Ex1.m3.1.1.1" xref="S3.Ex1.m3.1.1.1.cmml">+</mo><mrow id="S3.Ex1.m3.1.1.3" xref="S3.Ex1.m3.1.1.3.cmml"><msubsup id="S3.Ex1.m3.1.1.3.2" xref="S3.Ex1.m3.1.1.3.2.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.3.2.2.2" xref="S3.Ex1.m3.1.1.3.2.2.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.3.2.2.3" xref="S3.Ex1.m3.1.1.3.2.2.3.cmml">j</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.3.2.3" xref="S3.Ex1.m3.1.1.3.2.3.cmml">T</mi></msubsup><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.3.1" xref="S3.Ex1.m3.1.1.3.1.cmml">​</mo><mi mathsize="90%" id="S3.Ex1.m3.1.1.3.3" xref="S3.Ex1.m3.1.1.3.3.cmml">𝚲</mi><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.3.1a" xref="S3.Ex1.m3.1.1.3.1.cmml">​</mo><msub id="S3.Ex1.m3.1.1.3.4" xref="S3.Ex1.m3.1.1.3.4.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.3.4.2" xref="S3.Ex1.m3.1.1.3.4.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.3.4.3" xref="S3.Ex1.m3.1.1.3.4.3.cmml">i</mi></msub></mrow><mo mathsize="90%" id="S3.Ex1.m3.1.1.1a" xref="S3.Ex1.m3.1.1.1.cmml">+</mo><mrow id="S3.Ex1.m3.1.1.4" xref="S3.Ex1.m3.1.1.4.cmml"><msubsup id="S3.Ex1.m3.1.1.4.2" xref="S3.Ex1.m3.1.1.4.2.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.4.2.2.2" xref="S3.Ex1.m3.1.1.4.2.2.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.4.2.2.3" xref="S3.Ex1.m3.1.1.4.2.2.3.cmml">i</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.4.2.3" xref="S3.Ex1.m3.1.1.4.2.3.cmml">T</mi></msubsup><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.4.1" xref="S3.Ex1.m3.1.1.4.1.cmml">​</mo><mi mathsize="90%" id="S3.Ex1.m3.1.1.4.3" xref="S3.Ex1.m3.1.1.4.3.cmml">𝚪</mi><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.4.1a" xref="S3.Ex1.m3.1.1.4.1.cmml">​</mo><msub id="S3.Ex1.m3.1.1.4.4" xref="S3.Ex1.m3.1.1.4.4.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.4.4.2" xref="S3.Ex1.m3.1.1.4.4.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.4.4.3" xref="S3.Ex1.m3.1.1.4.4.3.cmml">i</mi></msub></mrow><mo mathsize="90%" id="S3.Ex1.m3.1.1.1b" xref="S3.Ex1.m3.1.1.1.cmml">+</mo><mrow id="S3.Ex1.m3.1.1.5" xref="S3.Ex1.m3.1.1.5.cmml"><msubsup id="S3.Ex1.m3.1.1.5.2" xref="S3.Ex1.m3.1.1.5.2.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.5.2.2.2" xref="S3.Ex1.m3.1.1.5.2.2.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.5.2.2.3" xref="S3.Ex1.m3.1.1.5.2.2.3.cmml">j</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.5.2.3" xref="S3.Ex1.m3.1.1.5.2.3.cmml">T</mi></msubsup><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.5.1" xref="S3.Ex1.m3.1.1.5.1.cmml">​</mo><mi mathsize="90%" id="S3.Ex1.m3.1.1.5.3" xref="S3.Ex1.m3.1.1.5.3.cmml">𝚪</mi><mo lspace="0em" rspace="0em" id="S3.Ex1.m3.1.1.5.1a" xref="S3.Ex1.m3.1.1.5.1.cmml">​</mo><msub id="S3.Ex1.m3.1.1.5.4" xref="S3.Ex1.m3.1.1.5.4.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.Ex1.m3.1.1.5.4.2" xref="S3.Ex1.m3.1.1.5.4.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.Ex1.m3.1.1.5.4.3" xref="S3.Ex1.m3.1.1.5.4.3.cmml">j</mi></msub></mrow></mrow><annotation-xml encoding="MathML-Content" id="S3.Ex1.m3.1b"><apply id="S3.Ex1.m3.1.1.cmml" xref="S3.Ex1.m3.1.1"><plus id="S3.Ex1.m3.1.1.1.cmml" xref="S3.Ex1.m3.1.1.1"></plus><apply id="S3.Ex1.m3.1.1.2.cmml" xref="S3.Ex1.m3.1.1.2"><times id="S3.Ex1.m3.1.1.2.1.cmml" xref="S3.Ex1.m3.1.1.2.1"></times><apply id="S3.Ex1.m3.1.1.2.2.cmml" xref="S3.Ex1.m3.1.1.2.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.2.2.1.cmml" xref="S3.Ex1.m3.1.1.2.2">superscript</csymbol><apply id="S3.Ex1.m3.1.1.2.2.2.cmml" xref="S3.Ex1.m3.1.1.2.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.2.2.2.1.cmml" xref="S3.Ex1.m3.1.1.2.2">subscript</csymbol><ci id="S3.Ex1.m3.1.1.2.2.2.2.cmml" xref="S3.Ex1.m3.1.1.2.2.2.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.2.2.2.3.cmml" xref="S3.Ex1.m3.1.1.2.2.2.3">𝑖</ci></apply><ci id="S3.Ex1.m3.1.1.2.2.3.cmml" xref="S3.Ex1.m3.1.1.2.2.3">𝑇</ci></apply><ci id="S3.Ex1.m3.1.1.2.3.cmml" xref="S3.Ex1.m3.1.1.2.3">𝚲</ci><apply id="S3.Ex1.m3.1.1.2.4.cmml" xref="S3.Ex1.m3.1.1.2.4"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.2.4.1.cmml" xref="S3.Ex1.m3.1.1.2.4">subscript</csymbol><ci id="S3.Ex1.m3.1.1.2.4.2.cmml" xref="S3.Ex1.m3.1.1.2.4.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.2.4.3.cmml" xref="S3.Ex1.m3.1.1.2.4.3">𝑗</ci></apply></apply><apply id="S3.Ex1.m3.1.1.3.cmml" xref="S3.Ex1.m3.1.1.3"><times id="S3.Ex1.m3.1.1.3.1.cmml" xref="S3.Ex1.m3.1.1.3.1"></times><apply id="S3.Ex1.m3.1.1.3.2.cmml" xref="S3.Ex1.m3.1.1.3.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.3.2.1.cmml" xref="S3.Ex1.m3.1.1.3.2">superscript</csymbol><apply id="S3.Ex1.m3.1.1.3.2.2.cmml" xref="S3.Ex1.m3.1.1.3.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.3.2.2.1.cmml" xref="S3.Ex1.m3.1.1.3.2">subscript</csymbol><ci id="S3.Ex1.m3.1.1.3.2.2.2.cmml" xref="S3.Ex1.m3.1.1.3.2.2.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.3.2.2.3.cmml" xref="S3.Ex1.m3.1.1.3.2.2.3">𝑗</ci></apply><ci id="S3.Ex1.m3.1.1.3.2.3.cmml" xref="S3.Ex1.m3.1.1.3.2.3">𝑇</ci></apply><ci id="S3.Ex1.m3.1.1.3.3.cmml" xref="S3.Ex1.m3.1.1.3.3">𝚲</ci><apply id="S3.Ex1.m3.1.1.3.4.cmml" xref="S3.Ex1.m3.1.1.3.4"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.3.4.1.cmml" xref="S3.Ex1.m3.1.1.3.4">subscript</csymbol><ci id="S3.Ex1.m3.1.1.3.4.2.cmml" xref="S3.Ex1.m3.1.1.3.4.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.3.4.3.cmml" xref="S3.Ex1.m3.1.1.3.4.3">𝑖</ci></apply></apply><apply id="S3.Ex1.m3.1.1.4.cmml" xref="S3.Ex1.m3.1.1.4"><times id="S3.Ex1.m3.1.1.4.1.cmml" xref="S3.Ex1.m3.1.1.4.1"></times><apply id="S3.Ex1.m3.1.1.4.2.cmml" xref="S3.Ex1.m3.1.1.4.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.4.2.1.cmml" xref="S3.Ex1.m3.1.1.4.2">superscript</csymbol><apply id="S3.Ex1.m3.1.1.4.2.2.cmml" xref="S3.Ex1.m3.1.1.4.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.4.2.2.1.cmml" xref="S3.Ex1.m3.1.1.4.2">subscript</csymbol><ci id="S3.Ex1.m3.1.1.4.2.2.2.cmml" xref="S3.Ex1.m3.1.1.4.2.2.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.4.2.2.3.cmml" xref="S3.Ex1.m3.1.1.4.2.2.3">𝑖</ci></apply><ci id="S3.Ex1.m3.1.1.4.2.3.cmml" xref="S3.Ex1.m3.1.1.4.2.3">𝑇</ci></apply><ci id="S3.Ex1.m3.1.1.4.3.cmml" xref="S3.Ex1.m3.1.1.4.3">𝚪</ci><apply id="S3.Ex1.m3.1.1.4.4.cmml" xref="S3.Ex1.m3.1.1.4.4"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.4.4.1.cmml" xref="S3.Ex1.m3.1.1.4.4">subscript</csymbol><ci id="S3.Ex1.m3.1.1.4.4.2.cmml" xref="S3.Ex1.m3.1.1.4.4.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.4.4.3.cmml" xref="S3.Ex1.m3.1.1.4.4.3">𝑖</ci></apply></apply><apply id="S3.Ex1.m3.1.1.5.cmml" xref="S3.Ex1.m3.1.1.5"><times id="S3.Ex1.m3.1.1.5.1.cmml" xref="S3.Ex1.m3.1.1.5.1"></times><apply id="S3.Ex1.m3.1.1.5.2.cmml" xref="S3.Ex1.m3.1.1.5.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.5.2.1.cmml" xref="S3.Ex1.m3.1.1.5.2">superscript</csymbol><apply id="S3.Ex1.m3.1.1.5.2.2.cmml" xref="S3.Ex1.m3.1.1.5.2"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.5.2.2.1.cmml" xref="S3.Ex1.m3.1.1.5.2">subscript</csymbol><ci id="S3.Ex1.m3.1.1.5.2.2.2.cmml" xref="S3.Ex1.m3.1.1.5.2.2.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.5.2.2.3.cmml" xref="S3.Ex1.m3.1.1.5.2.2.3">𝑗</ci></apply><ci id="S3.Ex1.m3.1.1.5.2.3.cmml" xref="S3.Ex1.m3.1.1.5.2.3">𝑇</ci></apply><ci id="S3.Ex1.m3.1.1.5.3.cmml" xref="S3.Ex1.m3.1.1.5.3">𝚪</ci><apply id="S3.Ex1.m3.1.1.5.4.cmml" xref="S3.Ex1.m3.1.1.5.4"><csymbol cd="ambiguous" id="S3.Ex1.m3.1.1.5.4.1.cmml" xref="S3.Ex1.m3.1.1.5.4">subscript</csymbol><ci id="S3.Ex1.m3.1.1.5.4.2.cmml" xref="S3.Ex1.m3.1.1.5.4.2">bold-italic-ϕ</ci><ci id="S3.Ex1.m3.1.1.5.4.3.cmml" xref="S3.Ex1.m3.1.1.5.4.3">𝑗</ci></apply></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.Ex1.m3.1c">\displaystyle\bm{\phi}_{i}^{T}\bm{\Lambda}\bm{\phi}_{j}+\bm{\phi}_{j}^{T}\bm{\Lambda}\bm{\phi}_{i}+\bm{\phi}_{i}^{T}\bm{\Gamma}\bm{\phi}_{i}+\bm{\phi}_{j}^{T}\bm{\Gamma}\bm{\phi}_{j}</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="2" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(1)</span></td>
+</tr>
+<tr class="ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_td ltx_eqn_cell"></td>
+<td class="ltx_td ltx_align_center ltx_eqn_cell"><math id="S3.E1.m1.1" class="ltx_Math" alttext="\displaystyle+" display="inline"><semantics id="S3.E1.m1.1a"><mo mathsize="90%" id="S3.E1.m1.1.1" xref="S3.E1.m1.1.1.cmml">+</mo><annotation-xml encoding="MathML-Content" id="S3.E1.m1.1b"><plus id="S3.E1.m1.1.1.cmml" xref="S3.E1.m1.1.1"></plus></annotation-xml><annotation encoding="application/x-tex" id="S3.E1.m1.1c">\displaystyle+</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left ltx_eqn_cell"><math id="S3.E1.m2.1" class="ltx_Math" alttext="\displaystyle(\bm{\phi}_{i}+\bm{\phi}_{j})^{T}\bm{c}+k," display="inline"><semantics id="S3.E1.m2.1a"><mrow id="S3.E1.m2.1.1.1" xref="S3.E1.m2.1.1.1.1.cmml"><mrow id="S3.E1.m2.1.1.1.1" xref="S3.E1.m2.1.1.1.1.cmml"><mrow id="S3.E1.m2.1.1.1.1.1" xref="S3.E1.m2.1.1.1.1.1.cmml"><msup id="S3.E1.m2.1.1.1.1.1.1" xref="S3.E1.m2.1.1.1.1.1.1.cmml"><mrow id="S3.E1.m2.1.1.1.1.1.1.1.1" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.cmml"><mo maxsize="90%" minsize="90%" id="S3.E1.m2.1.1.1.1.1.1.1.1.2" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.cmml">(</mo><mrow id="S3.E1.m2.1.1.1.1.1.1.1.1.1" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.cmml"><msub id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.2" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.3" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.3.cmml">i</mi></msub><mo mathsize="90%" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.1" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.1.cmml">+</mo><msub id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.cmml"><mi class="ltx_mathvariant_bold-italic" mathsize="90%" mathvariant="bold-italic" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.2" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.2.cmml">ϕ</mi><mi mathsize="90%" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.3" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.3.cmml">j</mi></msub></mrow><mo maxsize="90%" minsize="90%" id="S3.E1.m2.1.1.1.1.1.1.1.1.3" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.cmml">)</mo></mrow><mi mathsize="90%" id="S3.E1.m2.1.1.1.1.1.1.3" xref="S3.E1.m2.1.1.1.1.1.1.3.cmml">T</mi></msup><mo lspace="0em" rspace="0em" id="S3.E1.m2.1.1.1.1.1.2" xref="S3.E1.m2.1.1.1.1.1.2.cmml">​</mo><mi mathsize="90%" id="S3.E1.m2.1.1.1.1.1.3" xref="S3.E1.m2.1.1.1.1.1.3.cmml">𝒄</mi></mrow><mo mathsize="90%" id="S3.E1.m2.1.1.1.1.2" xref="S3.E1.m2.1.1.1.1.2.cmml">+</mo><mi mathsize="90%" id="S3.E1.m2.1.1.1.1.3" xref="S3.E1.m2.1.1.1.1.3.cmml">k</mi></mrow><mo mathsize="90%" id="S3.E1.m2.1.1.1.2" xref="S3.E1.m2.1.1.1.1.cmml">,</mo></mrow><annotation-xml encoding="MathML-Content" id="S3.E1.m2.1b"><apply id="S3.E1.m2.1.1.1.1.cmml" xref="S3.E1.m2.1.1.1"><plus id="S3.E1.m2.1.1.1.1.2.cmml" xref="S3.E1.m2.1.1.1.1.2"></plus><apply id="S3.E1.m2.1.1.1.1.1.cmml" xref="S3.E1.m2.1.1.1.1.1"><times id="S3.E1.m2.1.1.1.1.1.2.cmml" xref="S3.E1.m2.1.1.1.1.1.2"></times><apply id="S3.E1.m2.1.1.1.1.1.1.cmml" xref="S3.E1.m2.1.1.1.1.1.1"><csymbol cd="ambiguous" id="S3.E1.m2.1.1.1.1.1.1.2.cmml" xref="S3.E1.m2.1.1.1.1.1.1">superscript</csymbol><apply id="S3.E1.m2.1.1.1.1.1.1.1.1.1.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1"><plus id="S3.E1.m2.1.1.1.1.1.1.1.1.1.1.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.1"></plus><apply id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2"><csymbol cd="ambiguous" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.1.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2">subscript</csymbol><ci id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.2.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.2">bold-italic-ϕ</ci><ci id="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.3.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.2.3">𝑖</ci></apply><apply id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3"><csymbol cd="ambiguous" id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.1.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3">subscript</csymbol><ci id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.2.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.2">bold-italic-ϕ</ci><ci id="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.3.cmml" xref="S3.E1.m2.1.1.1.1.1.1.1.1.1.3.3">𝑗</ci></apply></apply><ci id="S3.E1.m2.1.1.1.1.1.1.3.cmml" xref="S3.E1.m2.1.1.1.1.1.1.3">𝑇</ci></apply><ci id="S3.E1.m2.1.1.1.1.1.3.cmml" xref="S3.E1.m2.1.1.1.1.1.3">𝒄</ci></apply><ci id="S3.E1.m2.1.1.1.1.3.cmml" xref="S3.E1.m2.1.1.1.1.3">𝑘</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.E1.m2.1c">\displaystyle(\bm{\phi}_{i}+\bm{\phi}_{j})^{T}\bm{c}+k,</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+</tr>
+</tbody>
+</table>
+<p id="S3.SS3.p1.10" class="ltx_p"><span id="S3.SS3.p1.10.1" class="ltx_text" style="font-size:90%;">where the parameters </span><math id="S3.SS3.p1.3.m1.1" class="ltx_Math" alttext="\bm{\Lambda}" display="inline"><semantics id="S3.SS3.p1.3.m1.1a"><mi mathsize="90%" id="S3.SS3.p1.3.m1.1.1" xref="S3.SS3.p1.3.m1.1.1.cmml">𝚲</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.3.m1.1b"><ci id="S3.SS3.p1.3.m1.1.1.cmml" xref="S3.SS3.p1.3.m1.1.1">𝚲</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.3.m1.1c">\bm{\Lambda}</annotation></semantics></math><span id="S3.SS3.p1.10.2" class="ltx_text" style="font-size:90%;">, </span><math id="S3.SS3.p1.4.m2.1" class="ltx_Math" alttext="\bm{\Gamma}" display="inline"><semantics id="S3.SS3.p1.4.m2.1a"><mi mathsize="90%" id="S3.SS3.p1.4.m2.1.1" xref="S3.SS3.p1.4.m2.1.1.cmml">𝚪</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.4.m2.1b"><ci id="S3.SS3.p1.4.m2.1.1.cmml" xref="S3.SS3.p1.4.m2.1.1">𝚪</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.4.m2.1c">\bm{\Gamma}</annotation></semantics></math><span id="S3.SS3.p1.10.3" class="ltx_text" style="font-size:90%;">, </span><math id="S3.SS3.p1.5.m3.1" class="ltx_Math" alttext="\bm{c}" display="inline"><semantics id="S3.SS3.p1.5.m3.1a"><mi mathsize="90%" id="S3.SS3.p1.5.m3.1.1" xref="S3.SS3.p1.5.m3.1.1.cmml">𝒄</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.5.m3.1b"><ci id="S3.SS3.p1.5.m3.1.1.cmml" xref="S3.SS3.p1.5.m3.1.1">𝒄</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.5.m3.1c">\bm{c}</annotation></semantics></math><span id="S3.SS3.p1.10.4" class="ltx_text" style="font-size:90%;"> and </span><math id="S3.SS3.p1.6.m4.1" class="ltx_Math" alttext="k" display="inline"><semantics id="S3.SS3.p1.6.m4.1a"><mi mathsize="90%" id="S3.SS3.p1.6.m4.1.1" xref="S3.SS3.p1.6.m4.1.1.cmml">k</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.6.m4.1b"><ci id="S3.SS3.p1.6.m4.1.1.cmml" xref="S3.SS3.p1.6.m4.1.1">𝑘</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.6.m4.1c">k</annotation></semantics></math><span id="S3.SS3.p1.10.5" class="ltx_text" style="font-size:90%;"> can be calculated from the parameters of the PLDA model (see </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS3.p1.10.6.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib12" title="" class="ltx_ref">12</a><span id="S3.SS3.p1.10.7.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS3.p1.10.8" class="ltx_text" style="font-size:90%;"> for details). The idea of DPLDA is to train </span><math id="S3.SS3.p1.7.m5.1" class="ltx_Math" alttext="\bm{\Lambda}" display="inline"><semantics id="S3.SS3.p1.7.m5.1a"><mi mathsize="90%" id="S3.SS3.p1.7.m5.1.1" xref="S3.SS3.p1.7.m5.1.1.cmml">𝚲</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.7.m5.1b"><ci id="S3.SS3.p1.7.m5.1.1.cmml" xref="S3.SS3.p1.7.m5.1.1">𝚲</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.7.m5.1c">\bm{\Lambda}</annotation></semantics></math><span id="S3.SS3.p1.10.9" class="ltx_text" style="font-size:90%;">, </span><math id="S3.SS3.p1.8.m6.1" class="ltx_Math" alttext="\bm{\Gamma}" display="inline"><semantics id="S3.SS3.p1.8.m6.1a"><mi mathsize="90%" id="S3.SS3.p1.8.m6.1.1" xref="S3.SS3.p1.8.m6.1.1.cmml">𝚪</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.8.m6.1b"><ci id="S3.SS3.p1.8.m6.1.1.cmml" xref="S3.SS3.p1.8.m6.1.1">𝚪</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.8.m6.1c">\bm{\Gamma}</annotation></semantics></math><span id="S3.SS3.p1.10.10" class="ltx_text" style="font-size:90%;">, </span><math id="S3.SS3.p1.9.m7.1" class="ltx_Math" alttext="\bm{c}" display="inline"><semantics id="S3.SS3.p1.9.m7.1a"><mi mathsize="90%" id="S3.SS3.p1.9.m7.1.1" xref="S3.SS3.p1.9.m7.1.1.cmml">𝒄</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.9.m7.1b"><ci id="S3.SS3.p1.9.m7.1.1.cmml" xref="S3.SS3.p1.9.m7.1.1">𝒄</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.9.m7.1c">\bm{c}</annotation></semantics></math><span id="S3.SS3.p1.10.11" class="ltx_text" style="font-size:90%;"> and </span><math id="S3.SS3.p1.10.m8.1" class="ltx_Math" alttext="k" display="inline"><semantics id="S3.SS3.p1.10.m8.1a"><mi mathsize="90%" id="S3.SS3.p1.10.m8.1.1" xref="S3.SS3.p1.10.m8.1.1.cmml">k</mi><annotation-xml encoding="MathML-Content" id="S3.SS3.p1.10.m8.1b"><ci id="S3.SS3.p1.10.m8.1.1.cmml" xref="S3.SS3.p1.10.m8.1.1">𝑘</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS3.p1.10.m8.1c">k</annotation></semantics></math><span id="S3.SS3.p1.10.12" class="ltx_text" style="font-size:90%;"> directly for the speaker verification task, i.e., given two i-vectors, decide whether they are from the same speaker or not. This is achieved by forming trials (usually all possible) from the training data and optimizing, e.g., the binary cross-entropy or the SVM objective. In this work we use the binary cross-entropy objective.</span></p>
+</div>
+<div id="S3.SS3.p2" class="ltx_para">
+<p id="S3.SS3.p2.1" class="ltx_p"><span id="S3.SS3.p2.1.1" class="ltx_text" style="font-size:90%;">Normally, DPLDA is trained iteratively using full batches, i.e., each update of the model parameters is calculated based on all training data. Whenever the DPLDA model is trained individually in the experiments, we train it in this way. However, for an end-to-end system this would require too much memory and computational time. As is common for neural networks, we therefore calculate each update of the model parameters based on a minibatch, i.e., a randomly selected subset of the training data.</span></p>
+</div>
+<div id="S3.SS3.p3" class="ltx_para">
+<p id="S3.SS3.p3.1" class="ltx_p"><span id="S3.SS3.p3.1.1" class="ltx_text" style="font-size:90%;">Due to the fact that the training trials are formed by combining training utterances, it is not obvious how to optimally select the data for minibatches.
+In this paper, we used the following procedure:</span></p>
+<ol id="S3.I1" class="ltx_enumerate">
+<li id="S3.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">1.</span> 
+<div id="S3.I1.i1.p1" class="ltx_para">
+<p id="S3.I1.i1.p1.1" class="ltx_p"><span id="S3.I1.i1.p1.1.1" class="ltx_text" style="font-size:90%;">For each speaker, randomly group his/her utterances into pairs.</span><span id="footnote2" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">2</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">2</sup><span class="ltx_tag ltx_tag_note">2</span>If a speaker has only one utterance, this utterance will be used as a ”pair”. If a speaker has another uneven number of utterances, one of the pairs will be given three utterances.</span></span></span><span id="S3.I1.i1.p1.1.2" class="ltx_text" style="font-size:90%;"></span></p>
+</div>
+</li>
+<li id="S3.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">2.</span> 
+<div id="S3.I1.i2.p1" class="ltx_para">
+<p id="S3.I1.i2.p1.1" class="ltx_p"><span id="S3.I1.i2.p1.1.1" class="ltx_text" style="font-size:90%;">For each minibatch, randomly select (without replacement) </span><math id="S3.I1.i2.p1.1.m1.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S3.I1.i2.p1.1.m1.1a"><mi mathsize="90%" id="S3.I1.i2.p1.1.m1.1.1" xref="S3.I1.i2.p1.1.m1.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S3.I1.i2.p1.1.m1.1b"><ci id="S3.I1.i2.p1.1.m1.1.1.cmml" xref="S3.I1.i2.p1.1.m1.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.I1.i2.p1.1.m1.1c">N</annotation></semantics></math><span id="S3.I1.i2.p1.1.2" class="ltx_text" style="font-size:90%;"> utterance pairs and use all trials that can be formed from these utterances. If the last pair is selected, repeat Step </span><a href="#S3.I1.i1" title="item 1 ‣ 3.3 i-vectors to scores (DPLDA) ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S3.I1.i2.p1.1.3" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+</li>
+</ol>
+<p id="S3.SS3.p3.2" class="ltx_p"><span id="S3.SS3.p3.2.1" class="ltx_text" style="font-size:90%;">This approach limits the number of utterances per speaker in a minibatch. Having more utterances from the same speaker in a batch would give us more target trials but these trials would have been statistically dependent which may affect the training negatively </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS3.p3.2.2.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib22" title="" class="ltx_ref">22</a><span id="S3.SS3.p3.2.3.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS3.p3.2.4" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<figure id="S3.T1" class="ltx_table">
+<figcaption class="ltx_caption" style="font-size:90%;"><span class="ltx_tag ltx_tag_table"><span id="S3.T1.10.1.1" class="ltx_text ltx_font_bold">Table 1</span>: </span> Overall results, <math id="S3.T1.2.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S3.T1.2.m1.1b"><msubsup id="S3.T1.2.m1.1.1" xref="S3.T1.2.m1.1.1.cmml"><mi id="S3.T1.2.m1.1.1.2.2" xref="S3.T1.2.m1.1.1.2.2.cmml">C</mi><mi id="S3.T1.2.m1.1.1.3" xref="S3.T1.2.m1.1.1.3.cmml">min</mi><mi id="S3.T1.2.m1.1.1.2.3" xref="S3.T1.2.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S3.T1.2.m1.1c"><apply id="S3.T1.2.m1.1.1.cmml" xref="S3.T1.2.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.2.m1.1.1.1.cmml" xref="S3.T1.2.m1.1.1">subscript</csymbol><apply id="S3.T1.2.m1.1.1.2.cmml" xref="S3.T1.2.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.2.m1.1.1.2.1.cmml" xref="S3.T1.2.m1.1.1">superscript</csymbol><ci id="S3.T1.2.m1.1.1.2.2.cmml" xref="S3.T1.2.m1.1.1.2.2">𝐶</ci><ci id="S3.T1.2.m1.1.1.2.3.cmml" xref="S3.T1.2.m1.1.1.2.3">Prm</ci></apply><ci id="S3.T1.2.m1.1.1.3.cmml" xref="S3.T1.2.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.2.m1.1d">C^{\rm Prm}_{\rm min}</annotation></semantics></math> and EER. Modules marked with a ’*’ are trained jointly. Other modules are trained sequentially. </figcaption>
+<p id="S3.T1.5" class="ltx_p ltx_align_center"><span id="S3.T1.5.3" class="ltx_text" style="font-size:90%;">
+
+<span id="S3.T1.5.3.3" class="ltx_tabular ltx_guessed_headers ltx_align_middle">
+<span class="ltx_tbody">
+<span id="S3.T1.5.3.3.4.1" class="ltx_tr">
+<span id="S3.T1.5.3.3.4.1.1" class="ltx_td ltx_border_tt"></span>
+<span id="S3.T1.5.3.3.4.1.2" class="ltx_td ltx_th ltx_th_column ltx_border_tt ltx_colspan ltx_colspan_4"></span>
+<span id="S3.T1.5.3.3.4.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt ltx_colspan ltx_colspan_2">SRE16</span>
+<span id="S3.T1.5.3.3.4.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt ltx_colspan ltx_colspan_2">short lang</span>
+<span id="S3.T1.5.3.3.4.1.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt ltx_colspan ltx_colspan_2">PRISM lang</span></span>
+<span id="S3.T1.5.3.3.3" class="ltx_tr">
+<span id="S3.T1.5.3.3.3.4" class="ltx_td"></span>
+<span id="S3.T1.5.3.3.3.5" class="ltx_td ltx_align_left ltx_th ltx_th_column">System Name</span>
+<span id="S3.T1.5.3.3.3.6" class="ltx_td ltx_align_left ltx_th ltx_th_column">stats</span>
+<span id="S3.T1.5.3.3.3.7" class="ltx_td ltx_align_left ltx_th ltx_th_column">i-vector</span>
+<span id="S3.T1.5.3.3.3.8" class="ltx_td ltx_align_left ltx_th ltx_th_column">PLDA</span>
+<span id="S3.T1.3.1.1.1.1" class="ltx_td ltx_align_right ltx_th ltx_th_column"><math id="S3.T1.3.1.1.1.1.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S3.T1.3.1.1.1.1.m1.1a"><msubsup id="S3.T1.3.1.1.1.1.m1.1.1" xref="S3.T1.3.1.1.1.1.m1.1.1.cmml"><mi id="S3.T1.3.1.1.1.1.m1.1.1.2.2" xref="S3.T1.3.1.1.1.1.m1.1.1.2.2.cmml">C</mi><mi id="S3.T1.3.1.1.1.1.m1.1.1.3" xref="S3.T1.3.1.1.1.1.m1.1.1.3.cmml">min</mi><mi id="S3.T1.3.1.1.1.1.m1.1.1.2.3" xref="S3.T1.3.1.1.1.1.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S3.T1.3.1.1.1.1.m1.1b"><apply id="S3.T1.3.1.1.1.1.m1.1.1.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.3.1.1.1.1.m1.1.1.1.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1">subscript</csymbol><apply id="S3.T1.3.1.1.1.1.m1.1.1.2.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.3.1.1.1.1.m1.1.1.2.1.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1">superscript</csymbol><ci id="S3.T1.3.1.1.1.1.m1.1.1.2.2.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1.2.2">𝐶</ci><ci id="S3.T1.3.1.1.1.1.m1.1.1.2.3.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1.2.3">Prm</ci></apply><ci id="S3.T1.3.1.1.1.1.m1.1.1.3.cmml" xref="S3.T1.3.1.1.1.1.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.3.1.1.1.1.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math></span>
+<span id="S3.T1.5.3.3.3.9" class="ltx_td ltx_align_right ltx_th ltx_th_column">EER</span>
+<span id="S3.T1.4.2.2.2.2" class="ltx_td ltx_align_right ltx_th ltx_th_column"><math id="S3.T1.4.2.2.2.2.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S3.T1.4.2.2.2.2.m1.1a"><msubsup id="S3.T1.4.2.2.2.2.m1.1.1" xref="S3.T1.4.2.2.2.2.m1.1.1.cmml"><mi id="S3.T1.4.2.2.2.2.m1.1.1.2.2" xref="S3.T1.4.2.2.2.2.m1.1.1.2.2.cmml">C</mi><mi id="S3.T1.4.2.2.2.2.m1.1.1.3" xref="S3.T1.4.2.2.2.2.m1.1.1.3.cmml">min</mi><mi id="S3.T1.4.2.2.2.2.m1.1.1.2.3" xref="S3.T1.4.2.2.2.2.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S3.T1.4.2.2.2.2.m1.1b"><apply id="S3.T1.4.2.2.2.2.m1.1.1.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.4.2.2.2.2.m1.1.1.1.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1">subscript</csymbol><apply id="S3.T1.4.2.2.2.2.m1.1.1.2.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.4.2.2.2.2.m1.1.1.2.1.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1">superscript</csymbol><ci id="S3.T1.4.2.2.2.2.m1.1.1.2.2.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1.2.2">𝐶</ci><ci id="S3.T1.4.2.2.2.2.m1.1.1.2.3.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1.2.3">Prm</ci></apply><ci id="S3.T1.4.2.2.2.2.m1.1.1.3.cmml" xref="S3.T1.4.2.2.2.2.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.4.2.2.2.2.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math></span>
+<span id="S3.T1.5.3.3.3.10" class="ltx_td ltx_align_right ltx_th ltx_th_column">EER</span>
+<span id="S3.T1.5.3.3.3.3" class="ltx_td ltx_align_right ltx_th ltx_th_column"><math id="S3.T1.5.3.3.3.3.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S3.T1.5.3.3.3.3.m1.1a"><msubsup id="S3.T1.5.3.3.3.3.m1.1.1" xref="S3.T1.5.3.3.3.3.m1.1.1.cmml"><mi id="S3.T1.5.3.3.3.3.m1.1.1.2.2" xref="S3.T1.5.3.3.3.3.m1.1.1.2.2.cmml">C</mi><mi id="S3.T1.5.3.3.3.3.m1.1.1.3" xref="S3.T1.5.3.3.3.3.m1.1.1.3.cmml">min</mi><mi id="S3.T1.5.3.3.3.3.m1.1.1.2.3" xref="S3.T1.5.3.3.3.3.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S3.T1.5.3.3.3.3.m1.1b"><apply id="S3.T1.5.3.3.3.3.m1.1.1.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.5.3.3.3.3.m1.1.1.1.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1">subscript</csymbol><apply id="S3.T1.5.3.3.3.3.m1.1.1.2.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1"><csymbol cd="ambiguous" id="S3.T1.5.3.3.3.3.m1.1.1.2.1.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1">superscript</csymbol><ci id="S3.T1.5.3.3.3.3.m1.1.1.2.2.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1.2.2">𝐶</ci><ci id="S3.T1.5.3.3.3.3.m1.1.1.2.3.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1.2.3">Prm</ci></apply><ci id="S3.T1.5.3.3.3.3.m1.1.1.3.cmml" xref="S3.T1.5.3.3.3.3.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.T1.5.3.3.3.3.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math></span>
+<span id="S3.T1.5.3.3.3.11" class="ltx_td ltx_align_right ltx_th ltx_th_column">EER</span></span>
+<span id="S3.T1.5.3.3.5.2" class="ltx_tr">
+<span id="S3.T1.5.3.3.5.2.1" class="ltx_td ltx_align_left ltx_border_tt">1</span>
+<span id="S3.T1.5.3.3.5.2.2" class="ltx_td ltx_align_left ltx_border_tt">Baseline</span>
+<span id="S3.T1.5.3.3.5.2.3" class="ltx_td ltx_align_left ltx_border_tt">UBM</span>
+<span id="S3.T1.5.3.3.5.2.4" class="ltx_td ltx_align_left ltx_border_tt">i-extractor</span>
+<span id="S3.T1.5.3.3.5.2.5" class="ltx_td ltx_align_left ltx_border_tt">Gen.</span>
+<span id="S3.T1.5.3.3.5.2.6" class="ltx_td ltx_align_right ltx_border_tt">0.988</span>
+<span id="S3.T1.5.3.3.5.2.7" class="ltx_td ltx_align_right ltx_border_tt">17.645</span>
+<span id="S3.T1.5.3.3.5.2.8" class="ltx_td ltx_align_right ltx_border_tt">0.699</span>
+<span id="S3.T1.5.3.3.5.2.9" class="ltx_td ltx_align_right ltx_border_tt">10.303</span>
+<span id="S3.T1.5.3.3.5.2.10" class="ltx_td ltx_align_right ltx_border_tt">0.411</span>
+<span id="S3.T1.5.3.3.5.2.11" class="ltx_td ltx_align_right ltx_border_tt">3.902</span></span>
+<span id="S3.T1.5.3.3.6.3" class="ltx_tr">
+<span id="S3.T1.5.3.3.6.3.1" class="ltx_td ltx_align_left">2</span>
+<span id="S3.T1.5.3.3.6.3.2" class="ltx_td ltx_align_left">Baseline DPLDA</span>
+<span id="S3.T1.5.3.3.6.3.3" class="ltx_td ltx_align_left">UBM</span>
+<span id="S3.T1.5.3.3.6.3.4" class="ltx_td ltx_align_left">i-extractor</span>
+<span id="S3.T1.5.3.3.6.3.5" class="ltx_td ltx_align_left">Discr.</span>
+<span id="S3.T1.5.3.3.6.3.6" class="ltx_td ltx_align_right">0.975</span>
+<span id="S3.T1.5.3.3.6.3.7" class="ltx_td ltx_align_right">16.902</span>
+<span id="S3.T1.5.3.3.6.3.8" class="ltx_td ltx_align_right">0.616</span>
+<span id="S3.T1.5.3.3.6.3.9" class="ltx_td ltx_align_right">9.462</span>
+<span id="S3.T1.5.3.3.6.3.10" class="ltx_td ltx_align_right">0.360</span>
+<span id="S3.T1.5.3.3.6.3.11" class="ltx_td ltx_align_right">3.461</span></span>
+<span id="S3.T1.5.3.3.7.4" class="ltx_tr">
+<span id="S3.T1.5.3.3.7.4.1" class="ltx_td ltx_align_left ltx_border_t">3</span>
+<span id="S3.T1.5.3.3.7.4.2" class="ltx_td ltx_align_left ltx_border_t">f2s</span>
+<span id="S3.T1.5.3.3.7.4.3" class="ltx_td ltx_align_left ltx_border_t">NN</span>
+<span id="S3.T1.5.3.3.7.4.4" class="ltx_td ltx_align_left ltx_border_t">i-extractor</span>
+<span id="S3.T1.5.3.3.7.4.5" class="ltx_td ltx_align_left ltx_border_t">Gen.</span>
+<span id="S3.T1.5.3.3.7.4.6" class="ltx_td ltx_align_right ltx_border_t">0.980</span>
+<span id="S3.T1.5.3.3.7.4.7" class="ltx_td ltx_align_right ltx_border_t">16.809</span>
+<span id="S3.T1.5.3.3.7.4.8" class="ltx_td ltx_align_right ltx_border_t">0.687</span>
+<span id="S3.T1.5.3.3.7.4.9" class="ltx_td ltx_align_right ltx_border_t">9.866</span>
+<span id="S3.T1.5.3.3.7.4.10" class="ltx_td ltx_align_right ltx_border_t">0.394</span>
+<span id="S3.T1.5.3.3.7.4.11" class="ltx_td ltx_align_right ltx_border_t">3.713</span></span>
+<span id="S3.T1.5.3.3.8.5" class="ltx_tr">
+<span id="S3.T1.5.3.3.8.5.1" class="ltx_td ltx_align_left">4</span>
+<span id="S3.T1.5.3.3.8.5.2" class="ltx_td ltx_align_left">s2i</span>
+<span id="S3.T1.5.3.3.8.5.3" class="ltx_td ltx_align_left">UBM</span>
+<span id="S3.T1.5.3.3.8.5.4" class="ltx_td ltx_align_left">NN</span>
+<span id="S3.T1.5.3.3.8.5.5" class="ltx_td ltx_align_left">Gen.</span>
+<span id="S3.T1.5.3.3.8.5.6" class="ltx_td ltx_align_right">0.988</span>
+<span id="S3.T1.5.3.3.8.5.7" class="ltx_td ltx_align_right">16.686</span>
+<span id="S3.T1.5.3.3.8.5.8" class="ltx_td ltx_align_right">0.788</span>
+<span id="S3.T1.5.3.3.8.5.9" class="ltx_td ltx_align_right">11.141</span>
+<span id="S3.T1.5.3.3.8.5.10" class="ltx_td ltx_align_right">0.430</span>
+<span id="S3.T1.5.3.3.8.5.11" class="ltx_td ltx_align_right">4.584</span></span>
+<span id="S3.T1.5.3.3.9.6" class="ltx_tr">
+<span id="S3.T1.5.3.3.9.6.1" class="ltx_td ltx_align_left">5</span>
+<span id="S3.T1.5.3.3.9.6.2" class="ltx_td ltx_align_left">f2s-s2i</span>
+<span id="S3.T1.5.3.3.9.6.3" class="ltx_td ltx_align_left">NN</span>
+<span id="S3.T1.5.3.3.9.6.4" class="ltx_td ltx_align_left">NN</span>
+<span id="S3.T1.5.3.3.9.6.5" class="ltx_td ltx_align_left">Gen.</span>
+<span id="S3.T1.5.3.3.9.6.6" class="ltx_td ltx_align_right">0.982</span>
+<span id="S3.T1.5.3.3.9.6.7" class="ltx_td ltx_align_right">16.226</span>
+<span id="S3.T1.5.3.3.9.6.8" class="ltx_td ltx_align_right">0.780</span>
+<span id="S3.T1.5.3.3.9.6.9" class="ltx_td ltx_align_right">11.523</span>
+<span id="S3.T1.5.3.3.9.6.10" class="ltx_td ltx_align_right">0.432</span>
+<span id="S3.T1.5.3.3.9.6.11" class="ltx_td ltx_align_right">4.616</span></span>
+<span id="S3.T1.5.3.3.10.7" class="ltx_tr">
+<span id="S3.T1.5.3.3.10.7.1" class="ltx_td ltx_align_left">6</span>
+<span id="S3.T1.5.3.3.10.7.2" class="ltx_td ltx_align_left">f2s-s2i-DPLDA</span>
+<span id="S3.T1.5.3.3.10.7.3" class="ltx_td ltx_align_left">NN</span>
+<span id="S3.T1.5.3.3.10.7.4" class="ltx_td ltx_align_left">NN</span>
+<span id="S3.T1.5.3.3.10.7.5" class="ltx_td ltx_align_left">Discr</span>
+<span id="S3.T1.5.3.3.10.7.6" class="ltx_td ltx_align_right">0.953</span>
+<span id="S3.T1.5.3.3.10.7.7" class="ltx_td ltx_align_right">15.091</span>
+<span id="S3.T1.5.3.3.10.7.8" class="ltx_td ltx_align_right">0.597</span>
+<span id="S3.T1.5.3.3.10.7.9" class="ltx_td ltx_align_right">9.328</span>
+<span id="S3.T1.5.3.3.10.7.10" class="ltx_td ltx_align_right">0.300</span>
+<span id="S3.T1.5.3.3.10.7.11" class="ltx_td ltx_align_right">3.426</span></span>
+<span id="S3.T1.5.3.3.11.8" class="ltx_tr">
+<span id="S3.T1.5.3.3.11.8.1" class="ltx_td ltx_align_left ltx_border_t">7</span>
+<span id="S3.T1.5.3.3.11.8.2" class="ltx_td ltx_align_left ltx_border_t">s2i-DPLDA_joint</span>
+<span id="S3.T1.5.3.3.11.8.3" class="ltx_td ltx_align_left ltx_border_t">NN</span>
+<span id="S3.T1.5.3.3.11.8.4" class="ltx_td ltx_align_left ltx_border_t">NN*</span>
+<span id="S3.T1.5.3.3.11.8.5" class="ltx_td ltx_align_left ltx_border_t">Discr.*</span>
+<span id="S3.T1.5.3.3.11.8.6" class="ltx_td ltx_align_right ltx_border_t">0.936</span>
+<span id="S3.T1.5.3.3.11.8.7" class="ltx_td ltx_align_right ltx_border_t">15.166</span>
+<span id="S3.T1.5.3.3.11.8.8" class="ltx_td ltx_align_right ltx_border_t">0.586</span>
+<span id="S3.T1.5.3.3.11.8.9" class="ltx_td ltx_align_right ltx_border_t">8.599</span>
+<span id="S3.T1.5.3.3.11.8.10" class="ltx_td ltx_align_right ltx_border_t">0.287</span>
+<span id="S3.T1.5.3.3.11.8.11" class="ltx_td ltx_align_right ltx_border_t">3.123</span></span>
+<span id="S3.T1.5.3.3.12.9" class="ltx_tr">
+<span id="S3.T1.5.3.3.12.9.1" class="ltx_td ltx_align_left ltx_border_bb">8</span>
+<span id="S3.T1.5.3.3.12.9.2" class="ltx_td ltx_align_left ltx_border_bb">f2s-s2i-DPLDA_joint</span>
+<span id="S3.T1.5.3.3.12.9.3" class="ltx_td ltx_align_left ltx_border_bb">NN*</span>
+<span id="S3.T1.5.3.3.12.9.4" class="ltx_td ltx_align_left ltx_border_bb">NN*</span>
+<span id="S3.T1.5.3.3.12.9.5" class="ltx_td ltx_align_left ltx_border_bb">Discr.*</span>
+<span id="S3.T1.5.3.3.12.9.6" class="ltx_td ltx_align_right ltx_border_bb">0.936</span>
+<span id="S3.T1.5.3.3.12.9.7" class="ltx_td ltx_align_right ltx_border_bb">15.170</span>
+<span id="S3.T1.5.3.3.12.9.8" class="ltx_td ltx_align_right ltx_border_bb">0.587</span>
+<span id="S3.T1.5.3.3.12.9.9" class="ltx_td ltx_align_right ltx_border_bb">8.661</span>
+<span id="S3.T1.5.3.3.12.9.10" class="ltx_td ltx_align_right ltx_border_bb">0.287</span>
+<span id="S3.T1.5.3.3.12.9.11" class="ltx_td ltx_align_right ltx_border_bb">3.125</span></span>
+</span>
+</span>
+</span></p>
+</figure>
+</section>
+<section id="S3.SS4" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_subsection">3.4 </span>End-to-end system</h3>
+
+<div id="S3.SS4.p1" class="ltx_para">
+<p id="S3.SS4.p1.1" class="ltx_p"><span id="S3.SS4.p1.1.1" class="ltx_text" style="font-size:90%;">After the individual components described in the previous subsections have been trained individually, they are combined to an end-to-end system.
+Unfortunately, combining the modules as they are leads to large memory requirements of the end-to-end system. This happens mainly for two reasons. First, contrary to the individual training of the modules, the PCA projection now needs to be part of the network in order for the </span><span id="S3.SS4.p1.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p1.1.3" class="ltx_text" style="font-size:90%;"> and </span><span id="S3.SS4.p1.1.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S3.SS4.p1.1.5" class="ltx_text" style="font-size:90%;"> modules to be connected. The PCA matrix with </span><math id="S3.SS4.p1.1.m1.1" class="ltx_Math" alttext="122880\times 4000" display="inline"><semantics id="S3.SS4.p1.1.m1.1a"><mrow id="S3.SS4.p1.1.m1.1.1" xref="S3.SS4.p1.1.m1.1.1.cmml"><mn mathsize="90%" id="S3.SS4.p1.1.m1.1.1.2" xref="S3.SS4.p1.1.m1.1.1.2.cmml">122880</mn><mo lspace="0.222em" mathsize="90%" rspace="0.222em" id="S3.SS4.p1.1.m1.1.1.1" xref="S3.SS4.p1.1.m1.1.1.1.cmml">×</mo><mn mathsize="90%" id="S3.SS4.p1.1.m1.1.1.3" xref="S3.SS4.p1.1.m1.1.1.3.cmml">4000</mn></mrow><annotation-xml encoding="MathML-Content" id="S3.SS4.p1.1.m1.1b"><apply id="S3.SS4.p1.1.m1.1.1.cmml" xref="S3.SS4.p1.1.m1.1.1"><times id="S3.SS4.p1.1.m1.1.1.1.cmml" xref="S3.SS4.p1.1.m1.1.1.1"></times><cn type="integer" id="S3.SS4.p1.1.m1.1.1.2.cmml" xref="S3.SS4.p1.1.m1.1.1.2">122880</cn><cn type="integer" id="S3.SS4.p1.1.m1.1.1.3.cmml" xref="S3.SS4.p1.1.m1.1.1.3">4000</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p1.1.m1.1c">122880\times 4000</annotation></semantics></math><span id="S3.SS4.p1.1.6" class="ltx_text" style="font-size:90%;"> parameters uses approximately 2GB of memory. Second, the </span><span id="S3.SS4.p1.1.7" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p1.1.8" class="ltx_text" style="font-size:90%;"> now needs to process all frames from many different utterances in one batch to obtain the sufficient number of trials for the DPLDA module.</span></p>
+</div>
+<div id="S3.SS4.p2" class="ltx_para">
+<p id="S3.SS4.p2.6" class="ltx_p"><span id="S3.SS4.p2.6.1" class="ltx_text" style="font-size:90%;">To mitigate the problem of the large PCA matrix we, before the complete end-to-end training, train only the </span><span id="S3.SS4.p2.6.2" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S3.SS4.p2.6.3" class="ltx_text" style="font-size:90%;"> NN and the DPLDA model jointly. As for the individual training of </span><span id="S3.SS4.p2.6.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S3.SS4.p2.6.5" class="ltx_text" style="font-size:90%;">, we can use pre-calculated input that includes the PCA projection since this input is fixed as long as </span><span id="S3.SS4.p2.6.6" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p2.6.7" class="ltx_text" style="font-size:90%;"> is not updated. For this training we use minibatches of 5000 pairs (</span><math id="S3.SS4.p2.1.m1.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S3.SS4.p2.1.m1.1a"><mi mathsize="90%" id="S3.SS4.p2.1.m1.1.1" xref="S3.SS4.p2.1.m1.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.1.m1.1b"><ci id="S3.SS4.p2.1.m1.1.1.cmml" xref="S3.SS4.p2.1.m1.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.1.m1.1c">N</annotation></semantics></math><span id="S3.SS4.p2.6.8" class="ltx_text" style="font-size:90%;">).
+To mitigate the large memory requirements of the </span><span id="S3.SS4.p2.6.9" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p2.6.10" class="ltx_text" style="font-size:90%;"> module, we modify the training procedure to keep less intermediate results in memory. Specifically, in usual NN training, the input is first </span><em id="S3.SS4.p2.6.11" class="ltx_emph ltx_font_italic" style="font-size:90%;">forward propagated</em><span id="S3.SS4.p2.6.12" class="ltx_text" style="font-size:90%;"> through the network to get the output of each layer. These outputs are stored in memory and used during </span><em id="S3.SS4.p2.6.13" class="ltx_emph ltx_font_italic" style="font-size:90%;">backpropagation</em><span id="S3.SS4.p2.6.14" class="ltx_text" style="font-size:90%;"> to obtain the derivative of the loss with respect to each model parameter. For the part of </span><span id="S3.SS4.p2.6.15" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p2.6.16" class="ltx_text" style="font-size:90%;"> that calculates responsibilities (Block A in Figure </span><a href="#S3.F1" title="Figure 1 ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S3.SS4.p2.6.17" class="ltx_text" style="font-size:90%;">), this results in </span><math id="S3.SS4.p2.2.m2.1" class="ltx_Math" alttext="n_{f}(1500+1500+1500+1500+2048)" display="inline"><semantics id="S3.SS4.p2.2.m2.1a"><mrow id="S3.SS4.p2.2.m2.1.1" xref="S3.SS4.p2.2.m2.1.1.cmml"><msub id="S3.SS4.p2.2.m2.1.1.3" xref="S3.SS4.p2.2.m2.1.1.3.cmml"><mi mathsize="90%" id="S3.SS4.p2.2.m2.1.1.3.2" xref="S3.SS4.p2.2.m2.1.1.3.2.cmml">n</mi><mi mathsize="90%" id="S3.SS4.p2.2.m2.1.1.3.3" xref="S3.SS4.p2.2.m2.1.1.3.3.cmml">f</mi></msub><mo lspace="0em" rspace="0em" id="S3.SS4.p2.2.m2.1.1.2" xref="S3.SS4.p2.2.m2.1.1.2.cmml">​</mo><mrow id="S3.SS4.p2.2.m2.1.1.1.1" xref="S3.SS4.p2.2.m2.1.1.1.1.1.cmml"><mo maxsize="90%" minsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.2" xref="S3.SS4.p2.2.m2.1.1.1.1.1.cmml">(</mo><mrow id="S3.SS4.p2.2.m2.1.1.1.1.1" xref="S3.SS4.p2.2.m2.1.1.1.1.1.cmml"><mn mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.2" xref="S3.SS4.p2.2.m2.1.1.1.1.1.2.cmml">1500</mn><mo mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.1" xref="S3.SS4.p2.2.m2.1.1.1.1.1.1.cmml">+</mo><mn mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.3" xref="S3.SS4.p2.2.m2.1.1.1.1.1.3.cmml">1500</mn><mo mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.1a" xref="S3.SS4.p2.2.m2.1.1.1.1.1.1.cmml">+</mo><mn mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.4" xref="S3.SS4.p2.2.m2.1.1.1.1.1.4.cmml">1500</mn><mo mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.1b" xref="S3.SS4.p2.2.m2.1.1.1.1.1.1.cmml">+</mo><mn mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.5" xref="S3.SS4.p2.2.m2.1.1.1.1.1.5.cmml">1500</mn><mo mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.1c" xref="S3.SS4.p2.2.m2.1.1.1.1.1.1.cmml">+</mo><mn mathsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.1.6" xref="S3.SS4.p2.2.m2.1.1.1.1.1.6.cmml">2048</mn></mrow><mo maxsize="90%" minsize="90%" id="S3.SS4.p2.2.m2.1.1.1.1.3" xref="S3.SS4.p2.2.m2.1.1.1.1.1.cmml">)</mo></mrow></mrow><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.2.m2.1b"><apply id="S3.SS4.p2.2.m2.1.1.cmml" xref="S3.SS4.p2.2.m2.1.1"><times id="S3.SS4.p2.2.m2.1.1.2.cmml" xref="S3.SS4.p2.2.m2.1.1.2"></times><apply id="S3.SS4.p2.2.m2.1.1.3.cmml" xref="S3.SS4.p2.2.m2.1.1.3"><csymbol cd="ambiguous" id="S3.SS4.p2.2.m2.1.1.3.1.cmml" xref="S3.SS4.p2.2.m2.1.1.3">subscript</csymbol><ci id="S3.SS4.p2.2.m2.1.1.3.2.cmml" xref="S3.SS4.p2.2.m2.1.1.3.2">𝑛</ci><ci id="S3.SS4.p2.2.m2.1.1.3.3.cmml" xref="S3.SS4.p2.2.m2.1.1.3.3">𝑓</ci></apply><apply id="S3.SS4.p2.2.m2.1.1.1.1.1.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1"><plus id="S3.SS4.p2.2.m2.1.1.1.1.1.1.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.1"></plus><cn type="integer" id="S3.SS4.p2.2.m2.1.1.1.1.1.2.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.2">1500</cn><cn type="integer" id="S3.SS4.p2.2.m2.1.1.1.1.1.3.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.3">1500</cn><cn type="integer" id="S3.SS4.p2.2.m2.1.1.1.1.1.4.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.4">1500</cn><cn type="integer" id="S3.SS4.p2.2.m2.1.1.1.1.1.5.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.5">1500</cn><cn type="integer" id="S3.SS4.p2.2.m2.1.1.1.1.1.6.cmml" xref="S3.SS4.p2.2.m2.1.1.1.1.1.6">2048</cn></apply></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.2.m2.1c">n_{f}(1500+1500+1500+1500+2048)</annotation></semantics></math><span id="S3.SS4.p2.6.18" class="ltx_text" style="font-size:90%;"> variables to store in memory, where </span><math id="S3.SS4.p2.3.m3.1" class="ltx_Math" alttext="n_{f}" display="inline"><semantics id="S3.SS4.p2.3.m3.1a"><msub id="S3.SS4.p2.3.m3.1.1" xref="S3.SS4.p2.3.m3.1.1.cmml"><mi mathsize="90%" id="S3.SS4.p2.3.m3.1.1.2" xref="S3.SS4.p2.3.m3.1.1.2.cmml">n</mi><mi mathsize="90%" id="S3.SS4.p2.3.m3.1.1.3" xref="S3.SS4.p2.3.m3.1.1.3.cmml">f</mi></msub><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.3.m3.1b"><apply id="S3.SS4.p2.3.m3.1.1.cmml" xref="S3.SS4.p2.3.m3.1.1"><csymbol cd="ambiguous" id="S3.SS4.p2.3.m3.1.1.1.cmml" xref="S3.SS4.p2.3.m3.1.1">subscript</csymbol><ci id="S3.SS4.p2.3.m3.1.1.2.cmml" xref="S3.SS4.p2.3.m3.1.1.2">𝑛</ci><ci id="S3.SS4.p2.3.m3.1.1.3.cmml" xref="S3.SS4.p2.3.m3.1.1.3">𝑓</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.3.m3.1c">n_{f}</annotation></semantics></math><span id="S3.SS4.p2.6.19" class="ltx_text" style="font-size:90%;"> is the total number of frames. This is much more than in subsequent modules (after pooling the frames into sufficient statistics, </span><math id="S3.SS4.p2.4.m4.1" class="ltx_Math" alttext="\mathbf{F}" display="inline"><semantics id="S3.SS4.p2.4.m4.1a"><mi mathsize="90%" id="S3.SS4.p2.4.m4.1.1" xref="S3.SS4.p2.4.m4.1.1.cmml">𝐅</mi><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.4.m4.1b"><ci id="S3.SS4.p2.4.m4.1.1.cmml" xref="S3.SS4.p2.4.m4.1.1">𝐅</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.4.m4.1c">\mathbf{F}</annotation></semantics></math><span id="S3.SS4.p2.6.20" class="ltx_text" style="font-size:90%;"> and </span><math id="S3.SS4.p2.5.m5.1" class="ltx_Math" alttext="\mathbf{N}" display="inline"><semantics id="S3.SS4.p2.5.m5.1a"><mi mathsize="90%" id="S3.SS4.p2.5.m5.1.1" xref="S3.SS4.p2.5.m5.1.1.cmml">𝐍</mi><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.5.m5.1b"><ci id="S3.SS4.p2.5.m5.1.1.cmml" xref="S3.SS4.p2.5.m5.1.1">𝐍</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.5.m5.1c">\mathbf{N}</annotation></semantics></math><span id="S3.SS4.p2.6.21" class="ltx_text" style="font-size:90%;">) where the layer outputs are per utterance. Thus, in order to reduce the memory usage, we calculate the sufficient statistics for one utterance at the time and discard all the layer outputs from Block A once the sufficient statistics for the utterance have been calculated. When the sufficient statistics for all utterances have been obtained, we continue the forward propagation in the normal way, keeping all outputs in memory. During backpropagation, we recalculate the outputs of Block A when needed. This is achieved in a similar way as in </span><span id="S3.SS4.p2.6.22" class="ltx_text ltx_font_typewriter" style="font-size:90%;">scan_checkpoints<span id="footnote3" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">3</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">3</sup><span class="ltx_tag ltx_tag_note"><span id="footnote3.1.1.1" class="ltx_text ltx_font_serif" style="font-size:111%;">3</span></span><span id="footnote3.4" class="ltx_text ltx_font_serif" style="font-size:111%;">http://www.deeplearning.net/software/theano/library/scan.html</span></span></span></span></span><span id="S3.SS4.p2.6.23" class="ltx_text" style="font-size:90%;">. This trick allows us to use minibatches of 75 pairs (</span><math id="S3.SS4.p2.6.m6.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S3.SS4.p2.6.m6.1a"><mi mathsize="90%" id="S3.SS4.p2.6.m6.1.1" xref="S3.SS4.p2.6.m6.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S3.SS4.p2.6.m6.1b"><ci id="S3.SS4.p2.6.m6.1.1.cmml" xref="S3.SS4.p2.6.m6.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p2.6.m6.1c">N</annotation></semantics></math><span id="S3.SS4.p2.6.24" class="ltx_text" style="font-size:90%;">) instead of approximately 2.</span></p>
+</div>
+<div id="S3.SS4.p3" class="ltx_para">
+<p id="S3.SS4.p3.1" class="ltx_p"><span id="S3.SS4.p3.1.1" class="ltx_text" style="font-size:90%;">Unlike the individual training of </span><span id="S3.SS4.p3.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S3.SS4.p3.1.3" class="ltx_text" style="font-size:90%;"> and </span><span id="S3.SS4.p3.1.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S3.SS4.p3.1.5" class="ltx_text" style="font-size:90%;">, we use the ADAM optimizer </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S3.SS4.p3.1.6.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib23" title="" class="ltx_ref">23</a><span id="S3.SS4.p3.1.7.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S3.SS4.p3.1.8" class="ltx_text" style="font-size:90%;"> for training since it may be more robust to different learning rate requirements of the different modules compared to standard SGD. We halved the learning rate whenever we see no improvement in </span><math id="S3.SS4.p3.1.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S3.SS4.p3.1.m1.1a"><msubsup id="S3.SS4.p3.1.m1.1.1" xref="S3.SS4.p3.1.m1.1.1.cmml"><mi mathsize="90%" id="S3.SS4.p3.1.m1.1.1.2.2" xref="S3.SS4.p3.1.m1.1.1.2.2.cmml">C</mi><mi mathsize="90%" id="S3.SS4.p3.1.m1.1.1.3" xref="S3.SS4.p3.1.m1.1.1.3.cmml">min</mi><mi mathsize="90%" id="S3.SS4.p3.1.m1.1.1.2.3" xref="S3.SS4.p3.1.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S3.SS4.p3.1.m1.1b"><apply id="S3.SS4.p3.1.m1.1.1.cmml" xref="S3.SS4.p3.1.m1.1.1"><csymbol cd="ambiguous" id="S3.SS4.p3.1.m1.1.1.1.cmml" xref="S3.SS4.p3.1.m1.1.1">subscript</csymbol><apply id="S3.SS4.p3.1.m1.1.1.2.cmml" xref="S3.SS4.p3.1.m1.1.1"><csymbol cd="ambiguous" id="S3.SS4.p3.1.m1.1.1.2.1.cmml" xref="S3.SS4.p3.1.m1.1.1">superscript</csymbol><ci id="S3.SS4.p3.1.m1.1.1.2.2.cmml" xref="S3.SS4.p3.1.m1.1.1.2.2">𝐶</ci><ci id="S3.SS4.p3.1.m1.1.1.2.3.cmml" xref="S3.SS4.p3.1.m1.1.1.2.3">Prm</ci></apply><ci id="S3.SS4.p3.1.m1.1.1.3.cmml" xref="S3.SS4.p3.1.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S3.SS4.p3.1.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math><span id="S3.SS4.p3.1.9" class="ltx_text" style="font-size:90%;"> on the development set after an epoch (defined to be 250 batches). The training set was the same as for DPLDA.</span></p>
+</div>
+</section>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_section">4 </span>Results and discussion</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.3" class="ltx_p"><span id="S4.p1.3.1" class="ltx_text" style="font-size:90%;">We report results in equal error rate (EER) as well as in the average minimum detection cost function for two operating points (</span><math id="S4.p1.1.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S4.p1.1.m1.1a"><msubsup id="S4.p1.1.m1.1.1" xref="S4.p1.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.p1.1.m1.1.1.2.2" xref="S4.p1.1.m1.1.1.2.2.cmml">C</mi><mi mathsize="90%" id="S4.p1.1.m1.1.1.3" xref="S4.p1.1.m1.1.1.3.cmml">min</mi><mi mathsize="90%" id="S4.p1.1.m1.1.1.2.3" xref="S4.p1.1.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S4.p1.1.m1.1b"><apply id="S4.p1.1.m1.1.1.cmml" xref="S4.p1.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p1.1.m1.1.1.1.cmml" xref="S4.p1.1.m1.1.1">subscript</csymbol><apply id="S4.p1.1.m1.1.1.2.cmml" xref="S4.p1.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p1.1.m1.1.1.2.1.cmml" xref="S4.p1.1.m1.1.1">superscript</csymbol><ci id="S4.p1.1.m1.1.1.2.2.cmml" xref="S4.p1.1.m1.1.1.2.2">𝐶</ci><ci id="S4.p1.1.m1.1.1.2.3.cmml" xref="S4.p1.1.m1.1.1.2.3">Prm</ci></apply><ci id="S4.p1.1.m1.1.1.3.cmml" xref="S4.p1.1.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p1.1.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math><span id="S4.p1.3.2" class="ltx_text" style="font-size:90%;">). The two operating points are
+the ones of interest in the NIST SRE’16 </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S4.p1.3.3.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib17" title="" class="ltx_ref">17</a><span id="S4.p1.3.4.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S4.p1.3.5" class="ltx_text" style="font-size:90%;">, namely the probability of target trials being equal to </span><math id="S4.p1.2.m2.1" class="ltx_Math" alttext="0.01" display="inline"><semantics id="S4.p1.2.m2.1a"><mn mathsize="90%" id="S4.p1.2.m2.1.1" xref="S4.p1.2.m2.1.1.cmml">0.01</mn><annotation-xml encoding="MathML-Content" id="S4.p1.2.m2.1b"><cn type="float" id="S4.p1.2.m2.1.1.cmml" xref="S4.p1.2.m2.1.1">0.01</cn></annotation-xml><annotation encoding="application/x-tex" id="S4.p1.2.m2.1c">0.01</annotation></semantics></math><span id="S4.p1.3.6" class="ltx_text" style="font-size:90%;"> and </span><math id="S4.p1.3.m3.1" class="ltx_Math" alttext="0.005" display="inline"><semantics id="S4.p1.3.m3.1a"><mn mathsize="90%" id="S4.p1.3.m3.1.1" xref="S4.p1.3.m3.1.1.cmml">0.005</mn><annotation-xml encoding="MathML-Content" id="S4.p1.3.m3.1b"><cn type="float" id="S4.p1.3.m3.1.1.cmml" xref="S4.p1.3.m3.1.1">0.005</cn></annotation-xml><annotation encoding="application/x-tex" id="S4.p1.3.m3.1c">0.005</annotation></semantics></math><span id="S4.p1.3.7" class="ltx_text" style="font-size:90%;">. Table </span><a href="#S3.T1" title="Table 1 ‣ 3.3 i-vectors to scores (DPLDA) ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S4.p1.3.8" class="ltx_text" style="font-size:90%;"> shows the results for the two baselines, the end-to-end system as well as systems where only some stages of the baseline have been replaced by a NN.
+Row 1 and Row 2 show the results for the PLDA and DPLDA baseline, respectively. The DPLDA performs better than generatively trained PLDA on all sets. This is consistent with our previous findings on NIST SRE’16 </span><cite class="ltx_cite ltx_citemacro_cite"><span id="S4.p1.3.9.1" class="ltx_text" style="font-size:90%;">[</span><a href="#bib.bib15" title="" class="ltx_ref">15</a><span id="S4.p1.3.10.2" class="ltx_text" style="font-size:90%;">]</span></cite><span id="S4.p1.3.11" class="ltx_text" style="font-size:90%;">.</span></p>
+</div>
+<div id="S4.p2" class="ltx_para">
+<p id="S4.p2.2" class="ltx_p"><span id="S4.p2.2.1" class="ltx_text" style="font-size:90%;">Row 3 shows the results when the UBM is replaced with the </span><span id="S4.p2.2.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.3" class="ltx_text" style="font-size:90%;"> NN. The i-vector extractor and PLDA model are trained as in the baseline but on the output of the </span><span id="S4.p2.2.4" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.5" class="ltx_text" style="font-size:90%;"> NN. It is noticeable that the </span><span id="S4.p2.2.6" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.7" class="ltx_text" style="font-size:90%;"> NN performs better than the UBM which it is supposed to mimic. The reason for this seems to be that the </span><span id="S4.p2.2.8" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.9" class="ltx_text" style="font-size:90%;"> NN is capable of learning a more robust model that generalizes better to the unseen data than the UBM, mainly because it uses a larger context. Our experiments in the development phase of the </span><span id="S4.p2.2.10" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.11" class="ltx_text" style="font-size:90%;"> NN showed that using the 60 dimensional features as input to a 2 layer </span><span id="S4.p2.2.12" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p2.2.13" class="ltx_text" style="font-size:90%;"> NN gave similar performance as the UBM (</span><math id="S4.p2.1.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S4.p2.1.m1.1a"><msubsup id="S4.p2.1.m1.1.1" xref="S4.p2.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.p2.1.m1.1.1.2.2" xref="S4.p2.1.m1.1.1.2.2.cmml">C</mi><mi mathsize="90%" id="S4.p2.1.m1.1.1.3" xref="S4.p2.1.m1.1.1.3.cmml">min</mi><mi mathsize="90%" id="S4.p2.1.m1.1.1.2.3" xref="S4.p2.1.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S4.p2.1.m1.1b"><apply id="S4.p2.1.m1.1.1.cmml" xref="S4.p2.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p2.1.m1.1.1.1.cmml" xref="S4.p2.1.m1.1.1">subscript</csymbol><apply id="S4.p2.1.m1.1.1.2.cmml" xref="S4.p2.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p2.1.m1.1.1.2.1.cmml" xref="S4.p2.1.m1.1.1">superscript</csymbol><ci id="S4.p2.1.m1.1.1.2.2.cmml" xref="S4.p2.1.m1.1.1.2.2">𝐶</ci><ci id="S4.p2.1.m1.1.1.2.3.cmml" xref="S4.p2.1.m1.1.1.2.3">Prm</ci></apply><ci id="S4.p2.1.m1.1.1.3.cmml" xref="S4.p2.1.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p2.1.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math><span id="S4.p2.2.14" class="ltx_text" style="font-size:90%;"> equal to 0.268 and 0.270 respectively on SRE’10, condition 5) whereas the large context features gave substantial improvement (</span><math id="S4.p2.2.m2.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S4.p2.2.m2.1a"><msubsup id="S4.p2.2.m2.1.1" xref="S4.p2.2.m2.1.1.cmml"><mi mathsize="90%" id="S4.p2.2.m2.1.1.2.2" xref="S4.p2.2.m2.1.1.2.2.cmml">C</mi><mi mathsize="90%" id="S4.p2.2.m2.1.1.3" xref="S4.p2.2.m2.1.1.3.cmml">min</mi><mi mathsize="90%" id="S4.p2.2.m2.1.1.2.3" xref="S4.p2.2.m2.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S4.p2.2.m2.1b"><apply id="S4.p2.2.m2.1.1.cmml" xref="S4.p2.2.m2.1.1"><csymbol cd="ambiguous" id="S4.p2.2.m2.1.1.1.cmml" xref="S4.p2.2.m2.1.1">subscript</csymbol><apply id="S4.p2.2.m2.1.1.2.cmml" xref="S4.p2.2.m2.1.1"><csymbol cd="ambiguous" id="S4.p2.2.m2.1.1.2.1.cmml" xref="S4.p2.2.m2.1.1">superscript</csymbol><ci id="S4.p2.2.m2.1.1.2.2.cmml" xref="S4.p2.2.m2.1.1.2.2">𝐶</ci><ci id="S4.p2.2.m2.1.1.2.3.cmml" xref="S4.p2.2.m2.1.1.2.3">Prm</ci></apply><ci id="S4.p2.2.m2.1.1.3.cmml" xref="S4.p2.2.m2.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p2.2.m2.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math><span id="S4.p2.2.15" class="ltx_text" style="font-size:90%;"> equal to 0.254).</span></p>
+</div>
+<div id="S4.p3" class="ltx_para">
+<p id="S4.p3.1" class="ltx_p"><span id="S4.p3.1.1" class="ltx_text" style="font-size:90%;">Row 4 shows the performance when i-vector extractor is replaced by the </span><span id="S4.p3.1.2" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S4.p3.1.3" class="ltx_text" style="font-size:90%;"> NN. The input is the original statistics from the UBM and a PLDA model is trained on the output. We can see that, except for SRE’16, the performance degrades to some extent compared to the baseline (Row 1).
+Row 5 shows the results when we train a </span><span id="S4.p3.1.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S4.p3.1.5" class="ltx_text" style="font-size:90%;"> module on the output from the </span><span id="S4.p3.1.6" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p3.1.7" class="ltx_text" style="font-size:90%;"> module instead of the statistics from the UBM. Again, we observe a small degradation compared to using a standard i-vector extractor (Row 3). Interestingly, when we further change from generative trained PLDA to DPLDA, the model performs better than both baselines. This suggests that the output from the </span><span id="S4.p3.1.8" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S4.p3.1.9" class="ltx_text" style="font-size:90%;"> can well discriminate between speakers but may not well fulfill the PLDA model assumptions so that generative training does not work well.</span></p>
+</div>
+<div id="S4.p4" class="ltx_para">
+<p id="S4.p4.3" class="ltx_p"><span id="S4.p4.3.1" class="ltx_text" style="font-size:90%;">After individual training of all blocks, we proceed with joint training of the </span><span id="S4.p4.3.2" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p4.3.3" class="ltx_text" style="font-size:90%;"> and </span><span id="S4.p4.3.4" class="ltx_text ltx_font_bold" style="font-size:90%;">s2i</span><span id="S4.p4.3.5" class="ltx_text" style="font-size:90%;"> modules, using L2 regularization (tuned on the </span><span id="S4.p4.3.6" class="ltx_text ltx_font_bold" style="font-size:90%;">dev</span><span id="S4.p4.3.7" class="ltx_text" style="font-size:90%;"> set) towards the parameters of the initial models. For this we use a batch size (</span><math id="S4.p4.1.m1.1" class="ltx_Math" alttext="N" display="inline"><semantics id="S4.p4.1.m1.1a"><mi mathsize="90%" id="S4.p4.1.m1.1.1" xref="S4.p4.1.m1.1.1.cmml">N</mi><annotation-xml encoding="MathML-Content" id="S4.p4.1.m1.1b"><ci id="S4.p4.1.m1.1.1.cmml" xref="S4.p4.1.m1.1.1">𝑁</ci></annotation-xml><annotation encoding="application/x-tex" id="S4.p4.1.m1.1c">N</annotation></semantics></math><span id="S4.p4.3.8" class="ltx_text" style="font-size:90%;"> in Section </span><a href="#S3.SS4" title="3.4 End-to-end system ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">3.4</span></a><span id="S4.p4.3.9" class="ltx_text" style="font-size:90%;">) of </span><math id="S4.p4.2.m2.1" class="ltx_Math" alttext="5000" display="inline"><semantics id="S4.p4.2.m2.1a"><mn mathsize="90%" id="S4.p4.2.m2.1.1" xref="S4.p4.2.m2.1.1.cmml">5000</mn><annotation-xml encoding="MathML-Content" id="S4.p4.2.m2.1b"><cn type="integer" id="S4.p4.2.m2.1.1.cmml" xref="S4.p4.2.m2.1.1">5000</cn></annotation-xml><annotation encoding="application/x-tex" id="S4.p4.2.m2.1c">5000</annotation></semantics></math><span id="S4.p4.3.10" class="ltx_text" style="font-size:90%;"> pairs. As can be seen in the Row 7 of Table </span><a href="#S3.T1" title="Table 1 ‣ 3.3 i-vectors to scores (DPLDA) ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">1</span></a><span id="S4.p4.3.11" class="ltx_text" style="font-size:90%;">, the joint training of the two modules improves the performance on all data sets. Finally, the last row shows the performance when all modules are trained jointly. For this training, we can only use </span><math id="S4.p4.3.m3.1" class="ltx_Math" alttext="N=75" display="inline"><semantics id="S4.p4.3.m3.1a"><mrow id="S4.p4.3.m3.1.1" xref="S4.p4.3.m3.1.1.cmml"><mi mathsize="90%" id="S4.p4.3.m3.1.1.2" xref="S4.p4.3.m3.1.1.2.cmml">N</mi><mo mathsize="90%" id="S4.p4.3.m3.1.1.1" xref="S4.p4.3.m3.1.1.1.cmml">=</mo><mn mathsize="90%" id="S4.p4.3.m3.1.1.3" xref="S4.p4.3.m3.1.1.3.cmml">75</mn></mrow><annotation-xml encoding="MathML-Content" id="S4.p4.3.m3.1b"><apply id="S4.p4.3.m3.1.1.cmml" xref="S4.p4.3.m3.1.1"><eq id="S4.p4.3.m3.1.1.1.cmml" xref="S4.p4.3.m3.1.1.1"></eq><ci id="S4.p4.3.m3.1.1.2.cmml" xref="S4.p4.3.m3.1.1.2">𝑁</ci><cn type="integer" id="S4.p4.3.m3.1.1.3.cmml" xref="S4.p4.3.m3.1.1.3">75</cn></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p4.3.m3.1c">N=75</annotation></semantics></math><span id="S4.p4.3.12" class="ltx_text" style="font-size:90%;"> as discussed in Section </span><a href="#S3.SS3" title="3.3 i-vectors to scores (DPLDA) ‣ 3 Proposed end-to-end DNN architecture ‣ End-to-end DNN based speaker recognition inspired by i-vector and PLDA" class="ltx_ref" style="font-size:90%;"><span class="ltx_text ltx_ref_tag">3.3</span></a><span id="S4.p4.3.13" class="ltx_text" style="font-size:90%;">. As can be seen, the performance is almost unchanged from the previous row. There are three possible reasons for this. First, the minibatches might be too small for stable training. Second, with the </span><span id="S4.p4.3.14" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p4.3.15" class="ltx_text" style="font-size:90%;"> being well initialized and the subsequent modules already being trained to fit its output, the model may be stuck in a local minimum. Third, the </span><span id="S4.p4.3.16" class="ltx_text ltx_font_bold" style="font-size:90%;">f2s</span><span id="S4.p4.3.17" class="ltx_text" style="font-size:90%;"> is in its current design quite constrained. It only estimates the responsibilities but cannot modify the features that are used to calculate the statistics. These issues will be studied in future work.</span></p>
+</div>
+<div id="S4.p5" class="ltx_para">
+<p id="S4.p5.1" class="ltx_p"><span id="S4.p5.1.1" class="ltx_text" style="font-size:90%;">In summary, the final system achieved relative improvements with respect to the DPLDA baseline of 3.9%, 4.7% and 20.4% in </span><math id="S4.p5.1.m1.1" class="ltx_Math" alttext="C^{\rm Prm}_{\rm min}" display="inline"><semantics id="S4.p5.1.m1.1a"><msubsup id="S4.p5.1.m1.1.1" xref="S4.p5.1.m1.1.1.cmml"><mi mathsize="90%" id="S4.p5.1.m1.1.1.2.2" xref="S4.p5.1.m1.1.1.2.2.cmml">C</mi><mi mathsize="90%" id="S4.p5.1.m1.1.1.3" xref="S4.p5.1.m1.1.1.3.cmml">min</mi><mi mathsize="90%" id="S4.p5.1.m1.1.1.2.3" xref="S4.p5.1.m1.1.1.2.3.cmml">Prm</mi></msubsup><annotation-xml encoding="MathML-Content" id="S4.p5.1.m1.1b"><apply id="S4.p5.1.m1.1.1.cmml" xref="S4.p5.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p5.1.m1.1.1.1.cmml" xref="S4.p5.1.m1.1.1">subscript</csymbol><apply id="S4.p5.1.m1.1.1.2.cmml" xref="S4.p5.1.m1.1.1"><csymbol cd="ambiguous" id="S4.p5.1.m1.1.1.2.1.cmml" xref="S4.p5.1.m1.1.1">superscript</csymbol><ci id="S4.p5.1.m1.1.1.2.2.cmml" xref="S4.p5.1.m1.1.1.2.2">𝐶</ci><ci id="S4.p5.1.m1.1.1.2.3.cmml" xref="S4.p5.1.m1.1.1.2.3">Prm</ci></apply><ci id="S4.p5.1.m1.1.1.3.cmml" xref="S4.p5.1.m1.1.1.3">min</ci></apply></annotation-xml><annotation encoding="application/x-tex" id="S4.p5.1.m1.1c">C^{\rm Prm}_{\rm min}</annotation></semantics></math><span id="S4.p5.1.2" class="ltx_text" style="font-size:90%;"> on </span><em id="S4.p5.1.3" class="ltx_emph ltx_font_italic" style="font-size:90%;">SRE16</em><span id="S4.p5.1.4" class="ltx_text" style="font-size:90%;">, </span><em id="S4.p5.1.5" class="ltx_emph ltx_font_italic" style="font-size:90%;">short lang</em><span id="S4.p5.1.6" class="ltx_text" style="font-size:90%;"> and </span><em id="S4.p5.1.7" class="ltx_emph ltx_font_italic" style="font-size:90%;">PRISM lang</em><span id="S4.p5.1.8" class="ltx_text" style="font-size:90%;"> respectively. In EER, the relative improvements were 10.2%, 8.5%, and 9.7%.</span></p>
+</div>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section" style="font-size:90%;">
+<span class="ltx_tag ltx_tag_section">5 </span>Conclusions and Future Work</h2>
+
+<div id="S5.p1" class="ltx_para">
+<p id="S5.p1.1" class="ltx_p"><span id="S5.p1.1.1" class="ltx_text" style="font-size:90%;">In this work, we have developed an end-to-end speaker verification system that outperforms an i-vector+PLDA baseline on three different datasets with utterances from many different languages and of both long and short durations. The system was constrained to behave similar to an i-vector + PLDA system. In this way we mitigated overfitting which normally limits the performance of end-to-end systems. This was a conservative approach and future work should explore if less constrained system can perform better, in particular as complement to i-vector+PLDA systems.
+We found that joint training of two modules of the three submodules of the system was effective but joint training all three modules was not effective. In future work we therefore want to develop more effective strategies for joint training of all three modules. The proposed system is designed for using single enrollment sessions, and extending it to deal with multiple enrollment sessions is also an important future work.</span></p>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography" style="font-size:90%;">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[1]</span>
+<span class="ltx_bibblock"><span id="bib.bib1.1.1" class="ltx_text" style="font-size:90%;">
+A. Lozano-Diez, A. Silnova, P. Matějka, O. Glembek, O. Plchot,
+J. Pešán, L. Burget, and J. Gonzalez-Rodriguez,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib1.2.1" class="ltx_text" style="font-size:90%;">“Analysis and optimization of bottleneck features for speaker
+recognition,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib1.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib1.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Proceedings of Odyssey 2016</span><span id="bib.bib1.5.3" class="ltx_text" style="font-size:90%;">. 2016, vol. 2016, pp. 352–357,
+International Speech Communication Association.
+</span>
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[2]</span>
+<span class="ltx_bibblock"><span id="bib.bib2.1.1" class="ltx_text" style="font-size:90%;">
+Y. Lei, N. Scheffer, L. Ferrer, and M. McLaren,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib2.2.1" class="ltx_text" style="font-size:90%;">“A novel scheme for speaker recognition using a phonetically-aware
+deep neural network,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib2.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib2.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2014 IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP)</span><span id="bib.bib2.5.3" class="ltx_text" style="font-size:90%;">, May 2014, pp. 1695–1699.
+</span>
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[3]</span>
+<span class="ltx_bibblock"><span id="bib.bib3.1.1" class="ltx_text" style="font-size:90%;">
+S. Novoselov, T. Pekhovsky, O. Kudashev, V. S. Mendelev, and A. Prudnikov,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib3.2.1" class="ltx_text" style="font-size:90%;">“Non-linear plda for i-vector speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib3.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib3.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2017 IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP)</span><span id="bib.bib3.5.3" class="ltx_text" style="font-size:90%;">, Sept 2015, pp. 214–218.
+</span>
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[4]</span>
+<span class="ltx_bibblock"><span id="bib.bib4.1.1" class="ltx_text" style="font-size:90%;">
+G. Bhattacharya, J. Alam, P. Kenny, and V. Gupta,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib4.2.1" class="ltx_text" style="font-size:90%;">“Modelling speaker and channel variability using deep neural
+networks for robust speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib4.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib4.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2016 IEEE Spoken Language Technology Workshop, SLT 2016,
+San Diego, CA, USA, December 13-16</span><span id="bib.bib4.5.3" class="ltx_text" style="font-size:90%;">, 2016.
+</span>
+</span>
+</li>
+<li id="bib.bib5" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[5]</span>
+<span class="ltx_bibblock"><span id="bib.bib5.1.1" class="ltx_text" style="font-size:90%;">
+O. Ghahabi and J. Hernando,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib5.2.1" class="ltx_text" style="font-size:90%;">“Deep belief networks for i-vector based speaker recognition,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib5.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib5.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2014 IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP)</span><span id="bib.bib5.5.3" class="ltx_text" style="font-size:90%;">, May 2014, pp. 1700–1704.
+</span>
+</span>
+</li>
+<li id="bib.bib6" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[6]</span>
+<span class="ltx_bibblock"><span id="bib.bib6.1.1" class="ltx_text" style="font-size:90%;">
+E. Variani, X. Lei, E. McDermott, I. L. Moreno, and J. Gonzalez-Dominguez,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib6.2.1" class="ltx_text" style="font-size:90%;">“Deep neural networks for small footprint text-dependent speaker
+verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib6.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib6.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2014 IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP)</span><span id="bib.bib6.5.3" class="ltx_text" style="font-size:90%;">, May 2014, pp. 4052–4056.
+</span>
+</span>
+</li>
+<li id="bib.bib7" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[7]</span>
+<span class="ltx_bibblock"><span id="bib.bib7.1.1" class="ltx_text" style="font-size:90%;">
+G. Heigold, I. Moreno, S. Bengio, and N. Shazeer,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib7.2.1" class="ltx_text" style="font-size:90%;">“End-to-end text-dependent speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib7.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib7.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2016 IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP)</span><span id="bib.bib7.5.3" class="ltx_text" style="font-size:90%;">, March 2016, pp. 5115–5119.
+</span>
+</span>
+</li>
+<li id="bib.bib8" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[8]</span>
+<span class="ltx_bibblock"><span id="bib.bib8.1.1" class="ltx_text" style="font-size:90%;">
+S. X. Zhang, Z. Chen, Y. Zhao, J. Li, and Y. Gong,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib8.2.1" class="ltx_text" style="font-size:90%;">“End-to-end attention based text-dependent speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib8.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib8.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2016 IEEE Spoken Language Technology Workshop (SLT)</span><span id="bib.bib8.5.3" class="ltx_text" style="font-size:90%;">, Dec
+2016, pp. 171–178.
+</span>
+</span>
+</li>
+<li id="bib.bib9" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[9]</span>
+<span class="ltx_bibblock"><span id="bib.bib9.1.1" class="ltx_text" style="font-size:90%;">
+D. Snyder, P. Ghahremani, D. Povey, D. Garcia-Romero, Y. Carmiel, and
+S. Khudanpur,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib9.2.1" class="ltx_text" style="font-size:90%;">“Deep neural network-based speaker embeddings for end-to-end speaker
+verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib9.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib9.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">2016 IEEE Spoken Language Technology Workshop (SLT)</span><span id="bib.bib9.5.3" class="ltx_text" style="font-size:90%;">, Dec
+2016, pp. 165–170.
+</span>
+</span>
+</li>
+<li id="bib.bib10" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[10]</span>
+<span class="ltx_bibblock"><span id="bib.bib10.1.1" class="ltx_text" style="font-size:90%;">
+G. Bhattacharya, J. Alam, and P. Kenny,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib10.2.1" class="ltx_text" style="font-size:90%;">“Deep speaker embeddings for short-duration speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib10.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib10.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Interspeech 2017</span><span id="bib.bib10.5.3" class="ltx_text" style="font-size:90%;">, 08 2017, pp. 1517–1521.
+</span>
+</span>
+</li>
+<li id="bib.bib11" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[11]</span>
+<span class="ltx_bibblock"><span id="bib.bib11.1.1" class="ltx_text" style="font-size:90%;">
+D. Snyder, D. Garcia-Romero, D. Povey, and S. Khudanpur,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib11.2.1" class="ltx_text" style="font-size:90%;">“Deep neural network embeddings for text-independent speaker
+verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib11.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib11.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Interspeech 2017</span><span id="bib.bib11.5.3" class="ltx_text" style="font-size:90%;">, Aug 2017.
+</span>
+</span>
+</li>
+<li id="bib.bib12" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[12]</span>
+<span class="ltx_bibblock"><span id="bib.bib12.1.1" class="ltx_text" style="font-size:90%;">
+L. Burget, O. Plchot, S. Cumani, O. Glembek, P. Matějka, and
+N. Brümmer,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib12.2.1" class="ltx_text" style="font-size:90%;">“Discriminatively trained probabilistic linear discriminant analysis
+for speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib12.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib12.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Proc. of the International Conference on Acoustics, Speech,
+and Signal Processing (ICASSP)</span><span id="bib.bib12.5.3" class="ltx_text" style="font-size:90%;">, Prague, CZ, May 2011.
+</span>
+</span>
+</li>
+<li id="bib.bib13" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[13]</span>
+<span class="ltx_bibblock"><span id="bib.bib13.1.1" class="ltx_text" style="font-size:90%;">
+S. Cumani, N. Brümmer, L. Burget, P. Laface, O. Plchot, and V. Vasilakis,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib13.2.1" class="ltx_text" style="font-size:90%;">“Pairwise discriminative speaker verification in the i–vector
+space,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib13.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">IEEE Transactions on Audio, Speech and Language Processing</span><span id="bib.bib13.4.2" class="ltx_text" style="font-size:90%;">,
+vol. 21, no. 6, pp. 1217–1227, june 2013.
+</span>
+</span>
+</li>
+<li id="bib.bib14" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[14]</span>
+<span class="ltx_bibblock"><span id="bib.bib14.1.1" class="ltx_text" style="font-size:90%;">
+L. Ferrer, H. Bratt, L. Burget, H. Cernocky, O. Glembek, M. Graciarena,
+A. Lawson, Y. Lei, P. Matejka, O. Plchot, et al.,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib14.2.1" class="ltx_text" style="font-size:90%;">“Promoting robustness for speaker modeling in the community: the
+prism evaluation set,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib14.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">https://code.google.com/p/prism-set/</span><span id="bib.bib14.4.2" class="ltx_text" style="font-size:90%;">, 2012.
+</span>
+</span>
+</li>
+<li id="bib.bib15" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[15]</span>
+<span class="ltx_bibblock"><span id="bib.bib15.1.1" class="ltx_text" style="font-size:90%;">
+O. Plchot, P. Matějka, A. Silnova, O. Novotný, M. Diez, J. Rohdin,
+O. Glembek, N. Brümmer, A. Swart, J. Jorrín-Prieto, P. García,
+L. Buera, P. Kenny, J. Alam, and G. Bhattacharya,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib15.2.1" class="ltx_text" style="font-size:90%;">“Analysis and Description of ABC Submission to NIST SRE
+2016,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib15.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib15.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Interspeech 2017</span><span id="bib.bib15.5.3" class="ltx_text" style="font-size:90%;">, Stockholm, Sweden, 2017.
+</span>
+</span>
+</li>
+<li id="bib.bib16" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[16]</span>
+<span class="ltx_bibblock"><span id="bib.bib16.1.1" class="ltx_text" style="font-size:90%;">
+N. Dehak, P. Kenny, R. Dehak, P. Dumouchel, and P. Ouellet,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib16.2.1" class="ltx_text" style="font-size:90%;">“Front-end factor analysis for speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib16.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">Audio, Speech, and Language Processing, IEEE Transactions on</span><span id="bib.bib16.4.2" class="ltx_text" style="font-size:90%;">,
+vol. PP, no. 99, 2011.
+</span>
+</span>
+</li>
+<li id="bib.bib17" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[17]</span>
+<span class="ltx_bibblock"><span id="bib.bib17.1.1" class="ltx_text" style="font-size:90%;">
+“The 2016 NIST speaker recognition evaluation plan (sre16),”
+https://www.nist.gov/file/325336.
+</span>
+</span>
+</li>
+<li id="bib.bib18" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[18]</span>
+<span class="ltx_bibblock"><span id="bib.bib18.1.1" class="ltx_text" style="font-size:90%;">
+J. Rohdin, A. Silnova, M. Diez, O. Plchot, P. Matejka, and
+L. Burget,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib18.2.1" class="ltx_text" style="font-size:90%;">“End-to-end DNN Based Speaker Recognition Inspired by i-vector and
+PLDA,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib18.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">ArXiv e-prints</span><span id="bib.bib18.4.2" class="ltx_text" style="font-size:90%;">, Oct. 2017.
+</span>
+</span>
+</li>
+<li id="bib.bib19" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[19]</span>
+<span class="ltx_bibblock"><span id="bib.bib19.1.1" class="ltx_text" style="font-size:90%;">
+Theano Development Team,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib19.2.1" class="ltx_text" style="font-size:90%;">“Theano: A Python framework for fast computation of mathematical
+expressions,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib19.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">arXiv e-prints</span><span id="bib.bib19.4.2" class="ltx_text" style="font-size:90%;">, vol. abs/1605.02688, May 2016.
+</span>
+</span>
+</li>
+<li id="bib.bib20" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[20]</span>
+<span class="ltx_bibblock"><span id="bib.bib20.1.1" class="ltx_text" style="font-size:90%;">
+M. Karafiát, F. Grézl, K. Veselý, M. Hannemann,
+I. Szőke, and J. Černocký,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib20.2.1" class="ltx_text" style="font-size:90%;">“But 2014 babel system: Analysis of adaptation in nn based
+systems,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib20.3.1" class="ltx_text" style="font-size:90%;">in </span><span id="bib.bib20.4.2" class="ltx_text ltx_font_italic" style="font-size:90%;">Proceedings of Interspeech 2014</span><span id="bib.bib20.5.3" class="ltx_text" style="font-size:90%;">. 2014, pp. 3002–3006,
+International Speech Communication Association.
+</span>
+</span>
+</li>
+<li id="bib.bib21" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[21]</span>
+<span class="ltx_bibblock"><span id="bib.bib21.1.1" class="ltx_text" style="font-size:90%;">
+D. A. Reynolds, T. F. Quatieri, and R. B. Dunn,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib21.2.1" class="ltx_text" style="font-size:90%;">“Speaker verification using adapted gaussian mixture models,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib21.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">Digital Signal Processing</span><span id="bib.bib21.4.2" class="ltx_text" style="font-size:90%;">, vol. 10, pp. 19–41, 2000.
+</span>
+</span>
+</li>
+<li id="bib.bib22" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[22]</span>
+<span class="ltx_bibblock"><span id="bib.bib22.1.1" class="ltx_text" style="font-size:90%;">
+J. Rohdin, S. Biswas, and K. Shinoda,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib22.2.1" class="ltx_text" style="font-size:90%;">“Robust discriminative training against data insufficiency in
+plda-based speaker verification,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib22.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">Computer Speech &amp; Language</span><span id="bib.bib22.4.2" class="ltx_text" style="font-size:90%;">, vol. 35, pp. 32 – 57, 2016.
+</span>
+</span>
+</li>
+<li id="bib.bib23" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[23]</span>
+<span class="ltx_bibblock"><span id="bib.bib23.1.1" class="ltx_text" style="font-size:90%;">
+D. P. Kingma and J. Ba,
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib23.2.1" class="ltx_text" style="font-size:90%;">“Adam: A method for stochastic optimization,”
+</span>
+</span>
+<span class="ltx_bibblock"><span id="bib.bib23.3.1" class="ltx_text ltx_font_italic" style="font-size:90%;">CoRR</span><span id="bib.bib23.4.2" class="ltx_text" style="font-size:90%;">, vol. abs/1412.6980, 2014.
+</span>
+</span>
+</li>
+</ul>
+</section>
+</article>
+</div>
+<div class="ar5iv-footer"><a href="/html/1710.02368" class="ar5iv-nav-button ar5iv-nav-button-prev">◄</a>
+    <a class="ar5iv-home-button" href="/"><img height="40" alt="ar5iv homepage" src="/assets/ar5iv.png"></a>
+    <a href="/feeling_lucky" class="ar5iv-text-button">Feeling<br>lucky?</a>
+    <a href="/land_of_honey_and_milk" rel="nofollow" aria-hidden="true" tabindex="-1"></a>
+    <a href="/log/1710.02369" class="ar5iv-text-button ar5iv-severity-ok">Conversion<br>report</a>
+    <a class="ar5iv-text-button" target="_blank" href="https://github.com/dginev/ar5iv/issues/new?template=improve-article--arxiv-id-.md&title=Improve+article+1710.02369">Report<br>an issue</a>
+    <a href="https://arxiv.org/abs/1710.02369" class="ar5iv-text-button arxiv-ui-theme">View&nbsp;original<br>on&nbsp;arXiv</a><a href="/html/1710.02370" class="ar5iv-nav-button ar5iv-nav-button-next">►</a>
+</div><footer class="ltx_page_footer">
+<a class="ar5iv-toggle-color-scheme" href="javascript:toggleColorScheme()" title="Toggle ar5iv color scheme"><span class="color-scheme-icon"></span></a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/license" target="_blank">Copyright</a>
+<a class="ar5iv-footer-button" href="https://arxiv.org/help/policies/privacy_policy" target="_blank">Privacy Policy</a>
+
+<div class="ltx_page_logo">Generated  on Fri Mar  8 08:38:18 2024 by <a target="_blank" href="http://dlmf.nist.gov/LaTeXML/" class="ltx_LaTeXML_logo"><span style="letter-spacing:-0.2em; margin-right:0.1em;">L<span class="ltx_font_smallcaps" style="position:relative; bottom:2.2pt;">a</span>T<span class="ltx_font_smallcaps" style="font-size:120%;position:relative; bottom:-0.2ex;">e</span></span><span style="font-size:90%; position:relative; bottom:-0.2ex;">XML</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==" alt="Mascot Sammy"></a>
+</div></footer>
+</div>
+
+    <script>
+      var canMathML = typeof(MathMLElement) == "function";
+      if (!canMathML) {
+        var body = document.querySelector("body");
+        body.firstElementChild.setAttribute('style', 'opacity: 0;');
+        var loading = document.createElement("div");
+        loading.setAttribute("id", "mathjax-loading-spinner");
+        var message = document.createElement("div");
+        message.setAttribute("id", "mathjax-loading-message");
+        message.innerText = "Typesetting Equations...";
+        body.prepend(loading);
+        body.prepend(message);
+
+        var el = document.createElement("script");
+        el.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+        document.querySelector("head").appendChild(el);
+
+        window.MathJax = {
+          startup: {
+            pageReady: () => {
+              return MathJax.startup.defaultPageReady().then(() => {
+                body.removeChild(loading);
+                body.removeChild(message);
+                body.firstElementChild.removeAttribute('style');
+              }); } } };
+      }
+    </script>
+    <script>
+    // Auxiliary function, building the preview feature when
+    // an inline citation is clicked
+    function clicked_cite(e) {
+      e.preventDefault();
+      let cite = this.closest('.ltx_cite');
+      let next = cite.nextSibling;
+      if (next && next.nodeType == Node.ELEMENT_NODE && next.getAttribute('class') == "ar5iv-bibitem-preview") {
+        next.remove();
+        return; }
+      // Before adding a preview modal,
+      // cleanup older previews, in case they're still open
+      document.querySelectorAll('span.ar5iv-bibitem-preview').forEach(function(node) {
+        node.remove();
+      })
+
+      // Create the preview
+      preview = document.createElement('span');
+      preview.setAttribute('class','ar5iv-bibitem-preview');
+      let target = document.getElementById(this.getAttribute('href').slice(1));
+      target.childNodes.forEach(function (child) {
+        preview.append(child.cloneNode(true));
+      });
+      let close_x = document.createElement('button');
+      close_x.setAttribute("aria-label","Close modal for bibliography item preview");
+      close_x.textContent = "×";
+      close_x.setAttribute('class', 'ar5iv-button-close-preview');
+      close_x.setAttribute('onclick','this.parentNode.remove()');
+      preview.append(close_x);
+      preview.querySelectorAll('.ltx_tag_bibitem').forEach(function(node) {
+        node.remove();
+      });
+      cite.parentNode.insertBefore(preview, cite.nextSibling);
+      return;
+    }
+    // Global Document initialization:
+    // - assign the preview feature to all inline citation links
+    document.querySelectorAll(".ltx_cite .ltx_ref").forEach(function (link) {
+      link.addEventListener("click", clicked_cite);
+    });
+    </script>
+    </body>
+</html>

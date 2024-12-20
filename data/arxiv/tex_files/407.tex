@@ -1,0 +1,263 @@
+\section{Overview of proof}
+
+We will first briefly sketch the entire proof, and in the subsequent sections expand on all the individual parts. 
+
+The key part of our proof is a new technique for bounding the spectral gap for simulated tempering chain using decompositions (Section~\ref{sec:decomposition}): for each temperature 
+%we partition $\cal P_i$
+we make a partition 
+into ``large'' pieces that are well-connected from the inside. If this partition can be done at every temperature, the difference in temperature is small enough, and the chain mixes at the highest temperature, we show the simulated tempering chain also mixes quickly. This is a general theorem for the mixing of simulated tempering chains that may be useful in other settings. %\Rnote{Maybe good to have a figure here?}
+
+\begin{figure}[h!]
+\centering
+\ig{figure/partition.jpeg}{0.4}
+\caption{For a mixture of gaussians, we can partition space into regions where Langevin Monte Carlo mixes well.}
+\label{fig:partition}
+\end{figure}
+
+We then show that if $f(x)$ is a mixture of gaussians, then indeed the partition exists (Section~\ref{sec:partition}). Here we use spectral clustering techniques developed by \cite{gharan2014partitioning} for finite graphs. The main technical difficulty is in transferring between the discrete and continuous cases.
+
+Finally we complete the proof by showing that
+\begin{enumerate}
+\item
+the Markov chain mixes at the highest temperature (Section~\ref{sec:mixht});
+\item
+the discretized Markov chain approximates the continuous time Markov chain (Section~\ref{sec:discretizeshort});
+\item
+the partition functions are estimated correctly which allows us to run the simulated tempering chain (Section~\ref{sec:partitionfunc}).
+\end{enumerate}•
+
+At last, in Appendix~\ref{sec:perturb} we prove the arguments are tolerant to $L^{\infty}$ perturbations, i.e. that the algorithm works for distributions that are not \emph{exactly} mixtures of gaussians.   
+
+% For simplicity, consider two simplifications: the first is that we have an estimate $\wh Z_i$ of each partition function $\int_\Om e^{-\be_i f(x)}\dx$ to within a constant factor; the second is that we can run the continuous, rather than the discretized Langevin chains.  Then we can run the simulated tempering Markov chain on $\fc{e^{-\be_i f}}{\wh Z_i}$, and the $r_i$'s in Definition~\ref{df:temperingchain} will all be within a constant factor of $\rc n$. 
+
+
+
+\subsection{Decomposing the simulated tempering chain} 
+%ala \cite{woodard2009conditions}
+\label{sec:decomposition}
+First we show that if
+there exists a partition $\cal P_i$ for each temperature %satisfying certain properties,
+such that
+\begin{enumerate}
+\item
+the Markov chain mixes rapidly within each set of the partition (i.e., $\Gap(M_i|_A)$ is large), and
+\item
+the sets in the partition are not too small,
+\end{enumerate}
+and the chain mixes at the highest temperature, 
+then the simulated tempering chain mixes rapidly. %(Theorem~\ref{t:temperingnochain}).
+
+ %More precisely, we will show that: 
+%Our main result is the following. 
+
+\begin{thm*}[Theorem~\ref{t:temperingnochain}]
+%\begin{asm}\label{asm}
+Let $M_i=(\Om, P_i), i\in [L]$ be a sequence of Markov chains with state space $\Om$ and stationary distributions $p_i$.
+Consider the simulated tempering chain $M=(\Om\times[L], P_{\st})$ %
+ with probabilities $(r_i)_{i=1}^{L}$. Let $r = \fc{\min(r_i)}{\max(r_i)}$.  
+
+Let $\cal P_i$
+%$\cal P=\set{A_j}{1\le j\le n}$ 
+be a partition %\footnote{We allow overlaps on sets of measure 0.} 
+of the ground set $\Om$, for each $i\in [L]$, with $\cal P_1=\{\Om\}$. 
+
+Define the \vocab{overlap parameter} of $(\cal P_i)_{i=1}^L$ to be 
+$$
+\de((\cal P_i)_{i=1}^L) = \min_{1< i\le L, A\in \cal P} \ba{
+\int_{A} \min\{p_{i-1}(x),p_i(x)\} \dx 
+}/p_i(A).
+$$
+%\end{asm}
+
+%\begin{thm}
+%Suppose Assumptions~\ref{asm} hold. 
+Define
+$$
+p_{\min}=\min_{i,A\in \cal P_i} p_i(A). 
+$$
+
+%Define a parameter $\ga$ for the tempering chain by
+%$$
+%\ga(\cal P) =\min_{0\le i_1\le i_2\le L-1}\min_j \fc{\mu_{{i_1}}(A_j)}{\mu_{{i_2}}(A_j)}
+%$$
+Then the spectral gap of the tempering chain  satisfies
+\begin{align}
+\Gap(M_{\st}) &\ge\fc{r^4\de^2p_{\min}^2}{32L^4}
+%{512L^2}
+\min_{1\le i\le L, A\in \cal P_i} (\Gap(M_{i}|_A)).
+\end{align} 
+\end{thm*} 
+To prove this, we use techniques similar to existing work on  simulated tempering. %, and improve previous bounds. 
+%We will bootstrap onto existing work for analyzing simulated tempering, improving some of the bounds there. 
+More precisely, similar to the proof in \cite{woodard2009conditions}, we will apply a 
+``decomposition'' theorem (Theorem~\ref{thm:gap-product}) for analyzing the mixing time of the simulated tempering chain.
+%This will be proved in (??) using Theorem~\ref{thm:gap-product}.
+
+%The proof of this fact %(and in fact, a more general claim) 
+%is in Section~\ref{s:main}.
+Note that as we are only using this theorem in the analysis, we only need an existential, not a algorithmic result. 
+%Next, we need to analyze the quantity in Theorem~\ref{t:temperingnochain}, which
+In order to apply this theorem, we will show that there exist good partitions $\mathcal{P}_i$, such that the spectral gap $\Gap(M_{i}|_A)$ within each set is large, and each set in the partition has size $\poly(w_{\min})$. 
+%and minimum probability $p_{\min}$ %the parameter $\gamma$ 
+%are large. We will proceed by showing in our case (mixture of gaussians) that there is a partition such that each set in the partition has size $1/\mbox{poly}(n)$, and the spectral gap within each of the sets is large.  
+%\Hnote{I don't think there's a dependence on $d$.}
+
+\begin{rem}
+In Appendix~\ref{app:other}, Theorem~\ref{thm:sim-temp}, we also give a different (incomparable) criterion for lower-bounding the spectral gap that improves the bound in~\cite{woodard2009conditions}, in some cases by an exponential factor. Theorem~\ref{thm:sim-temp} requires that the partitions $\cal P_i$ be successive refinements, but has the advantage of depending on a parameter $\ga((\cal P_i)_{i=1}^L)$ that is larger than $p_{\min}$, and unlike $p_{\min}$, can even be polynomial when the $\cal P_i$ have exponentially many pieces. Theorem~\ref{thm:sim-temp} will not be necessary for the proof of our main theorem.
+\end{rem}
+%\Rnote{I'm not sure if we want to include Appendix B. It doesn't feel like adding a lot to the paper.}
+
+\subsection{Existence of partitions} 
+%\Hnote{Spectral clustering seems to suggest an algorithmic use of the 
+\label{sec:partition}
+
+We will show the existence of good partitions $\cal P_i$ for $i\ge 2$ using a theorem of \cite{gharan2014partitioning}. The theorem shows if the $k$-th singular value is large, then it is possible to have a clustering with at most $k$ parts which has high ``inside'' conductance within the clusters and low ``outside'' conductance between the clusters (Definition~\ref{df:in-out}).
+
+\begin{thm*}[Spectrally partitioning graphs, Theorem~\ref{thm:gt14}]
+Let $M=(\Om, P)$ be a reversible Markov chain with $|\Om|=n$ states. Let $0=\la_1\le \la_2\le \cdots\le \la_n$ be the eigenvalues of the Markov chain. %\le 2
+
+For any $k\ge 2$, if $\la_k>0$, then there exists $1\le \ell\le k-1$ and a $\ell$-partitioning of $\Om$ into sets $P_1,\ldots, P_\ell$ that is a 
+$
+(\Om(\la_k/k^2), O(\ell^3\sqrt{\la_\ell}))
+$-clustering.
+\end{thm*}
+
+For a mixture of $n$ gaussians, using  the Poincar\'e inequality for gaussians we can  show that $\lambda_{n+1}$ for the continuous Langevin chain is bounded away from 0. Therefore one would hope to use Theorem~\ref{thm:gt14} above to obtain a clustering. However, there are some difficulties, especially that Theorem~\ref{thm:gt14} only holds for a discrete time, discrete space Markov chain.
+
+%Two difficulties arise in applying the theorem: it holds for a discrete time, discrete space Markov chain. 
+
+To solve the discrete time problem, we fix a time $T$, and consider the discrete time chain where each step is running Langevin for time $T$. To solve the discrete space problem, we note that we can apply the theorem to the Markov chain $M_i$ projected to any partition (See Definition~\ref{df:assoc-mc} for the definition of a projected Markov chain). %We show that for a mixture of $n$ gaussians, $\la_{n+1}$ for the continuous Langevin chain is bounded away from 0;  
+A series of technical lemmas will show that the eigenvalues and conductances do not change too much if we pass to the discrete time (and space) chain.
+%$\la_{n+1}$ is still large for the discrete time (and space) chain.
+
+Another issue is that although the theorem guarantees good inner-conductance, it does not immediately give a lowerbound for the size of the clusters. Here we again use Poincar\'e inequality to show {\em any} small set must have a large outer-conductance, therefore the clustering guaranteed by the theorem cannot have small clusters.
+Thus the assumptions of Theorem~\ref{thm:gt14} are satisfied, and we get a partition with large internal conductance and small external conductance for the projected chain (Lemma~\ref{lem:any-partition}). 
+%The conclusion would give us what we want for Theorem~\ref{t:temperingnochain}.
+%Large internal conductance means the spectral gap of the restricted chains $M_i|_A$ is large. Small external conductance for a set $A$ implies that $p_i(A)$ is not too small, again using a Poincar\'e inequality. 
+%This seems too technical here.
+%: if $A$ were small, then consider the gaussian in the mixture under which it has the most mass. Its measure for that gaussian is bounded away from 1, so a Poincar\'e inequality for that gaussian will show that $A$ has large external conductance. 
+%This gives Lemma~\ref{lem:any-partition}. 
+
+By letting the size of the cells in the partition go to 0, we show that the gap of the projected chain approaches the gap of the continuous chain (Lemma~\ref{lem:limit-chain}). Because this lemma only works for compact sets, we also need to show that restricting to a large ball doesn't change the eigenvalues too much (Lemma~\ref{lem:rest-large}).\Rnote{This is getting a bit too detailed for this part I think.}
+
+%More quantitatively, we will show that, given any ``fine'' partition of $\mathbb{R}^d$, one can construct a partition with a small number of cells, 
+%satisfying the properties above. Towards making this formal, let us define the notion of a clustering with high ``inside'' conductance in the clusters, 
+%and low ``outside'' conductance between the clusters. 
+
+%
+%\begin{df} Let $M=(\Om,P)$ be a Markov chain on a finite state space $\Om$. 
+%We say that $k$ disjoint subsets $A_1,\ldots, A_k$ of $\Om$ are a $(\phi_{\text{in}}, \phi_{\text{out}})$-clustering if for all $1\le i\le k$,
+%\begin{align}
+%\phi(M|_{A_i}) &\ge \phi_{\text{in}}\\
+%\phi_M(A_i)&\le \phi_{\text{out}}.
+%\end{align}•
+%\end{df}
+
+%The following general theorem holds. \Hnote{Perturb ratio?}
+%\begin{lem*}[Lemma~\ref{lem:any-partition}]
+%Let $p_i (x)= e^{-f_i(x)}$ be probability distributions such that for all $\be>0$, $\int e^{-\be f_i(x)}\dx<\iy$, and let 
+%$$
+%Z_\be = 
+%\int_{\R^d} e^{-\be f_1}\dx=\cdots = \int_{\R^d} e^{-\be f_n}\dx.
+%$$ 
+%Suppose that a Poincar\'e inequality holds for each $\wt p_{\be,i} = \fc{e^{-\be f_i}}{Z_\be}$ with constant $C_\be$.
+%
+%Let $\cal P=\{A_1,\ldots, A_n\}$ be any partition of $\R^d$.
+%Let $P_T$ be the discrete-time Markov chain where each step is running Langevin for time $T$.
+%Let $\ol P_T$ be the projected chain with respect to this partition; the states are $[n]$.
+%There exists $\ell \le m$ and a partition $\cal J$ of $[n]$ into $\ell$ sets $\ell$ $J_1,\ldots, J_\ell$ such that the following hold.
+%\begin{enumerate}
+%\item
+%$\phi(M|_{A_i}) = \Om(\poly(C_\be, \de, T,\rc m)) $
+%\Hnote{Insert actual factors?}
+%\item
+%Every set in the partition has measure  at least $\fc{w_{\min}^3}{4}$.
+%\end{enumerate}
+%\label{l:partitiongharan}
+%\end{lem*}
+%%\Anote{Say something about the notion of restriction in Oveis-Gharan and Trevisan.}
+%
+%Note that for our setting, $f_i$ corresponds to each of the individual gaussians in the mixture, and if the variances of the gaussians match, the partition functions are the same
+%for all $i$. The Poincar\'e inequality for gaussians is a well-known result---in fact, it holds even for strongly-convex functions (see e.g. \cite{bakry1985diffusions}), and we will review it in Section \ref{sec:mdo}.    
+%
+%%Then, the theorem statement implies that starting with any ``fine'' partition of $\mathbb{R}^d$, we can find a partition into at most $m$ pieces, each of which has good inside conductance, and is of size at least $1/\mbox{poly}(w_{\min})$. Thus, this partition can be plugged in in Theorem~\ref{t:temperingnochain}. However, there is a mild issue: we still need to formalize the fact that we can find a ``fine'' partition, and the convergence of the fineness is uniform in the size of the cells. We prove the following: 
+%
+%\begin{lem*}[Lemma~\ref{l:uniform_convergence}]
+%Let $(\Om, P)$ be a reversible Markov chain where
+%\begin{itemize}
+%\item
+%%$\Om$ is a compact topological space
+%$\Om\subeq \R^n$ is compact
+%\item
+%the kernel $P:\Om\times \Om\to \R$ is a continuous function that is $>0$ everywhere, and
+%\item
+%the stationary distribution $p:\Om\to \R$ is a continuous function.
+%\end{itemize}
+%Then 
+%$$
+%\lim_{\ep\searrow 0}\inf_{\ol P} {\text{Gap}(\ol P)}={\text{Gap}(P)}
+%$$
+%where the infimum is over projections of $P$ with respect to a partition $\cal P$ composed of sets $A$ with $\diam(A)<\ep$. 
+%\end{lem*}
+
+%\subsection{Details: mixing at the highest temperature, and estimating the partition functions} 
+\subsection{Mixing at highest temperature}
+\label{sec:mixht}
+Next, we need to show mixing at the highest temperature. Over bounded domains, we could set the highest temperature to be infinite, which would correspond to uniform sampling over the domain. Since we are working over an unbounded domain, we instead compare it to Langevin dynamics for a strictly convex function which is close in $L^\iy$ distance (Lemma~\ref{lem:hitemp}). We use the fact that 
+Langevin dynamics mixes rapidly for strictly convex functions, and an $L^{\iy}$ perturbation of $\ep$ affects the spectral gap by at most a factor of $e^{\ep}$. 
+
+%If we want to reprint a lemma here, print Lemma {lem:hitempmix} rather than {lem:hitemp}
+
+%To finish things up, we have two details remaining. The spectral gap of the tempering chain in Theorem~\ref{t:temperingnochain} is at most $\Gap(P_0)$, so we have to show this gap is large -- in other words, we have to show the chain at the highest temperature mixes rapidly. The difficulty is that the usual setting involves sampling over bounded domains, so the strategy is to show the highest temperature distribution is close-to-uniform over the domain. Here, we are working over an infinite domain, so we want to show that the high temperature distribution: namely the distribution at temperature $1/B$ is close-to a strongly log-concave distribution, in an $l_{\infty}$ sense. Toward that, we show: 
+
+%\begin{lem*}[Lemma~\ref{lem:hitemp}]
+%Let $ f(x) = -\ln\pa{\sumo im \al_i e^{-\fc{\ve{x-\mu_i}^2}2}}$ where $\al_1,\ldots, \al_m>0$, $\sumo im \al_i=1$, and $w_{\min} = \min_{1\le i\le m}\al_i$.
+%
+%Then there exists a 1-strongly convex function $g(x)$ such that $\ve{f-g}_{\iy}\le \ln \prc{w_{\min}}$.
+%\end{lem*}
+
+\subsection{Discretizing the Langevin diffusion}
+\label{sec:discretizeshort}
+Up to this point, though we subdivided time into discrete intervals of size $T$, in each time interval we ran the \emph{continuous} Langevin chain for time $T$. However, algorithmically we can only run a discretization of Langevin diffusion -- so we need to bound the drift of the discretization from the continuous chain. 
+
+For this, we follow the usual pattern of discretization arguments: if we run the continuous chain for some time $T$ with step size $\eta$, the drift of the discretized chain to the continuous will be $\eta T$. If we have a bound on $T$, this provides a bound for the drift. More precisely, we show: 
+
+\begin{lem*}[Lemma~\ref{l:maindiscretize}] Let $p^t, q^t: \mathbb{R}^d \times [L]  \to \mathbb{R}$ be the distributions after running the simulated tempering chain for $t$ steps, where in $p^t$, for any temperature $i \in L$, the Type 1 transitions are taken according to the (discrete time) Markov kernel $P_T$: running Langevin diffusion for time $T$; in $q^t$, the Type 1 transitions are taken according to running $\frac{T}{\eta}$ steps of the discretized Langevin diffusion, using $\eta$ as the discretization granularity, s.t. $\eta \leq \frac{\sigma^2}{2}$.  
+Then, 
+\begin{align*} \mbox{KL} (p^t || q^t) \lesssim \frac{\eta^2}{\sigma^6} (D+d) T t^2 + \frac{\eta^2}{\sigma^6} \max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 + \frac{\eta}{\sigma^4} d t T \eta  \end{align*}
+\end{lem*} 
+
+To prove this, consider the two types of steps separately. The Type 2 steps in the tempering chains do not increase the KL divergence between the continuous and discretized version of the chains, and during the Type 1 steps, the increase in KL divergence on a per-step basis can be bounded by using existing machinery on discretizing Langevin diffusion (see e.g. \cite{dalalyan2016theoretical}) along with a decomposition theorem for the KL divergence of a mixture of distributions (Lemma~\ref{l:decomposingKL}).  
+
+%\Hnote{Do we want this here? Seems like details.} 
+We make a brief remark about $\max_i \E_{x \sim p^0( \cdot, i)}\|x - x^*\|_2^2 $: since the means $\mu_i$ satisfy $\|\mu_i\| \leq D$, it's easy to characterize the location of $x^*$ and conclude that bounding this quantity essentially requires that most of the mass in the initial distributions should be concentrated on a ball of size $O(D)$. Namely, the following holds:  
+
+\begin{lem} Let $x^* = \mbox{argmin}_{x \in \mathbb{R}^d} \tilde{f}(x)$. Then, $\|x^*\| \leq \sqrt{2} D$.  
+\end{lem} 
+
+\subsection{Estimating the partition functions}
+\label{sec:partitionfunc}
+Finally, the Metropolis-Hastings filter in the Type 2 step of the simulated tempering chain requires us to estimate the partition functions at each of the temperatures. It is sufficient to estimate the partition functions to within a constant factor, because the gap of the tempering chain depends on the ratio of the maximum-to-minimum probability of a given temperature.  
+
+For this, we run the chain for temperatures $\be_1,\ldots, \be_\ell$, obtain good samples for $p_\ell$, and use them to estimate $Z_{\ell+1}$. We use Lemma~\ref{l:partitionfunc} to show that with high probability, this is a good estimate.
+
+%\begin{lem*}[Lemma~\ref{l:partitionfunc}, Estimating the partition function to within a constant factor]
+%Suppose that $p_1(x) =\fc{q_1(x)}{Z_1}$ and $p_2(x)=\fc{q_2(x)}{Z_2}$ are probability distributions on $\Om$. %, with $q_1,q_2$ being unnormalized versions of the probability distribution. 
+%%Let $\wt p_1, p_1,p_2$ be distributions on $\Om$. Suppose that $q_2=kp_2$ for some constant $k$ ($q_2$ is an unnormalized version of the probability distribution). 
+%Suppose $\wt p_1$ is a distribution such that $d_{TV}(\wt p_1, p_1)<\rc{4C^2}$, and $\fc{q_2(x)}{q_1(x)}\in [\rc C, C]$ for all $x\in \Om$. Given $n$ samples from $\wt p_1$, define the random variable
+%\begin{align}
+%\ol r = \rc{n} \sumo in \fc{q_2(x_i)}{q_1(x_i)}.
+%\end{align}
+%Let
+%\begin{align}
+%r = \EE_{x\sim p_1}\fc{q_2(x)}{q_1(x)} = \fc{Z_2}{Z_1}.
+%\end{align}
+%Then with probability $\ge 1-e^{-\fc{n}{8C^4}}$, 
+%\begin{align}
+%\ab{\fc{\ol r}{r}-1}& \le \rc 2.
+%\end{align}
+%\end{lem*}
+
+
+
+ 

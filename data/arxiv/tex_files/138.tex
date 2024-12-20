@@ -1,0 +1,314 @@
+
+\documentclass[11pt]{article}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{xspace}
+\usepackage{theorem}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{graphics}
+\usepackage{colordvi}
+\usepackage{colordvi}
+\usepackage{subfig}
+\usepackage{caption}
+\usepackage{hyperref}
+% -----------------------------------------------------------------------------
+
+\begin{document}
+
+\title{A Multiscale Patch Based Convolutional Network for Brain Tumor Segmentation. }
+
+\author{Jean Stawiaski\\ \small Stryker Corporation, Freiburg, Germany.}
+
+\date{September 22, 2017.}
+
+% -----------------------------------------------------------------------------
+\maketitle
+
+\begin{abstract}
+  This article presents a multiscale patch based convolutional neural network for the automatic segmentation of brain tumors in multi-modality 3D MR images. We use multiscale deep supervision and inputs to train a convolutional network. We evaluate the effectiveness of the proposed approach on the BRATS 2017 segmentation challenge \cite{brats1,brats2,brats3,brats4} where we obtained dice scores of 0.755, 0.900, 0.782 and 95\% Hausdorff distance of 3.63mm, 4.10mm, and 6.81mm  for enhanced tumor core, whole tumor and tumor core respectively.
+\end{abstract}
+
+\smallskip
+\noindent \textbf{Keywords.} Brain tumor, convolutional neural network, image segmentation.
+
+% -----------------------------------------------------------------------------
+\section{Introduction}
+
+Brain Gliomas represent 80\% of all malignant brain tumors. Gliomas can be categorized according to their grade which is determined by a pathologic evaluation of the tumor:
+\begin{itemize}
+\item Low-grade gliomas exhibit benign tendencies and indicate thus a better prognosis for the patient. However, they also have a uniform rate of recurrence and increase in grade over time.
+\item High-grade gliomas are anaplastic; these are malignant and carry a worse prognosis for the patient.
+\end{itemize}
+
+Brain gliomas can be well detected using magnetic resonance imaging. The whole tumor is visible in T2-FLAIR, the tumor core is visible in T2 and the enhancing tumor structures as well as the necrotic parts can be visualized using contrast enhanced T1 scans. An example is illustrated in figure \ref{bratsex}. \\
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.37]{brats_ex.png}
+    \caption{Example of images from the BRATS 2017 dataset. From left to right: T1 image, T2 image: the whole tumor and its core are visible, T2 FLAIR image: discarding the cerebrospinal fluid signal from the T2 image highlights the tumor region only, T1ce: contrast injection permits to visualize the enhancing part of the tumor as well as the necrotic part. Finally the expected segmentation result is overlaid on the T1ce image. The edema is shown in red, the enhancing part in white and the necrotic part of the tumor is shown in blue. }
+    \label{bratsex}
+\end{figure}
+
+Automatic segmentation of brain tumor structures is particularly important in order to quantitatively assess the tumor geometry. It has also a great potential for surgical planning and intraoperative surgical resection guidance. Automatic segmentation still poses many challenges because of the variability of appearances and sizes of the tumors. Moreover the differences in the image acquisition protocols, the inhomogeneity of the magnetic field and partial volume effects have also a great impact on the image quality obtained from routinely acquired 3D MR images.\\
+
+In the recent years, deep neural networks have shown to provide state-of-the-art performance for various challenging image segmentation and classification problems \cite{FCN,FCN-CRF,segnet,dilnet,Deconv}. Medical image segmentation problems have also been successfully tackled by such approaches \cite{UNET,VNET,deepsuper2,deepsuper3,cascade}. Inspired by these works, we present here a relatively simple architecture that produces competitive results for the BRATS 2017 dataset \cite{brats1,brats2,brats3,brats4}. We propose a variant of the well known U-net \cite{UNET}, fed with multiscale inputs \cite{multiscalenet}, having residual connections \cite{ResNet}, and being trained in a multiscale deep supervised manner \cite{deepsuper}.\\
+
+% -----------------------------------------------------------------------------
+\section{Multiscale Patch Based Convolutional Network}
+
+This section details our network architecture, the loss function used to train the network end-to-end as well as the training data preparation.
+
+% -----------------------------------------------------------------------------
+\subsection{Network Architecture}
+
+Our architecture is illustrated in figure \ref{archi}. The network processes patches of $64^3$ voxels and takes multiscale version of these patches as input. We detail here some important properties of the network:
+
+\begin{itemize}
+
+\item each sample image $y$ is normalised to have zero mean and unit variance for voxels inside the brain:
+\begin{equation}
+y = \frac{x-m_{br} }{\sigma_{br} } \; ,
+\end{equation}
+where $m_{br}$ and $\sigma_{br}$ is the mean and the variance of voxels inside the brain (non zero voxels of a given 3D image),
+
+\item batch normalisation is performed after each convolutional layer using a running mean and standard deviation computed on 5000 samples:
+\begin{equation}
+by = \frac{ (y-m_b) }{( \sigma_b + \epsilon) } \times \gamma + c \; ,
+\end{equation}
+where $m_{b}$ and $\sigma_{b}$ is the mean and variance of the minibatches and $\gamma$ and $c$ are learnable parameters,
+
+\item each layer is composed of residual connections as illustrated in figure \ref{residual},
+
+\item different layers of the network are combined using (1x1) convolution kernels as illustrated in figure \ref{combination},
+
+\item the activation function is an exponential linear unit,
+
+\item convolution kernels are (3x3x3) kernels,
+
+\item convolutions are computed using reflective border padding,
+
+\item downsampling is performed by decimating a smooth version of the layer:
+\begin{equation}
+dy = (y  \ast G_\sigma) \downarrow_2 \; ,
+\end{equation}
+where $G_\sigma$ is a gaussian kernel,
+
+\item upsampling is performed by nearest neighbor interpolation.
+
+\end{itemize}
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.3]{network_multiscale.png}
+    \caption{Network architecture: multiscale convolutional neural network.}
+    \label{archi}
+\end{figure}
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.2]{resblock.png}
+    \caption{Residual connections in a convolutional layer.}
+    \label{residual}
+\end{figure}
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.33]{combineblock.png}
+    \caption{Layer combination using (1x1) convolution kernels.}
+    \label{combination}
+\end{figure}
+
+
+% -----------------------------------------------------------------------------
+\subsection{Scale-wise Loss Function}
+
+We define a loss function for each scale of the network allowing a faster training and a better model convergence. Using this deep supervision, gradients are efficiently injected at all scales of the network during the training process. Downsampled ground truth segmentation images are used to compute the loss associated for each scale. The loss function is defined as the combination of the mean cross entropy (mce) and the Dice coefficients (dce) between the ground truth class probability and the network estimates:
+\begin{equation}
+ce = \sum_k \Big( \frac{-1}{n} \sum_i y_i^k log(p_i^k) \Big) \;
+\end{equation}
+where $y_i^k$ and $p_i^k$ represent respectively the ground truth probability and the network estimate for the class $k$ at location $i$.
+
+\begin{equation}
+dce = \sum_{k \neq 0}  \Big( 1.0 - \frac{1}{n} \Big( \frac{ 2 \sum_i p_i^k y_i^k }{ \sum_i (p_i^k)^2 + \sum_i (y_i^k)^2  } \Big) \Big) \; .
+\end{equation}
+
+Note that we exclude the background class for the computation of the dice coefficient.
+
+% -----------------------------------------------------------------------------
+\subsection{Training Data Preparation}
+
+We used the BRATS 2017 training and validation sets for our experiments \cite{brats1,brats2,brats3,brats4}. The training set contains 285 patients (210 high grade gliomas and 75 low grade gliomas). The BRATS 2017 validation set contains 46 patients with brain tumors of unknown grade with unknown ground truth segmentations. Each patient contains four modalities: T1, T1 with contrast enhancement, T2 and T2 FLAIR. The aim of this experiment is to segment automatically the tumor necrotic part, the tumor edema and the tumor enhancing part.\\
+
+The segmentation ground truth provided with the BRATS 2017 dataset presents however some imperfections. The segmentation is relatively noisy and does not present a strong 3D coherence as illustrated in figure \ref{noisy}. We have thus decided to manually smooth each ground truth segmentation map independently such that:
+\begin{equation}
+y^k = (y^k \ast G_\sigma) \; ,
+\end{equation}
+where $y^k $ is the probability map associated with the class $k$, $G_\sigma$ is a normalised gaussian kernel. Note that this process still ensures that $y_k$ is a probability map:
+\begin{equation}
+\sum_{k} y_i^k = 1 \; .
+\end{equation}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.2]{t1.png}
+    \caption{Noisy segmentation ground truth. Example of class wise probability smoothing. (Necrotic parts is shown in dark gray, edema in light gray and enhancing tumor in white). }
+    \label{noisy}
+\end{figure}
+
+In order to deal with the class imbalance, patches are sampled so that at least 0.01 \% of the voxels contain one of the tumor classes.
+
+% -----------------------------------------------------------------------------
+\subsection{Implementation}
+
+The network is implemented using Microsoft CNTK \footnote{\url{https://www.microsoft.com/en-us/cognitive-toolkit/}}. We use stochastic gradient descent with momentum to train the network. The network is trained using 3 Nvidia GTX 1080 receiving a different subset of the training data. The inference of the network is done on one graphic card and takes approximatively 5 seconds to process an image by analyzing non overlapping sub volumes of $64^3$ voxels.\\
+
+% -----------------------------------------------------------------------------
+\section{Results}
+
+Due to our training data preparation (class wise segmentation smoothing) and due to our data augmentation method (additive noise), our segmentation results tends to be smoother than the ground truth segmentation. This effect is illustrated in figure \ref{train}.\\
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.3]{resbrats4.png}
+    \caption{Left: segmentation obtained on a image from the training data. Middle: obtained segmentation result. Right: Ground truth segmentation. The edema is shown in red, the enhancing part in white and the necrotic part of the tumor is shown in blue. Our results tend to be smoother than the ground truth delineation. }
+    \label{train}
+\end{figure}
+
+We uploaded our segmentation results to the BRATS 2017 server \footnote{\url{https://www.cbica.upenn.edu/BraTS17/lboardValidation.html} } which evaluates the segmentation and provides quantitative measurements in terms of Dice scores, sensitivity, specificity and Hausdorff distances of enhanced tumor core, whole tumor, and tumor core. Results of the BRATS 2017 validation phase are presented in Table 1. The table summarizes the scores as they appeared on the leaderboard the 22 September 2017. We observe that the proposed method does not perform as well as the other best methods in terms of dice coefficients. On the other side our method produces very competitive distances metrics.\\
+
+\begin{center}
+  \begin{tabular}{ | l | l | l | l | l | l | l | }
+    \hline
+    Team & Dice ET & Dice WT & Dice TC & Dist. ET & Dist. WT & Dist. TC \\ \hline
+    UCL-TIG   & 0.785 & 0.904 & 0.837 & 3.28 & 3.89 & 6.47 \\ \hline
+    biomedia1 & 0.757 & 0.901 & 0.820 & 4.22 & 4.55 & 6.10 \\ \hline
+    Zhouch    & 0.760 & 0.903 & 0.824 & 3.71 & 4.87 & 6.74 \\ \hline
+    MIC DKFZ  & 0.731 & 0.896 & 0.797 & 4.54 & 6.97 & 9.47 \\ \hline
+    \textbf{stryker}  & \textbf{0.755} & \textbf{0.900} & \textbf{0.782} & \textbf{3.63} & \textbf{4.10} & \textbf{6.81} \\
+    \hline
+  \end{tabular}
+  \captionof{table}{BRATS 2017 Validation scores, dice coefficients and the 95\% Hausdorff distances. Our results corresponds to the team name "stryker". }
+\end{center}
+
+Different segmentation results are illustrated in figure \ref{test1}. The proposed network tends to produce smooth and compact segmentation results which are often very close in terms of Euclidean distance to the ground truth segmentation. We have consciously chosen to privilege this effect by smoothing the ground truth segmentation and augmenting data with additive noise. Different approaches may be better suited for other kind of quality metrics.\\
+
+\begin{figure}[httb]
+    \centering
+    \includegraphics[scale=0.45]{alz.png}
+    \includegraphics[scale=0.4]{atw.png}
+    \caption{Segmentation results obtained on images from the validation data. (Top: good results, Bottom: incorrect detection of necrotic parts.) The edema is shown in red, the enhancing part in white and the necrotic part of the tumor is shown in blue.  }
+    \label{test1}
+\end{figure}
+
+
+% -----------------------------------------------------------------------------
+\section{Conclusion}
+
+We have presented a relatively simple but efficient approach for automatic brain tumor segmentation using a convolutional network. We obtained competitive scores on the BRATS 2017 segmentation challenge \footnote{\url{https://www.cbica.upenn.edu/BraTS17/lboardValidation.html}}. Future work will concentrate on making the network more compact and more robust in order to be used clinically in an intraoperative setup. A possible improvement of the presented method could consist in adding semantic constraints by using a hierarchical approach such as the one presented in \cite{UCL}.\\
+
+\bibliographystyle{amsplain}
+
+\begin{thebibliography}{9}
+
+\bibitem{brats1}
+    Menze BH, Jakab A, Bauer S, Kalpathy-Cramer J, Farahani K, Kirby J, Burren Y, Porz N, Slotboom J, Wiest R, Lanczi L, Gerstner E, Weber MA, Arbel T, Avants BB, Ayache N, Buendia P, Collins DL, Cordier N, Corso JJ, Criminisi A, Das T, Delingette H, Demiralp Ç, Durst CR, Dojat M, Doyle S, Festa J, Forbes F, Geremia E, Glocker B, Golland P, Guo X, Hamamci A, Iftekharuddin KM, Jena R, John NM, Konukoglu E, Lashkari D, Mariz JA, Meier R, Pereira S, Precup D, Price SJ, Raviv TR, Reza SM, Ryan M, Sarikaya D, Schwartz L, Shin HC, Shotton J, Silva CA, Sousa N, Subbanna NK, Szekely G, Taylor TJ, Thomas OM, Tustison NJ, Unal G, Vasseur F, Wintermark M, Ye DH, Zhao L, Zhao B, Zikic D, Prastawa M, Reyes M, Van Leemput K. "The Multimodal Brain Tumor Image Segmentation Benchmark (BRATS)", IEEE Transactions on Medical Imaging 34(10), 1993-2024 (2015)
+
+\bibitem{brats2}
+    Bakas S, Akbari H, Sotiras A, Bilello M, Rozycki M, Kirby JS, Freymann JB, Farahani K, Davatzikos C. "Advancing The Cancer Genome Atlas glioma MRI collections with expert segmentation labels and radiomic features", Nature Scientific Data, 2017.
+
+\bibitem{brats3}
+    Bakas S, Akbari H, Sotiras A, Bilello M, Rozycki M, Kirby J, Freymann J, Farahani K, Davatzikos C. "Segmentation Labels and Radiomic Features for the Pre-operative Scans of the TCGA-GBM collection", The Cancer Imaging Archive, 2017.
+
+\bibitem{brats4}
+    Bakas S, Akbari H, Sotiras A, Bilello M, Rozycki M, Kirby J, Freymann J, Farahani K, Davatzikos C. "Segmentation Labels and Radiomic Features for the Pre-operative Scans of the TCGA-LGG collection", The Cancer Imaging Archive, 2017.
+
+\bibitem{UCL}
+  Guotai Wang, Wenqi Li, Sebastien Ourselin, Tom Vercauteren,
+  Automatic Brain Tumor Segmentation using Cascaded Anisotropic Convolutional Neural Networks,
+  arXiv:1709.00382,
+  \url{https://arxiv.org/abs/1709.00382}, 2016.
+
+\bibitem{FCN}
+  J. Long, E. Shelhamer, and T. Darrell,
+  Fully convolutional networks for semantic segmentation,
+  arXiv:1605.06211,
+  \url{https://arxiv.org/abs/1605.06211}, 2016.
+
+\bibitem{FCN-CRF}
+  L.-C. Chen, G. Papandreou, I. Kokkinos, K. Murphy, and A. L.Yuille,
+  Semantic image segmentation with deep convolutional nets and fully connected CRF,
+  arXiv:1412.7062,
+  \url{https://arxiv.org/abs/1412.7062}, 2014.
+
+\bibitem{Deconv}
+  Hyeonwoo Noh, Seunghoon Hong, Bohyung Han,
+  Learning Deconvolution Network for Semantic Segmentation,
+  arXiv:1505.04366,
+  \url{https://arxiv.org/abs/1505.04366}, 2015.
+
+\bibitem{segnet}
+  Vijay Badrinarayanan, Alex Kendall, Roberto Cipolla,
+  SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation,
+  arXiv:1511.00561,
+  \url{https://arxiv.org/abs/1511.00561}, 2015.
+
+\bibitem{dilnet}
+  Fisher Yu, Vladlen Koltun,
+  Multi-Scale Context Aggregation by Dilated Convolutions,
+  arXiv:1511.07122,
+  \url{https://arxiv.org/abs/1511.07122}, 2016.
+
+\bibitem{UNET}
+  Olaf Ronneberger, Philipp Fischer, Thomas Brox,
+  U-Net: Convolutional Networks for Biomedical Image Segmentation,
+  arXiv:1505.04597,
+  \url{https://arxiv.org/abs/1505.04597}, 2015.
+
+\bibitem{VNET}
+  Fausto Milletari, Nassir Navab, Seyed-Ahmad Ahmadi,
+  V-Net: Fully Convolutional Neural Networks for Volumetric Medical Image Segmentation,
+  arXiv:1606.04797,
+  \url{https://arxiv.org/abs/1606.04797}, 2016.
+
+\bibitem{ResNet}
+  Zifeng Wu, Chunhua Shen, and Anton van den Hengel,
+  Wider or Deeper: Revisiting the ResNet Model for Visual Recognition,
+  \url{https://arxiv.org/abs/1611.10080}, 2016.
+
+\bibitem{multiscalenet}
+  Iasonas Kokkinos,
+  Pushing the Boundaries of Boundary Detection using Deep Learning,
+  arXiv:1611.10080,
+  \url{https://arxiv.org/abs/1511.07386}, 2015.
+
+\bibitem{deepsuper}
+  Chen-Yu Lee, Saining Xie, Patrick Gallagher, Zhengyou Zhang, Zhuowen Tu,
+  Deeply-Supervised Nets.
+  arXiv:1409.5185,
+  \url{https://arxiv.org/abs/1409.5185}, 2014.
+
+\bibitem{deepsuper2}
+  Qikui Zhu, Bo Du, Baris Turkbey, Peter L . Choyke, Pingkun Yan,
+  Deeply-Supervised CNN for Prostate Segmentation.
+  arXiv:1703.07523,
+  \url{https://arxiv.org/abs/1703.07523}, 2017.
+
+\bibitem{deepsuper3}
+    Lequan Yu, Xin Yang, Hao Chen, Jing Qin, Pheng-Ann Heng,
+    Volumetric ConvNets with Mixed Residual Connections for Automated Prostate Segmentation from 3D MR Images.
+    Proceedings of the Thirty-First AAAI Conference on Artificial Intelligence (AAAI-17). 2017.
+
+\bibitem{cascade}
+    Christ P.F.,  Elshaer M.E.A., Ettlinger F., Tatavarty S., Bickel M., Bilic P., Remper M., Armbruster M., Hofmann F., Anastasi M.D., Sommer W.H., Ahmadi S.a., Menze B.H.,
+    Automatic Liver and Lesion Segmentation in CT Using Cascaded Fully Convolutional Neural Networks and 3D Conditional Random Fields.
+    arXiv:1610.02177,
+    \url{https://arxiv.org/abs/1610.02177}, 2016.
+
+\end{thebibliography}
+
+\end{document}
+
+% -----------------------------------------------------------------------------

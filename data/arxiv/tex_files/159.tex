@@ -1,0 +1,373 @@
+
+\section{Scheduling: Emulating LCFS-PR\label{sec:scheduling}}
+
+In this section, we design a scheduling algorithm that achieves a
+delay bound of 
+$$O\Big(\# \text{hops} \times  \text{flow-size} \times \frac{1}{\text{gap-to-capacity}}\Big)$$ 
+ without throughput loss for a multi-class queueing network operating in discrete
+ time. As mentioned earlier, our design consists of three key steps.
+We first discuss how to choose the granularity of time-slot $\epsilon$
+appropriately, in order to avoid throughput loss in the discrete-time
+network. In terms of the delay bound, we leverage the results from
+a continuous-time network operating under the Last-Come-First-Serve
+Preemptive-Resume (LCFS-PR) policy. With a Poisson arrival process,
+the network becomes quasi-reversible with a product-form stationary
+distribution. Then we adapt the LCFS-PR policy to obtain a scheduling
+scheme for the discrete-time network. In particular, we design an emulation
+scheme such that the delay of a flow in the discrete-time network
+is bounded above by the delay of the corresponding flow in the continuous-time
+network operating under LCFS-PR. This establishes the delay property
+of the discrete-time network. 
+
+
+\subsection{Granularity of Discretization }
+
+We start with the following definitions that will be useful going forward.
+\begin{defn}[$\mathcal{N}_{D}^{(\epsilon)}$ network]
+It is a discrete-time network with the topology, service requirements and
+exogenous arrivals as described in Section \ref{sec:Model-and-Notation}.
+In particular, each time slot is of length $\epsilon$. Additionally,
+the arrivals of size-$x$ flows on route $j$ form a Poisson process
+of rate $\lambda_{j,x}.$ For such a type-$(j,x)$ flow, its size in 
+$\mathcal{N}_{D}^{(\epsilon)}$
+becomes
+\[
+x^{(\epsilon)}:=\epsilon\left\lceil \frac{x}{\epsilon}\right\rceil ,
+\]
+and the flow is decomposed into $\lceil\frac{x}{\epsilon}\rceil$
+packets of equal size $\epsilon$. 
+\end{defn}
+%
+\begin{defn}[$\mathcal{N}_{C}^{(\epsilon)}$  network]
+It is a continuous-time network with the same topology, service requirements
+and exogenous arrivals as $\mathcal{N}_{D}^{(\epsilon)}.$ The size
+of a type-$(j,x)$ flow is modified in the same way as that in $\mathcal{N}_{D}^{(\epsilon)}$. 
+\end{defn}
+
+Consider the network $\mathcal{N}_{D}^{(\epsilon)}.$ Given an arrival
+rate vector $\blambda\in\Lambda,$ the load on node $v$ is
+\begin{align*}
+f_{v}^{(\epsilon)}= & \sum_{j:j\in v}\sum_{x:x\in\mathcal{X}}\epsilon\left\lceil \frac{x}{\epsilon}\right\rceil \lambda_{j,x}.
+\end{align*}
+As each node has a unit capacity, $\blambda$ is admissible in $\mathcal{N}_{D}^{(\epsilon)}$
+only if $f_{v}^{(\epsilon)}<1$ for all $v\in\mathcal{V}$. We let 
+\begin{align}
+\epsilon & = \min \left\{
+	\frac{1}{C_{0}}\cdot\min_{v\in\mathcal{V}}\left\{ \frac{1-f_{v}}{\sum_{j:j\in v}\sum_{x:x\in\mathcal{X}}\lambda_{j,x}}\right\},
+	\;
+	\min_{j\in \mathcal{J}} \left\{ 1- \rho_j(\blambda) \right\} 
+\right\},
+\label{eq:epsilon}
+\end{align}
+where $C_{0}>1$ is an arbitrary constant. Then for each $v\in\mathcal{V},$
+\begin{align*}
+f_{v}^{(\epsilon)} 
+& < \sum_{j:j\in v}\sum_{x:x\in\mathcal{X}}(x+\epsilon)\lambda_{j,x} \\
+&=  f_{v} + \epsilon \sum_{j:j\in v}\sum_{x:x\in\mathcal{X}} \lambda_{j,x} \\
+&\overset{(a)}{\leq}f_{v}+\frac{1-f_{v}}{C_{0}},\label{eq:node_load_Nd}
+\end{align*}
+where the inequality (a) holds because $\epsilon \le \frac{1-f_{v}}{C_{0}} \cdot \frac{1}{\sum_{j:j\in v}\sum_{x:x\in\mathcal{X}}\lambda_{j,x}} $ by the definition of $\epsilon$
+in Eq.\ (\ref{eq:epsilon}). Since $\blambda\in\Lambda,$ for each
+$v\in\mathcal{V},$ $f_{v}<1$. We thus have 
+\begin{equation}
+1-f_{v}^{(\epsilon)}\geq\frac{C_{0}-1}{C_{0}}(1-f_{v})>0.\label{eq:node_load_Nd_gap}
+\end{equation}
+Thus, each $\blambda\in\Lambda$ is admissible in the discrete-time
+network $\mathcal{N}_{D}^{(\epsilon)}$. 
+
+\subsection{Property of $\mathcal{N}_{C}^{(\epsilon)}$\label{subsec:Nc}}
+
+Consider the continuous-time open network $\mathcal{N}_{C}^{(\epsilon)}$,
+where a LCFS-PR scheduling policy is used at each node. From Theorems
+$3.7$ and $3.8$ in~\cite{kelly1979reversibility}, the network $\mathcal{N}_{C}^{(\epsilon)}$ has a product-form queue length distribution in equilibrium, if the
+following conditions are satisfied: 
+\begin{enumerate}
+\item[(C1.)] the service time distribution is either phase-type or the limit of
+a sequence of phase-type distributions; 
+\item[(C2.)] the total traffic at each node is less than its capacity. 
+\end{enumerate}
+Note that the sum of $n$ exponential random variables each with mean
+$\frac{1}{nx}$ has a phase-type distribution and converges in distribution
+to a constant $x,$ as $ n $ approaches infinity. Thus the first condition
+is satisfied. For each $\blambda\in\Lambda,$ the second condition
+holds for $\mathcal{N}_{C}^{(\epsilon)}$ with $\epsilon$ defined
+as Eq.\ (\ref{eq:epsilon}).
+
+In the following theorem, we establish a bound for the delay
+experience by each flow type. For $j\in\mathcal{J},x\in\mathcal{X},$ let $D^{(j,x),\epsilon} (\blambda)$ denote the sample
+mean of the delay over all type-$(j,x)$ flows, i.e.,
+\begin{align*}
+D^{(j,x),\epsilon} (\blambda) & =\limsup_{k\rightarrow\infty}\frac{1}{k}\sum_{i=1}^{k}D^{(j,x),\epsilon,i} (\blambda),
+\end{align*}
+where $D^{(j,x),\epsilon,i}$ is the delay of the $i$-th type-$(j,x)$ flow.
+
+\begin{thm}
+\label{thm:Delay_Nc} 
+In the network $\mathcal{N}_{C}^{(\epsilon)},$ we have
+\[
+{D}^{(j,x),\epsilon} (\blambda) =\sum_{v:v\in j}\frac{\xe}{1-f_{v}^{(\epsilon)}},\quad \mbox{with probability } 1.
+\]
+\end{thm}
+\begin{proof}
+
+	
+The network $\mathcal{N}_{C}^{(\epsilon)}$ described above is an
+open network with Poisson exogenous arrival processes. An LCFS-PR queue
+management is used at each node in $\Nc.$ The service requirement
+of each flow at each node is deterministic with bounded support. As
+shown in \cite{kelly1979reversibility} (see Theorem 3.10 of Chapter 3), the network
+$\Nc$ is an open network of quasi-reversible queues. Therefore, the
+queue size distribution of $\Nc$ has a product form in equilibrium.
+Further, the marginal distribution of each queue in equilibrium is
+the same as if the queue is operating in isolation. Consider a node
+$v.$ We denote by $Q_{v}$ the queue size of node $v$ in equilibrium.
+In isolation, $Q_{v}$ is distributed as if the queue has a Poisson
+arrival process of rate $f_{v}^{(\epsilon)}.$ Theorem $3.10$ implies
+that the queue is quasi-reversible and hence it has a distribution such
+that 
+\[
+\E[Q_{v}]=\frac{f_{v}^{(\epsilon)}}{1-f_{v}^{(\epsilon)}}.
+\]
+
+Let $Q_{v}^{(j,x)}$ denote the number of type-$(j,x)$ flows at node
+$v$ in equilibrium. Note that $\xe\lambda_{j,x}$ is the average
+amount of service requirement for type-$(j,x)$ flows at node $v$
+per unit time. Then by Theorem $3.10$ \cite{kelly1979reversibility}, we have 
+\[
+\E[Q_{v}^{(j,x)}]=\frac{\xe\lambda_{j,x}}{f_{v}^{(\epsilon)}}\E[Q_{v}]. 
+\]
+
+
+Let $\bar{D}_{v}^{(j,x),\epsilon} (\blambda)$ denote the delay experienced by a type-$(j,x)$ flow at node $v,$ in equilibrium.
+Applying Little's Law to the stable system concerning only type-$(j,x)$
+flows at node $v$, we can obtain 
+\[
+\E[\bar{D}_{v}^{(j,x),\epsilon} (\blambda)]=\frac{\E[Q_{v}^{(j,x)}]}{\lambda_{j,x}}=\frac{\xe}{1-f_{v}^{(\epsilon)}}.
+\]
+
+Therefore, the delay experienced by a flow of size $x$ along the entire route~$j,$ $\bar{D}^{(j,x),\epsilon}(\blambda),$ satisfies
+\[
+\E[\bar{D}^{(j,x),\epsilon} (\blambda)]=\sum_{v:v\in j}\E[\bar{D}_{v}^{(j,x),\epsilon} (\blambda)]=\sum_{v:v\in j}\frac{\xe}{1-f_{v}^{(\epsilon)}}.
+\]
+
+By the ergodicity of the network $\Nc,$ with probability 1, 
+\[
+{D}^{(j,x),\epsilon} (\blambda) =\E[\bar{D}^{(j,x),\epsilon} (\blambda)]=\sum_{v:v\in j}\frac{\xe}{1-f_{v}^{(\epsilon)}}.
+\]
+
+\end{proof}
+
+
+\subsection{Scheduling Scheme for $\mathcal{N}_{D}^{(\epsilon)}$\label{subsec:Nd}}
+
+In the discrete-time networks, each flow is packetized and time is
+slotted for packetized transmission. The scheduling policy for $\Nd$
+differs from that for $\mathcal{N}_{C}^{(\epsilon)}$ in the following
+ways: 
+\begin{enumerate}
+\item[(1)] A flow/packet generated at time $t$ becomes eligible for transmission
+only at the $\lceil\frac{t}{\epsilon}\rceil$-th time slot; 
+\item[(2)] A complete packet has to be transmitted in a time slot, i.e., fractions
+of packets cannot be transmitted. 
+\end{enumerate}
+Therefore, the LCFS-PR policy in $\Nc$ cannot be directly implemented.
+We need to adapt the LCFS-PR policy to our discrete-time setting.
+The adaption was first introduced by El Gamal et al.~\cite{gamal2006throughput_delay}
+and has been applied to the design of a scheduling algorithm for a
+constrained network \cite{jagabathula2008delay_scheduling}. However,
+it was restricted to the setup where all flows had unit size. Unlike that, here we
+consider variable size flows. Before presenting the adaptation of LCFS-PR scheme, 
+we first make the following definition. 
+\begin{defn}[Flow Arrival Time in $\mathcal{N}_{D}^{(\epsilon)}$]
+The arrival time of a flow at a node $v$ 
+in $\mathcal{N}_{D}^{(\epsilon)}$
+is defined as the arrival time of its last packet at node
+$v$. That is, assume that its $i$-th packet arrives at node $v$
+at time $p_{i},$ then the flow is said to arrive at node $v$ at
+time $A=\max_{1\leq i\leq k}p_{i}.$ Similarly, we define the departure
+time of a flow from a node as the moment when its last packet leaves
+this node. 
+\end{defn}
+
+\medskip
+\noindent\textbf{Emulation scheme. }Suppose that exogenous flows arrive at
+$\Nc$ and $\Nd$ simultaneously. In $\Nc$, flows are served at each
+node according to the LCFS-PR policy. For $\Nd,$ we consider a scheduling
+policy where packets of a flow will not be eligible for transmission
+until the full flow arrives. Let the arrival time of a flow at some
+node in $\mathcal{N}_{C}$ be $\tau$ and in $\mathcal{N}_{D}^{(\epsilon)}$
+at the same node be $A.$ Then packets of this flow are served in
+$\mathcal{N}_{D}^{(\epsilon)}$ using an LCFS-PR policy with the arrival
+time $\epsilon\lceil\frac{\tau}{\epsilon}\rceil$ instead of $A.$
+If multiple flows arrive at a node at the same time, the flow with
+the largest arrival time in $\Nc$ is scheduled first. For a flow
+with multiple packets, packets are transmitted in an arbitrary
+order.
+
+\smallskip
+
+This scheduling policy is feasible in $\Nd$ if and only if each flow
+arrives before its scheduled departure time, i.e., $A\leq\epsilon\lceil\frac{\tau}{\epsilon}\rceil$
+for every flow at each node. Let $\delta$ and $\Delta$ be the departure
+times of a flow from some node in $\mathcal{N}_{C}^{(\epsilon)}$
+and $\mathcal{N}_{D}^{(\epsilon)}$, respectively. Since the departure
+time of a flow at a node is exactly its arrival time at the next node
+on the route, it is sufficient to show that $\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil$
+for each flow in every busy cycle of each node in $\mathcal{N}_{C}^{(\epsilon)}.$
+This will be proved in the following lemma.
+\begin{lem}
+\label{lemma:NcNd_single_node} Assume that a flow departs from a node
+in $\mathcal{N}_{C}^{(\epsilon)}$ and $\mathcal{N}_{D}^{(\epsilon)}$
+at times $\delta$ and $\Delta,$ respectively. Then $\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil.$ 
+\end{lem}
+%
+\begin{proof}
+	As the underlying graph $\mathcal{G}$ for $\Nc$ and $\Nd$ is a
+	DAG, there is a topological ordering of the vertices $\mathcal{V}.$
+	Without loss of generosity, assume that $v_{1},\ldots,v_{n}$ is a
+	topological order of $\mathcal{G}.$ We prove the statement via induction
+	on the index of vertex. 
+	
+	\textbf{Base case. }We show that the statement holds for node $v_{1},$
+	i.e., $\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil$ for
+	each flow in every busy cycle of node $v_{1}.$ We do so via induction
+	on the number $ k $ of flows that contribute to the busy cycle of node $v_{1}$
+	in $\Nc.$ Consider a busy cycle consisting of flows numbered $1,\ldots,k$
+	with arrivals at times $\tau_{1}\leq\ldots\leq\tau_{k}$ and departures
+	at times $\delta_{1},\ldots,\delta_{k}.$ We denote by $c_{i}=(j_{i},x_{i})$
+	the type of flow numbered $i.$ Let the arrival times of these flows
+	at node $v_{1}$ in $\mathcal{N}_{D}^{(\epsilon)}$ be $A_{1},\ldots,A_{k}$
+	and departures at times $\Delta_{1},\ldots,\Delta_{k}.$ As the first
+	node in the topological ordering, node $v_{1}$ only has external
+	arrivals. Hence $A_{i}=\epsilon\lceil\frac{\tau_{i}}{\epsilon}\rceil$
+	for $i=1,\ldots,k$. We need to show that $\Delta_{i}\leq\epsilon\lceil\frac{\delta_{i}}{\epsilon}\rceil,$
+	for $i=1,\ldots,k.$ For brevity, we let $S_{i}$ denote the schedule
+	time for the $i$-th flow in $\mathcal{N}_{D}^{(\epsilon)}.$ We have
+	$S_{i}=\epsilon\lceil\frac{\tau_{i}}{\epsilon}\rceil.$
+	
+	\textbf{Nested base case. }For $k=1,$ since this busy cycle consists
+	of only one flow of type $(j_{1},x_{1}),$ no arrival will occur at
+	this node until the departure of this particular flow. In other words,
+	for each flow that arrives at node $v_{1}$ after time $\tau_{1},$
+	its arrival time, denoted by $\tau_{f},$ should satisfy $\tau_{f}\geq\tau_{1}+x_{1}^{(\epsilon)}.$
+	Thus $A_{f}\leq\epsilon\left\lceil \frac{\tau_{f}}{\epsilon}\right\rceil ,$
+	and the schedule time for flow $f$ in $\mathcal{N}_{D}^{(\epsilon)}$
+	should satisfy 
+	\[
+	S_{f}=\epsilon\left\lceil \frac{\tau_{f}}{\epsilon}\right\rceil \geq\epsilon\left(\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\frac{x_{1}^{(\epsilon)}}{\epsilon}\right).
+	\]
+	Hence in $\mathcal{N}_{D}^{(\epsilon)}$, flow $f$ will not become
+	eligible for service until node $v_{1}$ transmits all packets of
+	the flow 1. Therefore, $\Delta_{1}=S_{1}+x_{1}^{(\epsilon)}=\epsilon\left\lceil \frac{\delta_{1}}{\epsilon}\right\rceil .$
+	Thus the induction hypothesis is true for the base case.
+	
+	\textbf{Nested induction step. }Now assume that the bound $\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil$  holds for all busy
+	cycles consisting of $k$ flows at $v_{1}$ in $\Nc$. Consider a busy cycle
+	of $k+1$ flows.
+	
+	Note that in $\mathcal{N}_{C}^{(\epsilon)},$ the LCFS-PR service
+	policy determines that the first flow of the busy cycle is the last
+	to depart. That is, $\delta_{1}=\tau_{1}+\sum_{i=1}^{k+1}x_{i}^{(\epsilon)}.$
+	Since flow $i$ is in the same busy cycle of flow $1$ in $\mathcal{N}_{C}^{(\epsilon)},$
+	its arrival time should satisfy $\tau_{i}<\tau_{1}+\sum_{l=1}^{i-1}x_{l}^{(\epsilon)},$
+	for $i=2,\ldots,k+1.$ Thus $\left\lceil \frac{\tau_{i}}{\epsilon}\right\rceil \leq\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\sum_{l=1}^{i-1}\frac{x_{l}^{(\epsilon)}}{\epsilon},$
+	i.e., $S_{i}\leq S_{1}+\sum_{l=1}^{i-1}x_{l}^{(\epsilon)}.$ Let us
+	focus on the departure times of these flows in $\Nd.$
+	
+	\smallskip{}
+	
+	Case (i): There exists some $i$ such that $S_{i}=S_{1}+\sum_{l=1}^{i-1}x_{l}^{(\epsilon)}.$
+	Let $i^{*}$ be the smallest $i$ satisfying this equality. Then under
+	the LCFS-PR policy in $\mathcal{N}_{D}^{(\epsilon)},$ the $i^{*}$-th
+	flow will be scheduled for service right after the departure of flow
+	$1.$ That is, $\Delta_{1}=S_{1}+\sum_{l=1}^{i^{*}-1}x_{l}^{(\epsilon)}=\epsilon\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\sum_{l=1}^{i^{*}-1}x_{l}^{(\epsilon)}\leq\epsilon\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\sum_{l=1}^{k+1}x_{l}^{(\epsilon)}=\epsilon\left\lceil \frac{\delta_{1}}{\epsilon}\right\rceil .$
+	The remaining flows numbered $i^{*},\ldots,k+1$ depart exactly as
+	if they belong to a busy cycle of $k+2-i^{*}$ flows.
+	
+	\smallskip{}
+	
+	Case (ii): For $i=2,\ldots,k+1,$ $S_{i}<S_{1}+\sum_{l=1}^{i-1}x_{l}^{(\epsilon)}.$
+	Then with the LCFS-PR policy in $\mathcal{N}_{D}^{(\epsilon)},$ flows
+	numbered $2,\ldots,k+1$ would have departure times as if they are
+	from a busy cycle of $k$ flows. The service for flow $1$ will be
+	resumed after the departure of these $k$ flows. In particular, we
+	will show that the resumed service for flow $1$ will not be interrupted
+	by any further arrival. Then $\Delta_{1}=S_{1}+\sum_{l=1}^{k+1}x_{l}^{(\epsilon)}=\epsilon\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\sum_{l=1}^{k+1}x_{l}^{(\epsilon)}=\epsilon\left\lceil \frac{\delta_{1}}{\epsilon}\right\rceil .$
+	
+	Since this particular busy cycle in $\mathcal{N}_{C}^{(\epsilon)}$
+	consists of $k+1$ flows, arguing similarly as the base case, each
+	flow $f$ that arrives at node $v_{1}$ after this busy cycle should
+	satisfy $\tau_{f}\geq\delta_{1}.$ Hence its schedule time $S_{f}$
+	in $\mathcal{N}_{D}^{(\epsilon)}$ satisfies $S_{f}=\epsilon\left\lceil \frac{\tau_{f}}{\epsilon}\right\rceil \geq\epsilon\left\lceil \frac{\delta_{1}}{\epsilon}\right\rceil =\epsilon\left\lceil \frac{\tau_{1}}{\epsilon}\right\rceil +\sum_{l=1}^{k+1}x_{l}^{(\epsilon)}=S_{1}+\sum_{l=1}^{k+1}x_{l}^{(\epsilon)}.$
+	Therefore, flow $f$ will not be eligible for service until the departure
+	of flow $1$ in $\mathcal{N}_{D}^{(\epsilon)}.$ This completes the
+	proof of the base case $v_{1}$.
+	
+	\textbf{Induction step. }Now assume that for each $\tau=1,\cdots,t,$
+	$\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil$ holds for
+	each flow in every busy cycle of node $v_{\tau}.$ We show that this
+	holds for node $v_{t+1.}$
+	
+	We can show that $\Delta\leq\epsilon\lceil\frac{\delta}{\epsilon}\rceil$
+	via induction on the number of flows that contribute to the busy cycle
+	of node $v_{t+1}$ in $\Nc,$ following exactly the same argument
+	for the proof of base case $v_{1}.$ Omitting the details, we point
+	to the difference from the proof of nested induction step for $v_1$. 
+	
+	Note that by the topological ordering, flows arriving at node $v_{t+1}$
+	are either external arrivals or departures from nodes $v_{1},\ldots,v_{t}.$
+	By the induction hypothesis, the arrival times of each flow at $v_{t+1}$
+	in $\Nc$ and $\Nd$, denoted by $\tau$ and $A,$ respectively,
+	satisfy $A\leq\epsilon\lceil\frac{\tau}{\epsilon}\rceil.$ 
+	
+	This completes the proof of this lemma.
+\end{proof}
+
+\smallskip
+
+We now prove Theorem \ref{thm:scheduling} by Lemma \ref{lemma:NcNd_single_node}.
+\begin{proof}[Proof of Theorem \ref{thm:scheduling}]
+Suppose $\mathcal{N}_{D}^{(\epsilon)}$ is operating under the LCFS-PR
+scheduling policy using the arrival times in $\mathcal{N}_{C}^{(\epsilon)},$
+where LCFS-PR queue management is used at each node. Let $D_S^{(j,x),\epsilon} (\blambda)$
+and $D_{C}^{(j,x),\epsilon} (\blambda)$ denote the sample mean of the delay over all type-$(j,x)$
+flows in $\mathcal{N}_{D}^{(\epsilon)}$ and $\mathcal{N}_{C}^{(\epsilon)}$
+respectively. Then it follows from Lemma~\ref{lemma:NcNd_single_node}
+that $D_S^{(j,x),\epsilon} (\blambda) \leq D_{C}^{(j,x),\epsilon} (\blambda).$ 
+From Theorem
+\ref{thm:Delay_Nc}, we have 
+\[
+D_{C}^{(j,x),\epsilon} (\blambda) =\sum_{v:v\in j}\frac{\xe}{1-f_{v}^{(\epsilon)}}, \quad \mbox{with probability } 1.
+\]
+Hence, with probability 1, 
+\[
+D^{(j,x),\epsilon}_S (\blambda) \leq\sum_{v:v\in j}\frac{\xe}{1-f_{v}^{(\epsilon)}}\leq\frac{C_{0}}{C_{0}-1}\sum_{v:v\in j}\frac{\xe}{1-f_{v}}, \label{eq:delay_Nd}
+\]
+where the last inequality follows from Eq.~(\ref{eq:node_load_Nd_gap}).
+
+By definition,  we have $\frac{1}{1-f_{v}}\leq\frac{1}{1-\rho_{j}(\boldsymbol{\lambda})}$ for each $v\in j.$
+Therefore, with probability 1, 
+\begin{align*}
+D^{(j,x),\epsilon}_S (\blambda) & \leq\frac{C_{0}}{C_{0}-1}\cdot\frac{\epsilon\left\lceil x/\epsilon\right\rceil d_{j}}{1-\rho_{j}(\boldsymbol{\lambda})} \\
+& \leq\frac{C_{0}}{C_{0}-1}\cdot\frac{\epsilon (x/\epsilon + 1) d_{j}}{1-\rho_{j}(\boldsymbol{\lambda})} \\
+& \leq\frac{C_{0}}{C_{0}-1}\Big(\frac{xd_{j}}{1-\rho_{j}(\boldsymbol{\lambda})} + \frac{\epsilon d_{j}}{1-\rho_{j}(\boldsymbol{\lambda})}\Big) \\
+& \leq \frac{C_{0}}{C_{0}-1}\Big(\frac{xd_{j}}{1-\rho_{j}(\boldsymbol{\lambda})} +  d_{j} \Big),
+\end{align*}
+where the last inequality holds because $ \epsilon \le 1-\rho_j(\blambda) $ by the definition of $ \epsilon $ in Eq.~(\ref{eq:epsilon}).
+This completes the proof of Theorem \ref{thm:scheduling}.
+\end{proof}
+
+\begin{rem}
+	Consider a continuous-time network $\mathcal{N}_{C}$ with the same
+	topology and exogenous arrivals as $\Nd,$ while each type-$(j,x)$
+	flow maintains the original size $x.$ Using the same argument employed
+	for the proof of Theorem \ref{thm:Delay_Nc}, we can show that the expected
+	delay of a type-$(j,x)$ flow in $\mathcal{N_{C}},$ $\E[\bar{D}^{(j,x)} (\blambda)]$,
+	is such that $\E[\bar{D}^{(j,x)} (\blambda)]=\sum_{v:v\in j}\frac{x}{1-f_{v}}.$ 
+	For the discrete-time network $\Nd,$ from Eq.\ (\ref{eq:delay_Nd}), we have 
+	\[
+    D^{(j,x),\epsilon}_S (\blambda) \leq \frac{C_{0}}{C_{0}-1}\Big(\sum_{v:v\in j}\frac{x}{1-f_{v}} +  d_{j} \Big),
+	\]
+	Therefore, $\Nd$ achieves essentially the same flow delay bound as $\mathcal{N}_{C}$.
+	
+\end{rem}

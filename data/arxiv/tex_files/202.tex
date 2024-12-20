@@ -1,0 +1,112 @@
+%\section{Additional Details and Proofs for Connected Components}\label{sec:appendix-cc}
+
+\section{Summary of Low-Diameter Decomposition Algorithm}\label{sec:appendix-cc}
+
+%\myparagraph{Summary of Low-Diameter Decomposition Algorithm}
+ The algorithm of Miller et al.~\cite{miller2013parallel} generates a
+%% Miller et al. present a parallel decomposition algorithm based on
+%% parallel BFS's~\cite{miller2013parallel}, which we call \textproc{Decomp}.
+%% They prove that for a value $\beta$, \textproc{Decomp} generates a
+$(\beta, O({\log n}/\beta))$ decomposition with $O(m)$ operations and
+$O(\wcost{\log^2 n}/\beta)$ \depth\ \whp{}.  As described by Miller et
+al., the number of writes performed is also $O(m)$, but this can be
+improved to $O(n)$.  Specifically, the algorithm executes multiple
+breadth-first searches (BFS's) in parallel, which can be replaced by
+write-efficient BFS's.
+
+In more detail, the algorithm first assigns each vertex $v$ a
+value $\delta_v$ drawn from an exponential distribution with parameter
+$\beta$ (mean $1/\beta$). Then on iteration $i$ of the algorithm,
+BFS's are started from unexplored vertices $v$ where
+$\delta_v \in [i,i+1)$ and all BFS's that have already started are
+advanced one level. At the end of the algorithm, all vertices that
+were visited by a BFS starting from the same source will belong to the
+same subset of the decomposition. If a vertex is visited by multiple
+BFS's in the same iteration, it can be assigned to an arbitrary
+BFS.\footnote{The original analysis of Miller et
+  al.~\cite{miller2013parallel} requires the vertex to be assigned to
+  the BFS with the smaller fractional part of $\delta_s$, where $s$ is
+  the source of the BFS. However, Shun et al.~\cite{Shun2014} show
+  that an arbitrary assignment gives the same complexity bounds.}  The
+maximum value of $\delta_v$ can be shown to be $O({\log n}/\beta)$
+\whp{}, and so the algorithm terminates in $O(\log n/\beta)$
+iterations. Each iteration requires $O(\wcost\log n)$ \depth\ for
+packing the frontiers of the BFS's, leading to an overall \depth\ of
+$O(\wcost\log^2 n/\beta)$ \whp{}. A standard BFS requires operations
+and writes that are linear in the number of vertices and edges
+explored, giving a total work of $O(\wcost(m+n))$.  By using the
+write-efficient BFS from~\cite{BBFGGMS16}, the expected number of
+writes for each BFS is proportional to the number of vertices marked
+(assigned to it), and so the total expected number of writes is
+$O(n)$. Tasks only need $O(1)$ \local{} memory in the algorithm.  This
+yields Theorem~\ref{thm:ldd}.
+
+%\subsection{Proofs Omitted from Section~\ref{sec:cc}}
+
+%% \begin{proof}[Proof of Theorem~\ref{thm:cc-linear}]
+%%   Step~1 has performance bounds given by Theorem~\ref{thm:ldd}, and
+%%   the expected number of edges remaining in the contracted graph is at
+%%   most $\beta m$.  Step~2 performs BFS's on disjoint subgraphs, so
+%%   summing across subsets yields $O(n)$ expected writes and
+%%   $O(m+n\wcost)$ expected work.  Since each tree has low diameter
+%%   ${\cal D} = O(\log n / \beta)$, the BFS's have \depth{} $O(\wcost
+%%   {\cal D} \log n) = O(\wcost \log^2 n / \beta)$
+%%   \whp{}~\cite{BBFGGMS16}.  Step~3 is dominated by the filter, which
+%%   has a number of writes proportional to the output size of $O(\beta
+%%   m)$, for $O(m + \beta \wcost m)$ work. The \depth{} is $O(\wcost
+%%   \log n)$~\cite{BBFGGMS16}.  Finally, the algorithm used in Step~4 is
+%%   not write-efficient, but the size of the graph is $O(n+\beta m)$,
+%%   giving that many writes and $O(\wcost (n + m\beta))$ work.  Adding
+%%   these bounds together yields the theorem.
+%% \end{proof}
+
+%% \begin{proof}[Proof of Lemma~\ref{lem:cc-impgraph}]
+%%   Listing all the vertices in the cluster takes expected work $O(k^2)$
+%%   according to Lemma~\ref{lemma:findcluster}, or $O(k^2\log n)$
+%%   \whp{}.  The number of vertices in the cluster is $O(k)$, so they
+%%   can all fit in \local{} memory. Moreover, since each vertex in the
+%%   cluster has $O(1)$ neighbors, the total number of explored vertices
+%%   in neighboring clusters is $O(k)$, all of which can fit in \local{}
+%%   memory.  Each of these vertices is queried with a cost of $O(k)$
+%%   operations in expectation and $O(k\log n)$ \whp{} given the
+%%   specified \local{} memory (Lemma~\ref{lemma:findcenter}).
+%% \end{proof}
+
+\hide{
+\begin{proof}[{\bf Proof of Theorem~\ref{thm:cc-oracle}}]
+  The $k$-implicit decomposition can be found in $O(n/k)$ writes,
+  $O(kn + \wcost n/ k)$ work, and $O(k\log n(k^2\log n + \wcost))$
+  \depth{} by Lemmas~\ref{lemma:genclusters}
+  and~\ref{lemma:pargenclusters}.  For $k=\sqrt{\wcost}$, these bounds
+  reduce to $O(n/\sqrt{\wcost})$ writes, $O(\sqrt{\wcost} n)$ work, and
+  $O(\wcost^{3/2}\log^3n)$ \depth{}.
+
+  If we had an explicit representation of the \clustergraph{} with
+  $n'=O(n/k)$ vertices and $m' = O(m) = O(n)$ edges, the connectivity
+  algorithm would have $O(n'+m'/k) = O(n/k)$ expected writes,
+  $O(\wcost n' + \wcost m' / k + m') = O(\wcost n/k + n)$ expected
+  work, and $O(\wcost k \log^2n)$ \depth{} \whp{} (by
+  Theorem~\ref{thm:cc-linear}).  The fact that the \clustergraph{} is
+  implicit means that the BFS needs to perform $O(k^2)$ additional
+  work (but not writes) per node in the \clustergraph{}, giving
+  expected work $O(\wcost n/k + n + k^2n') = O(\wcost n /k + kn)$.  To
+  get a high probability bound, the \depth{} is multiplied by
+  $O(k^2\log n)$, giving us $O(\wcost k^3 \log^3 n)$.  For
+  $k=\sqrt{\wcost}$, the work and writes match the theorem statement,
+  but the \depth{} is larger than claimed by a $\wcost$ factor.
+
+  To remove the extra $\wcost$ factor on the \depth{}, we need to look
+  inside the BFS algorithm and its analysis~\cite{BBFGGMS16}.  The
+  $O(\wcost {\cal D} \log n)$ \depth{} bound for the BFS, where ${\cal
+    D} = O(k\log n)$ is the diameter, is dominated by the \depth{} of
+  a packing subroutine on vertices of the frontier.  This packing
+  subroutine does not look at edges, and is thus not affected by the
+  overhead of finding a vertex's neighbors in the implicit
+  representation of the \clustergraph{}.  Ignoring the packing and
+  just looking at the exploration itself, the \depth{} of BFS is
+  $O({\cal D} \log n)$, which given the implicit representation
+  increases by a $O(k^2 \log n)$ factor.  Adding these together, we
+  get \depth{} $O(\wcost k \log^2 n + k^3 \log^3 n) =
+  O(\wcost^{3/2}\log^3n)$ for the BFS phases.
+\end{proof}
+}

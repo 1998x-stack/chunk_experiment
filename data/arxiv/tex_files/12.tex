@@ -1,0 +1,144 @@
+\subsection{Second development cycle}
+\label{sec:second_dev_cyvle}
+
+The user experiments prompted us to perform an additional development cycle before the public release: not only there were important usability issues to work, but the speed and reliability of TopCodes detection could be improved. On that new phase we again relied on storyboards to redesign and guide the implementation changes. The second cycle concluded with the release of paperclickers on the Google Play Store\footnote{https://play.google.com/store/apps/details?id=com.paperclickers}, and the publication of its source code under the GNU Public Licence v2\footnote{https://github.com/learningtitans/paperclickers}.
+
+The usability tests taught us that many extra features were more confusing than helpful, thus we turned to the Minimum Viable Product approach~\cite{ries2011lean}, focusing on the essential: collecting and summarizing students' responses. Keeping poll data for posterior analysis is still possible, but no longer encumbers the main workflow, if the teacher is interested in those extra features, she has to use the settings screen.
+
+% \begin{figure}[ht]
+%     \centering
+%     \begin{minipage}{.5\textwidth}
+%         \centering
+%         \setlength{\fboxsep}{0pt}\fbox{\includegraphics[width=.9\textwidth]{figures/paperClickersLight_storyboard_800x573}}
+%         \captionof{figure}{Storyboard for the paperclickers second development cycle}
+%         \label{fig:storyboard_2nd_cycle}
+%     \end{minipage}
+% \end{figure}
+
+We removed the second screen entirely, along with its two features, the preliminary definitions (class and question) and roll call feature initialization. Although the users found those features interesting, they had trouble understanding and accessing them. % --- Hunsu et al. meta-analysis~\cite{hunsu2016ARSeffect} even indicates additional tools like roll call are considered attractive aspects of CRS --- we preferred to remove them from the released version due to two main reasons: the preliminary definitions required an offline module we have not considered developing yet; and the roll call feature required a major redesign and without the preliminary definitions it could be practically replaced by an answers scan result, since the students presence can be indirectly taken from their answers.
+We kept the main workflow as simple as possible for basic usage, and added a separate settings screen for advanced users, with options to add tags to the questions and to share the answers log, allowing those expert teachers to analyze individual students' answers. Figures~\ref{fig:old_initialScreen} until~\ref{fig:settings} contrast the main screens from the prototype \textit{versus} from the released versions.
+
+% Also to have a standalone solution, we included the students' codes generation feature, providing the ability to share Portable Document Format (PDF) files with the codes required for the students answering. The codes can be generated in different sizes --- one per page, two per page and four per page --- in different page sizes --- letter and A4. Preliminary tests indicates the two per page code sizes provides the best detection and portability for a medium sized class (60 students, 10 meters longest distance).
+
+%This released Paperclickers user interaction included the following elements:
+
+% \begin{itemize}
+%     \item \textbf{Settings}: encompassing the following elements:
+
+%     \begin{itemize}
+%         \item \textbf{Minimal preliminary definitions}: simple class size definition, required parameter for the responses detection speed and robustness.
+
+%         \item \textbf{Answers log sharing}: added functionality, included to provide the ability to further manipulate the detected answers.
+
+%         \item \textbf{Students' codes printing}: added functionality, included to enhance the solution completeness.
+%     \end{itemize}
+
+%     \item \textbf{Enhanced answers capture display}: added on-screen feedback on the class scanning screen, providing instant user feedback regarding the detected and validated student answers.
+
+%     \item \textbf{Results screen}: students' detailed answer screen with improved colors and design.
+
+%     \item \textbf{Chart screen}: answers chart view screen, with improved colors and design, in order to simplify the available options, keeping the back button consistency across all the screens and offering only a button for new question capture.
+
+%     \item Revised backward navigation, aligned with the regular device operating system behavior.
+% \end{itemize}
+
+\begin{figure}[ht]
+    \centering
+    \begin{minipage}{\linewidth}
+        \centering
+        \setlength{\fboxsep}{0pt}\fbox{\includegraphics[width=.9\textwidth]{figures/wrongDecoding_composition}}
+        \captionof{figure}{Decoding error due partial occlusion; on the right spurious detected codes for TopCode 2 partially occluded; in 123 scan cycles, TopCode 32 appeared in 0,82\% of the scan cycles, 33 in 0,82\%, 35 in 17,89\%, 36 in 8,94\%, 37 in 3,25\% and 40 in 8,13\% }
+        \label{fig:decodingError}
+    \end{minipage}
+\end{figure}
+
+We also worked to improve some issues found on the TopCodes detection and decoding. TopCodes original use case is the tracking of a small number of fiducial points to create virtual objects for virtual/augmented reality. They were not optimized for our context of tracking dozens of codes in very uncontrolled and dynamic environments, keeping careful track of each code orientation. In the second version, we found and corrected the problems explained below.
+
+\textbf{Errors in detection and decoding:} In TopCodes' reference implementation, partially occluded codes are often decoded incorrectly (Figure~\ref{fig:decodingError}). In the original contexts, this creates a short transient detection that has no consequence other than quickly flashing an object out of place, but in paperclickers, errors of detection or decoding may set the wrong answer for a student. Worse: partial occlusions are very common as the teacher scans a classroom full of students. To overcome that issue, we added a time-consistency constraint to the detection: only codes which are detected across several contiguous video frames are considered valid; the threshold of frames is set dynamically according to the duration of the take.
+% To overcome the detection/decoding error, we decided to create an additional validation phase before registering a given answer: any code should be detected across subsequent scan cycles for a certain number of times; only after this arbitrary threshold the code is declared valid and the corresponding answer registered. That approach considers the fact the spurious decoding fluctuates and is intermittent throughout the reading cycles.
+
+\textbf{Too many code candidates:} TopCodes' reference implementation binarizes the image and then scans it horizontally, looking for the right transitions between black and white pixels, to find potential candidates for code locations. However, when the background has many vertical lines (e.g., curtains, blinds...), that results in a huge number of candidates, slowing the detection.  To reduce that sensitiveness to the background, we added a vertical scan step, and kept only the candidate points found both by the horizontal and the vertical scans.
+
+%We identified the overall detection and decoding cycle time presented huge changes depending on the image background; implementation analysis indicated the detection phase was marking a huge amount of TopCode candidates if the background presented vertical lines pattern. This happens due to the horizontal scan used to search in the image --- after being processed by an adaptive thresholding~\cite{wellner1993adaptive} --- for black/white sequences which could be a valid TopCode bull's-eye (its central circle) horizontal section. To reduce that sensitiveness to the background, we included an additional vertical scan step in the detection phase, looking for the same black/white sequences; TopCodes candidates would only be points found on both the horizontal and the vertical scans.
+
+\textbf{Sensitivity to hairline code defects:} Although TopCodes are extremely robust to affine transformations (scale, rotations, moderate camera baseline changes, etc.), we found them very sensitive to hairline defects, i.e., situations where a single row or column of the code becomes entirely white or black after binarization. We found those defects would be very common if the codes were printed in less-than-perfect printers, or if the students ignored the admonition to not fold the cards. After considering several complex solutions, we attempted using morphological operations to seal those small gaps. We tested many alternatives, but a binary closing followed by a binary opening using a 3 by 3 pixels square element offered the best compromise between eliminating defects and preserving details. However, further tests showed that the best solution --- both in terms of precision and speed --- was simply to instruct the user to not film from too close!
+
+% Indeed, the ability to recognize a given code is predictable, given the camera parameters --- equations~\ref{eq:1} and~\ref{eq:2} define the horizontal field of view and the final image resolution. [<= O
+
+% \begin{equation} \label{eq:1}
+% HFOV = distance * \frac{width}{focal}
+% \end{equation}
+
+% \begin{equation} \label{eq:2}
+% resolution = \frac{pixels}{HFOV}
+% \end{equation}
+
+% Where:
+% \begin{itemize}
+%     \item HFOV = Horizontal Field of View (meters)
+%     \item distance = camera distance (meters)
+%     \item width = camera chip width (meters)
+%     \item focal = focal length (meters)
+%     \item resolution = final digital image resolution (pixels/meter)
+%     \item pixels = horizontal pixels count (pixels)
+% \end{itemize}
+
+
+% According to table~\ref{tab:image_resolution}, morphological square elements of 5 by 5 pixels cannot detect A4 sized answers' cards from a 3 meters distance, since the TopCodes unit size~\cite{horn2012topcode} is 4 pixels; experimentally, starting from 2 meters distance the detection starts to fail --- the morphological close operation end up joining the TopCode's bulls-eye and data rings. Using a 3 by 3 pixels square element allows to successfully decode TopCodes with hairline effect of 1,5 mm thickness.
+
+% \begin{table}[!t]
+% \color{blue}
+% \begin{minipage}[t]{\linewidth}
+%         \renewcommand{\arraystretch}{1.5}
+%         \begin{tabular}[c]{ >{\centering\arraybackslash}p{0.12\textwidth} | >{\centering\arraybackslash}p{0.12\textwidth} | >{\centering\arraybackslash}p{0.15\textwidth} | >{\centering\arraybackslash}p{0.15\textwidth} | >{\centering\arraybackslash}p{0.08\textwidth} | >{\centering\arraybackslash}p{0.08\textwidth}}
+%             \hline
+%             \textbf{Camera distance (meters)} & \textbf{HFOV (meters)} & \textbf{Sensor res. (pix/meter)} & \textbf{Image res. (pix/meter)} & \textbf{A4 unit (pix)} & \textbf{A5 unit (pix)}\\
+%             \hline
+%             1 & 1.27 & 3615 & 1004 & 12 & 17 \\
+%             \hline
+%             2 & 2.55 & 1808 & 502 & 6 & 9 \\
+%             \hline
+%             3 & 3.82 & 1205 & 335 & 4 & 6 \\
+%             \hline
+%             8 & 10.20 & 452 & 126 & 2 & 2 \\
+%             \hline
+%             10 & 12.75 & 362 & 100 & 1 & 2 \\
+%             \hline
+%         \end{tabular}%
+%         \caption{\color{blue}Depending on the camera distance, each pixel in the image cover longer portions of the real image, which limits the maximum distance for detection. Using morphological operations reduces even more that distance. The data has been captured using a camera sensor width of 1,3 $\mu$m, focal length of 4,7 mm; the analyzed image was 1280 x 720 pixels.\color{black}}
+%         \label{tab:image_resolution}
+% \end{minipage}%
+% \color{black}
+% \end{table}
+% \color{black}
+
+We also improved the overall detection speed --- one of the user complains about the prototype --- fine-tuning the grayscale conversion and using the Android's native image processing multi-core CPUs and GPUs usage\footnote{Android Renderscript computation engine framework - https://developer.android.com/guide/topics/renderscript}. After those changes, the TopCodes detection and decoding functionality reached the scan cycle performance of about 2 frames per second, including all the changes described above, running on 2017 mid-tier Android devices\footnote{1.5 GHz Cortex-A53 CPU, 1920x1080 pixels image}.
+
+
+% The reference TopCodes detection/decoding library was originally created to be used in a more controlled scenario, differing from a classroom with students showing their answers during a teacher's pool, a situation where code partial occlusions are a reasonably expected occurrence: the varying camera baseline and position (caused by both the teacher scanning movement and the students holding their cards) combined with the dynamic partial occlusions, created the spurious decoding.
+
+
+
+% Aligned with our initial proposition of broadening PI and user-centered educational approaches adoption, this Paperclickers version has been released as a free Android Platform\footnote{Android Platform - https://www.android.com/}  application\footnote{https://play.google.com/store/apps/details?id=com.paperclickers}, and its source code is available as open-source, licensed as GPLv2\footnote{https://github.com/learningtitans/paperclickers}, compatible with all the open-source elements included.
+
+% We expect with this open-source release the missing features can be developed and the overall solution expanded.
+
+% After both changes, the TopCodes detection and decoding functionality presented an overall good performance, allowing a scan cycles of 500 milliseconds on 2016 mid-high Android devices\footnote{1.5 GHz Cortex-A53 CPU, 1920x1080 pixels image}.
+
+% Considering these changes on the TopCodes library, additional detection tests indicated a reasonable performance: once again a classroom scenario were considered and this test indicated the following:
+
+% \begin{itemize}
+%     \item Up to 5m distance, codes printed in A4, A5 and A6 format could be properly detected/decoded;
+%     \item Up to 7m distance, only codes printed in A4 or A5 could be detected/decoded;
+%     \item At 10m distance (back of the classroom), only A4 codes could be detected/decoded.
+% \end{itemize}
+
+
+
+% The Paperclickers released version also included the changes on the TopCodes reference library, identified during the detection experiments:
+
+% \begin{itemize}
+%     \item In order to speedup the overall scanning cycle, we changed the detection phase including a vertical scan to consider as candidates only the points coinciding the original horizontal and the new vertical scans; this reduces the number of TopCodes candidates, overcoming the additional scan cost.
+
+%     \item Since the additional detection experiments indicated the fragility to partial occlusion of the TopCodes decoding mechanism, we have also included a code validation algorithm, requesting the same code to be sequentially read up to a threshold --- proportional to the overall scan time --- in order to remove spurious detections; this add robustness required to avoid partially covered codes to be wrongly decoded.
+% \end{itemize}

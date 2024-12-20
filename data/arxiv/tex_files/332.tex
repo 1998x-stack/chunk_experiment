@@ -1,0 +1,162 @@
+%!TEX root = main.tex
+%\vspace{-3mm}
+\section{Introduction}
+\label{sec:intro}
+
+Question classification has applications
+in many domains ranging from question answering to dialog systems, 
+and has been increasingly popular in recent years.
+%question classification has received much attention in recent years.
+Several recent efforts \cite{kim:2014,blunsom:2014,ma+:2015} treat questions as general sentences and employ Convolutional Neural Networks (CNNs) to achieve
+remarkably strong performance
+in the TREC question classification task.
+%% as well as other sentence classification
+%% tasks such as sentiment analysis.
+
+\iffalse
+
+Most existing approaches to this problem
+%however,
+simply use existing sentence modeling frameworks
+and treat questions as general sentences,
+without any special treatment. % tailored to questions.
+For example, %% neural network-based sentence modeling frameworks have received  tremendous attention due to the impressive performance and little manual feature engineering.
+%In particular,
+several recent efforts employ Convolutional Neural Networks (CNNs)
+to achieve remarkably strong performance
+in the TREC question classification task
+as well as other sentence classification
+tasks such as sentiment analysis \cite{kim:2014,blunsom:2014,ma+:2015}.
+
+\fi
+
+
+
+
+
+We argue, however, that
+those general sentence modeling frameworks neglect two unique
+properties of question classification. 
+First, different from the flat and coarse categories in most sentence classification tasks (i.e.~sentimental classification), % or sarcasm detection), 
+question classes often have a hierarchical structure such as those from the New York State DMV FAQ\footnote{Crawled from {\scriptsize\url{http://nysdmv.custhelp.com/app/home}}.
+This data and our code will be at {\scriptsize\url{http://github.com/cosmmb}}.} (see Fig.~\ref{fig:cate}).
+Another unique aspect of question classification is the well prepared answers %with detailed descriptions or instructions 
+for each question  or question category.
+These answer sets generally cover a larger vocabulary (than the questions themselves) and provide richer information %  carry more distinctive semantic meanings 
+for each class.
+We believe there is a great potential to enhance question representation with extra information from corresponding answer sets.
+% not found in other sentence classification tasks (such as sentimental classification or sarcasm detection), which we detail below:
+
+% \begin{itemize}
+% \item 
+% The categories for most sentence classification tasks 
+% are flat and coarse
+% (notable exceptions such as the Reuters Corpus RCV1 \cite{lewis+:2004} notwithstanding), 
+% and in many cases, even binary (i.e.~sarcasm detection).
+% However, question sentences commonly belong to multiple categories,
+% and these categories often have a hierarchical (tree or DAG) structure such as those from the New York State DMV FAQ section \footnote{\scriptsize\url{http://nysdmv.custhelp.com/app/home}} in Fig.~\ref{fig:cate}.
+
+% \item 
+% Question sentences from different categories often share similar information or language patterns. This phenomenon becomes more obvious when categories are hierarchical. Fig.~\ref{fig:example} shows one example of questions sharing similar information from different categories. This cross-category shared patterns are not only shown in questions but can also be found in answers corresponding to these questions.
+
+% \item 
+% Another unique characteristic for question classification is the well prepared answer set with detailed descriptions or instructions 
+% for each corresponding question category.
+% These answer sets generally cover a broader range of vocabulary (than the questions themselves) and carry more distinctive semantic meanings for each class.
+% We believe there is great potential to enhance the representation of questions with extra information from corresponding answer sets.
+% \end{itemize}
+\begin{figure}
+\begin{center}
+\scalebox{0.98}{
+\noindent \fbox{\parbox{0.47\textwidth}{%
+\textbf{1: Driver License/Permit/Non-Driver ID}\\
+a: \textit{Apply for original} \qquad \qquad   \; \; \, (49 questions)\\
+b: \textit{Renew or replace} \qquad \qquad \; \; \,  (24 questions)\\[-0.2cm]
+...\\
+\textbf{2: Vehicle Registrations and Insurance}\\
+a: \textit{Buy, sell, or transfer a vehicle} \, \;(22 questions)\\
+b: \textit{Reg. and title requirements} \; \; \; \, (42 questions) \\[-0.2cm]
+...\\
+\textbf{3: Driving Record / Tickets / Points}\\
+...
+}}
+}
+\end{center}
+%\vspace{-3mm}
+\caption{Examples from NYDMV FAQs. There are 8 top-level categories,
+47 sub-categories, and 537 questions (among them 388 are {\em unique};
+many questions fall into multiple categories).}
+\label{fig:cate}
+%\vspace{-6mm}
+\end{figure} 
+
+To exploit the hierarchical and overlapping structures in question categories
+and extra information from answer sets,
+we consider dictionary learning %\cite{Aharon05k-svd:design,Roth05fieldsof,Lee07efficientsparse,Candes+:2008,Kreutz:2003,Rubin:2010} 
+\cite{Candes+:2008,Rubin:2010}
+which is a common approach for representing samples from 
+many correlated groups with external information. This learning procedure first builds a dictionary with a series of grouped bases. 
+These bases can be initialized randomly or from external data (from the answer set in our case) and optimized during training through Sparse Group Lasso (SGL) \cite{Simon13asparse-group}. 
+% There are many promising improvements which have been achieved recently by this grouped-dictionary learning-based methods \cite{zhao2016hierarchical,rao2016classification}. 
+% Considering the unique advantages from the SGL-based and the CNNs-based model, we believe that performance of question classification will have another boost if we could put SGL-based and CNNs-based model within the same end-to-end framework.This requires us to design a new neural-based model which behaves similarly with SGL.
+
+
+
+
+
+% \begin{figure}[!htbp]
+% \centering
+% \includegraphics[width=0.45\textwidth,height=5cm]{figs/act.pdf}
+% \caption{The hidden activations $h$ respect to the input image in Fig.~\ref{fig:vis}(a). The red numbers corresponds to the index in Fig.~\ref{fig:vis}(b). These activations come from $10$ different groups. The group size here is $50$.}
+% \label{fig:act}
+% \end{figure}
+
+
+
+% To exploit the hierarchical and overlapping structures in question categories
+% and extra information from answer sets,
+% we consider dictionary learning \cite{Aharon05k-svd:design,Roth05fieldsof,Lee07efficientsparse,Candes+:2008,Kreutz:2003,Rubin:2010} which is one common approach for representing samples from a vast, 
+% correlated groups with external information. This learning procedure first builds a dictionary with a series of grouped bases. These bases can be initialized randomly or from external data (from the answer set in our case) and optimized during training through Sparse Group Lasso (SGL) \cite{Simon13asparse-group}. There are many promising improvements which have been achieved recently by this grouped-dictionary learning-based methods \cite{zhao2016hierarchical,rao2016classification}. 
+% We also showcase some preliminary experiments in Section \ref{sec:related} for question classification with SGL, and the performance is indeed extraordinary compared with baselines but still lose to the CNNs-based method. 
+% Considering the unique advantages from the SGL-based model and the CNNs-based model, we believe that performance of question classification will have another boost if we could put SGL-based and CNNs-based model within the same end-to-end framework. This requires us to design a new neural-based model which behaves similarly with SGL.
+
+To apply dictionary learning to CNN,
+%Motivated from above, 
+we first develop a neural version of SGL, {\em Group Sparse Autoencoders} (GSAs),
+which to the best of our knowledge, is the first full neural model with group sparse constraints.
+ % which is a neural-based version of SGL. 
+% The objective of GSA and SGL are very similar. 
+The encoding matrix of GSA (like the dictionary in SGL) is grouped into different categories. 
+The bases in different groups can be either initialized randomly or by the sentences in corresponding answer categories. 
+Each question sentence will be reconstructed by a few bases within a few groups. 
+GSA can use either linear or nonlinear encoding or decoding while SGL is restricted to be linear.
+Eventually, %Based on GSA, 
+to model questions with sparsity,
+%In order to incorporate both advantages from GSA and CNNs, 
+we further propose novel {\em Group Sparse Convolutional Neural Networks} (GSCNNs) by implanting the GSA onto CNNs, 
+essentially enforcing group sparsity between the convolutional and classification layers. 
+%% GSCNNs are jointly trained %end-to-end 
+%% neural-based framework for getting question representations with group sparse constraint from both answer and question sets. 
+This framework is a jointly trained %end-to-end 
+neural model to learn question representation with group sparse constraints from both question and answer sets. 
+
+% Experiments show significant improvements over strong baselines
+% on four datasets.
+
+
+% \begin{figure}
+% \begin{center}
+% \noindent \fbox{\parbox{0.45\textwidth}{%
+% \textbf{Category: Finance}\\
+% Q: How to get a personal loan from the bank?\\
+% \textbf{Category: Education}\\
+% Q: What are the steps for applying for student loan?}}
+% \end{center}
+% \caption{Examples of questions from two different categories. These questions ask for the similar problem even if they are in different classes. Their answers also contain similar information.}
+% \label{fig:example}
+% \vspace{-3mm}
+% \end{figure}
+
+
+
+

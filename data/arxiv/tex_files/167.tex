@@ -1,0 +1,35 @@
+\subsection{Analysis for Sparse Contexts}
+\label{sec:TA_anal}
+
+The TripAdvisor data is an interesting case because the original context space is high dimensional (3500 hotels $\times$ 5 user ratings) and sparse. Since the model applies end-to-end learning, we can investigate what the context embeddings learn. In particular, we looked at location (hotels are from 25 cities in the United States) and class of hotel, neither of which are input to the model. All of what it learns about these concepts come from extracting information from the text of the reviews.
+
+
+To visualize the embedding, we used a 2-dimensional PCA projection of the embeddings of the 3500 hotels.
+We found that the model learns to group the hotels based on geographic region; the projected embeddings for the largest cities are shown in Figure \ref{fig:location_pca}, plotting the $1.5\sigma$ ellipsoid of the Gaussian distribution of the points. (Actual points are not shown to avoid clutter.) Not only are hotels from the same city grouped together, cities that are close geographically appear close to each other in the embedding space. Cities in the Southwest appear on the left of the figure, the West coast is on top and the East coast and Midwest is on the right side. 
+This is likely due in part to the impact of the region on activities that guests may mention, but there also appears to be a geographic sampling bias in the hotel class that may impact language use.
+
+Class is a rating from an independent agency that indicates the level of service and amenities that customers can expect to receive at a hotel. Whereas, the star rating is the average score given to each establishment by the customers who reviewed it. Hotel class does not determine star rating although they are correlated ($r=0.54$). 
+The dataset does not contain a uniform sample of hotel classes from each city. 
+The hotels included from Boston, Chicago, and Philly are almost exclusively high class and the ones from L.A. and San Diego happen to be low class, so the embedding distributions also reflect hotel class: lower class hotels towards the top left and higher class hotels towards the bottom right. The visualization for the ConcatCell and SoftmaxBias models are similar.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.35\textwidth]{tripfigs/ellipse_small.png}
+    \caption{Distribution of a PCA projection of hotel embeddings PCA from the TripAdvisor FactorCell model showing the grouping of the hotels by city.}
+    \label{fig:location_pca}
+\end{figure}
+
+Another way of understanding what the context embeddings represent is to compute the softmax bias projection $\mathbf{Q}c$ and examine the words that experience the biggest increase in probability. We show three examples in Table \ref{table:boosted}. In each case, the top words are strongly related to geography and include names of neighborhoods, local attractions, and other hotels in the same city. The top boosted words are relatively unaffected by changing the rating. (Recall that the hotel identifier and the user rating are the only two inputs used to create the context embedding.) This table combined with the other visualizations indicates that location effects tend to dominate in the output layer, which may explain why the two models adapting the recurrent network seem to have a bigger impact on classification performance.
+
+\begin{table*}[]
+\begin{tabular}{ccccp{7.5cm}}
+\textbf{Hotel}       & \textbf{City} & \textbf{Class} & \textbf{Rating} & \textbf{Top Boosted Words}    \\ \hline
+Amalfi               & Chicago       & 4.0            & 5               & amalfi, chicago, allegro, burnham, sable, michigan, acme, conrad, talbott, wrigley   \\
+BLVD Hotel Suites    & Los Angeles   & 2.5            & 3               & hollywood, kodak, highland, universal, reseda, griffith, grauman's, beverly, ventura \\
+Four Points Sheraton & Seattle       & 3.0            & 1               & seattle, pike, watertown, deca, needle, pikes, pike's monorail, uw, safeco          
+\end{tabular}
+\centering
+\caption{The top boosted words in the Softmax bias layer for different context settings in a FactorCell model.}
+\label{table:boosted}
+\end{table*}
+

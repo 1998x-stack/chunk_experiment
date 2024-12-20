@@ -1,0 +1,161 @@
+\section{System Design}
+\label{sec:methodology} 
+
+In this section, we describe the design, architecture, and implementation of the
+OutWithFriendz system.  We also present \replaced{a walk-through example to 
+illustrate the user workflow of our app for group event scheduling }{the typical user workflow through a
+series of use cases}.
+
+\subsection{System Architecture}
+In order to understand group user behavior at scale, we designed versions of the
+OutWithFriendz mobile client for both the iPhone and Android platforms, allowing
+us to collect data on the scale of hundreds of users and user-generated
+invitations. This mobile system provides opportunity for us to track group
+event organization behavior on a regular, ongoing basis. We support the two most
+popular mobile platforms, iPhone and Android, allowing us to accommodate groups composed of
+users of both platforms.
+Our system consists of three major components: the mobile client, the data
+collection server, and the Google Cloud Messaging (GCM)
+server~\cite{developers2014google}. We also call the Google Maps API to retrieve
+location search results.  Figure~\ref{fig:architecture} shows the overall
+architecture of our OutWithFriendz system.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.9\linewidth]{architecture}
+\caption{The architecture of the OutWithFriendz system.}
+\label{fig:architecture}
+\end{figure}
+
+The implementation of the OutWithFriendz system requires careful engineering to
+handle the communication and data synchronization between clients. Our
+OutWithFriendz server is implemented as a Java Web application using the Spring
+application framework~\cite{Spring}. All required functionality to the client is
+exposed through the server's REST APIs. MongoDB is also used to store and manage
+all data on the server~\cite{mongodb}. To push notifications between server and
+clients, GCM services are used to handle all aspects of queueing of messages and
+delivery to client applications running on both mobile platforms. In addition,
+information about each location is obtained from Google Map
+Services~\cite{googlemaps}, including the name, street address, and
+latitude/longitude coordinates.
+
+\begin{figure}
+\centering
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_host}
+  \caption{Create invitation.}
+  \label{fig:screenshot_host}
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_map}
+  \caption{Add location through Google Map.}
+  \label{fig:screenshot_map}
+\end{subfigure}
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_vote}
+  \caption{\added{Suggest and} vote for preferences.}
+  \label{fig:screenshot_vote}
+\end{subfigure}
+\caption{Main workflow of the OutWithFriendz mobile application.}
+\end{figure}
+
+\subsection{UI Design Challenges}
+%User interface is a very important part in our OutWithFriendz system. 
+In order to enable a natural group decision-making workflow, we continuously
+streamlined the UI and workflow of the OutWithFriends app based on feedback
+collected from user studies. We started with an initial usage survey
+before releasing the app to the market. During our survey, we hired seven
+students on campus who have different academic backgrounds. They formed three
+groups to use our app and provided useful feedbacks for improving UI design.
+For example, these users suggested: (1) Adding a chat board to allow group
+members to discuss their opinions; (2) Allowing users to edit the location title
+and provide detailed information for each location; (3) Allowing users to link
+suggested locations with the Google Places application; (4) Pushing notifications
+if an invitation is created or modified; and (5) Replacing text buttons with
+interactive icon buttons. Implementing this functionality helped us improve our
+app to better support the real-life group \replaced{event scheduling }{decision making} process.
+We also added and altered application functionality to improve usability, based
+on many user suggestions received during application usage.
+At the beginning of the study, we focused on dining events only. Later we came
+to realize that the users would also like to use the OutWithFriends app for
+generic group gatherings, such as going for a hike or watching a movie. To
+support this functionality, we shifted from integrating with Foursquare API to the more
+suitable Google Places API. We also changed the workflow for the voting process
+to make it more flexible. Initially, invitation participants were required to
+decide on the meeting time before starting the voting process for the location.
+However, our users preferred to perform time voting and location voting
+concurrently, which is more flexible. Next, we describe the main workflow of our app.
+
+\subsection{\replaced{A Walk-through Example }{Use Cases}}
+\label{sec:flow}
+
+\begin{figure}
+\centering
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_chat}
+  \caption{Chat screen.}
+  \label{fig:screenshot_chat}
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_finalize}
+  \caption{Invitation finalization screen.}
+  \label{fig:screenshot_finalize}
+\end{subfigure}
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{screenshot_list}
+  \caption{Invitation list screen.}
+  \label{fig:screenshot_list}
+\end{subfigure}
+\caption{Main functions of the OutWithFriendz mobile application.}
+\end{figure}
+
+\added{To better understand the workflow of our mobile application, 
+we provide a walk-through example of how the main functions are 
+used for group event scheduling.}
+
+\subsubsection{A host invites two friends to meet for dinner}
+In this use case, we describe the actions a user would take to invite some friends to meet for 
+dinner. Here we call this user the host. When creating 
+a new event invitation, the host will go to the window shown in
+Figure~\ref{fig:screenshot_host} and perform the following steps:
+(1) create a title for the invitation, \added{such as Friday Dinner}; 
+(2) specify one or more possible dates and times for the 
+invitation; (3) suggest meeting locations using Google Map Services, as
+shown in Figure~\ref{fig:screenshot_map}; and (4) add one or more friends that
+want to be included as participants in the invitation. Finally, when the host is
+satisfied with the invitation settings, she taps the ``send invitation'' icon, to send the invitation to all selected participants.
+\added{She can also start voting for her own preferences right after the new invitation shows up on her screen.}
+
+\subsubsection{A user receives an invitation to meet several friends for dinner}
+First, the user receives a notification from the OutWithFriendz application
+indicating that she has received a new invitation. The user can express her 
+preferences by voting on one or more possible options for meeting dates and
+locations, as shown in Figure~\ref{fig:screenshot_vote}. \added{One important feature of our system is that} 
+the user may also add
+new proposed dates/time or locations to the invitation. Once the user has added a new
+option, it will be automatically made visible to all other participants. \added{Users are also allowed to change their suggestions 
+and votes throughout the voting process.}
+In the ``Chat'' tab shown in Figure~\ref{fig:screenshot_chat}, \replaced{the }{user}
+is also able to send text messages to other group members \added{for discussion and better coordination 
+of the scheduling process}.
+
+\subsubsection{Host finalizes the invitation based on voting results}
+The voting process continues until the host decides to finalize the meeting time 
+and location. Only the host is permitted to finalize, which is shown in
+Figure~\ref{fig:screenshot_finalize}. After the host has finalized the
+invitation, each participant receives a notification regarding this action. 
+\added{To support unforeseen changes, the host could still update the final decision 
+after it is finalized.}
+Each user's main screen will show a list of invitations that she has 
+participated in, as shown in Figure~\ref{fig:screenshot_list}.
+
+
+
+
+

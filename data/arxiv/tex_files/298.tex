@@ -1,0 +1,293 @@
+%!TEX root = main.tex
+\section{Experiments}
+\label{sec:exp}
+
+
+
+\subsection{Datasets}
+
+In our experiments, we use two datasets Flickr30K~\cite{elliott:2016} 
+and MSCOCO~\cite{MSCOCO} which are provided by the WMT organization.
+For both datasets, there are triples that contains English as source 
+sentence, its German and French human translations and corresponding 
+image. The system is only trained on Flickr30K datasets but are also tested on 
+MSCOCO besides Flickr30K. 
+MSCOCO datasets are considered out-of-domain (OOD) testing while 
+Flickr30K dataset are considered in-domain testing.
+The datasets' statics is shown in Table~\ref{tb:data}
+
+\begin{table}[htbp]
+\centering
+\scalebox{0.9}{
+\begin{tabular}{ |l|c|c|c|c| }
+\hline
+            Datasets     & Train     &  Dev &  Test  & OOD ?\\ 
+\hline
+            Flickr30K    &  $29,000$  &    $1,014$   & $1,000$   & No\\
+\hline
+            MSCOCO    &  -  &    -   & $461$   & Yes\\
+\hline
+\end{tabular}
+}
+\caption{Summary of datasets statistics.}
+\label{tb:data}
+\end{table}
+
+
+\subsection{Training details}
+
+For preprocessing, we convert all of the sentences to lower case, normalize the 
+punctuation, and do the tokenization. For simplicity, our vocabulary keeps all the 
+words that show in training set. 
+For image representation, we use ResNet~\cite{kaiming:2016} generated image features which are
+provided by the WMT organization. In our experiments, we only use average pooled features.
+
+Our implementation is adapted from on Pytorch-based OpenNMT~\cite{2017opennmt}. We use two layered
+bi-LSTM~\cite{Sutskever:2014} on the source side as encoder. Our batch size is 64, with SGD optimization and a learning rate at 1.
+For English to German, the dropout rate 
+is 0.6, and for English to French, the dropout rate is 0.4. These two parameters are selected by
+observing the performance on development set. Our word embeddings are randomly initialized with 
+500 dimensions. 
+The source side vocabulary is 10,214 and the target side vocabulary is 18,726 for German 
+and 11,222 for French.
+
+\subsection{Beam search with length reward}
+
+During test time, beam search is widely used to improve the output text quality by giving the decoder 
+more options to generate the next possible word.
+However, different from traditional beam search in phrase-based MT where all hypotheses 
+know the number of steps to finish the generation, while in neural-based generation, 
+there is no information about what is the most ideal number of steps to finish the decoding.
+The above issue also leads to another problem that the beam search in neural-based MT prefers shorter sequences due to probability-based scores for evaluating different candidates.
+In this paper, we use Optimal Beam Search~\cite{huang+:2017} (OBS) during decoding time.
+OBS uses bounded length reward
+mechanism which allows a modified version of
+our beam search algorithm to remain optimal.
+
+Figure~\ref{fig:b} and Figure~\ref{fig:l} show the BLEU score and length ratio with different rewards for different beam size. We choose beam size equals to 5 and reward equals to 0.1 during decoding. 
+
+\begin{figure*}
+\centering
+\begin{minipage}{0.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{figs/bs_bleus.pdf}
+  \captionof{figure}{BLEU vs. beam size}
+  \label{fig:b}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{figs/bs_length.pdf}
+  \captionof{figure}{length ratio vs. beam size}
+  \label{fig:l}
+\end{minipage}
+\end{figure*}
+
+\subsection{Results}
+
+WMT organization provides three different evaluating metrics: BLEU~\cite{Papineni:2002}, METEOR~\cite{Lavie2009} and TER~\cite{Snover06astudy}. 
+
+Table~\ref{tb:fen2de} to Table~\ref{tb:cen2fr} summarize the performance with their corresponding rank among all other systems. 
+We only 
+show a few top performing systems in the tables to make a comparison. OSU1 is our proposed model and OSU2 
+is our baseline system without any image information. 
+For MSCOCO dataset, the translation from English to 
+German (Table~\ref{tb:cen2de}), which is the hardest tasks compared with others since it is from 
+English to German on OOD dataset, we 
+achieve best TER score across all other systems. 
+
+
+
+\begin{table}[htbp]
+\centering
+\scalebox{0.9}{
+\begin{tabular}{ |c|c|c|c|c| }
+\hline 
+            System      & Rank & TER     &  METEOR &  BLEU  \\ 
+\hline
+            UvA-TiCC    & 1   &  \textbf{47.5}  &    53.5   & \textbf{33.3} \\
+\hline
+            NICT        & 2 &  48.1 &    \textbf{53.9}   & 31.9  \\
+\hline
+            LIUMCVC   & 3 \& 4 &  48.2 &    53.8   & 33.2  \\
+\hline
+            CUNI   & 5 &  50.7 &    51   & 31.1  \\
+\hline
+            $\text{OSU2}^\dagger$  & 6 &  50.7 &   50.6   & 31  \\
+\hline
+            $\text{OSU1}^\dagger$  & 8 &  51.6 &   48.9   & 29.7  \\
+\hline
+\end{tabular}
+}
+\caption{Experiments on Flickr30K dataset for translation from English to German. 16 systems in total. $\dagger$ represents our system.}
+\label{tb:fen2de}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\scalebox{0.9}{
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+            System    & Rank & TER     &  METEOR &  BLEU  \\ 
+\hline
+            \color{blue}\text{OSU1}   & \color{blue}1 &  \color{blue}\textbf{52.3}  &    \color{blue}46.5   & \color{blue}27.4 \\
+\hline
+            UvA-TiCC   & 2 &  52.4 &    48.1   & 28  \\
+\hline
+            LIUMCVC   &  3 &  52.5 &    \textbf{48.9}   & \textbf{28.7}  \\
+\hline
+            \color{blue}$\text{OSU2}$  & \color{blue}8 &  \color{blue}55.9 &   \color{blue}45.7  & \color{blue}26.1  \\
+\hline
+\end{tabular}
+}
+\caption{Experiments on MSCOCO dataset for translation from English to German. 15 systems in total. $\dagger$ represents our system.}
+\label{tb:cen2de}
+\end{table}
+
+
+
+\begin{table}[htbp]
+\centering
+\scalebox{0.9}{
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+            System   & Rank  & TER     &  METEOR &  BLEU  \\ 
+\hline
+            LIUMCVC  & 1  &  \textbf{28.4}  &   \textbf{72.1}   & \textbf{55.9} \\
+\hline
+            NICT  & 2  &  28.4 &    72   & 55.3  \\
+\hline
+            DCU   & 3  &  30 &    70.1   & 54.1  \\
+\hline
+            $\text{OSU2}^\dagger$ & 5   &  32.7 &   68.3   & 51.9 \\
+\hline
+            $\text{OSU1}^\dagger$ & 6    &  33.6 &   67.2   & 51 \\
+\hline
+\end{tabular}
+}
+\caption{Experiments on Flickr30K dataset for translation from English to French. 11 systems in total. $\dagger$ represents our system.}
+\label{tb:fen2fr}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\scalebox{0.9}{
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+            System    & Rank & TER     &  METEOR &  BLEU  \\ 
+\hline
+            LIUMCVC  & 1  &  \textbf{34.2}  &   \textbf{65.9}   & \textbf{45.9} \\
+\hline
+            NICT   & 2   &  34.7 &    65.6   & 45.1  \\
+\hline
+            DCU  & 3   &  35.2 &    64.1   & 44.5 \\
+\hline
+            \color{blue}$\text{OSU2}$  & \color{blue}4  &  \color{blue}36.7 &   \color{blue}63.8   & \color{blue}44.1 \\
+\hline
+            \color{blue}$\text{OSU1}$  & \color{blue}6  &  \color{blue}37.8 &   \color{blue}61.6   & \color{blue}41.2 \\
+\hline
+\end{tabular}
+}
+\caption{Experiments on MSCOCO dataset for translation from English to French. 11 systems in total.}
+\label{tb:cen2fr}
+\end{table}
+
+\begin{figure*}[htbp]
+\centering
+   \begin{subfigure}[b]{1\textwidth}
+   \includegraphics[width=2.5cm]{figs/m2_1.jpg}
+   \;
+    \scalebox{0.85}{
+    \begin{tabular}[b]{cl}\hline
+      input & a finger pointing at a hotdog with cheese , sauerkraut and ketchup . \\
+      OSU1 &  ein finger zeigt auf einen hot dog mit einem messer , wischmobs und napa . \\
+      OSU2 &  ein finger zeigt auf einen hotdog mit hammer und italien .  \\
+      Reference & ein finger zeigt auf einen hotdog mit käse , sauerkraut und ketchup .  \\ \hline
+    \end{tabular}}
+\end{subfigure}
+
+\vspace{3mm}
+
+\begin{subfigure}[b]{1\textwidth}
+   \includegraphics[width=2.5cm]{figs/m2_2.jpg}
+   \;
+    \scalebox{0.85}{
+    \begin{tabular}[b]{cl}\hline
+      input & a man reaching down for something in a box  \\
+      OSU1 &   ein mann greift nach unten , um etwas zu irgendeinem .  \\
+      OSU2 &  ein mann greift nach etwas in einer kiste .   \\
+      Reference & ein mann bückt sich nach etwas in einer schachtel .   \\ \hline
+    \end{tabular}}
+\end{subfigure}
+\caption{Two testing examples that image information confuses the NMT model.}
+\label{tb:bad}
+\end{figure*}
+
+
+\begin{figure*}[htbp]
+\centering
+   \begin{subfigure}[b]{1\textwidth}
+   \includegraphics[width=2.5cm]{figs/m1_1.jpg}
+   \;
+    \scalebox{0.85}{
+    \begin{tabular}[b]{cl}\hline
+      input & there are two foods and one drink set on the clear table .  \\
+      OSU1 & da sind zwei speisen und ein getränk am klaren tisch .   \\
+      OSU2 &  zwei erwachsene und ein erwachsener befinden sich auf dem rechteckigen tisch .    \\
+      Reference & auf dem transparenten tisch stehen zwei speisen und ein getränk .    \\ \hline
+    \end{tabular}}
+\end{subfigure}
+
+\vspace{3mm}
+
+\begin{subfigure}[b]{1\textwidth}
+   \includegraphics[width=2.5cm]{figs/m1_2.jpg}
+   \;
+    \scalebox{0.85}{
+    \begin{tabular}[b]{cl}\hline
+      input & a camera set up in front of a sleeping cat .   \\
+      OSU1 & eine kameracrew vor einer schlafenden katze .     \\
+      OSU2 &  eine kamera vor einer blonden katze .     \\
+      Reference & eine kamera , die vor einer schlafenden katze aufgebaut ist     \\ \hline
+    \end{tabular}}
+\end{subfigure}
+\caption{Two testing examples that image information helps the NMT model.}
+\label{tb:good}
+\end{figure*}
+
+As describe in section~\ref{sec:model}, OSU1 is the model with image information for both encoder 
+and decoder, and OSU2 is only the neural machine translation baseline without any image information. 
+From the above results table we found that image information would hurt the performance in some cases.
+In order to have more detailed analysis, we show some test examples for the translation from English to 
+German on MSCOCO dataset. 
+
+Fig~\ref{tb:bad} shows two examples that NMT baseline model performances better than OSU1 model. 
+In the first example, OSU1 generates several unseen objects from given image, such like knife. 
+The image feature might not represent the image accurately.
+For the second example, OSU1 model ignores the object ``box'' in the image.
+
+Fig~\ref{tb:good} shows two examples that image feature helps the OSU1 to generate better results.
+In the first example, image feature successfully detects the object ``drink'' while the baseline
+completely neglects this.
+In the second example, the image feature even help the model figure out the action of the cat is ``sleeping''.
+
+
+
+
+
+
+
+% \begin{figure*}[htbp]
+%     \centering
+%     \includegraphics[width=8cm]{figs/m1_3.jpg}
+%     \;
+%     \scalebox{0.85}{
+%     \begin{tabular}[b]{cl}\hline
+%       input & four pictures of a room showing a bed , pictures and a laptop on a desk .  \\
+%       OSU1 & vier bilder eines raums , bilder und einem laptop auf einem schreibtisch .    \\
+%       OSU2 &  vier bilder aus einem raum , das ein bett zeigt , bilder und laptop an einem schreibtisch .  \\
+%       Reference & vier bilder eines zimmers mit einem bett , bildern und einem laptop auf einem schreibtisch \\ \hline
+%     \end{tabular}}
+%     \caption{One example that image feature do not recognize bed but help the NMT to generate more accurate sentence.}
+% \end{figure*}

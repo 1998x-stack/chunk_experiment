@@ -1,0 +1,188 @@
+
+
+
+\section{A Low-Complexity Heuristic Algorithm for \textsf{Min-Spectrum-D2D}}  \label{sec:heuristic}
+Our proposed LP formulation for \textsf{Min-Spectrum-D2D} has high complexity
+due to the size of input traffic demand and cellular network.
+To reduce the complexity, in this section, we propose a heuristic algorithm which
+can significantly reduce the number of traffic demands that is needed to be considered. Moreover,
+our algorithm has a parameter (which is $\lambda$ defined shortly)
+such that we can balance the complexity and
+the performance.
+
+Our proposed algorithm has three steps.
+\par\noindent\rule{0.5\textwidth}{0.4pt}
+
+\emph{Step I.}
+We solve \textsf{Min-Spectrum-ND}$_b$ for each BS $b \in \mathcal{B}$, and get
+the optimal solution $\{x^{j}_{u_j,b}(t), \gamma_b(t), F_b\}$.
+
+\emph{Step II.}
+For each BS $b$ with the spectrum profile $\gamma_b(t)$, we consider the following set,
+\be
+T_b(\lambda) \triangleq \{t \in [T]: \gamma_b(t) > \lambda F_b \},
+\label{equ:T-b-lambda}
+\ee
+where parameter $\lambda \in [0,1]$ controls the split level.
+Now we divide all cell-$b$ traffic demands $\mathcal{J}_b$ into two demand sets
+\be
+\resizebox{0.89\linewidth}{!}{$\mathcal{J}_b^{\textsf{D2D}}(\lambda) \triangleq \{j \in \mathcal{J}_b:
+ \exists t \in [s_j, e_j] \cap T_b(\lambda) \text{ s.t. } x_{u_j,b}^{j}(t) > 0 \},$}
+\label{equ:D2D-demand-set}
+\ee
+and
+\be
+\resizebox{0.89\linewidth}{!}{$\mathcal{J}_b^{\textsf{ND}}(\lambda) \triangleq \{j \in \mathcal{J}_b: x_{u_j,b}^{j}(t) = 0, \forall t \in [s_j, e_j] \cap T_b(\lambda)\}.$}
+\label{equ:ND-demand-set}
+\ee
+
+For all traffic demand in $\mathcal{J}_b^{\textsf{ND}}(\lambda)$, we  schedule them according to $\{x^{j}_{u_j,b}(t)\}$ without D2D,
+which results in at most $\gamma_b(t)$ spectrum requirement for BS $b$ at slot $t$.
+Note that no demand in $\mathcal{J}_b^{\textsf{ND}}(\lambda)$
+is served in slot set $T_b(\lambda)$. We thud denote $\tilde{\gamma}_b(t)$ as
+the already allocated spectrum spectrum for demand set $\mathcal{J}_b^{\textsf{ND}}(\lambda)$ for BS $b$ at slot $b$,
+which satisfies $\tilde{\gamma}_b(t) \le \gamma_b(t)$ when $t \notin T_b(\lambda)$
+and $\tilde{\gamma}_b(t) =0$ when $t \in T_b(\lambda)$.
+
+
+\emph{Step III.}  We solve the D2D load balancing problem with traffic demands
+$\mathcal{J}^{\textsf{D2D}}(\lambda) \triangleq \{\mathcal{J}_b^{\textsf{D2D}}(\lambda): b \in \mathcal{B}\}$,
+according to the following LP, which adaptes \textsf{Min-Spectrum-D2D} in \eqref{equ:d2d-lp} by considering the already allocated spectrum $\{\tilde{\gamma}_b(t)\}$,
+\bse \label{equ:d2d-lp-heuristic}
+\bee
+%& \textsf{PEAK-D2D}  \nnb \\
+& \min_{x^{j}_{u,v}(t), \alpha_b(t),  \beta_b(t), F_b \in \mathbb{R}^+}  \quad \sum_{b \in \mathcal{B}} F_b \\
+%\text{subject to} & \quad \eqref{equ:d2d_up_traffic_cons1}, \eqref{equ:d2d_up_traffic_cons2},
+%\eqref{equ:d2d_up_traffic_cons3}, \eqref{equ:d2d_up_traffic_cons4}, \nnb \\
+\text{s.t.} & \quad \eqref{equ_demand}, \eqref{equ_reach},
+\eqref{equ_conservation}, \eqref{equ:y_nonnegative}, \eqref{equ:y_nonnegative_selflink} \nnb \\
+& \quad \sum_{v \in \mathcal{U}_b} \sum_{j \in \mathcal{J}^{\textsf{D2D}}(\lambda): t \in [s_j, e_j]} x^{j}_{v,b}(t) = \alpha_b(t),  \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons1-heuristic}\\
+& \quad \sum_{u \in \mathcal{U}_b} \sum_{v \in \text{in}\left( u \right)
+\backslash \left\{ u \right\}} \sum_{j \in \mathcal{J}^{\textsf{D2D}}(\lambda): t \in [s_j, e_j]} x^{j}_{v,u}(t) = \beta_b(t),  \nnb \\
+& \qquad \qquad \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons2-heuristic}\\
+& \quad \alpha_b(t)+\beta_b(t) + \tilde{\gamma}_b(t) \le F_b,\forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons3-heuristic}
+\eee
+\ese
+
+
+Similar to the overhead minimization problem \textsf{Min-Overhead} in \eqref{equ:overhead-lp},
+given the optimal spectrum requirement of \eqref{equ:d2d-lp-heuristic}, denoted as, $F^{\textsf{Heuristic}}(\lambda)$,
+we next minimize the overhead by solving the following LP,
+\bse \label{equ:d2d-lp-heuristic-overhead}
+\bee
+%& \textsf{PEAK-D2D}  \nnb \\
+& \min_{\substack{x^{j}_{u,v}(t), \alpha_b(t), \\ \beta_b(t), F_b \in \mathbb{R}^+}}  \quad  \sum_{t=1}^{T} \sum_{j \in \mathcal{J}^{\textsf{D2D}}: t \in [s_j, e_j-1]}
+\sum_{u \in \mathcal{U}} \sum_{\substack{v:v \in \mathcal{U}, \\ (u,v) \in \mathcal{E}}} x^{j}_{u,v}(t) {R_{u,v}} \\
+%\text{subject to} & \quad \eqref{equ:d2d_up_traffic_cons1}, \eqref{equ:d2d_up_traffic_cons2},
+%\eqref{equ:d2d_up_traffic_cons3}, \eqref{equ:d2d_up_traffic_cons4}, \nnb \\
+\text{s.t.} & \quad \eqref{equ_demand}, \eqref{equ_reach},
+\eqref{equ_conservation}, \eqref{equ:y_nonnegative}, \eqref{equ:y_nonnegative_selflink} \nnb \\
+& \quad \sum_{v \in \mathcal{U}_b} \sum_{j \in \mathcal{J}^{\textsf{D2D}}(\lambda): t \in [s_j, e_j]} x^{j}_{v,b}(t) = \alpha_b(t),  \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons1-heuristic-overhead}\\
+& \quad \sum_{u \in \mathcal{U}_b} \sum_{v \in \text{in}\left( u \right)
+\backslash \left\{ u \right\}} \sum_{j \in \mathcal{J}^{\textsf{D2D}}(\lambda): t \in [s_j, e_j]} x^{j}_{v,u}(t) = \beta_b(t),  \nnb \\
+& \qquad \qquad \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons2-heuristic-overhead}\\
+& \quad \alpha_b(t)+\beta_b(t) + \tilde{\gamma}_b(t) \le F_b,  \forall b \in \mathcal{B}, t \in [T]
+\label{equ:d2d_peak_cons3-heuristic-overhead} \\
+& \quad \sum_{b \in \mathcal{B}} F_b \le F^{\textsf{Heuristic}}(\lambda) \label{equ:sum-spectrum-requirement-overhead}
+\eee
+\ese
+
+\par\noindent\rule{0.5\textwidth}{0.4pt}
+
+Note that in \eqref{equ:d2d-lp-heuristic}/\eqref{equ:d2d-lp-heuristic-overhead}, all variables, $x^{j}_{u,v}(t), \alpha_b(t),  \beta_b(t), F_b$, have
+the same meanings of those in \eqref{equ:d2d-lp}/\eqref{equ:overhead-lp}. There are two differences between \eqref{equ:d2d-lp-heuristic}/\eqref{equ:d2d-lp-heuristic-overhead}
+and \eqref{equ:d2d-lp}/\eqref{equ:overhead-lp}. First, the traffic demand set in \eqref{equ:d2d-lp-heuristic}/\eqref{equ:d2d-lp-heuristic-overhead} is
+$\mathcal{J}^{\textsf{D2D}}(\lambda)$ while that in \eqref{equ:d2d-lp}/\eqref{equ:overhead-lp} is $\mathcal{J}$.
+Likewise, the traffic scheduling policy characterized by \eqref{equ_demand}, \eqref{equ_reach},
+\eqref{equ_conservation}, \eqref{equ:y_nonnegative}, \eqref{equ:y_nonnegative_selflink} in \eqref{equ:d2d-lp-heuristic}/\eqref{equ:d2d-lp-heuristic-overhead}  is  for the traffic demand set
+$\mathcal{J}^{\textsf{D2D}}(\lambda)$ while that in \eqref{equ:d2d-lp}/\eqref{equ:overhead-lp} is for the traffic demand set $\mathcal{J}$.
+Second, constraint \eqref{equ:d2d_peak_cons3-heuristic}/\eqref{equ:d2d_peak_cons3-heuristic-overhead}
+is different from constraint \eqref{equ:d2d_peak_cons3}/\eqref{equ:overhead_peak_cons3} in that \eqref{equ:d2d_peak_cons3-heuristic}/\eqref{equ:d2d_peak_cons3-heuristic-overhead} considers the already allocated spectrum $\{\tilde{\gamma}_b(t)\}$.
+Namely, the spectrum requirement for BS $b$ at slot $t$ includes the already allocated spectrum
+$\tilde{\gamma}_b(t)$ to serve the traffic demand $\mathcal{J}_b^{\textsf{ND}}$
+and the new allocated spectrum $(\alpha_b(t)+\beta_b(t))$ to serve the traffic demand
+$\mathcal{J}_b^{\textsf{D2D}}(\lambda)$.
+
+
+
+
+Obviously, if the number of traffic demand in $\mathcal{J}^{\textsf{D2D}}(\lambda)$ is much less than the total number of traffic demands in $\mathcal{J}$, which is indeed the case according to our empirical study in Sec.~\ref{sec:simulation},
+we can significantly reduce the number of variables and constraints in
+\eqref{equ:d2d-lp-heuristic}/\eqref{equ:d2d-lp-heuristic-overhead}
+in Step III as compared to the LP problem \textsf{Min-Spectrum-D2D}/\textsf{Min-Overhead} in \eqref{equ:d2d-lp}/\eqref{equ:overhead-lp}.
+After these three steps, the total spectrum is given by the objective value of \eqref{equ:d2d-lp-heuristic}
+and the corresponding overhead is given by the objective value of \eqref{equ:d2d-lp-heuristic-overhead}.
+An example of our heuristic algorithm is shown
+\ifx \ISTR \undefined
+in our technical report \cite{TR}.
+\else
+in Appendix~\ref{app:an-example-for-heuristic}.
+% in the supplementary materials.
+\fi
+
+
+
+
+We denote the spectrum reduction of our heuristic algorithm as
+\be
+\rho^{\textsf{Heuristic}}(\lambda) \triangleq \frac{F^{\textsf{ND}}-F^{\textsf{Heuristic}}(\lambda)}{F^{\textsf{ND}}}.
+\ee
+Similarly, we denote $\eta^{\textsf{Heuristic}}(\lambda)$ as the overhead ratio of our heuristic algorithm.
+We next show that the performance guarantee of our heuristic algorithm.
+
+First, for the spectrum we reduction, we have,
+\begin{theorem} \label{thm:performance-heuristic}
+$(1-\lambda) \rho \le \rho^{\textsf{Heuristic}}(\lambda) \le \rho.$
+\end{theorem}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see Appendix~\ref{app:proof-performance-heuristic}.
+\else
+Please see our technical report \cite{TR}.
+\fi
+\end{IEEEproof}
+
+
+
+
+
+Theorem \ref{thm:performance-heuristic} shows that when $\lambda=0$, we have
+$\rho^{\textsf{Heuristic}}(0) = \rho$. This is because when $\lambda=0$, we have
+$\mathcal{J}^{\textsf{D2D}}(0)=\mathcal{J}$, i.e., all demands  participate
+in D2D load balancing in our heuristic algorithm when $\lambda=0$ and thus
+the objective value of \eqref{equ:d2d-lp-heuristic} when $\lambda=0$ is exactly $F^\textsf{D2D}$.
+When $\lambda=1$, since $\mathcal{J}^{\textsf{D2D}}(1)=\emptyset$, all traffic demands are served locally without D2D and
+therefore the objective value of \eqref{equ:d2d-lp-heuristic} when $\lambda=1$ is exactly $F^\textsf{ND}$.
+Thus, the lower bound $(1-\lambda) \rho = 0$  is tight.
+Further, the lower bound $(1-\lambda) \rho$,
+decreases as $\lambda$ increases, but the computational complexity
+decreases as $\lambda$ increases. Thus, this lower bound illustrates
+the tradeoff between the performance and the complexity of our heuristic algorithm.
+
+Second, we give an upper bound for the overhead ratio\footnote{Recall that $d_{\max}$ is the maximum demand delay.}.
+\begin{theorem} \label{the:overhead-upper-bound-heuristic}
+$\eta^{\textsf{Heuristic}}(\lambda) \le \frac{ (d_{\max}-1) \sum\limits_{j \in \mathcal{J}^{\textsf{D2D}  }(\lambda)} r_j }{
+(d_{\max}-1) \sum\limits_{j \in \mathcal{J}^{\textsf{D2D}  }(\lambda)} r_j + \sum\limits_{j \in \mathcal{J}} r_j} \le \frac{d_{\max}-1}{d_{\max}}$.
+\end{theorem}
+\begin{IEEEproof}
+\ifx \ISTR \undefined
+Please see our technical report \cite{TR}.
+\else
+Please see Appendix \ref{app:proof-of-overhead-upper-bound-heuristic}.
+% in the supplementary materials.
+\fi
+\end{IEEEproof}
+We can see that the upper bound of the overhead ratio is 0 when $\lambda=1$ because $\mathcal{J}^{\textsf{D2D}}(1)=\emptyset$, i.e.,
+all traffic demands are served locally without D2D. Moreover, when $\lambda$ increases, the upper bound decreases because
+less traffic demands participate in D2D load balancing.
+
+Overall, our heuristic algorithm
+reduce the complexity of our global LP approach and has performance guarantee.
+Moreover, our proposed heuristic algorithm has a controllable parameter $\lambda$ to
+balance the benefit in terms of spectrum reduction, the cost in terms of overhead ratio, and
+the computational complexity for our D2D load balancing scheme.
