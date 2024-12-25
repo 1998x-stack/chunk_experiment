@@ -2,9 +2,8 @@
 
 import sys
 import os
-sys.path.append(
-    os.path.abspath(os.path.dirname(__file__) + "/" + "..")
-)
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
 import numpy as np
 import warnings
@@ -15,6 +14,7 @@ from util.sentence_split import GeneralTextSplitter
 # 下方定义的类与方法用于处理文本的语义分块操作，包含分句、语义相似性计算、
 # 分组与最终chunk生成的流程。还提供对外接口函数实现根据query选出最匹配文本块的功能。
 
+
 class EmbeddingModel:
     """A placeholder embedding model class.
 
@@ -23,13 +23,14 @@ class EmbeddingModel:
     - A `similarity` method to compute similarity between two embeddings.
 
     Note:
-        In a real-world scenario, this would load a specific model 
+        In a real-world scenario, this would load a specific model
         (e.g., a SentenceTransformer model or a proprietary large language model)
         based on the model_name. Here, we just simulate embeddings with random vectors.
     """
-    def __init__(self, model_name: str, embedding_dim: int = 128):
+
+    def __init__(self, embedding_client, embedding_dim: int = 128):
         # 中文注释: 初始化嵌入模型，实际实现中可加载相应的模型文件。
-        self.model_name = model_name
+        self.embedding_client = embedding_client
         self.embedding_dim = embedding_dim
 
     def embed_batch(self, texts: List[str]) -> List[np.ndarray]:
@@ -48,8 +49,9 @@ class EmbeddingModel:
         batch_size = 10
         embeddings = []
         for i in range(0, len(texts), batch_size):
-            batch_texts = texts[i:i+batch_size]
-            batch_embeddings = embedding_api(batch_texts)
+            batch_texts = texts[i : i + batch_size]
+            response = self.embedding_client.get_embeddings(batch_texts)
+            batch_embeddings = response.get("data", {}).get("resultList", [])
             embeddings.extend(batch_embeddings)
         return [np.array(embedding).astype(np.float32) for embedding in embeddings]
 
@@ -64,10 +66,11 @@ class EmbeddingModel:
             float: Cosine similarity between the two embeddings.
         """
         return float(np.dot(embedding1, embedding2))
-    
+
 
 class Sentence:
     """A simple Sentence class to store raw sentence text and metadata."""
+
     def __init__(self, text: str, start_index: int, end_index: int):
         # 中文注释: 基础句子类，用于存储句子文本和起始结束位置。
         self.text = text
@@ -77,8 +80,15 @@ class Sentence:
 
 class SemanticSentence(Sentence):
     """A SemanticSentence class that includes embedding and token count information."""
-    def __init__(self, text: str, start_index: int, end_index: int,
-                 token_count: int, embedding: np.ndarray):
+
+    def __init__(
+        self,
+        text: str,
+        start_index: int,
+        end_index: int,
+        token_count: int,
+        embedding: np.ndarray,
+    ):
         # 中文注释: 扩展的句子类，包含嵌入向量和token计数信息。
         super().__init__(text, start_index, end_index)
         self.token_count = token_count
@@ -87,9 +97,16 @@ class SemanticSentence(Sentence):
 
 class SemanticChunk:
     """A SemanticChunk class representing a coherent text chunk."""
-    def __init__(self, text: str, start_index: int, end_index: int,
-                 token_count: int, sentences: List[SemanticSentence],
-                 chunk_embedding: np.ndarray):
+
+    def __init__(
+        self,
+        text: str,
+        start_index: int,
+        end_index: int,
+        token_count: int,
+        sentences: List[SemanticSentence],
+        chunk_embedding: np.ndarray,
+    ):
         # 中文注释: 语义块类，包含块文本、起止位置、token计数及所属句子列表、以及预先计算好的chunk embedding。
         self.text = text
         self.start_index = start_index
@@ -123,19 +140,21 @@ class SemanticChunker:
         sep (str): Separator for sentence splitting.
     """
 
-    def __init__(self,
-                 embedding_model: EmbeddingModel,
-                 min_characters_per_sentence: int = 5,
-                 similarity_threshold: Optional[float] = None,
-                 similarity_percentile: Optional[float] = 90,
-                 similarity_window: int = 1,
-                 mode: str = "cumulative",
-                 initial_sentences: int = 1,
-                 min_sentences: int = 1,
-                 chunk_size: int = 200,
-                 min_chunk_size: int = 50,
-                 threshold_step: float = 0.05,
-                 sep: str = "🐮🍺"):
+    def __init__(
+        self,
+        embedding_model: EmbeddingModel,
+        min_characters_per_sentence: int = 5,
+        similarity_threshold: Optional[float] = None,
+        similarity_percentile: Optional[float] = 90,
+        similarity_window: int = 1,
+        mode: str = "cumulative",
+        initial_sentences: int = 1,
+        min_sentences: int = 1,
+        chunk_size: int = 200,
+        min_chunk_size: int = 50,
+        threshold_step: float = 0.05,
+        sep: str = "🐮🍺",
+    ):
         # 中文注释: 初始化分块器参数，支持两种模式并设置各种限制参数和分句分隔符。
         self.embedding_model = embedding_model
         self.min_characters_per_sentence = min_characters_per_sentence
@@ -178,7 +197,7 @@ class SemanticChunker:
     def _split_sentences(self, text: str) -> List[str]:
         """Fast sentence splitting while maintaining accuracy.
 
-        This method is faster than using regex for sentence splitting and 
+        This method is faster than using regex for sentence splitting and
         more accurate than using spaCy sentence tokenizer.
 
         Args:
@@ -250,7 +269,9 @@ class SemanticChunker:
 
         return sentences
 
-    def _get_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
+    def _get_semantic_similarity(
+        self, embedding1: np.ndarray, embedding2: np.ndarray
+    ) -> float:
         """Compute cosine similarity between two embeddings."""
         # 中文注释: 简化调用embedding_model的similarity方法。
         return self.embedding_model.similarity(embedding1, embedding2)
@@ -271,7 +292,9 @@ class SemanticChunker:
             dtype=np.float32,
         )
 
-    def _compute_pairwise_similarities(self, sentences: List[SemanticSentence]) -> List[float]:
+    def _compute_pairwise_similarities(
+        self, sentences: List[SemanticSentence]
+    ) -> List[float]:
         """Compute all pairwise similarities between sentences.
 
         Args:
@@ -288,7 +311,9 @@ class SemanticChunker:
             for i in range(len(sentences) - 1)
         ]
 
-    def _get_split_indices(self, similarities: List[float], threshold: float = None) -> List[int]:
+    def _get_split_indices(
+        self, similarities: List[float], threshold: float = None
+    ) -> List[int]:
         """Get indices of sentences to split at.
 
         Args:
@@ -325,7 +350,9 @@ class SemanticChunker:
                 i += 1
         return splits
 
-    def _calculate_threshold_via_binary_search(self, sentences: List[SemanticSentence]) -> float:
+    def _calculate_threshold_via_binary_search(
+        self, sentences: List[SemanticSentence]
+    ) -> float:
         """Calculate similarity threshold via binary search.
 
         Args:
@@ -360,7 +387,10 @@ class SemanticChunker:
                 segment_lengths.append(segment_token_count)
 
             # Check condition: ideally segment lengths between min_chunk_size and chunk_size
-            if all(self.min_chunk_size <= length <= self.chunk_size for length in segment_lengths):
+            if all(
+                self.min_chunk_size <= length <= self.chunk_size
+                for length in segment_lengths
+            ):
                 break
             elif any(length > self.chunk_size for length in segment_lengths):
                 # 若有超过chunk_size的分段，增加threshold降低分组数量
@@ -379,7 +409,9 @@ class SemanticChunker:
 
         return threshold
 
-    def _calculate_threshold_via_percentile(self, sentences: List[SemanticSentence]) -> float:
+    def _calculate_threshold_via_percentile(
+        self, sentences: List[SemanticSentence]
+    ) -> float:
         """Calculate similarity threshold via percentile.
 
         Args:
@@ -392,7 +424,9 @@ class SemanticChunker:
         all_similarities = self._compute_pairwise_similarities(sentences)
         return float(np.percentile(all_similarities, 100 - self.similarity_percentile))
 
-    def _calculate_similarity_threshold(self, sentences: List[SemanticSentence]) -> float:
+    def _calculate_similarity_threshold(
+        self, sentences: List[SemanticSentence]
+    ) -> float:
         """Calculate similarity threshold either through binary search or percentile.
 
         Args:
@@ -409,7 +443,9 @@ class SemanticChunker:
         else:
             return self._calculate_threshold_via_binary_search(sentences)
 
-    def _group_sentences_cumulative(self, sentences: List[SemanticSentence]) -> List[List[SemanticSentence]]:
+    def _group_sentences_cumulative(
+        self, sentences: List[SemanticSentence]
+    ) -> List[List[SemanticSentence]]:
         """Group sentences based on cumulative semantic similarity.
 
         Args:
@@ -427,7 +463,9 @@ class SemanticChunker:
         current_embedding = self._compute_group_embedding(current_group)
 
         for sentence in sentences[self.initial_sentences :]:
-            similarity = self._get_semantic_similarity(current_embedding, sentence.embedding)
+            similarity = self._get_semantic_similarity(
+                current_embedding, sentence.embedding
+            )
             if similarity >= self.similarity_threshold:
                 current_group.append(sentence)
                 current_embedding = self._compute_group_embedding(current_group)
@@ -442,7 +480,9 @@ class SemanticChunker:
 
         return groups
 
-    def _group_sentences_window(self, sentences: List[SemanticSentence]) -> List[List[SemanticSentence]]:
+    def _group_sentences_window(
+        self, sentences: List[SemanticSentence]
+    ) -> List[List[SemanticSentence]]:
         """Group sentences based on semantic similarity using a window-based approach.
 
         Args:
@@ -460,7 +500,9 @@ class SemanticChunker:
         ]
         return groups
 
-    def _group_sentences(self, sentences: List[SemanticSentence]) -> List[List[SemanticSentence]]:
+    def _group_sentences(
+        self, sentences: List[SemanticSentence]
+    ) -> List[List[SemanticSentence]]:
         """Group sentences based on semantic similarity, either cumulatively or by window.
 
         Args:
@@ -499,10 +541,12 @@ class SemanticChunker:
             end_index=sentences[-1].end_index,
             token_count=token_count,
             sentences=sentences,
-            chunk_embedding=chunk_embedding
+            chunk_embedding=chunk_embedding,
         )
 
-    def _split_chunks(self, sentence_groups: List[List[SemanticSentence]]) -> List[SemanticChunk]:
+    def _split_chunks(
+        self, sentence_groups: List[List[SemanticSentence]]
+    ) -> List[SemanticChunk]:
         """Split sentence groups into chunks that respect chunk_size.
 
         Args:
@@ -555,7 +599,8 @@ class SemanticChunker:
         sentences = self._prepare_sentences(text)
         if len(sentences) <= self.min_sentences:
             # 所有句子过少，直接作为一个chunk返回
-            return [self._create_chunk(sentences)]
+            if sentences:
+                return [self._create_chunk(sentences)]
 
         self.similarity_threshold = self._calculate_similarity_threshold(sentences)
         sentence_groups = self._group_sentences(sentences)

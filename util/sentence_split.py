@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + '..'))
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
 import re
 from typing import List, Optional
@@ -11,7 +12,12 @@ from util.utils import calculate_custom_length
 class GeneralTextSplitter:
     """一个综合的中英混合文本句子分割器，支持动态配置和多层次分割。"""
 
-    def __init__(self, sentence_endings: Optional[str] = None, max_sentence_length: int = 100, is_pdf: bool = False):
+    def __init__(
+        self,
+        sentence_endings: Optional[str] = None,
+        max_sentence_length: int = 100,
+        is_pdf: bool = False,
+    ):
         """初始化分割器。
 
         Args:
@@ -43,7 +49,9 @@ class GeneralTextSplitter:
         self.sentence_end_re = re.compile(r"([。！？!?])([^”’])")  # 普通句子结束符
         self.ellipsis_en_re = re.compile(r"(\.{6})([^”’])")  # 英文省略号
         self.ellipsis_cn_re = re.compile(r"(…{2})([^”’])")  # 中文省略号
-        self.quote_sentence_end_re = re.compile(r"([。！？!?][”’])([^，。！？!?])")  # 带引号句子
+        self.quote_sentence_end_re = re.compile(
+            r"([。！？!?][”’])([^，。！？!?])"
+        )  # 带引号句子
         self.comma_semicolon_re = re.compile(r"([，；,;])")  # 逗号和分号
 
     def split_text(self, text: str) -> List[str]:
@@ -70,7 +78,7 @@ class GeneralTextSplitter:
 
         return final_segments
 
-    def batch_chunk(self, text_list, max_length: int = 512, overlap_size: int = 50):
+    def batch_chunk(self, text_list, max_length: int = 50, overlap_size: int = 10):
         """
         将输入文本列表中的每个文本分割为句子，并将句子合并为最大长度为 max_length 的块。
         每个新块会引入前一个块的最后几个句子，重叠部分的总长度不超过 overlap_size。
@@ -136,8 +144,13 @@ class GeneralTextSplitter:
                         overlap_sentences = []
                         overlap_length = 0
                         # 从当前_chunk的末尾开始，逐句添加到重叠部分，直到达到 overlap_size
-                        for sent, sent_len in zip(reversed(current_chunk), reversed(sent_lengths[:i])):
-                            if overlap_length + sent_len > overlap_size and overlap_sentences:
+                        for sent, sent_len in zip(
+                            reversed(current_chunk), reversed(sent_lengths[:i])
+                        ):
+                            if (
+                                overlap_length + sent_len > overlap_size
+                                and overlap_sentences
+                            ):
                                 break
                             overlap_sentences.insert(0, sent)
                             overlap_length += sent_len
@@ -173,7 +186,6 @@ class GeneralTextSplitter:
             cumulative_counts.append(cumulative_counts[-1] + len(chunks))
 
         return chunk_list, cumulative_counts[1:]
-
 
     def _preprocess_pdf_text(self, text: str) -> str:
         """预处理 PDF 文本，去除多余换行和空格。

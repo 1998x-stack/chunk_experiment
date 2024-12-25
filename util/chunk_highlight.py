@@ -1,12 +1,12 @@
 import sys
 import os
-sys.path.append(
-    os.path.abspath(os.path.dirname(__file__) + "/" + "..")
-)
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
 import random
 from typing import Callable, List
 from IPython.display import HTML, display
+
 
 class TextHighlighter:
     """
@@ -22,7 +22,9 @@ class TextHighlighter:
         colors (List[str]): 用于高亮显示的颜色列表。
     """
 
-    def __init__(self, long_text: str, chunking_api: Callable[[str], List[str]], max_length: int):
+    def __init__(
+        self, long_text: str, chunking_api: Callable[[str], List[str]], max_length: int
+    ):
         """
         初始化TextHighlighter实例。
 
@@ -39,14 +41,21 @@ class TextHighlighter:
             raise ValueError("max_length必须是一个正整数。")
         if not callable(chunking_api):
             raise TypeError("chunking_api必须是一个可调用的函数。")
-        
+
         self.long_text: str = long_text
         self.chunking_api: Callable[[str], List[str]] = chunking_api
         self.max_length: int = max_length
         self.colors: List[str] = [
-            "lightblue", "lightgreen", "lightpink", "lightyellow",
-            "lightcoral", "lightsalmon", "lightseagreen", "lightsteelblue",
-            "lightgoldenrodyellow", "lightcyan"
+            "lightblue",
+            "lightgreen",
+            "lightpink",
+            "lightyellow",
+            "lightcoral",
+            "lightsalmon",
+            "lightseagreen",
+            "lightsteelblue",
+            "lightgoldenrodyellow",
+            "lightcyan",
         ]
 
     def get_random_chunk(self) -> str:
@@ -65,13 +74,13 @@ class TextHighlighter:
         if text_length <= self.max_length:
             print(f"长文本长度小于或等于max_length ({self.max_length})，返回整个文本。")
             return self.long_text
-        
+
         start_idx = random.randint(0, text_length - self.max_length)
-        selected_text = self.long_text[start_idx:start_idx + self.max_length]
+        selected_text = self.long_text[start_idx : start_idx + self.max_length]
         print(f"随机选取的文本片段起始索引: {start_idx}, 长度: {len(selected_text)}")
         return selected_text
 
-    def chunk_text(self, text: str) -> List[str]:
+    def chunk_text(self, text: str, wrapper_func=None) -> List[str]:
         """
         使用分块API将文本分块。
 
@@ -84,9 +93,14 @@ class TextHighlighter:
         Raises:
             ValueError: 如果分块结果为空。
         """
+
         chunks = self.chunking_api(text)
+        if wrapper_func==None:
+            pass
+        else:
+            chunks = wrapper_func(chunks)
         if not chunks:
-            raise ValueError("分块API返回的结果为空。")
+            return []
         print(f"文本已分成 {len(chunks)} 块。")
         return chunks
 
@@ -103,7 +117,7 @@ class TextHighlighter:
         html_chunks = []
         num_colors = len(self.colors)
         previous_color = ""
-        
+
         for idx, chunk in enumerate(chunks):
             color = self.colors[idx % num_colors]
             # 确保当前颜色与前一个颜色不同
@@ -112,10 +126,10 @@ class TextHighlighter:
             html_chunk = f'<span style="background-color: {color}; padding: 2px 4px; border-radius: 3px; margin: 1px;">{chunk}</span>'
             html_chunks.append(html_chunk)
             previous_color = color
-        
-        return ' '.join(html_chunks)
 
-    def display_highlighted_text(self) -> None:
+        return " ".join(html_chunks)
+
+    def display_highlighted_text(self, wrapper_func=None) -> None:
         """
         执行随机选取、分块和高亮显示的完整流程，并在Jupyter Notebook中展示结果。
 
@@ -126,19 +140,21 @@ class TextHighlighter:
             # 随机选取文本片段
             selected_text = self.get_random_chunk()
             print(f"选取的文本片段:\n{selected_text}\n")
-            
+
             # 分块
             chunks = self.chunk_text(selected_text)
+            if wrapper_func is not None:
+                chunks = wrapper_func(chunks)
+
             print("分块结果:")
             for i, chunk in enumerate(chunks, 1):
                 print(f"Chunk {i}: {chunk}")
-            print()
-            
+
             # 生成带颜色的HTML
             colored_html = self.generate_colored_html(chunks)
-            
+
             # 在Jupyter Notebook中显示
             display(HTML(colored_html))
-        
+
         except Exception as e:
             print(f"发生错误: {e}")
