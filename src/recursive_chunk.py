@@ -1,5 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
+
 import re
 from typing import List, Optional
+
+from util.sentence_split import GeneralTextSplitter
 
 class RecursiveCharacterTextSplitter:
     """递归字符文本分割器。
@@ -26,8 +32,9 @@ class RecursiveCharacterTextSplitter:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.separators = separators
+        self.general_splitter = GeneralTextSplitter()
 
-    def split_text(self, text: str) -> List[str]:
+    def split_text(self, text: str, sep_type='sentence') -> List[str]:
         """分割文本为较小的块。
 
         Args:
@@ -36,6 +43,8 @@ class RecursiveCharacterTextSplitter:
         Returns:
             分割后的文本块列表。
         """
+        if sep_type == 'sentence':
+            chunks = self.general_splitter.batch_chunk(text, max_length=self.chunk_size, overlap_size=self.chunk_overlap, return_counts=False)
         # 开始递归分割
         splits = self._recursive_split(text, self.separators, self.chunk_size)
         # 合并分割后的块，处理重叠

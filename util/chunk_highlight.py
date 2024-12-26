@@ -154,7 +154,21 @@ class TextHighlighter:
             colored_html = self.generate_colored_html(chunks)
 
             # 在Jupyter Notebook中显示
-            display(HTML(colored_html))
+            display(HTML(colored_html)) #TODO： 如何把\n\t显示出来？
 
         except Exception as e:
             print(f"发生错误: {e}")
+
+    def save_highlighted_text(self, output_file: str, wrapper_func=None) -> None:
+        """
+        执行随机选取、分块和高亮显示的完整流程，并将结果保存到指定文件。
+
+        Args:
+            output_file (str): 保存结果的文件路径。
+
+        Raises:
+            Exception: 如果在任何步骤中发生错误。
+        """
+        # TODO: 最好保存为PNG
+        # TODO: output_file保留重要的参数，data/test_result
+        pass

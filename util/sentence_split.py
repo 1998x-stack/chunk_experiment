@@ -78,7 +78,7 @@ class GeneralTextSplitter:
 
         return final_segments
 
-    def batch_chunk(self, text_list, max_length: int = 50, overlap_size: int = 10):
+    def batch_chunk(self, text_list, max_length: int = 50, overlap_size: int = 10, return_counts: bool = True):
         """
         将输入文本列表中的每个文本分割为句子，并将句子合并为最大长度为 max_length 的块。
         每个新块会引入前一个块的最后几个句子，重叠部分的总长度不超过 overlap_size。
@@ -184,8 +184,10 @@ class GeneralTextSplitter:
             # 更新累积计数
             chunk_list.append(chunks)
             cumulative_counts.append(cumulative_counts[-1] + len(chunks))
-
-        return chunk_list, cumulative_counts[1:]
+        if return_counts:
+            return chunk_list, cumulative_counts[1:]
+        else:
+            return chunk_list
 
     def _preprocess_pdf_text(self, text: str) -> str:
         """预处理 PDF 文本，去除多余换行和空格。
