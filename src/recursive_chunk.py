@@ -18,6 +18,7 @@ class RecursiveCharacterTextSplitter:
         self,
         chunk_size: int = 200,
         chunk_overlap: int = 50,
+        sep_type:str = "chunk_size",
         separators: Optional[List[str]] = None,
     ):
         """初始化分割器。
@@ -31,10 +32,11 @@ class RecursiveCharacterTextSplitter:
             separators = ["\n\n", "\n", "。", "？", "！", "，", " ", ""]
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.sep_type=sep_type
         self.separators = separators
         self.general_splitter = GeneralTextSplitter()
 
-    def split_text(self, text: str, sep_type='sentence') -> List[str]:
+    def split_text(self, text: str, sep_type="sentence") -> List[str]:
         """分割文本为较小的块。
 
         Args:
@@ -43,12 +45,14 @@ class RecursiveCharacterTextSplitter:
         Returns:
             分割后的文本块列表。
         """
-        if sep_type == 'sentence':
+        if sep_type == "sentence":
             chunks = self.general_splitter.batch_chunk(text, max_length=self.chunk_size, overlap_size=self.chunk_overlap, return_counts=False)
-        # 开始递归分割
-        splits = self._recursive_split(text, self.separators, self.chunk_size)
-        # 合并分割后的块，处理重叠
-        chunks = self._merge_splits(splits)
+        else:
+            # 开始递归分割
+            splits = self._recursive_split(text, self.separators, self.chunk_size)
+            # 合并分割后的块，处理重叠
+            chunks = self._merge_splits(splits)
+            
         return chunks
 
     def _recursive_split(

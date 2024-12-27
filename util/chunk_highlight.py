@@ -4,8 +4,11 @@ import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
 import random
+import html
 from typing import Callable, List
 from IPython.display import HTML, display
+from html2image import Html2Image
+import datetime
 
 
 class TextHighlighter:
@@ -95,7 +98,7 @@ class TextHighlighter:
         """
 
         chunks = self.chunking_api(text)
-        if wrapper_func==None:
+        if wrapper_func == None:
             pass
         else:
             chunks = wrapper_func(chunks)
@@ -123,11 +126,27 @@ class TextHighlighter:
             # 确保当前颜色与前一个颜色不同
             if color == previous_color:
                 color = self.colors[(idx + 1) % num_colors]
-            html_chunk = f'<span style="background-color: {color}; padding: 2px 4px; border-radius: 3px; margin: 1px;">{chunk}</span>'
+
+            if isinstance(chunk, str):
+                text = chunk
+            elif isinstance(chunk, list):
+                text = " ".join(chunk)
+            elif hasattr(chunk, "page_content"):
+                text = chunk.page_content
+            else:
+                raise TypeError(f"Unsupported chunk type: {type(chunk)}")
+
+            escaped_chunk = html.escape(text)
+            # 替换制表符和换行符
+            escaped_chunk = escaped_chunk.replace("\t", "&nbsp;" * 4).replace(
+                "\n", "<br>"
+            )
+
+            html_chunk = f'<span style="background-color: {color}; padding: 2px 4px; border-radius: 3px; margin: 1px;">{escaped_chunk}</span>'
             html_chunks.append(html_chunk)
             previous_color = color
 
-        return " ".join(html_chunks)
+        return f"<div style='white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px;'>{' '.join(html_chunks)}</div>"
 
     def display_highlighted_text(self, wrapper_func=None) -> None:
         """
@@ -154,12 +173,14 @@ class TextHighlighter:
             colored_html = self.generate_colored_html(chunks)
 
             # 在Jupyter Notebook中显示
-            display(HTML(colored_html)) #TODO： 如何把\n\t显示出来？
+            display(HTML(colored_html))
 
         except Exception as e:
             print(f"发生错误: {e}")
 
-    def save_highlighted_text(self, output_file: str, wrapper_func=None) -> None:
+    def save_highlighted_text(
+        self, output_dir: str = "data", chunk_name="unknown", wrapper_func=None
+    ) -> None:
         """
         执行随机选取、分块和高亮显示的完整流程，并将结果保存到指定文件。
 
@@ -171,4 +192,61 @@ class TextHighlighter:
         """
         # TODO: 最好保存为PNG
         # TODO: output_file保留重要的参数，data/test_result
-        pass
+        try:
+            # 随机选取文本片段
+            selected_text = self.get_random_chunk()
+            #print(f"选取的文本片段:\n{selected_text}\n")
+
+            # 分块
+            chunks = self.chunk_text(selected_text)
+            if wrapper_func is not None:
+                chunks = wrapper_func(chunks)
+
+            if not chunks:
+                print("没有分块结果，无法生成图片。")
+                return
+
+            # print("分块结果:")
+            # for i, chunk in enumerate(chunks, 1):
+            #     print(f"Chunk {i}: {chunk}")
+
+            # 生成带颜色的HTML
+            colored_html = self.generate_colored_html(chunks)
+
+            # chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"  # 根据您的系统调整路径
+            # 使用 html2image 将 HTML 转换为 PNG
+            hti = Html2Image(output_path=output_dir)
+            # 确保输出目录存在
+            os.makedirs(output_dir, exist_ok=True)
+
+            if hasattr(self.chunking_api, "__self__"):
+                splitter = self.chunking_api.__self__
+                chunk_size = getattr(splitter, "chunk_size", "unknown")
+                chunk_overlap = getattr(splitter, "chunk_overlap", "unknown")
+            else:
+                chunk_size = "unknown"
+                chunk_overlap = "unknown"
+
+            # 构建文件名，包含 max_length 和分块数量
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"chunkSize{chunk_size}_chunkOverlap{chunk_overlap}_{chunk_name}_{timestamp}.png"
+
+            # 将 HTML 保存为临时文件
+            temp_html_path = os.path.join(output_dir, "temp_highlight.html")
+            with open(temp_html_path, "w", encoding="utf-8") as f:
+                f.write(colored_html)
+
+            # 渲染 HTML 到 PNG
+            hti.screenshot(
+                html_file=temp_html_path,
+                save_as=filename,
+                size=(800, 1000),  # 你可以根据需要调整图片大小
+            )
+
+            # 删除临时 HTML 文件
+            os.remove(temp_html_path)
+
+            print(f"高亮文本已保存为 PNG 图片:{os.path.join(output_dir, filename)}")
+
+        except Exception as e:
+            print(f"发生错误: {e}")

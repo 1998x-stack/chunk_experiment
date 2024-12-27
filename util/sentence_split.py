@@ -78,7 +78,13 @@ class GeneralTextSplitter:
 
         return final_segments
 
-    def batch_chunk(self, text_list, max_length: int = 50, overlap_size: int = 10, return_counts: bool = True):
+    def batch_chunk(
+        self,
+        text_list,
+        max_length: int = 50,
+        overlap_size: int = 10,
+        return_counts: bool = True,
+    ):
         """
         将输入文本列表中的每个文本分割为句子，并将句子合并为最大长度为 max_length 的块。
         每个新块会引入前一个块的最后几个句子，重叠部分的总长度不超过 overlap_size。
@@ -97,6 +103,13 @@ class GeneralTextSplitter:
         """
         chunk_list = []
         cumulative_counts = [0]
+
+        if isinstance(text_list, str):
+            text_list = [text_list]
+        elif not isinstance(text_list, list):
+            raise TypeError(
+                f"text_list 必须是 str 或 List[str]，但接收到 {type(text_list)}"
+            )
 
         for text in text_list:
             # 分割为句子列表
