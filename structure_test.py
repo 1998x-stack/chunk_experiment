@@ -44,7 +44,7 @@ def test_chunk(type, chunk_size, chunk_overlap):
     paths, splitter, _ = get_pathsplitter(type, chunk_size, chunk_overlap)
     # Gather file paths
     file_paths = [os.path.join(paths, f) for f in os.listdir(paths) if f.endswith(type)]
-    file_paths = file_paths[:1]  # Limit to first 100 files
+    file_paths = file_paths[:100]  # Limit to first 100 files
 
     total_time = 0
 
@@ -55,7 +55,7 @@ def test_chunk(type, chunk_size, chunk_overlap):
     for file_path in file_paths:
         with open(file_path, "r", encoding=encoding) as f:
             sample_text = f.read()
-            # sample_text = sample_text[:20000]  # Limit to first 20,000 characters
+            # sample_text = sample_text[:200000]  # Limit to first 20,0000 characters
             # print(f"Processing file: {file_path} | Length: {len(sample_text)}")
 
         # Specific preprocessing for HTML files
@@ -77,7 +77,6 @@ def test_chunk(type, chunk_size, chunk_overlap):
     print(
         f"Processed {len(file_paths)} documents. Average runtime: {average_time:.4f} seconds"
     )
-    print(f"Last processed chunks: {chunks}")
 
 
 def save_highlight(type, chunk_size, chunk_overlap, max_len=2000):
@@ -106,11 +105,11 @@ def save_highlight(type, chunk_size, chunk_overlap, max_len=2000):
         output_dir+= "/html"
     
     highlighter.save_highlighted_text(output_dir, chunk_type)
-    highlighter.display_highlighted_text()
+    # highlighter.display_highlighted_text()
 
 
 def main():
-    file_type = ".tex"
+    file_type = ".py"
     chunk_size = 100
     chunk_overlap = 20
     test_chunk(file_type, chunk_size, chunk_overlap)

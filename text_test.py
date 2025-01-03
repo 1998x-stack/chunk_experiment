@@ -4,8 +4,15 @@ from util.embedding_api import EmbeddingClient
 from src.semantic_chunk import SemanticChunker, EmbeddingModel
 from src.recursive_chunk import RecursiveCharacterTextSplitter
 from util.chunk_highlight import TextHighlighter
+import chardet
 
 from util.helpers import semantic_chunks_to_text, process_batch_chunk_output
+
+
+def detect_encoding(file_path):
+    with open(file_path, "rb") as f:
+        result = chardet.detect(f.read())
+        return result["encoding"]
 
 
 def get_pathsplitter(splittertype, language, chunk_size, chunk_overlap):
@@ -59,9 +66,7 @@ def get_pathsplitter(splittertype, language, chunk_size, chunk_overlap):
         separators=["\n\n", "\n", "。", "？", "！", "，", " ", ""],
     )
     recursivesentencesplitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        sep_type="sentence"
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap, sep_type="sentence"
     )
     recursivechunker = recursivesplitter.split_text
     recursivesentencechunker = recursivesentencesplitter.split_text
@@ -88,11 +93,13 @@ def test_chunk(type, language, chunk_size, chunk_overlap):
         if f.endswith(".txt") and os.path.isfile(os.path.join(paths, f))
     ]
 
+    encoding = detect_encoding(file_paths[0])
     total_time = 0
     for file_path in file_paths:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding=encoding, errors="ignore") as f:
             sample_text = f.read()
             print(f"Processing file: {file_path} | Length: {len(sample_text)}")
+            # sample_text = sample_text[:100]
             sample_text = sample_text[:20000]  # Limit to first 20,000 characters
             # print(f"Processing file: {file_path} | Length: {len(sample_text)}")
         start_time = time.time()
@@ -114,7 +121,8 @@ def save_highlight(type, language, chunk_size, chunk_overlap, max_len=1000):
         if f.endswith(".txt") and os.path.isfile(os.path.join(paths, f))
     ]
 
-    with open(file_paths[0], "r", encoding="utf-8") as f:
+    encoding = detect_encoding(file_paths[0])
+    with open(file_paths[0], "r", encoding=encoding, errors="ignore") as f:
         sample_text = f.read()
 
     if type == "semanticcumulative" or type == "semanticwindow":
@@ -130,32 +138,32 @@ def save_highlight(type, language, chunk_size, chunk_overlap, max_len=1000):
     )
 
     output_dir = "chunk_experiment/data/test_result/general"
-    if language=="zh":
+    if language == "zh":
         output_dir += "/zh"
-    elif language=="en":
+    elif language == "en":
         output_dir += "/en"
-    
-    if type=="semanticcumulative":
+
+    if type == "semanticcumulative":
         output_dir += "/semanticcumulative"
-    elif type=="semanticwindow":
+    elif type == "semanticwindow":
         output_dir += "/semanticwindow"
-    elif type=="recursive":
+    elif type == "recursive":
         output_dir += "/recursive"
-    elif type=="recursivesentence":
+    elif type == "recursivesentence":
         output_dir += "/recursivesentence"
-        
+
     highlighter.save_highlighted_text(output_dir, chunk_type, wrapper_func=wrapper_func)
     # 显示高亮文本
     # highlighter.display_highlighted_text()
 
 
 def main():
-    file_type = "semanticcumulative"
-    language = "en"
+    file_type = "semanticwindow"
+    language = "zh"
     chunk_size = 1000
     chunk_overlap = 100
     test_chunk(file_type, language, chunk_size, chunk_overlap)
-    save_highlight(file_type, language, chunk_size, chunk_overlap)
+    # save_highlight(file_type, language, chunk_size, chunk_overlap)
 
 
 if __name__ == "__main__":
