@@ -5,7 +5,7 @@
 
 ## Current architecture
 
-The repository has evolved in four additive stages:
+The repository has evolved in five additive stages:
 
 - **v2 — trustworthy chunking core**: exact source offsets, explicit length metrics,
   deterministic baselines, real cosine similarity and reproducible experiments.
@@ -32,6 +32,8 @@ See:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)
 - [docs/ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
+- [docs/ARCHITECTURE_V5.md](docs/ARCHITECTURE_V5.md)
+- [docs/RERANKING.md](docs/RERANKING.md)
 - [docs/RETRIEVAL_EVALUATION.md](docs/RETRIEVAL_EVALUATION.md)
 - [docs/HYBRID_RETRIEVAL.md](docs/HYBRID_RETRIEVAL.md)
 - [docs/REVIEW.md](docs/REVIEW.md)
@@ -161,6 +163,15 @@ python experiments/run_retrieval_v4.py examples/retrieval_eval/golden.json \
   --retrieval-modes dense bm25 hybrid \
   --chunk-sizes 12 20 \
   --parent-multipliers 1 3
+```
+
+v5 candidate/reranking matrix:
+
+```bash
+python experiments/run_rerank_v5.py examples/retrieval_eval/golden.json \
+  --retrieval-modes dense bm25 hybrid \
+  --candidate-ks 3 5 10 \
+  --final-ks 1 3
 ```
 
 ## Testing
