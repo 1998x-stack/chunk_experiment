@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from .length import LengthMetric, character_length
 from .models import Chunk
 
-
 DEFAULT_SEPARATORS = ("\n\n", "\n", "。", "！", "？", ". ", "! ", "? ", "；", "; ", "，", ", ", " ")
 
 

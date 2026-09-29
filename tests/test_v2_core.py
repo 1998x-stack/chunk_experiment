@@ -81,6 +81,9 @@ def test_evaluation_detects_no_overlap_for_semantic_chunks() -> None:
 
 
 def test_recursive_boundary_search_never_exceeds_budget() -> None:
-    text = "第一段。第二段继续。\n\nThis is an English paragraph with several words. Another sentence."
+    text = (
+        "第一段。第二段继续。\n\n"
+        "This is an English paragraph with several words. Another sentence."
+    )
     chunks = RecursiveChunker(chunk_size=40, chunk_overlap=5).split(text)
     assert all(len(chunk.text) <= 40 for chunk in chunks)

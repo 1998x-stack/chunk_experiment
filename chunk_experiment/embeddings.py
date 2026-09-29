@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 import numpy as np
 

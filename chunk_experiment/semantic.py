@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
 
@@ -9,7 +9,6 @@ from .embeddings import EmbeddingProvider, cosine_similarity
 from .length import LengthMetric, approximate_token_length
 from .models import Chunk
 from .recursive import RecursiveChunker
-
 
 _SENTENCE_ENDINGS = frozenset("。！？!?；;\n")
 
