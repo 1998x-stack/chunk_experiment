@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
@@ -65,7 +66,11 @@ class EmbeddingModel:
         Returns:
             float: Cosine similarity between the two embeddings.
         """
-        return float(np.dot(embedding1, embedding2))
+        norm1 = float(np.linalg.norm(embedding1))
+        norm2 = float(np.linalg.norm(embedding2))
+        if norm1 == 0.0 or norm2 == 0.0:
+            return 0.0
+        return float(np.dot(embedding1, embedding2) / (norm1 * norm2))
 
 
 class Sentence:
@@ -179,8 +184,14 @@ class SemanticChunker:
         Returns:
             int: Approximate token count.
         """
-        # 中文注释: 粗略计算token数，实际可使用更严格的tokenizer。
-        return len(text.split())
+        # Model-agnostic approximation only. CJK characters are counted explicitly
+        # so Chinese text is not collapsed into one whitespace-delimited token.
+        return len(
+            re.findall(
+                r"[\u4e00-\u9fff]|[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)?|[^\s]",
+                text,
+            )
+        )
 
     def _count_tokens_batch(self, texts: List[str]) -> List[int]:
         """Count tokens for a batch of texts.
