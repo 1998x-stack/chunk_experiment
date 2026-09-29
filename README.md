@@ -1,87 +1,81 @@
 # chunk_experiment
 
-> 可复现的 RAG 文本切分实验框架：递归切分、embedding 驱动语义切分、统一指标、CLI 与目录级 benchmark。  
-> Reproducible chunking experiments for RAG with explicit length metrics, embedding backends and source-aligned evaluation.
+> 可复现、可审计、面向真实 RAG 检索效果的文本切分实验框架。  
+> Reproducible chunking and retrieval experiments with source-aligned evidence labels.
 
-## Why this refactor
+## Current architecture
 
-The repository started as a collection of research scripts and notebooks. That was useful for exploration, but several implementation details made cross-run conclusions hard to trust:
+The repository has evolved in four additive stages:
 
-- legacy semantic experiments used synthetic/mock embeddings;
-- enhanced defaults could generate random embeddings;
-- "token count" was based on whitespace, which is not meaningful for unsegmented Chinese;
-- cosine similarity was named as such but the legacy path used a raw dot product;
-- adaptive thresholds could be written back to instance state and leak across documents;
-- chunk text did not have a single, auditable offset/metadata contract.
+- **v2 — trustworthy chunking core**: exact source offsets, explicit length metrics,
+  deterministic baselines, real cosine similarity and reproducible experiments.
+- **v3 — retrieval-grounded evaluation**: Markdown-aware chunking, versioned golden sets,
+  source-span labels, HitRate/Precision/SpanRecall/MRR/nDCG and CI quality gates.
+- **v4 — RAG retrieval architecture experiments**: BM25, dense + sparse RRF fusion,
+  parent/child retrieval and latency/context-cost metrics.
 
-The v2 core keeps the historical artifacts, but makes those experimental dependencies explicit.\n\n**v3 adds retrieval-grounded evaluation**: structure-aware Markdown chunking, versioned golden sets, exact dense retrieval, source-span labels, HitRate/Precision/SpanRecall/MRR/nDCG, and CI quality gates.
+Historical notebooks, scripts and result files remain available for research provenance.
 
-## v2 architecture
+## Design invariants
 
-```text
-document
-  ├─ LengthMetric
-  ├─ RecursiveChunker
-  └─ SemanticChunker ── EmbeddingProvider
-             │
-             └──────────────> Chunk(text, start, end, metadata)
-                                      │
-                                      └─ evaluate_chunks(...)
-```
+- Every returned chunk is an exact source slice: `chunk.text == source[start:end]`.
+- Gold relevance labels point to stable document spans, never transient chunk IDs.
+- Character/token-like length units are explicit and injectable.
+- Retrieval strategies share one `Retriever` protocol.
+- Hybrid retrieval fuses **ranks**, not incomparable dense/BM25 raw scores.
+- Parent/child retrieval searches small evidence units but returns larger source-aligned context.
+- Context cost is measured alongside retrieval quality.
+- Hash embeddings are a deterministic CI/plumbing baseline, not evidence of semantic quality.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md), [docs/RETRIEVAL_EVALUATION.md](docs/RETRIEVAL_EVALUATION.md) and [docs/REVIEW.md](docs/REVIEW.md).
+See:
 
-### Core invariants
-
-- **Source aligned**: `chunk.text == source[chunk.start:chunk.end]`.
-- **Explicit units**: character length and token-like length are separate metrics.
-- **Deterministic offline baseline**: hash embeddings are reproducible and clearly labelled lexical, not semantic.
-- **Real cosine similarity**: vectors are normalized/validated.
-- **No hidden state mutation** across documents.
-- **Algorithm-neutral metrics**: coverage, duplication, size compliance and dispersion.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)
+- [docs/ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
+- [docs/RETRIEVAL_EVALUATION.md](docs/RETRIEVAL_EVALUATION.md)
+- [docs/HYBRID_RETRIEVAL.md](docs/HYBRID_RETRIEVAL.md)
+- [docs/REVIEW.md](docs/REVIEW.md)
 
 ## Install
 
-For the new core:
+Core development environment:
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-For the historical scripts as well:
-
-```bash
-python -m pip install -e ".[legacy,dev]"
-```
-
-HTTP embedding support is optional:
+HTTP embedding support:
 
 ```bash
 python -m pip install -e ".[http]"
 ```
 
-## CLI
-
-Recursive splitting:
+Historical scripts and dependencies:
 
 ```bash
-chunk-experiment data/general/en/example.txt \
+python -m pip install -e ".[legacy,dev]"
+```
+
+## Chunking CLI
+
+Recursive:
+
+```bash
+chunk-experiment input.txt \
   --algorithm recursive \
   --chunk-size 500 \
-  --overlap 100 \
-  --output recursive.json
+  --overlap 100
 ```
 
-Deterministic lexical baseline for smoke tests / CI:
+Markdown structure-aware:
 
 ```bash
-chunk-experiment data/general/en/example.txt \
-  --algorithm semantic-hash \
-  --chunk-size 200 \
-  --output semantic_hash.json
+chunk-experiment guide.md \
+  --algorithm markdown \
+  --chunk-size 256
 ```
 
-Real HTTP embedding service:
+Semantic chunking with a real HTTP embedding service:
 
 ```bash
 chunk-experiment input.txt \
@@ -90,41 +84,100 @@ chunk-experiment input.txt \
   --chunk-size 200
 ```
 
-## Reproducible directory benchmark
+## Retrieval evaluation
+
+Dense retrieval:
+
+```bash
+chunk-retrieval-eval examples/retrieval_eval/golden.json \
+  --chunker markdown \
+  --chunk-size 20 \
+  --retrieval-mode dense \
+  --contextual-headings \
+  --top-k 1 3
+```
+
+Dependency-free BM25:
+
+```bash
+chunk-retrieval-eval examples/retrieval_eval/golden.json \
+  --chunker markdown \
+  --chunk-size 20 \
+  --retrieval-mode bm25 \
+  --top-k 1 3
+```
+
+Dense + BM25 weighted RRF:
+
+```bash
+chunk-retrieval-eval examples/retrieval_eval/golden.json \
+  --chunker markdown \
+  --chunk-size 20 \
+  --retrieval-mode hybrid \
+  --contextual-headings \
+  --top-k 1 3 \
+  --gate-k 3 \
+  --min-hit-rate 1.0 \
+  --min-span-recall 1.0
+```
+
+Parent/child retrieval uses small chunks for matching and larger parents for returned context:
+
+```bash
+chunk-retrieval-eval examples/retrieval_eval/golden.json \
+  --chunker markdown \
+  --chunk-size 12 \
+  --parent-chunk-size 40 \
+  --retrieval-mode hybrid \
+  --contextual-headings \
+  --top-k 1 3 \
+  --cost-k 3
+```
+
+The output contains retrieval metrics plus mean/p95 query latency, returned context characters,
+unique context characters and context duplication ratio.
+
+## Experiment runners
+
+Chunk-size benchmark:
 
 ```bash
 python experiments/run_v2.py data/general/en \
   --chunk-sizes 200 500 1000 \
-  --include-semantic-hash \
   --output v2_benchmark_results.json
 ```
 
-The result records the document SHA-256, parameters, runtime environment and unified metrics for every run.
+Retrieval-grounded v3 matrix:
+
+```bash
+python experiments/run_retrieval_v3.py examples/retrieval_eval/golden.json
+```
+
+v4 RAG architecture matrix:
+
+```bash
+python experiments/run_retrieval_v4.py examples/retrieval_eval/golden.json \
+  --strategies recursive markdown \
+  --retrieval-modes dense bm25 hybrid \
+  --chunk-sizes 12 20 \
+  --parent-multipliers 1 3
+```
 
 ## Testing
 
 ```bash
 pytest
-ruff check chunk_experiment tests
+ruff check chunk_experiment tests experiments
 ```
 
-CI runs the v2 suite on Python 3.10, 3.11 and 3.12.
+CI runs Python 3.10, 3.11 and 3.12 and includes an end-to-end retrieval golden-set gate.
 
 ## Historical results
 
-The following files are preserved as historical research artifacts:
-
-- `EXPERIMENT_SUMMARY.md`
-- `ENHANCEMENT_SUMMARY.md`
-- `algorithm_comparison_results.json`
-- `param_ablation_results.json`
-- notebooks and the original `src/` / `util/` implementations
-
-Those historical semantic comparisons were produced with mocked/synthetic embeddings, so they are useful for execution-flow and parameter-sensitivity inspection, **not as evidence that one semantic strategy has higher semantic coherence than another**.
-
-New runs from `ablation_experiments.py` use a deterministic lexical-hash backend and write `*_v2.json` files so the historical outputs are not overwritten.
-
-For semantic-quality conclusions, use a documented real embedding model and retrieval-grounded downstream metrics (for example Recall@K, MRR or nDCG when labels are available).
+The original `src/`, `util/`, notebooks and historical JSON reports are intentionally retained.
+Older semantic comparisons used mocked/synthetic embeddings and should be treated as
+execution-flow or parameter-sensitivity artifacts, not as evidence that one semantic strategy
+has superior semantic coherence.
 
 ## License
 

@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from statistics import mean
 
-from .retrieval import DenseRetriever, SearchResult
+from .retrieval import Retriever, SearchResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,8 +128,30 @@ def evaluate_query(
     )
 
 
+def aggregate_retrieval_metrics(
+    rows: Sequence[RetrievalMetrics],
+    *,
+    ks: Sequence[int],
+) -> dict[int, AggregateRetrievalMetrics]:
+    aggregates: dict[int, AggregateRetrievalMetrics] = {}
+    for k in ks:
+        selected = [row for row in rows if row.k == k]
+        if not selected:
+            raise ValueError(f"no retrieval rows available for k={k}")
+        aggregates[k] = AggregateRetrievalMetrics(
+            k=k,
+            queries=len(selected),
+            hit_rate=mean(row.hit_rate for row in selected),
+            precision=mean(row.precision for row in selected),
+            span_recall=mean(row.span_recall for row in selected),
+            mrr=mean(row.reciprocal_rank for row in selected),
+            ndcg=mean(row.ndcg for row in selected),
+        )
+    return aggregates
+
+
 def evaluate_retriever(
-    retriever: DenseRetriever,
+    retriever: Retriever,
     cases: Sequence[QueryCase],
     *,
     top_k: Sequence[int] = (1, 3, 5),
@@ -147,19 +169,7 @@ def evaluate_retriever(
         for k in ks:
             per_query.append(evaluate_query(case, results, k=k))
 
-    aggregates: dict[int, AggregateRetrievalMetrics] = {}
-    for k in ks:
-        rows = [row for row in per_query if row.k == k]
-        aggregates[k] = AggregateRetrievalMetrics(
-            k=k,
-            queries=len(rows),
-            hit_rate=mean(row.hit_rate for row in rows),
-            precision=mean(row.precision for row in rows),
-            span_recall=mean(row.span_recall for row in rows),
-            mrr=mean(row.reciprocal_rank for row in rows),
-            ndcg=mean(row.ndcg for row in rows),
-        )
-    return aggregates, per_query
+    return aggregate_retrieval_metrics(per_query, ks=ks), per_query
 
 
 @dataclass(frozen=True, slots=True)
