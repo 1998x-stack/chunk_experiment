@@ -18,6 +18,15 @@ from .parent_child import (
     build_parent_child_index,
 )
 from .recursive import RecursiveChunker
+from .rerank import (
+    LexicalOverlapScoreProvider,
+    Reranker,
+    RerankScoreProvider,
+    ScoreProviderReranker,
+    TwoStageRetriever,
+    TwoStageTrace,
+)
+from .rerank_factory import RerankerConfig, build_reranker
 from .retrieval import (
     DenseRetriever,
     Document,
@@ -28,15 +37,6 @@ from .retrieval import (
     contextual_heading_text,
     plain_chunk_text,
 )
-from .rerank import (
-    LexicalOverlapScoreProvider,
-    Reranker,
-    RerankScoreProvider,
-    ScoreProviderReranker,
-    TwoStageRetriever,
-    TwoStageTrace,
-)
-from .rerank_factory import RerankerConfig, build_reranker
 from .retrieval_eval import (
     AggregateRetrievalMetrics,
     QueryCase,
@@ -72,18 +72,18 @@ __all__ = [
     "HttpEmbeddingProvider",
     "HybridRetriever",
     "IndexedChunk",
-    "MarkdownChunker",
     "LexicalOverlapScoreProvider",
+    "MarkdownChunker",
     "MarkdownSection",
     "ParentChildIndex",
     "ParentChildRetriever",
     "QueryCase",
     "QueryCostMetrics",
+    "RecursiveChunker",
+    "RelevantSpan",
     "Reranker",
     "RerankerConfig",
     "RerankScoreProvider",
-    "RecursiveChunker",
-    "RelevantSpan",
     "Retriever",
     "RetrieverConfig",
     "RetrievalGate",
