@@ -14,6 +14,10 @@ class Chunker(Protocol):
     def split(self, text: str) -> list[Chunk]: ...
 
 
+class Retriever(Protocol):
+    def search(self, query: str, top_k: int = 5) -> list["SearchResult"]: ...
+
+
 @dataclass(frozen=True, slots=True)
 class Document:
     document_id: str
