@@ -1,10 +1,16 @@
+"""Legacy-compatible ablation runner.
+
+The historical JSON files are preserved. New runs use a deterministic lexical-hash
+embedding baseline so execution is reproducible, but this backend is not evidence of
+semantic quality. Use a documented real embedding model for semantic conclusions.
+"""
+
 import os
 import sys
 import json
 import time
 import numpy as np
 from datetime import datetime
-from unittest.mock import Mock
 from typing import Dict, List, Tuple
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -12,6 +18,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from src.semantic_chunk import SemanticChunker, EmbeddingModel
 from src.recursive_chunk import RecursiveCharacterTextSplitter
 from util.embedding_api import EmbeddingClient
+from chunk_experiment.embeddings import HashEmbeddingProvider
 
 
 class AblationExperimentRunner:
@@ -40,26 +47,19 @@ class AblationExperimentRunner:
     
     def run_semantic_chunker_experiment(self, text: str, params: Dict) -> Dict:
         """Run experiment with semantic chunker using specified parameters"""
-        # Create mock embedding client
-        mock_client = Mock()
-        # Generate mock embeddings - we'll need as many as the number of sentences
-        # Estimate number of sentences by counting sentence terminators
-        import re
-        sentences = re.split(r'[.!?。！？]', text)
-        n_sentences = len([s for s in sentences if s.strip()])
-        
-        # If no sentences detected, use a reasonable default
-        n_sentences = max(n_sentences, 10)
-        
-        # Generate mock embeddings
-        mock_embeddings = [[float(j)/100.0 for j in range(128)] for _ in range(n_sentences)]
-        mock_client.get_embeddings.return_value = {
-            "data": {
-                "resultList": mock_embeddings
-            }
-        }
-        
-        embedding_model = EmbeddingModel(mock_client, embedding_dim=128)
+        # Deterministic lexical-hash backend for reproducible plumbing experiments.
+        # This is intentionally NOT treated as a semantic-quality model.
+        provider = HashEmbeddingProvider(dimension=128)
+
+        class _EmbeddingClient:
+            def get_embeddings(self, texts):
+                return {
+                    "data": {
+                        "resultList": provider.embed(texts).tolist()
+                    }
+                }
+
+        embedding_model = EmbeddingModel(_EmbeddingClient(), embedding_dim=128)
         
         chunker = SemanticChunker(
             embedding_model=embedding_model,
@@ -86,7 +86,8 @@ class AblationExperimentRunner:
             'n_chunks': len(chunks),
             'avg_chunk_size': np.mean([len(chunk.text) for chunk in chunks]) if chunks else 0,
             'total_processing_time': end_time - start_time,
-            'text_length': len(text)
+            'text_length': len(text),
+            'embedding_backend': 'deterministic-lexical-hash'
         }
     
     def run_recursive_chunker_experiment(self, text: str, params: Dict) -> Dict:
@@ -280,14 +281,14 @@ def run_ablation_experiments():
     param_results = runner.run_parameter_ablation_study()
     
     # Save parameter study results
-    runner.save_results(param_results, "param_ablation_results.json")
+    runner.save_results(param_results, "param_ablation_results_v2.json")
     
     # Run algorithm comparison
     print("\n2. Running algorithm comparison...")
     comparison_results = runner.compare_algorithms()
     
     # Save comparison results
-    runner.save_results(comparison_results, "algorithm_comparison_results.json")
+    runner.save_results(comparison_results, "algorithm_comparison_results_v2.json")
     
     # Print summary
     print("\n3. Experiment Summary:")
