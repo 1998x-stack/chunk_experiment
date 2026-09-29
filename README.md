@@ -14,7 +14,7 @@ The repository started as a collection of research scripts and notebooks. That w
 - adaptive thresholds could be written back to instance state and leak across documents;
 - chunk text did not have a single, auditable offset/metadata contract.
 
-The v2 core keeps the historical artifacts, but makes those experimental dependencies explicit.
+The v2 core keeps the historical artifacts, but makes those experimental dependencies explicit.\n\n**v3 adds retrieval-grounded evaluation**: structure-aware Markdown chunking, versioned golden sets, exact dense retrieval, source-span labels, HitRate/Precision/SpanRecall/MRR/nDCG, and CI quality gates.
 
 ## v2 architecture
 
@@ -29,7 +29,7 @@ document
                                       └─ evaluate_chunks(...)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/REVIEW.md](docs/REVIEW.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md), [docs/RETRIEVAL_EVALUATION.md](docs/RETRIEVAL_EVALUATION.md) and [docs/REVIEW.md](docs/REVIEW.md).
 
 ### Core invariants
 
