@@ -7,16 +7,24 @@ from pathlib import Path
 from .embeddings import HashEmbeddingProvider, HttpEmbeddingProvider
 from .evaluation import evaluate_chunks
 from .length import approximate_token_length, character_length
+from .markdown import MarkdownChunker
 from .recursive import RecursiveChunker
 from .semantic import SemanticChunker
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Reproducible text chunking experiments")
+    parser = argparse.ArgumentParser(
+        description="Reproducible text chunking experiments"
+    )
     parser.add_argument("input", type=Path, help="UTF-8 text file")
     parser.add_argument(
         "--algorithm",
-        choices=("recursive", "semantic-hash", "semantic-http"),
+        choices=(
+            "recursive",
+            "markdown",
+            "semantic-hash",
+            "semantic-http",
+        ),
         default="recursive",
     )
     parser.add_argument("--chunk-size", type=int, default=500)
@@ -33,14 +41,27 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.algorithm == "recursive":
         metric = character_length
-        chunker = RecursiveChunker(args.chunk_size, args.overlap, length_metric=metric)
+        chunker = RecursiveChunker(
+            args.chunk_size,
+            args.overlap,
+            length_metric=metric,
+        )
+    elif args.algorithm == "markdown":
+        metric = approximate_token_length
+        chunker = MarkdownChunker(
+            chunk_size=args.chunk_size,
+            chunk_overlap=args.overlap,
+            length_metric=metric,
+        )
     else:
         metric = approximate_token_length
         if args.algorithm == "semantic-hash":
             provider = HashEmbeddingProvider()
         else:
             if not args.embedding_url:
-                raise SystemExit("--embedding-url is required for semantic-http")
+                raise SystemExit(
+                    "--embedding-url is required for semantic-http"
+                )
             provider = HttpEmbeddingProvider(args.embedding_url)
         chunker = SemanticChunker(
             provider,
@@ -50,18 +71,35 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     chunks = chunker.split(text)
-    metrics = evaluate_chunks(text, chunks, max_chunk_size=args.chunk_size, length_metric=metric)
+    metrics = evaluate_chunks(
+        text,
+        chunks,
+        max_chunk_size=args.chunk_size,
+        length_metric=metric,
+    )
     payload = {
         "algorithm": args.algorithm,
         "metrics": metrics.to_dict(),
         "chunks": [
-            {"start": c.start, "end": c.end, "text": c.text, "metadata": dict(c.metadata)}
-            for c in chunks
+            {
+                "start": chunk.start,
+                "end": chunk.end,
+                "text": chunk.text,
+                "metadata": dict(chunk.metadata),
+            }
+            for chunk in chunks
         ],
     }
-    encoded = json.dumps(payload, ensure_ascii=False, indent=2)
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        indent=2,
+    )
     if args.output:
-        args.output.write_text(encoded + "\n", encoding="utf-8")
+        args.output.write_text(
+            encoded + "\n",
+            encoding="utf-8",
+        )
     else:
         print(encoded)
     return 0
