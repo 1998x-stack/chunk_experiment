@@ -10,6 +10,7 @@ import warnings
 from typing import List, Optional
 
 from util.sentence_split import GeneralTextSplitter
+from chunk_experiment.length import approximate_token_length
 
 # 下方定义的类与方法用于处理文本的语义分块操作，包含分句、语义相似性计算、
 # 分组与最终chunk生成的流程。还提供对外接口函数实现根据query选出最匹配文本块的功能。
@@ -65,7 +66,11 @@ class EmbeddingModel:
         Returns:
             float: Cosine similarity between the two embeddings.
         """
-        return float(np.dot(embedding1, embedding2))
+        norm1 = np.linalg.norm(embedding1)
+        norm2 = np.linalg.norm(embedding2)
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return float(np.dot(embedding1, embedding2) / (norm1 * norm2))
 
 
 class Sentence:
@@ -180,7 +185,7 @@ class SemanticChunker:
             int: Approximate token count.
         """
         # 中文注释: 粗略计算token数，实际可使用更严格的tokenizer。
-        return len(text.split())
+        return approximate_token_length(text)
 
     def _count_tokens_batch(self, texts: List[str]) -> List[int]:
         """Count tokens for a batch of texts.
@@ -207,7 +212,11 @@ class SemanticChunker:
             List[str]: List of sentences.
         """
         sentences = self.splitter.split_text(text)
-        return sentences
+        return [
+            sentence
+            for sentence in sentences
+            if len(sentence.strip()) >= self.min_characters_per_sentence
+        ]
 
     def _compute_similarity_threshold(self, all_similarities: List[float]) -> float:
         """Compute similarity threshold based on percentile if specified."""
@@ -252,6 +261,11 @@ class SemanticChunker:
 
         # Compute embeddings
         embeddings = self.embedding_model.embed_batch(sentence_groups)
+        if len(embeddings) != len(raw_sentences):
+            raise ValueError(
+                f"embedding provider returned {len(embeddings)} vectors "
+                f"for {len(raw_sentences)} sentences"
+            )
         # Compute token counts
         token_counts = self._count_tokens_batch(raw_sentences)
         sentences = [
@@ -602,7 +616,11 @@ class SemanticChunker:
             if sentences:
                 return [self._create_chunk(sentences)]
 
-        self.similarity_threshold = self._calculate_similarity_threshold(sentences)
-        sentence_groups = self._group_sentences(sentences)
-        chunks = self._split_chunks(sentence_groups)
-        return chunks
+        configured_threshold = self.similarity_threshold
+        threshold = self._calculate_similarity_threshold(sentences)
+        try:
+            self.similarity_threshold = threshold
+            sentence_groups = self._group_sentences(sentences)
+            return self._split_chunks(sentence_groups)
+        finally:
+            self.similarity_threshold = configured_threshold

@@ -1,45 +1,131 @@
 # chunk_experiment
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+> 可复现的 RAG 文本切分实验框架：递归切分、embedding 驱动语义切分、统一指标、CLI 与目录级 benchmark。  
+> Reproducible chunking experiments for RAG with explicit length metrics, embedding backends and source-aligned evaluation.
 
-> A text-**chunking algorithm experiment**: compare semantic chunking (cumulative & window
-> modes) against traditional recursive chunking, with ablation over chunk size / overlap /
-> similarity thresholds. —— 文本分块算法实验:对比语义分块(累积/窗口)与经典递归分块,并进行参数消融实验。
+## Why this refactor
 
-## 📊 Key Results (from `EXPERIMENT_SUMMARY.md`)
+The repository started as a collection of research scripts and notebooks. That was useful for exploration, but several implementation details made cross-run conclusions hard to trust:
 
-| Metric | Recursive | Semantic (Window) | Semantic (Cumulative) |
-|---|---|---|---|
-| Time(per doc) | 0.0001s | 0.0094–0.0477s | — |
-| # Chunks | 22 | 286 | 5 |
-| Avg chunk | 555.0 chars | 32.5 chars | 1860.8 chars |
+- legacy semantic experiments used synthetic/mock embeddings;
+- enhanced defaults could generate random embeddings;
+- "token count" was based on whitespace, which is not meaningful for unsegmented Chinese;
+- cosine similarity was named as such but the legacy path used a raw dot product;
+- adaptive thresholds could be written back to instance state and leak across documents;
+- chunk text did not have a single, auditable offset/metadata contract.
 
-- **Speed**: recursive ≫ semantic; **Sensitivity**: semantic more structure-aware; **Predictability**: recursive most stable.
+The v2 core keeps the historical artifacts, but makes those experimental dependencies explicit.
 
-## 📚 Reports (authoritative write-ups)
+## v2 architecture
 
-- **`EXPERIMENT_SUMMARY.md`** — ablation methodology, parameters & findings(本实验的权威总结)。
-- **`ENHANCEMENT_SUMMARY.md`** — enhancement rebuild summary。
-- `algorithm_comparison_results.json` / `param_ablation_results.json` — raw metrics。
-- `chunking_analysis.png` — analysis chart。
-
-## 🔧 Reproduce / Run
-
-```bash
-pip install -r requirements.txt   # 注意: 锁定 transformers==4.33.0 等
-python ablation_experiments.py
-python results_analysis.py
+```text
+document
+  ├─ LengthMetric
+  ├─ RecursiveChunker
+  └─ SemanticChunker ── EmbeddingProvider
+             │
+             └──────────────> Chunk(text, start, end, metadata)
+                                      │
+                                      └─ evaluate_chunks(...)
 ```
 
-> 说明:样例脚本(`download_*.sh` 下载语料、其余 `test_*.py` / notebooks)运行依赖
-> `requirements.txt`(transformers / SentencePiece / jieba 等)与语料;结果以仓库内 summary 与
-> JSON 为准。
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/REVIEW.md](docs/REVIEW.md).
 
-## ✅ Quality Bar
+### Core invariants
 
-- 实验结果以仓库内 `*_SUMMARY.md` + `*.json` 为可复现来源(本 README 不虚构指标)。
-- `results_analysis.py` 等脚本驱动分析。
+- **Source aligned**: `chunk.text == source[chunk.start:chunk.end]`.
+- **Explicit units**: character length and token-like length are separate metrics.
+- **Deterministic offline baseline**: hash embeddings are reproducible and clearly labelled lexical, not semantic.
+- **Real cosine similarity**: vectors are normalized/validated.
+- **No hidden state mutation** across documents.
+- **Algorithm-neutral metrics**: coverage, duplication, size compliance and dispersion.
 
-## 📄 License
+## Install
 
-MIT — see `LICENSE`。
+For the new core:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+For the historical scripts as well:
+
+```bash
+python -m pip install -e ".[legacy,dev]"
+```
+
+HTTP embedding support is optional:
+
+```bash
+python -m pip install -e ".[http]"
+```
+
+## CLI
+
+Recursive splitting:
+
+```bash
+chunk-experiment data/general/en/example.txt \
+  --algorithm recursive \
+  --chunk-size 500 \
+  --overlap 100 \
+  --output recursive.json
+```
+
+Deterministic lexical baseline for smoke tests / CI:
+
+```bash
+chunk-experiment data/general/en/example.txt \
+  --algorithm semantic-hash \
+  --chunk-size 200 \
+  --output semantic_hash.json
+```
+
+Real HTTP embedding service:
+
+```bash
+chunk-experiment input.txt \
+  --algorithm semantic-http \
+  --embedding-url "$EMBEDDING_URL" \
+  --chunk-size 200
+```
+
+## Reproducible directory benchmark
+
+```bash
+python experiments/run_v2.py data/general/en \
+  --chunk-sizes 200 500 1000 \
+  --include-semantic-hash \
+  --output v2_benchmark_results.json
+```
+
+The result records the document SHA-256, parameters, runtime environment and unified metrics for every run.
+
+## Testing
+
+```bash
+pytest
+ruff check chunk_experiment tests
+```
+
+CI runs the v2 suite on Python 3.10, 3.11 and 3.12.
+
+## Historical results
+
+The following files are preserved as historical research artifacts:
+
+- `EXPERIMENT_SUMMARY.md`
+- `ENHANCEMENT_SUMMARY.md`
+- `algorithm_comparison_results.json`
+- `param_ablation_results.json`
+- notebooks and the original `src/` / `util/` implementations
+
+Those historical semantic comparisons were produced with mocked/synthetic embeddings, so they are useful for execution-flow and parameter-sensitivity inspection, **not as evidence that one semantic strategy has higher semantic coherence than another**.
+
+New runs from `ablation_experiments.py` use a deterministic lexical-hash backend and write `*_v2.json` files so the historical outputs are not overwritten.
+
+For semantic-quality conclusions, use a documented real embedding model and retrieval-grounded downstream metrics (for example Recall@K, MRR or nDCG when labels are available).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
