@@ -116,12 +116,12 @@ class MemoryCache(Generic[T]):
 
 
 def _text_key(namespace: str, text: str) -> str:
-    payload = f"{namespace}\0{text}".encode("utf-8")
+    payload = f"{namespace}\0{text}".encode()
     return hashlib.sha256(payload).hexdigest()
 
 
 def _pair_key(namespace: str, query: str, text: str) -> str:
-    payload = f"{namespace}\0{query}\0{text}".encode("utf-8")
+    payload = f"{namespace}\0{query}\0{text}".encode()
     return hashlib.sha256(payload).hexdigest()
 
 

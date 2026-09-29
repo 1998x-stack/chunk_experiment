@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from chunk_experiment.http_rerank import HttpRerankScoreProvider
+from chunk_experiment.models import Chunk
 from chunk_experiment.production import (
     CachedEmbeddingProvider,
     CachedRerankScoreProvider,
@@ -18,7 +19,6 @@ from chunk_experiment.production_benchmark import (
     run_benchmark_phase,
 )
 from chunk_experiment.retrieval import IndexedChunk, SearchResult
-from chunk_experiment.models import Chunk
 
 
 class CountingEmbeddingProvider:
