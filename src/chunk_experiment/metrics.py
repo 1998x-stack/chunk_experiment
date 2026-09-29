@@ -95,7 +95,7 @@ def evaluate_chunking(
     boundary_candidates = [chunk for chunk in chunks if chunk.end < source_length]
     if boundary_candidates:
         aligned = sum(
-            chunk.text.endswith(preferred_boundaries) for chunk in boundary_candidates
+            chunk.text.rstrip().endswith(preferred_boundaries) for chunk in boundary_candidates
         )
         boundary_alignment = aligned / len(boundary_candidates)
     else:
