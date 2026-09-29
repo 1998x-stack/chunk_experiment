@@ -29,7 +29,7 @@ def test_multilingual_chunks_are_exact_source_slices_and_respect_hard_limit() ->
     assert all(chunk.size <= config.chunk_size for chunk in chunks)
     assert chunks[0].start == 0
     assert chunks[-1].end == len(text)
-    assert all(left.start < right.start for left, right in zip(chunks, chunks[1:]))
+    assert all(left.start < right.start for left, right in zip(chunks, chunks[1:], strict=False))
 
 
 def test_overlap_is_represented_by_offsets_without_text_rewriting() -> None:
