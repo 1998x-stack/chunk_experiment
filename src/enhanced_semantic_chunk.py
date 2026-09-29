@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
@@ -152,7 +153,12 @@ class EnhancedSemanticChunker:
 
     def _count_tokens(self, text: str) -> int:
         """Count approximate tokens in text based on whitespace splitting."""
-        return len(text.split())
+        return len(
+            re.findall(
+                r"[\u4e00-\u9fff]|[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)?|[^\s]",
+                text,
+            )
+        )
 
     def _count_tokens_batch(self, texts: List[str]) -> List[int]:
         """Count tokens for a batch of texts."""
