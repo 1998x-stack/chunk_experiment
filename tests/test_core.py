@@ -32,6 +32,31 @@ def test_multilingual_chunks_are_exact_source_slices_and_respect_hard_limit() ->
     assert all(left.start < right.start for left, right in zip(chunks, chunks[1:], strict=False))
 
 
+def test_multichar_separator_cannot_cross_hard_limit() -> None:
+    text = "abcdefghi||klmnop"
+    config = ChunkingConfig(
+        chunk_size=10,
+        chunk_overlap=2,
+        min_chunk_size=4,
+        separators=("||",),
+    )
+    chunks = BoundaryAwareChunker(config).split(text)
+
+    assert all(chunk.size <= config.chunk_size for chunk in chunks)
+    assert chunks[0].end == 10
+
+
+def test_boundary_alignment_ignores_trailing_whitespace() -> None:
+    source = "Hello. Next"
+    chunks = [
+        Chunk("Hello. ", 0, 7, 0),
+        Chunk("Next", 7, 11, 1),
+    ]
+
+    metrics = evaluate_chunking(source, chunks)
+    assert metrics.boundary_alignment_ratio == 1.0
+
+
 def test_overlap_is_represented_by_offsets_without_text_rewriting() -> None:
     text = "abcdefghijklmnopqrstuvwxyz0123456789"
     config = ChunkingConfig(
