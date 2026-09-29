@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from statistics import fmean, median, pstdev
-from typing import Iterable, Sequence
 
 from .models import Chunk
 
