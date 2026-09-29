@@ -15,7 +15,7 @@ class Chunker(Protocol):
 
 
 class Retriever(Protocol):
-    def search(self, query: str, top_k: int = 5) -> list["SearchResult"]: ...
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]: ...
 
 
 @dataclass(frozen=True, slots=True)
