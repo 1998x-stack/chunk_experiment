@@ -41,6 +41,7 @@ class TestEmbeddingModel(unittest.TestCase):
         similarity = self.embedding_model.similarity(emb1, emb2)
         
         self.assertIsInstance(similarity, float)
+        self.assertAlmostEqual(similarity, 0.0, places=7)
 
 
 class TestSemanticChunker(unittest.TestCase):
@@ -106,8 +107,8 @@ class TestSemanticChunker(unittest.TestCase):
         text = "This is a single sentence."
         chunks = self.chunker.chunk(text)
         
-        # Should return at least one chunk
-        self.assertGreaterEqual(len(chunks), 0)
+        # A non-empty single sentence must produce a chunk.
+        self.assertGreaterEqual(len(chunks), 1)
 
 
 class TestRecursiveCharacterTextSplitter(unittest.TestCase):
