@@ -29,11 +29,12 @@ class EmbeddingClient:
                 "Embedding URL must be provided either as an argument or via environment variable 'EMBEDDING_URL'."
             )
 
-        # Set headers for the HTTP request
-        self.headers = {
-            "Content-Type": "application/json",
-            "Cookie": "acw_tc=0a5cc91217346004928187547ede31ab8900fa93156591e93b26d29b8a9da9",  # Cookie should be secure and configurable
-        }
+        # Keep credentials/configuration out of source control.
+        self.headers = {"Content-Type": "application/json"}
+        cookie = os.getenv("EMBEDDING_COOKIE")
+        if cookie:
+            self.headers["Cookie"] = cookie
+        self.timeout = float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "30"))
 
     def get_embeddings(
         self,
@@ -66,7 +67,12 @@ class EmbeddingClient:
 
         # 发送请求并获取响应
         try:
-            response = requests.post(self.url, headers=self.headers, json=payload)
+            response = requests.post(
+                self.url,
+                headers=self.headers,
+                json=payload,
+                timeout=self.timeout,
+            )
             response.raise_for_status()  # Check if the request was successful
             response_data = response.json()
 
@@ -98,8 +104,8 @@ class EmbeddingClient:
 
 
 if __name__ == "__main__":
-    # Set API URL
-    TEST_URL = "https://ai-platform-cloud-proxy.polymas.com/ai/common/kb-get-embedding"
+    # Use EMBEDDING_URL from the environment for local smoke tests.
+    TEST_URL = os.getenv("EMBEDDING_URL")
 
     # Input text to embed
     text_to_embed = [
