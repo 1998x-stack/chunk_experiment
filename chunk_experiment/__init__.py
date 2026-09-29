@@ -28,6 +28,15 @@ from .retrieval import (
     contextual_heading_text,
     plain_chunk_text,
 )
+from .rerank import (
+    LexicalOverlapScoreProvider,
+    Reranker,
+    RerankScoreProvider,
+    ScoreProviderReranker,
+    TwoStageRetriever,
+    TwoStageTrace,
+)
+from .rerank_factory import RerankerConfig, build_reranker
 from .retrieval_eval import (
     AggregateRetrievalMetrics,
     QueryCase,
@@ -42,10 +51,17 @@ from .retriever_factory import RetrieverConfig, build_retriever
 from .semantic import SemanticChunker
 from .sparse import BM25Retriever, lexical_terms
 from .strategy import StrategyConfig, build_strategy
+from .two_stage_eval import (
+    AggregateTwoStageMetrics,
+    TwoStageGate,
+    TwoStageQueryMetrics,
+    evaluate_two_stage_retriever,
+)
 
 __all__ = [
     "AggregateCostMetrics",
     "AggregateRetrievalMetrics",
+    "AggregateTwoStageMetrics",
     "BM25Retriever",
     "Chunk",
     "ChunkingMetrics",
@@ -57,23 +73,33 @@ __all__ = [
     "HybridRetriever",
     "IndexedChunk",
     "MarkdownChunker",
+    "LexicalOverlapScoreProvider",
     "MarkdownSection",
     "ParentChildIndex",
     "ParentChildRetriever",
     "QueryCase",
     "QueryCostMetrics",
+    "Reranker",
+    "RerankerConfig",
+    "RerankScoreProvider",
     "RecursiveChunker",
     "RelevantSpan",
     "Retriever",
     "RetrieverConfig",
     "RetrievalGate",
     "RetrievalMetrics",
+    "ScoreProviderReranker",
     "SearchResult",
     "SemanticChunker",
     "StrategyConfig",
+    "TwoStageGate",
+    "TwoStageQueryMetrics",
+    "TwoStageRetriever",
+    "TwoStageTrace",
     "aggregate_retrieval_metrics",
     "approximate_token_length",
     "build_parent_child_index",
+    "build_reranker",
     "build_retriever",
     "build_strategy",
     "character_length",
@@ -83,6 +109,7 @@ __all__ = [
     "evaluate_query",
     "evaluate_retriever",
     "evaluate_retriever_profiled",
+    "evaluate_two_stage_retriever",
     "lexical_terms",
     "load_evaluation_dataset",
     "markdown_sections",

@@ -14,6 +14,8 @@ from .parent_child import (
     ParentChildRetriever,
     build_parent_child_index,
 )
+from .rerank import TwoStageRetriever
+from .rerank_factory import RerankerConfig, build_reranker
 from .retrieval import (
     chunk_documents,
     contextual_heading_text,
@@ -22,13 +24,17 @@ from .retrieval import (
 from .retrieval_eval import RetrievalGate
 from .retriever_factory import RetrieverConfig, build_retriever
 from .strategy import StrategyConfig, build_strategy
+from .two_stage_eval import (
+    TwoStageGate,
+    evaluate_two_stage_retriever,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate chunking and retrieval strategies against "
-            "a versioned retrieval golden set"
+            "Evaluate chunking, retrieval and reranking strategies "
+            "against a versioned retrieval golden set"
         )
     )
     parser.add_argument("dataset", type=Path, help="Evaluation manifest JSON")
@@ -50,20 +56,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--retriever",
         choices=("hash", "http"),
         default="hash",
-        help="Embedding backend for dense/hybrid retrieval and semantic chunking",
+        help=(
+            "Embedding backend for dense/hybrid retrieval "
+            "and semantic chunking"
+        ),
     )
     parser.add_argument("--embedding-url")
     parser.add_argument("--contextual-headings", action="store_true")
     parser.add_argument("--dense-weight", type=float, default=1.0)
     parser.add_argument("--sparse-weight", type=float, default=1.0)
     parser.add_argument("--rrf-k", type=int, default=60)
-    parser.add_argument("--candidate-k", type=int, default=50)
+    parser.add_argument(
+        "--candidate-k",
+        type=int,
+        default=50,
+        help="Candidate depth used inside hybrid RRF",
+    )
     parser.add_argument(
         "--parent-chunk-size",
         type=int,
         help="Enable child retrieval with larger returned parent contexts",
     )
     parser.add_argument("--parent-overlap", type=int, default=0)
+    parser.add_argument(
+        "--reranker",
+        choices=("none", "lexical"),
+        default="none",
+    )
+    parser.add_argument(
+        "--rerank-candidate-k",
+        type=int,
+        default=20,
+        help="First-stage candidate depth exposed to the reranker",
+    )
     parser.add_argument("--top-k", type=int, nargs="+", default=[1, 3, 5])
     parser.add_argument("--cost-k", type=int)
     parser.add_argument("--gate-k", type=int)
@@ -71,10 +96,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-span-recall", type=float)
     parser.add_argument("--min-mrr", type=float)
     parser.add_argument("--min-ndcg", type=float)
+    parser.add_argument("--min-candidate-span-recall", type=float)
+    parser.add_argument("--min-rerank-final-ndcg", type=float)
+    parser.add_argument("--min-rerank-ndcg-lift", type=float)
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("retrieval_eval_v4.json"),
+        default=Path("retrieval_eval_v5.json"),
     )
     return parser
 
@@ -86,9 +114,23 @@ def _needs_embeddings(args: argparse.Namespace) -> bool:
     )
 
 
+def _stage_gate_requested(args: argparse.Namespace) -> bool:
+    return any(
+        value is not None
+        for value in (
+            args.min_candidate_span_recall,
+            args.min_rerank_final_ndcg,
+            args.min_rerank_ndcg_lift,
+        )
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     dataset = load_evaluation_dataset(args.dataset)
+
+    if not args.top_k or min(args.top_k) <= 0:
+        raise SystemExit("--top-k must contain positive integers")
 
     provider = None
     provider_label = None
@@ -159,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
             embedding_provider=provider,
             renderer=renderer,
         )
-        retriever = ParentChildRetriever(
+        base_retriever = ParentChildRetriever(
             child_retriever,
             index,
         )
@@ -170,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
             dataset.documents,
             child_chunker,
         )
-        retriever = build_retriever(
+        base_retriever = build_retriever(
             retriever_config,
             chunks,
             embedding_provider=provider,
@@ -178,6 +220,36 @@ def main(argv: list[str] | None = None) -> int:
         )
         retrieval_chunks = len(chunks)
         returned_units = len(chunks)
+
+    reranker_config = RerankerConfig(
+        mode=args.reranker,
+        candidate_k=args.rerank_candidate_k,
+    )
+    reranker = build_reranker(
+        reranker_config,
+        renderer=renderer,
+    )
+    two_stage_retriever = None
+    retriever = base_retriever
+    if reranker is not None:
+        required_final_k = max(
+            max(args.top_k),
+            args.cost_k or 0,
+        )
+        if reranker_config.candidate_k < required_final_k:
+            raise SystemExit(
+                "--rerank-candidate-k must be >= max(--top-k, --cost-k)"
+            )
+        two_stage_retriever = TwoStageRetriever(
+            base_retriever,
+            reranker,
+            candidate_k=reranker_config.candidate_k,
+        )
+        retriever = two_stage_retriever
+    elif _stage_gate_requested(args):
+        raise SystemExit(
+            "reranking stage gates require --reranker lexical"
+        )
 
     aggregates, per_query, cost_summary, per_query_cost = (
         evaluate_retriever_profiled(
@@ -188,8 +260,19 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    two_stage_metrics = None
+    two_stage_rows = None
+    if two_stage_retriever is not None:
+        two_stage_metrics, two_stage_rows = (
+            evaluate_two_stage_retriever(
+                two_stage_retriever,
+                dataset.queries,
+                final_k=max(args.top_k),
+            )
+        )
+
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "dataset": {
             "id": dataset.dataset_id,
             "fingerprint": dataset.fingerprint,
@@ -221,6 +304,27 @@ def main(argv: list[str] | None = None) -> int:
             "retrieval_chunks": retrieval_chunks,
             "returned_units": returned_units,
         },
+        "reranking": {
+            "mode": reranker_config.mode,
+            "candidate_k": (
+                reranker_config.candidate_k
+                if reranker is not None
+                else None
+            ),
+            "stage_metrics": (
+                two_stage_metrics.to_dict()
+                if two_stage_metrics is not None
+                else None
+            ),
+            "per_query_stage": (
+                [
+                    row.to_dict()
+                    for row in two_stage_rows
+                ]
+                if two_stage_rows is not None
+                else None
+            ),
+        },
         "environment": {
             "python": platform.python_version(),
             "platform": platform.platform(),
@@ -238,10 +342,14 @@ def main(argv: list[str] | None = None) -> int:
         ],
         "notes": (
             [
-                "hash embeddings are deterministic lexical smoke vectors; "
-                "use a documented real embedding backend for semantic conclusions"
+                "hash embeddings and lexical reranking are deterministic "
+                "pipeline baselines; use documented real models for "
+                "semantic-quality conclusions"
             ]
-            if provider_label == "deterministic-lexical-hash"
+            if (
+                provider_label == "deterministic-lexical-hash"
+                or reranker_config.mode == "lexical"
+            )
             else []
         ),
     }
@@ -292,6 +400,22 @@ def main(argv: list[str] | None = None) -> int:
                     f"{failure}"
                 )
             return 2
+
+    if _stage_gate_requested(args):
+        assert two_stage_metrics is not None
+        stage_gate = TwoStageGate(
+            min_candidate_span_recall=args.min_candidate_span_recall,
+            min_final_ndcg=args.min_rerank_final_ndcg,
+            min_mean_ndcg_lift=args.min_rerank_ndcg_lift,
+        )
+        stage_failures = stage_gate.failures(
+            two_stage_metrics
+        )
+        if stage_failures:
+            for failure in stage_failures:
+                print(f"reranking stage gate failed: {failure}")
+            return 3
+
     return 0
 
 
