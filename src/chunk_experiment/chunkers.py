@@ -57,7 +57,7 @@ class BoundaryAwareChunker:
         search_start = min(start + minimum_width, hard_end)
 
         for separator in self.config.separators:
-            index = text.rfind(separator, search_start, hard_end + 1)
+            index = text.rfind(separator, search_start, hard_end)
             if index >= 0:
                 candidate = index + len(separator)
                 if candidate > start:
