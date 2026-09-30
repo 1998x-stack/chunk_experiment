@@ -1,11 +1,11 @@
 # chunk_experiment
 
-> 可复现、可审计、面向真实 RAG 检索效果的文本切分实验框架。  
-> Reproducible chunking and retrieval experiments with source-aligned evidence labels.
+> 可复现、可审计、面向真实 RAG 检索效果的文本切分与检索实验框架。  
+> Reproducible chunking, retrieval and reranking experiments with production benchmark support.
 
 ## Current architecture
 
-The repository has evolved in five additive stages:
+The repository has evolved in six additive stages:
 
 - **v2 — trustworthy chunking core**: exact source offsets, explicit length metrics,
   deterministic baselines, real cosine similarity and reproducible experiments.
@@ -13,8 +13,11 @@ The repository has evolved in five additive stages:
   source-span labels, HitRate/Precision/SpanRecall/MRR/nDCG and CI quality gates.
 - **v4 — RAG retrieval architecture experiments**: BM25, dense + sparse RRF fusion,
   parent/child retrieval and latency/context-cost metrics.
-
-Historical notebooks, scripts and result files remain available for research provenance.
+- **v5 — two-stage retrieval and reranking**: candidate-ceiling diagnostics, explicit
+  reranking, ranking-lift metrics and separate candidate/rerank latency.
+- **v6 — real-model production benchmark layer**: generic HTTP reranking, model
+  fingerprints, embedding/rerank caches, usage accounting, cold/warm latency, QPS,
+  user-supplied cost estimates and Pareto-frontier reporting.
 
 ## Design invariants
 
@@ -22,10 +25,13 @@ Historical notebooks, scripts and result files remain available for research pro
 - Gold relevance labels point to stable document spans, never transient chunk IDs.
 - Character/token-like length units are explicit and injectable.
 - Retrieval strategies share one `Retriever` protocol.
-- Hybrid retrieval fuses **ranks**, not incomparable dense/BM25 raw scores.
+- Hybrid retrieval fuses ranks rather than incomparable dense/BM25 raw scores.
 - Parent/child retrieval searches small evidence units but returns larger source-aligned context.
-- Context cost is measured alongside retrieval quality.
-- Hash embeddings are a deterministic CI/plumbing baseline, not evidence of semantic quality.
+- Candidate retrieval and reranking failures are measured separately.
+- Model identity is fingerprinted without storing credentials or raw endpoint URLs.
+- Cache usage and backend usage are reported separately.
+- Cost estimates use explicit user-supplied pricing and are never presented as vendor billing.
+- Hash embeddings and lexical reranking remain deterministic CI baselines, not semantic models.
 
 See:
 
@@ -33,9 +39,11 @@ See:
 - [docs/ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)
 - [docs/ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
 - [docs/ARCHITECTURE_V5.md](docs/ARCHITECTURE_V5.md)
-- [docs/RERANKING.md](docs/RERANKING.md)
+- [docs/ARCHITECTURE_V6.md](docs/ARCHITECTURE_V6.md)
 - [docs/RETRIEVAL_EVALUATION.md](docs/RETRIEVAL_EVALUATION.md)
 - [docs/HYBRID_RETRIEVAL.md](docs/HYBRID_RETRIEVAL.md)
+- [docs/RERANKING.md](docs/RERANKING.md)
+- [docs/PRODUCTION_BENCHMARK.md](docs/PRODUCTION_BENCHMARK.md)
 - [docs/REVIEW.md](docs/REVIEW.md)
 
 ## Install
@@ -46,133 +54,83 @@ Core development environment:
 python -m pip install -e ".[dev]"
 ```
 
-HTTP embedding support:
+HTTP embedding / reranking support:
 
 ```bash
 python -m pip install -e ".[http]"
 ```
 
-Historical scripts and dependencies:
-
-```bash
-python -m pip install -e ".[legacy,dev]"
-```
-
-## Chunking CLI
-
-Recursive:
-
-```bash
-chunk-experiment input.txt \
-  --algorithm recursive \
-  --chunk-size 500 \
-  --overlap 100
-```
-
-Markdown structure-aware:
-
-```bash
-chunk-experiment guide.md \
-  --algorithm markdown \
-  --chunk-size 256
-```
-
-Semantic chunking with a real HTTP embedding service:
-
-```bash
-chunk-experiment input.txt \
-  --algorithm semantic-http \
-  --embedding-url "$EMBEDDING_URL" \
-  --chunk-size 200
-```
-
 ## Retrieval evaluation
 
-Dense retrieval:
-
-```bash
-chunk-retrieval-eval examples/retrieval_eval/golden.json \
-  --chunker markdown \
-  --chunk-size 20 \
-  --retrieval-mode dense \
-  --contextual-headings \
-  --top-k 1 3
-```
-
-Dependency-free BM25:
+Example deterministic two-stage evaluation:
 
 ```bash
 chunk-retrieval-eval examples/retrieval_eval/golden.json \
   --chunker markdown \
   --chunk-size 20 \
   --retrieval-mode bm25 \
+  --reranker lexical \
+  --rerank-candidate-k 3 \
   --top-k 1 3
 ```
 
-Dense + BM25 weighted RRF:
+## v6 production benchmark
+
+Offline deterministic smoke run:
 
 ```bash
-chunk-retrieval-eval examples/retrieval_eval/golden.json \
+python experiments/run_production_v6.py examples/retrieval_eval/golden.json \
   --chunker markdown \
   --chunk-size 20 \
-  --retrieval-mode hybrid \
-  --contextual-headings \
-  --top-k 1 3 \
-  --gate-k 3 \
-  --min-hit-rate 1.0 \
-  --min-span-recall 1.0
+  --retrieval-modes dense bm25 hybrid \
+  --rerankers none lexical \
+  --rerank-candidate-k 3 \
+  --top-k 3 \
+  --cold-passes 1 \
+  --warm-passes 2
 ```
 
-Parent/child retrieval uses small chunks for matching and larger parents for returned context:
+Real HTTP embedding + reranking:
 
 ```bash
-chunk-retrieval-eval examples/retrieval_eval/golden.json \
+export EMBEDDING_TOKEN="..."
+export RERANK_TOKEN="..."
+
+python experiments/run_production_v6.py examples/retrieval_eval/golden.json \
   --chunker markdown \
-  --chunk-size 12 \
-  --parent-chunk-size 40 \
-  --retrieval-mode hybrid \
-  --contextual-headings \
-  --top-k 1 3 \
-  --cost-k 3
+  --chunk-size 256 \
+  --retrieval-modes dense hybrid \
+  --embedding-backend http \
+  --embedding-url "$EMBEDDING_URL" \
+  --embedding-model "$EMBEDDING_MODEL" \
+  --embedding-provider-label internal-embedding \
+  --embedding-endpoint-label prod \
+  --embedding-bearer-env EMBEDDING_TOKEN \
+  --rerankers http \
+  --rerank-url "$RERANK_URL" \
+  --rerank-model "$RERANK_MODEL" \
+  --rerank-provider-label internal-rerank \
+  --rerank-endpoint-label prod \
+  --rerank-bearer-env RERANK_TOKEN \
+  --rerank-candidate-k 20 \
+  --top-k 5 \
+  --embedding-usd-per-1k-items 0.0 \
+  --rerank-usd-per-1k-pairs 0.0 \
+  --output production_benchmark_v6.json
 ```
 
-The output contains retrieval metrics plus mean/p95 query latency, returned context characters,
-unique context characters and context duplication ratio.
+The output intentionally excludes raw endpoint URLs and authorization values. It contains model
+fingerprints, index-build usage, quality metrics, candidate/rerank stage metrics, cold/warm p95
+and p99 latency, QPS, cache hit rates, backend item/character counts, optional cost estimates and
+a non-dominated Pareto frontier.
 
 ## Experiment runners
 
-Chunk-size benchmark:
-
-```bash
-python experiments/run_v2.py data/general/en \
-  --chunk-sizes 200 500 1000 \
-  --output v2_benchmark_results.json
-```
-
-Retrieval-grounded v3 matrix:
-
-```bash
-python experiments/run_retrieval_v3.py examples/retrieval_eval/golden.json
-```
-
-v4 RAG architecture matrix:
-
-```bash
-python experiments/run_retrieval_v4.py examples/retrieval_eval/golden.json \
-  --strategies recursive markdown \
-  --retrieval-modes dense bm25 hybrid \
-  --chunk-sizes 12 20 \
-  --parent-multipliers 1 3
-```
-
-v5 candidate/reranking matrix:
-
-```bash
-python experiments/run_rerank_v5.py examples/retrieval_eval/golden.json \
-  --retrieval-modes dense bm25 hybrid \
-  --candidate-ks 3 5 10 \
-  --final-ks 1 3
-```
+- `experiments/run_v2.py`: chunk-size experiments.
+- `experiments/run_retrieval_v3.py`: retrieval-grounded chunking matrix.
+- `experiments/run_retrieval_v4.py`: hybrid and parent/child matrix.
+- `experiments/run_rerank_v5.py`: candidate-depth and reranking matrix.
+- `experiments/run_production_v6.py`: real-model quality/latency/cache/cost benchmark.
 
 ## Testing
 
@@ -181,7 +139,8 @@ pytest
 ruff check chunk_experiment tests experiments
 ```
 
-CI runs Python 3.10, 3.11 and 3.12 and includes an end-to-end retrieval golden-set gate.
+CI runs Python 3.10, 3.11 and 3.12, the retrieval golden-set gate, and a deterministic v6
+production-benchmark smoke test.
 
 ## Historical results
 
