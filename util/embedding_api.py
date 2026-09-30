@@ -1,63 +1,46 @@
 import os
+from typing import Dict, List, Optional
+
 import requests
-import json
-from typing import List
 
 
 class EmbeddingClient:
-    """
-    A client for interacting with the embedding service API.
+    """Client for the repository's embedding HTTP service contract.
 
-    This class handles sending text data to the embedding API and retrieving the generated embeddings.
-    It uses the URL from the environment variable `EMBEDDING_URL` for the API endpoint.
-
-    Attributes:
-        url (str): The base URL of the embedding service API.
-        headers (dict): The headers required by the API for the request.
+    The endpoint can be passed explicitly or read from ``EMBEDDING_URL``.
+    Authentication/session headers must be injected by the caller; no credentials
+    or cookies are stored in source code.
     """
 
-    def __init__(self, embedding_url: str = None):
-        """
-        Initializes the EmbeddingClient with the URL from the environment variable or provided as an argument.
-
-        Args:
-            embedding_url (str): The embedding API URL. Defaults to None, in which case the URL is retrieved from the environment variable 'EMBEDDING_URL'.
-        """
+    def __init__(
+        self,
+        embedding_url: Optional[str] = None,
+        *,
+        headers: Optional[Dict[str, str]] = None,
+        timeout_seconds: float = 30.0,
+    ):
         self.url = embedding_url or os.getenv("EMBEDDING_URL")
         if not self.url:
             raise ValueError(
-                "Embedding URL must be provided either as an argument or via environment variable 'EMBEDDING_URL'."
+                "Embedding URL must be provided either as an argument or via "
+                "environment variable 'EMBEDDING_URL'."
             )
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be > 0")
 
-        # Keep credentials/configuration out of source control.
-        self.headers = {"Content-Type": "application/json"}
-        cookie = os.getenv("EMBEDDING_COOKIE")
-        if cookie:
-            self.headers["Cookie"] = cookie
-        self.timeout = float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "30"))
+        self.headers = {"Content-Type": "application/json", **(headers or {})}
+        self.timeout_seconds = timeout_seconds
 
     def get_embeddings(
         self,
         text_list: List[str],
         model: str = "m3e",
         version: str = "m3e",
-        unique_id: str = "test",
+        unique_id: str = "chunk-experiment",
     ) -> dict:
-        """
-        Sends the text list to the embedding API and retrieves the embeddings.
+        if not isinstance(text_list, list) or not all(isinstance(x, str) for x in text_list):
+            raise TypeError("text_list must be List[str]")
 
-        Args:
-            text_list (List[str]): A list of text strings to be embedded.
-            model (str): The model to use for embedding generation (default: "m3e").
-            version (str): The version of the model to use (default: "m3e").
-            unique_id (str): A unique identifier for the request (default: "test").
-
-        Returns:
-            dict: The response from the API containing the generated embeddings or an error message.
-
-        Raises:
-            ValueError: If the API response indicates an error.
-        """
         payload = {
             "model": model,
             "textList": text_list,
@@ -65,56 +48,43 @@ class EmbeddingClient:
             "uniqueId": unique_id,
         }
 
-        # 发送请求并获取响应
         try:
             response = requests.post(
                 self.url,
                 headers=self.headers,
                 json=payload,
-                timeout=self.timeout,
+                timeout=self.timeout_seconds,
             )
-            response.raise_for_status()  # Check if the request was successful
+            response.raise_for_status()
             response_data = response.json()
+        except requests.RequestException as exc:
+            raise ValueError(f"Embedding request failed: {exc}") from exc
+        except ValueError as exc:
+            raise ValueError("Embedding service returned invalid JSON") from exc
 
-            # 检查API返回的状态是否正确
-            if "error" in response_data:
-                raise ValueError(f"API Error: {response_data['error']}")
+        if "error" in response_data:
+            raise ValueError(f"Embedding API error: {response_data['error']}")
 
-            return response_data
-        except requests.RequestException as e:
-            # 捕捉请求中的任何异常，打印日志信息
-            raise ValueError(f"Request failed: {e}")
+        result_list = response_data.get("data", {}).get("resultList")
+        if not isinstance(result_list, list):
+            raise ValueError("Embedding API response is missing data.resultList")
+        if len(result_list) != len(text_list):
+            raise ValueError(
+                f"Embedding API returned {len(result_list)} vectors for "
+                f"{len(text_list)} input texts"
+            )
+        return response_data
 
     def print_embeddings(self, text_list: List[str]) -> None:
-        """
-        Retrieves and prints the embeddings for a given list of texts.
-
-        Args:
-            text_list (List[str]): The list of text to get embeddings for.
-        """
-        try:
-            embeddings = self.get_embeddings(text_list)
-            result_list = embeddings.get("data", {}).get("resultList", [])
-            print(f"Embeddings for the provided text list:")
-            for text, embedding in zip(text_list, result_list):
-                print(f"Text: {text}")
-                print(f"Embedding: {embedding}")
-        except ValueError as e:
-            print(f"Error: {e}")
+        embeddings = self.get_embeddings(text_list)
+        result_list = embeddings["data"]["resultList"]
+        for text, embedding in zip(text_list, result_list):
+            print(f"Text: {text}")
+            print(f"Embedding: {embedding}")
 
 
 if __name__ == "__main__":
-    # Use EMBEDDING_URL from the environment for local smoke tests.
-    TEST_URL = os.getenv("EMBEDDING_URL")
-
-    # Input text to embed
-    text_to_embed = [
-        "人机界面设计问题\n1人机界面设计问题\n2人机界面设计过程\n3人机界面设计指南\n(1)系统响应时间\n(2)用户帮助设施\n(3)出错信息处理\n(4)命令交互\n本节课主要探讨人机界面设计的相关问题、设计过程及设计指南。首先,人机界面设计问题中,系统响应时间被定义为用户完成特定控制动作(如按回车键或点击鼠标)至软件给出预期响应之间的时间间隔。现代软件通常提供在线帮助功能,使用户能够在不离开界面的情况下解决问题。此外,出错信息的处理是用户交互中重要的一环,系统通过出错信息和警告信息向用户传达潜在问题。最后,命令交互仍然受到许多高级用户的青睐,他们可以选择通过菜单或键盘命令序列来调用软件功能,这种灵活性增强了用户的操作体验"
-    ]
-
-    # Instantiate client and print embeddings
-    embedding_client = EmbeddingClient(embedding_url=TEST_URL)
-    try:
-        embedding_client.print_embeddings(text_to_embed)
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    url = os.getenv("EMBEDDING_URL")
+    if not url:
+        raise SystemExit("Set EMBEDDING_URL before running this module directly.")
+    EmbeddingClient(url).print_embeddings(["embedding smoke test"])

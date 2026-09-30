@@ -2,7 +2,6 @@
 
 import sys
 import os
-import re
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/" + ".."))
 
@@ -10,6 +9,8 @@ import numpy as np
 import warnings
 from typing import List, Optional, Tuple, Dict, Callable
 from util.sentence_split import GeneralTextSplitter
+from chunk_experiment.embeddings import HashEmbeddingProvider
+from chunk_experiment.length import approximate_token_length
 import logging
 
 
@@ -27,6 +28,7 @@ class EnhancedEmbeddingModel:
         self.embedding_client = embedding_client
         self.embedding_dim = embedding_dim
         self.strategy = strategy
+        self._fallback_provider = HashEmbeddingProvider(dimension=embedding_dim)
 
     def embed_batch(self, texts: List[str]) -> List[np.ndarray]:
         """Embed a batch of texts and return a list of embedding vectors."""
@@ -41,8 +43,8 @@ class EnhancedEmbeddingModel:
                 embeddings.extend(batch_embeddings)
             return [np.array(embedding).astype(np.float32) for embedding in embeddings]
         else:
-            # Use simulated embeddings
-            return [np.random.rand(self.embedding_dim).astype(np.float32) for _ in texts]
+            # Deterministic lexical baseline for offline tests; not a semantic-quality model.
+            return [row for row in self._fallback_provider.embed(texts)]
 
     def similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Compute cosine similarity between two embeddings."""
@@ -153,12 +155,7 @@ class EnhancedSemanticChunker:
 
     def _count_tokens(self, text: str) -> int:
         """Count approximate tokens in text based on whitespace splitting."""
-        return len(
-            re.findall(
-                r"[\u4e00-\u9fff]|[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)?|[^\s]",
-                text,
-            )
-        )
+        return approximate_token_length(text)
 
     def _count_tokens_batch(self, texts: List[str]) -> List[int]:
         """Count tokens for a batch of texts."""

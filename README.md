@@ -1,186 +1,130 @@
 # chunk_experiment
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+> 可复现的 RAG 文本切分实验框架：递归切分、embedding 驱动语义切分、统一指标、CLI 与目录级 benchmark。  
+> Reproducible chunking experiments for RAG with explicit length metrics, embedding backends and source-aligned evaluation.
 
-A bilingual RAG chunking research workbench: build chunkers, compare their intrinsic
-properties, and evaluate retrieval against source evidence spans instead of
-algorithm-specific chunk ids.
+## Why this refactor
 
-> 当前仓库同时保留历史实验脚本与新的 v2 核心包。v2 采用增量迁移，避免为了重构而一次性
-> 破坏旧结果与 notebooks。
+The repository started as a collection of research scripts and notebooks. That was useful for exploration, but several implementation details made cross-run conclusions hard to trust:
 
-## What changed in v2
+- legacy semantic experiments used synthetic/mock embeddings;
+- enhanced defaults could generate random embeddings;
+- "token count" was based on whitespace, which is not meaningful for unsegmented Chinese;
+- cosine similarity was named as such but the legacy path used a raw dot product;
+- adaptive thresholds could be written back to instance state and leak across documents;
+- chunk text did not have a single, auditable offset/metadata contract.
 
-The repository is evolving from a script collection into a reproducible experiment
-system:
+The v2 core keeps the historical artifacts, but makes those experimental dependencies explicit.
 
-- source-faithful `Chunk(text, start, end, metadata)` model;
-- deterministic Chinese/English boundary-aware baseline;
-- explicit overlap and hard chunk-size invariants;
-- chunk quality metrics: coverage, duplication, size distribution, boundary alignment;
-- span-based retrieval evaluation: Hit@K, MRR, relevant-span Recall@K;
-- deterministic benchmark harness;
-- `chunk-exp` CLI;
-- installable `pyproject.toml` package;
-- pytest + Ruff + Python 3.10/3.11/3.12 CI;
-- architecture and evaluation design docs.
-
-The historical modules under `src/*.py`, `util/*.py`, notebooks, and existing JSON
-results remain available as legacy research assets.
-
-## Quick start
-
-### Core workbench
-
-```bash
-python -m pip install -e ".[dev]"
-pytest
-```
-
-Split a UTF-8 document:
-
-```bash
-chunk-exp split path/to/document.txt \
-  --chunk-size 500 \
-  --overlap 50 \
-  --output chunks.jsonl
-```
-
-Benchmark the baseline:
-
-```bash
-chunk-exp benchmark path/to/document.txt \
-  --chunk-size 500 \
-  --overlap 50 \
-  --repeats 5
-```
-
-The core v2 path intentionally has no runtime third-party dependency.
-
-### Legacy experiments
-
-Install the historical dependency set through the compatibility extra:
-
-```bash
-python -m pip install -e ".[legacy]"
-python ablation_experiments.py
-python results_analysis.py
-```
-
-The root `requirements.txt` is retained for older workflows.
-
-## Evaluation model
-
-Chunking is not evaluated by one opaque score.
-
-### Intrinsic chunk quality
-
-- chunk count and size distribution;
-- exact source coverage;
-- duplication introduced by overlap;
-- natural-boundary alignment;
-- determinism;
-- latency.
-
-### Retrieval quality
-
-Gold evidence is stored as original-document spans:
-
-```json
-{
-  "case_id": "example-001",
-  "relevant_spans": [[1830, 2014], [4420, 4518]]
-}
-```
-
-This matters because chunk ids change when the chunking strategy changes. Source spans
-remain stable, so recursive, semantic, structure-aware, contextual, and late-chunking
-strategies can be compared against the same evidence labels.
-
-See [docs/EVALUATION.md](docs/EVALUATION.md).
-
-## Architecture
+## v2 architecture
 
 ```text
 document
-  -> parser / normalizer
-  -> chunker
-  -> Chunk(text, source offsets, metadata)
-  -> optional contextual / entity enrichment
-  -> dense + sparse indexes
-  -> retrieval
-  -> optional reranking
-  -> generation
-  -> stage-specific evaluation
+  ├─ LengthMetric
+  ├─ RecursiveChunker
+  └─ SemanticChunker ── EmbeddingProvider
+             │
+             └──────────────> Chunk(text, start, end, metadata)
+                                      │
+                                      └─ evaluate_chunks(...)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/REVIEW.md](docs/REVIEW.md).
 
-## Repository layout
+### Core invariants
 
-```text
-src/chunk_experiment/       # v2 installable core
-  models.py
-  chunkers.py
-  metrics.py
-  benchmark.py
-  cli.py
+- **Source aligned**: `chunk.text == source[chunk.start:chunk.end]`.
+- **Explicit units**: character length and token-like length are separate metrics.
+- **Deterministic offline baseline**: hash embeddings are reproducible and clearly labelled lexical, not semantic.
+- **Real cosine similarity**: vectors are normalized/validated.
+- **No hidden state mutation** across documents.
+- **Algorithm-neutral metrics**: coverage, duplication, size compliance and dispersion.
 
-src/*.py                    # historical chunking implementations
-util/*.py                   # historical utilities
-tests/                      # v2 invariant tests
-docs/                       # architecture + evaluation design
-ablation_experiments.py     # historical experiment runner
-results_analysis.py         # historical result analysis
-*_SUMMARY.md                # historical write-ups
+## Install
+
+For the new core:
+
+```bash
+python -m pip install -e ".[dev]"
 ```
+
+For the historical scripts as well:
+
+```bash
+python -m pip install -e ".[legacy,dev]"
+```
+
+HTTP embedding support is optional:
+
+```bash
+python -m pip install -e ".[http]"
+```
+
+## CLI
+
+Recursive splitting:
+
+```bash
+chunk-experiment data/general/en/example.txt \
+  --algorithm recursive \
+  --chunk-size 500 \
+  --overlap 100 \
+  --output recursive.json
+```
+
+Deterministic lexical baseline for smoke tests / CI:
+
+```bash
+chunk-experiment data/general/en/example.txt \
+  --algorithm semantic-hash \
+  --chunk-size 200 \
+  --output semantic_hash.json
+```
+
+Real HTTP embedding service:
+
+```bash
+chunk-experiment input.txt \
+  --algorithm semantic-http \
+  --embedding-url "$EMBEDDING_URL" \
+  --chunk-size 200
+```
+
+## Reproducible directory benchmark
+
+```bash
+python experiments/run_v2.py data/general/en \
+  --chunk-sizes 200 500 1000 \
+  --include-semantic-hash \
+  --output v2_benchmark_results.json
+```
+
+The result records the document SHA-256, parameters, runtime environment and unified metrics for every run.
+
+## Testing
+
+```bash
+pytest
+ruff check chunk_experiment tests
+```
+
+CI runs the v2 suite on Python 3.10, 3.11 and 3.12.
 
 ## Historical results
 
-Existing reports are retained for provenance:
+The following files are preserved as historical research artifacts:
 
 - `EXPERIMENT_SUMMARY.md`
 - `ENHANCEMENT_SUMMARY.md`
 - `algorithm_comparison_results.json`
 - `param_ablation_results.json`
-- `chunking_analysis.png`
+- notebooks and the original `src/` / `util/` implementations
 
-These numbers should be treated as **legacy results**, not silently mixed with v2
-experiments. The semantic similarity and multilingual length-counting paths have
-received correctness fixes in v2, so affected historical results should be regenerated
-under a new experiment id before making direct comparisons.
+Those historical semantic comparisons were produced with mocked/synthetic embeddings, so they are useful for execution-flow and parameter-sensitivity inspection, **not as evidence that one semantic strategy has higher semantic coherence than another**.
 
-## Data policy
+New runs from `ablation_experiments.py` use a deterministic lexical-hash backend and write `*_v2.json` files so the historical outputs are not overwritten.
 
-The repository contains large, already-tracked corpora and papers. Although `data/`
-is ignored for new untracked files, that does not remove historical objects from Git.
-
-The planned migration is:
-
-1. keep existing tracked data during compatibility work;
-2. add small license-clear fixtures for CI;
-3. move large corpora to a versioned external dataset/artifact store;
-4. keep checksums, manifests, provenance, and download scripts in Git;
-5. treat any Git-history rewrite as a separate coordinated operation.
-
-## Design roadmap
-
-1. wrap the historical recursive algorithm behind the v2 `Chunker` contract;
-2. migrate semantic chunking to explicit embedding/tokenizer interfaces;
-3. make Markdown/HTML/LaTeX/code chunkers source-offset aware;
-4. add dense + BM25 + hybrid retrieval experiments;
-5. add reranker evaluation;
-6. add contextual chunk enrichment;
-7. add late-chunking embedding experiments;
-8. add entity/KG metadata and graph-neighborhood retrieval;
-9. publish versioned benchmark manifests and per-query result artifacts.
-
-## Research references
-
-- Late Chunking: https://arxiv.org/abs/2409.04701
-- Contextual Retrieval: https://www.anthropic.com/engineering/contextual-retrieval
-- RAGChecker: https://arxiv.org/abs/2408.08067
-- CoFE-RAG: https://arxiv.org/abs/2410.12248
+For semantic-quality conclusions, use a documented real embedding model and retrieval-grounded downstream metrics (for example Recall@K, MRR or nDCG when labels are available).
 
 ## License
 
