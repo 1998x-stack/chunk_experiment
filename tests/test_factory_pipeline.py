@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
+from runpy import run_path
 
 import pytest
 
@@ -18,7 +20,10 @@ from chunk_experiment.retrieval import (
     SearchHit,
     evaluate_retrieval,
 )
-from experiments.run_factory import main as run_factory_main
+run_factory_main = run_path(
+    str(Path(__file__).resolve().parents[1] / "experiments" / "run_factory.py"),
+    run_name="__test__",
+)["main"]
 
 
 def test_factory_validates_algorithm_and_shared_budget():
