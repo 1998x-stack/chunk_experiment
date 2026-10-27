@@ -5,13 +5,17 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Literal, Protocol
 
+from .baselines import FixedWindowChunker, MarkdownHeadingChunker
 from .embeddings import EmbeddingProvider, HashEmbeddingProvider, HttpEmbeddingProvider
 from .length import LengthMetric, approximate_token_length, character_length
 from .models import Chunk
 from .recursive import RecursiveChunker
 from .semantic import SemanticChunker
 
-Algorithm = Literal["recursive", "semantic-hash", "semantic-http", "semantic-provider"]
+Algorithm = Literal[
+    "fixed", "recursive", "markdown-heading",
+    "semantic-hash", "semantic-http", "semantic-provider"
+]
 LengthUnit = Literal["characters", "approx_tokens"]
 
 
@@ -35,7 +39,8 @@ class ChunkerConfig:
 
     def __post_init__(self) -> None:
         if self.algorithm not in (
-            "recursive", "semantic-hash", "semantic-http", "semantic-provider"
+            "fixed", "recursive", "markdown-heading",
+            "semantic-hash", "semantic-http", "semantic-provider"
         ):
             raise ValueError(f"unsupported chunker algorithm: {self.algorithm}")
         if self.length_unit not in ("characters", "approx_tokens"):
@@ -54,7 +59,7 @@ class ChunkerConfig:
             raise ValueError("hash_dimension must be at least 8")
         if self.algorithm == "semantic-http" and not self.embedding_url:
             raise ValueError("semantic-http requires embedding_url")
-        if self.algorithm != "recursive" and self.chunk_overlap:
+        if self.algorithm not in ("fixed", "recursive") and self.chunk_overlap:
             raise ValueError("semantic algorithms do not support chunk_overlap")
 
     def to_dict(self) -> dict:
@@ -77,6 +82,14 @@ def build_chunker(
 ) -> Chunker:
     """Create a fresh chunker; no mutable instance is reused across runs."""
     metric = make_length_metric(config.length_unit)
+    if config.algorithm in ("fixed", "recursive", "markdown-heading") and embedding_provider is not None:
+        raise ValueError("non-semantic chunkers do not use an embedding provider")
+    if config.algorithm == "fixed":
+        return FixedWindowChunker(
+            config.chunk_size, config.chunk_overlap, length_metric=metric
+        )
+    if config.algorithm == "markdown-heading":
+        return MarkdownHeadingChunker(config.chunk_size, length_metric=metric)
     if config.algorithm == "recursive":
         if embedding_provider is not None:
             raise ValueError("recursive chunker does not use an embedding provider")
