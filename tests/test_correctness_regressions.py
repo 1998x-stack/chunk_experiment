@@ -3,12 +3,11 @@
 import numpy as np
 import pytest
 
-from chunk_experiment.embeddings import cosine_similarity, l2_normalize
+from chunk_experiment.embeddings import HashEmbeddingProvider, cosine_similarity, l2_normalize
 from chunk_experiment.evaluation import evaluate_chunks
 from chunk_experiment.models import Chunk
 from chunk_experiment.semantic import SemanticChunker, sentence_spans
-from chunk_experiment.embeddings import HashEmbeddingProvider
-
+ 
 
 @pytest.mark.parametrize("text", [
     "\nFirst sentence. Next sentence.",
@@ -22,7 +21,7 @@ def test_sentence_spans_preserve_all_source_characters(text):
     assert "".join(s.text for s in spans) == text
     assert spans[0].start == 0
     assert spans[-1].end == len(text)
-    assert all(left.end == right.start for left, right in zip(spans, spans[1:]))
+    assert all(left.end == right.start for left, right in zip(spans, spans[1:], strict=False))
 
 
 def test_semantic_chunking_keeps_whitespace_prefix():
