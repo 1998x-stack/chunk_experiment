@@ -129,6 +129,27 @@ character recall. Its default lexical-hash retrieval is a **CI/smoke baseline
 only**; use a fixed real embedding service for semantic-quality conclusions.
 The example config is a template and does not include curated gold labels.
 
+## Reconstruct a local working tree by serial GitHub fetch
+
+This environment cannot download the repository's roughly 946 MB of tracked
+files. A sequential per-blob downloader with SHA verification and Loguru
+progress logs is included for execution on your own computer:
+
+```bash
+export GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
+python scripts/github_fetch_checkout.py \
+  --repo 1998x-stack/chunk_experiment \
+  --ref feat/factory-retrieval-eval-v3 \
+  --target ./chunk-experiment-local \
+  --exclude-prefix data \
+  --exclude-prefix chunk_papers
+```
+
+Remove the exclusions for all tracked files. Re-running the command verifies
+existing blobs and fetches only missing ones. The downloader creates a
+**working-tree snapshot**, not a clone of Git history. For full Git history,
+use `git clone --filter=blob:none` with normal Git.
+
 ## Testing
 
 ```bash
