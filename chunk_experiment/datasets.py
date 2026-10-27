@@ -100,7 +100,9 @@ def load_gold(path: Path, documents: list[Document], *, split: str = "test") -> 
         for span in spans:
             doc = by_id.get(span.document_id)
             if doc is None or doc.split != split:
-                raise ValueError(f"gold references absent or non-{split} document: {span.document_id}")
+                raise ValueError(
+                    f"gold references absent or non-{split} document: {span.document_id}"
+                )
             if span.end > len(doc.text):
                 raise ValueError(f"gold span exceeds document boundary: {case_id}")
         cases.append(QueryCase(case_id=case_id, query=row["query"], relevant_spans=spans))
