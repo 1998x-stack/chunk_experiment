@@ -37,7 +37,10 @@ class QueryCase:
             by_doc.setdefault(span.document_id, []).append(span)
         for spans in by_doc.values():
             ordered = sorted(spans, key=lambda span: span.start)
-            if any(left.end > right.start for left, right in zip(ordered, ordered[1:], strict=False)):
+            if any(
+                left.end > right.start
+                for left, right in zip(ordered, ordered[1:], strict=False)
+            ):
                 raise ValueError("overlapping gold spans must be merged before evaluation")
 
 
