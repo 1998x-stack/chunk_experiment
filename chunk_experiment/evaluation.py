@@ -33,7 +33,16 @@ def evaluate_chunks(
 ) -> ChunkingMetrics:
     if max_chunk_size <= 0:
         raise ValueError("max_chunk_size must be > 0")
-    intervals = sorted((max(0, c.start), min(len(source), c.end)) for c in chunks)
+    for chunk in chunks:
+        if chunk.start < 0 or chunk.end > len(source) or chunk.end <= chunk.start:
+            raise ValueError(
+                f"invalid chunk span [{chunk.start}, {chunk.end}) for source length {len(source)}"
+            )
+        if source[chunk.start:chunk.end] != chunk.text:
+            raise ValueError(
+                f"chunk content is not source-aligned at [{chunk.start}, {chunk.end})"
+            )
+    intervals = sorted((c.start, c.end) for c in chunks)
     covered = 0
     cursor = 0
     for start, end in intervals:
