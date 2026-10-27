@@ -16,6 +16,8 @@ def l2_normalize(vectors: np.ndarray) -> np.ndarray:
     vectors = np.asarray(vectors, dtype=np.float32)
     if vectors.ndim == 1:
         vectors = vectors[None, :]
+    if vectors.ndim != 2 or not np.all(np.isfinite(vectors)):
+        raise ValueError("embedding vectors must be finite 2D arrays")
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     norms = np.where(norms == 0, 1.0, norms)
     return vectors / norms
@@ -24,8 +26,13 @@ def l2_normalize(vectors: np.ndarray) -> np.ndarray:
 def cosine_similarity(left: np.ndarray, right: np.ndarray) -> float:
     left_arr = np.asarray(left, dtype=np.float32)
     right_arr = np.asarray(right, dtype=np.float32)
-    if left_arr.shape != right_arr.shape:
-        raise ValueError(f"embedding shape mismatch: {left_arr.shape} != {right_arr.shape}")
+    if (
+        left_arr.ndim != 1
+        or left_arr.shape != right_arr.shape
+        or not np.all(np.isfinite(left_arr))
+        or not np.all(np.isfinite(right_arr))
+    ):
+        raise ValueError("cosine_similarity expects equal finite 1D vectors")
     left_norm = float(np.linalg.norm(left_arr))
     right_norm = float(np.linalg.norm(right_arr))
     if left_norm == 0.0 or right_norm == 0.0:
@@ -73,6 +80,8 @@ class HttpEmbeddingProvider:
     ) -> None:
         if not url:
             raise ValueError("url is required")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be > 0")
         self.url = url
         self.model = model
         self.version = version
