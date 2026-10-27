@@ -82,7 +82,10 @@ def build_chunker(
 ) -> Chunker:
     """Create a fresh chunker; no mutable instance is reused across runs."""
     metric = make_length_metric(config.length_unit)
-    if config.algorithm in ("fixed", "recursive", "markdown-heading") and embedding_provider is not None:
+    if (
+        config.algorithm in ("fixed", "recursive", "markdown-heading")
+        and embedding_provider is not None
+    ):
         raise ValueError("non-semantic chunkers do not use an embedding provider")
     if config.algorithm == "fixed":
         return FixedWindowChunker(
