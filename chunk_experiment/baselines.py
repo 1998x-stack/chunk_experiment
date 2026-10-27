@@ -58,7 +58,7 @@ class MarkdownHeadingChunker:
         )
         offsets.append(len(text))
         chunks = []
-        for start, end in zip(offsets, offsets[1:]):
+        for start, end in zip(offsets, offsets[1:], strict=False):
             section = text[start:end]
             if self.length_metric(section) <= self.chunk_size:
                 pieces = [Chunk(section, 0, len(section))]
