@@ -49,21 +49,26 @@ be used for a query.
 
 ## Quickstart
 
+Run the **checked-in fixture** before introducing a new corpus:
+
 ```bash
 pip install -e '.[dev,viz]'
 python experiments/run_factory.py \
-  --manifest benchmarks/my_corpus.jsonl \
-  --dataset-root benchmarks/documents \
-  --gold benchmarks/my_gold.jsonl \
+  --manifest benchmarks/fixtures/manifest.jsonl \
+  --dataset-root benchmarks/fixtures/documents \
+  --gold benchmarks/fixtures/gold.jsonl \
   --config configs/factory_smoke.json \
   --output-dir runs/v3-smoke
 python experiments/visualize_factory.py runs/v3-smoke/results.json
-pytest && ruff check chunk_experiment tests
+python -m pytest
+ruff check chunk_experiment tests experiments/run_factory.py \
+  experiments/visualize_factory.py scripts/github_fetch_checkout.py
 ```
 
-The bundled smoke config is a *template*, not a claim that labelled data
-already exists. Provide your own corpus and query labels, or generate fixtures
-following the schema above. Run directories are experiment artifacts.
+The fixture contains labelled source spans but is **too small to support
+statistical or semantic quality conclusions**. To run research experiments,
+replace the manifest, dataset root and gold paths with your own curated,
+licensed, independently labelled corpus. `runs/` is Git-ignored.
 
 ## Methodology and acceptance gates
 
