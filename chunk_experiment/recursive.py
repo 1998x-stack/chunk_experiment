@@ -69,6 +69,8 @@ class RecursiveChunker:
         return chunks
 
     def _max_end(self, text: str, start: int, budget: int) -> int:
+        if self.length_metric is character_length:
+            return min(len(text), start + budget)
         if self.length_metric(text[start:]) <= budget:
             return len(text)
         lo, hi = start + 1, len(text)
@@ -95,6 +97,8 @@ class RecursiveChunker:
     def _overlap_start(self, text: str, chunk_start: int, chunk_end: int) -> int:
         if self.chunk_overlap == 0:
             return chunk_end
+        if self.length_metric is character_length:
+            return max(chunk_start, chunk_end - self.chunk_overlap)
         lo, hi = chunk_start, chunk_end
         # Find the earliest suffix whose measured length is <= overlap.
         while lo < hi:

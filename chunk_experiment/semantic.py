@@ -23,6 +23,8 @@ class SentenceSpan:
 def sentence_spans(text: str, max_sentence_chars: int = 400) -> list[SentenceSpan]:
     """Split mixed Chinese/English text while preserving exact source offsets."""
 
+    if max_sentence_chars <= 0:
+        raise ValueError("max_sentence_chars must be > 0")
     if not text:
         return []
     spans: list[SentenceSpan] = []
@@ -37,13 +39,12 @@ def sentence_spans(text: str, max_sentence_chars: int = 400) -> list[SentenceSpa
             if boundary:
                 while end < len(text) and text[end].isspace():
                     end += 1
-            if text[start:end].strip():
-                spans.append(SentenceSpan(text[start:end], start, end))
+            spans.append(SentenceSpan(text[start:end], start, end))
             start = end
             i = end
             continue
         i += 1
-    if start < len(text) and text[start:].strip():
+    if start < len(text):
         spans.append(SentenceSpan(text[start:], start, len(text)))
     return spans
 
@@ -75,6 +76,8 @@ class SemanticChunker:
             raise ValueError("similarity_threshold must be in [-1, 1]")
         if not 0.0 <= breakpoint_percentile <= 100.0:
             raise ValueError("breakpoint_percentile must be in [0, 100]")
+        if max_sentence_chars <= 0:
+            raise ValueError("max_sentence_chars must be > 0")
         self.embedding_provider = embedding_provider
         self.chunk_size = chunk_size
         self.min_chunk_size = min_chunk_size

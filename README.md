@@ -101,6 +101,55 @@ python experiments/run_v2.py data/general/en \
 
 The result records the document SHA-256, parameters, runtime environment and unified metrics for every run.
 
+## v3 Factory Mode + retrieval evaluation
+
+New experiments should use the checked-in [Factory Pipeline Guide](docs/FACTORY_PIPELINE.md).
+The source-aligned experiment layer now includes **fixed-window, recursive,
+Markdown-heading, lexical-hash semantic and HTTP semantic chunking**.
+
+Create a JSONL document manifest with `document_id`, relative `path`, `split`,
+`language`, `domain` and an optional SHA-256; pair it with JSONL queries
+and source-character evidence spans. Then run:
+
+```bash
+pip install -e ".[dev,viz]"
+python experiments/run_factory.py \
+  --manifest benchmarks/my_corpus.jsonl \
+  --dataset-root benchmarks/documents \
+  --gold benchmarks/my_gold.jsonl \
+  --config configs/factory_smoke.json \
+  --output-dir runs/my-first-benchmark
+python experiments/visualize_factory.py runs/my-first-benchmark/results.json
+```
+
+The runner validates input checksums and gold offsets, enforces 100% source
+coverage, records Loguru serialized JSONL event traces and preserves raw
+per-query rankings. It reports Hit@K, MRR@K and non-double-counting evidence
+character recall. Its default lexical-hash retrieval is a **CI/smoke baseline
+only**; use a fixed real embedding service for semantic-quality conclusions.
+The example config is a template and does not include curated gold labels.
+
+## Reconstruct a local working tree by serial GitHub fetch
+
+This environment cannot download the repository's roughly 946 MB of tracked
+files. A sequential per-blob downloader with SHA verification and Loguru
+progress logs is included for execution on your own computer:
+
+```bash
+export GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
+python scripts/github_fetch_checkout.py \
+  --repo 1998x-stack/chunk_experiment \
+  --ref feat/factory-retrieval-eval-v3 \
+  --target ./chunk-experiment-local \
+  --exclude-prefix data \
+  --exclude-prefix chunk_papers
+```
+
+Remove the exclusions for all tracked files. Re-running the command verifies
+existing blobs and fetches only missing ones. The downloader creates a
+**working-tree snapshot**, not a clone of Git history. For full Git history,
+use `git clone --filter=blob:none` with normal Git.
+
 ## Testing
 
 ```bash
