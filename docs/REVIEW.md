@@ -1,4 +1,11 @@
-# Deep review: findings and redesign
+# Historical v2 code review: findings and redesign
+
+> This file records the original refactor audit. The maintained v3 Factory Mode
+> pipeline now also includes checksum manifests, source-span retrieval metrics,
+> executable fixtures, and Loguru JSONL tracing. Refer to
+> [Factory Pipeline](FACTORY_PIPELINE.md) and
+> [Repository Layout](REPOSITORY_LAYOUT.md) for current behavior.
+
 
 ## P0 / correctness
 
