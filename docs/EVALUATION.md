@@ -42,14 +42,16 @@ Use source spans:
 Do not label a query with one algorithm's chunk ids. If chunk boundaries change,
 chunk-id gold data becomes invalid or unfair.
 
-The v2 core exposes span-based:
+The maintained v3 retrieval evaluator currently exposes:
 
-- Hit@K;
-- Mean Reciprocal Rank;
-- mean relevant-span Recall@K.
+- Hit@K based on intersection with labelled source evidence;
+- reciprocal rank of the first intersecting chunk (MRR@K);
+- evidence-character Recall@K, measured from the union of retrieved spans.
 
-Future benchmark layers can add NDCG, precision, answer-support coverage, and
-retrieval-context redundancy.
+The v3 runner stores per-query scores and exact rankings. The original
+v2 discussion used broader terminology; the current implementation
+**does not yet compute** NDCG, generation faithfulness, answer-support
+coverage, precision or retrieval-context redundancy.
 
 ## 3. End-to-end RAG metrics
 

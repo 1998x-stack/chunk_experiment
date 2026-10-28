@@ -1,4 +1,10 @@
-# Architecture v2
+# Architecture: v2 core and v3 Factory extension
+
+This document describes the original v2 core architecture. The supported v3
+pipeline adds `ChunkerConfig` / `build_chunker`, checksummed dataset manifests,
+source-span retrieval evaluation, Loguru JSONL tracing and visualizations.
+See [Factory Pipeline](FACTORY_PIPELINE.md) and
+[Repository Layout](REPOSITORY_LAYOUT.md) for current entry points.
 
 The repository now separates **chunking mechanics** from **experiment dependencies**.
 

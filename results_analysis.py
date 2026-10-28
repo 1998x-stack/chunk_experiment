@@ -1,13 +1,20 @@
 import json
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Dict, List, Any
 
 def load_results(filename: str) -> List[Dict]:
-    """Load experimental results from JSON file"""
-    with open(filename, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    """Read legacy results, including files archived out of the repository root."""
+    path = Path(filename)
+    if not path.is_file() and not path.is_absolute():
+        archived = Path(__file__).resolve().parent / "archive" / "results" / path.name
+        if archived.is_file():
+            path = archived
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 def analyze_param_ablation_results():
     """Analyze the parameter ablation study results"""
@@ -204,8 +211,10 @@ def generate_visualizations(data_analysis, comparison_results):
                                f'{avg_val:.3f}s', ha='center', va='bottom')
         
         plt.tight_layout()
-        plt.savefig('chunking_analysis.png', dpi=300, bbox_inches='tight')
-        print("\nVisualization saved as 'chunking_analysis.png'")
+        output_path = Path("runs/legacy_analysis/chunking_analysis.png")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f"\nVisualization saved as '{output_path}'")
         plt.show()
         
     except ImportError:
