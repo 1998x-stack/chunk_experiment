@@ -12,6 +12,10 @@ DOCS = (
     "README.md",
     "AGENTS.md",
     "docs/REPOSITORY_LAYOUT.md",
+    "docs/ARCHITECTURE.md",
+    "docs/EVALUATION.md",
+    "docs/FACTORY_PIPELINE.md",
+    "docs/REVIEW.md",
     "archive/README.md",
     "notebooks/README.md",
 )
